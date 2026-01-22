@@ -1,11 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Navigation, ArrowLeft, Loader2 } from 'lucide-react';
+import { MapPin, Navigation, ArrowLeft, Loader2, Maximize2, Minimize2, ChevronDown } from 'lucide-react';
 import { GlassCard, GlassInput, GoldButton, LoadingSpinner } from '../components/common/GlassComponents';
 import { LocationPickerMap, RideMap } from '../components/map/RideMap';
 import { useAuth } from '../context/AuthContext';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { toast } from 'sonner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
 
 const RideRequestPage = () => {
   const navigate = useNavigate();
@@ -20,6 +27,23 @@ const RideRequestPage = () => {
   const [fareEstimate, setFareEstimate] = useState(null);
   const [loading, setLoading] = useState(false);
   const [requesting, setRequesting] = useState(false);
+  const [isMapFullscreen, setIsMapFullscreen] = useState(false);
+  const [destinations, setDestinations] = useState([]);
+  const [selectedDestination, setSelectedDestination] = useState(null);
+
+  // Fetch admin-defined destinations
+  useEffect(() => {
+    fetchDestinations();
+  }, []);
+
+  const fetchDestinations = async () => {
+    try {
+      const response = await api.get('/destinations?active_only=true');
+      setDestinations(response.data);
+    } catch (error) {
+      console.error('Error fetching destinations:', error);
+    }
+  };
 
   // Use current location as default pickup
   useEffect(() => {
@@ -55,15 +79,23 @@ const RideRequestPage = () => {
       const distance = calculateDistance(pickup.lat, pickup.lng, dropoff.lat, dropoff.lng);
       const duration = Math.round(distance * 3); // Rough estimate: 3 min per km
       
-      const response = await api.post('/rides/estimate-fare', {
-        distance_km: distance,
-        duration_min: duration
-      });
+      // If using admin-defined destination, use its estimated fare as base
+      let estimatedFare = selectedDestination?.estimated_fare;
+      
+      if (!estimatedFare) {
+        // Calculate dynamically if no predefined fare
+        const response = await api.post('/rides/estimate-fare', {
+          distance_km: distance,
+          duration_min: duration
+        });
+        estimatedFare = response.data.estimated_fare;
+      }
       
       setFareEstimate({
-        ...response.data,
+        estimated_fare: estimatedFare,
         distance,
-        duration
+        duration,
+        is_predefined: !!selectedDestination?.estimated_fare
       });
     } catch (error) {
       console.error('Error calculating fare:', error);
@@ -71,7 +103,7 @@ const RideRequestPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [pickup, dropoff, api]);
+  }, [pickup, dropoff, api, selectedDestination]);
 
   useEffect(() => {
     if (pickup && dropoff) {
@@ -79,10 +111,24 @@ const RideRequestPage = () => {
     }
   }, [pickup, dropoff, calculateFare]);
 
+  const handleDestinationSelect = (destId) => {
+    const dest = destinations.find(d => d.id === destId);
+    if (dest) {
+      setSelectedDestination(dest);
+      setDropoff({
+        lat: dest.latitude,
+        lng: dest.longitude,
+        address: dest.address
+      });
+      setDropoffAddress(dest.name);
+    }
+  };
+
   const handleLocationSelect = (location) => {
     if (step === 'pickup') {
       setPickup({ ...location, address: pickupAddress || 'Selected location' });
     } else if (step === 'dropoff') {
+      setSelectedDestination(null); // Clear predefined when manually selecting
       setDropoff({ ...location, address: dropoffAddress || 'Selected location' });
     }
   };
@@ -136,6 +182,37 @@ const RideRequestPage = () => {
     }
   };
 
+  // Fullscreen map modal
+  if (isMapFullscreen) {
+    return (
+      <div className="fixed inset-0 z-50 bg-[#0B0B0B]" data-testid="fullscreen-map">
+        <div className="absolute top-4 left-4 z-50">
+          <button
+            onClick={() => setIsMapFullscreen(false)}
+            className="p-3 rounded-xl bg-black/80 backdrop-blur-md border border-white/10 hover:bg-black transition-colors"
+            data-testid="exit-fullscreen-btn"
+          >
+            <Minimize2 className="w-5 h-5 text-white" />
+          </button>
+        </div>
+        <div className="absolute top-4 right-4 z-50 max-w-xs">
+          <GlassCard className="p-3" hover={false}>
+            <p className="text-white text-sm">Tap on map to select {step === 'pickup' ? 'pickup' : 'dropoff'} location</p>
+          </GlassCard>
+        </div>
+        <LocationPickerMap
+          center={pickup ? [pickup.lat, pickup.lng] : userLocation ? [userLocation.lat, userLocation.lng] : [-14.4087, 28.2849]}
+          selectedLocation={step === 'pickup' ? pickup : dropoff}
+          onLocationSelect={(loc) => {
+            handleLocationSelect(loc);
+            setIsMapFullscreen(false);
+          }}
+          className="h-full w-full"
+        />
+      </div>
+    );
+  }
+
   const renderStepContent = () => {
     switch (step) {
       case 'pickup':
@@ -185,13 +262,20 @@ const RideRequestPage = () => {
               {geoLoading ? 'Getting location...' : 'Use Current Location'}
             </GoldButton>
 
-            <div className="h-64 rounded-2xl overflow-hidden mb-4">
+            <div className="relative h-64 rounded-2xl overflow-hidden mb-4">
               <LocationPickerMap
                 center={pickup ? [pickup.lat, pickup.lng] : userLocation ? [userLocation.lat, userLocation.lng] : [-14.4087, 28.2849]}
                 selectedLocation={pickup}
                 onLocationSelect={handleLocationSelect}
                 className="h-full"
               />
+              <button
+                onClick={() => setIsMapFullscreen(true)}
+                className="absolute top-3 right-3 p-2 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 hover:bg-black/80 transition-colors"
+                data-testid="expand-map-btn"
+              >
+                <Maximize2 className="w-4 h-4 text-white" />
+              </button>
             </div>
           </>
         );
@@ -201,17 +285,44 @@ const RideRequestPage = () => {
           <>
             <div className="mb-4">
               <h2 className="font-heading text-xl font-semibold text-white mb-2">Set Destination</h2>
-              <p className="text-white/50 text-sm">Where would you like to go?</p>
+              <p className="text-white/50 text-sm">Choose a destination or tap on map</p>
             </div>
+
+            {/* Predefined Destinations Dropdown */}
+            {destinations.length > 0 && (
+              <div className="mb-4">
+                <label className="block text-sm text-white/60 mb-2">Quick Select Destination</label>
+                <Select onValueChange={handleDestinationSelect}>
+                  <SelectTrigger className="w-full bg-black/30 border-white/10 text-white h-12 rounded-xl">
+                    <SelectValue placeholder="Choose a popular destination" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#121212] border-white/10">
+                    {destinations.map((dest) => (
+                      <SelectItem 
+                        key={dest.id} 
+                        value={dest.id}
+                        className="text-white hover:bg-white/10 focus:bg-white/10"
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <span>{dest.name}</span>
+                          <span className="text-gold ml-2">~K{dest.estimated_fare}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             
             <div className="relative mb-4">
               <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />
               <GlassInput
                 type="text"
-                placeholder="Enter destination"
+                placeholder="Or enter custom destination"
                 value={dropoffAddress}
                 onChange={(e) => {
                   setDropoffAddress(e.target.value);
+                  setSelectedDestination(null);
                   if (dropoff) {
                     setDropoff({ ...dropoff, address: e.target.value });
                   }
@@ -221,13 +332,20 @@ const RideRequestPage = () => {
               />
             </div>
 
-            <div className="h-64 rounded-2xl overflow-hidden mb-4">
+            <div className="relative h-64 rounded-2xl overflow-hidden mb-4">
               <LocationPickerMap
-                center={pickup ? [pickup.lat, pickup.lng] : [-14.4087, 28.2849]}
+                center={dropoff ? [dropoff.lat, dropoff.lng] : pickup ? [pickup.lat, pickup.lng] : [-14.4087, 28.2849]}
                 selectedLocation={dropoff}
                 onLocationSelect={handleLocationSelect}
                 className="h-full"
               />
+              <button
+                onClick={() => setIsMapFullscreen(true)}
+                className="absolute top-3 right-3 p-2 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 hover:bg-black/80 transition-colors"
+                data-testid="expand-map-btn"
+              >
+                <Maximize2 className="w-4 h-4 text-white" />
+              </button>
             </div>
           </>
         );
@@ -241,7 +359,7 @@ const RideRequestPage = () => {
             </div>
 
             {/* Map Preview */}
-            <div className="h-48 rounded-2xl overflow-hidden mb-4">
+            <div className="relative h-48 rounded-2xl overflow-hidden mb-4">
               <RideMap
                 pickup={pickup}
                 dropoff={dropoff}
@@ -249,6 +367,12 @@ const RideRequestPage = () => {
                 interactive={false}
                 className="h-full"
               />
+              <button
+                onClick={() => setIsMapFullscreen(true)}
+                className="absolute top-3 right-3 p-2 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 hover:bg-black/80 transition-colors"
+              >
+                <Maximize2 className="w-4 h-4 text-white" />
+              </button>
             </div>
 
             {/* Trip Details */}
@@ -278,17 +402,19 @@ const RideRequestPage = () => {
                 <h3 className="font-heading font-semibold text-white mb-3">Fare Estimate</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between text-white/60">
-                    <span>Base fare</span>
-                    <span>K{fareEstimate.base_fare?.toFixed(2)}</span>
+                    <span>Distance</span>
+                    <span>{fareEstimate.distance?.toFixed(1)} km</span>
                   </div>
                   <div className="flex justify-between text-white/60">
-                    <span>Distance ({fareEstimate.distance?.toFixed(1)} km)</span>
-                    <span>K{fareEstimate.distance_charge?.toFixed(2)}</span>
+                    <span>Est. Duration</span>
+                    <span>{fareEstimate.duration} min</span>
                   </div>
-                  <div className="flex justify-between text-white/60">
-                    <span>Time ({fareEstimate.duration} min)</span>
-                    <span>K{fareEstimate.time_charge?.toFixed(2)}</span>
-                  </div>
+                  {fareEstimate.is_predefined && (
+                    <div className="flex justify-between text-white/60">
+                      <span>Preset Route Fare</span>
+                      <span className="text-gold">✓</span>
+                    </div>
+                  )}
                   <div className="border-t border-white/10 pt-2 mt-2 flex justify-between">
                     <span className="font-semibold text-white">Total</span>
                     <span className="font-heading font-bold text-gold text-lg">
