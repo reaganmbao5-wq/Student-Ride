@@ -1,34 +1,159 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+.App {
+  min-height: 100vh;
+  background-color: #0B0B0B;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+/* Leaflet custom styles for dark theme */
+.leaflet-container {
+  background: #0B0B0B !important;
+  font-family: 'DM Sans', sans-serif;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+.leaflet-tile-pane {
+  filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
 }
 
-.App-link {
-    color: #61dafb;
+.leaflet-control-zoom {
+  border: none !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+.leaflet-control-zoom a {
+  background: rgba(18, 18, 18, 0.9) !important;
+  color: #fff !important;
+  border: none !important;
+  width: 36px !important;
+  height: 36px !important;
+  line-height: 36px !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: rgba(212, 175, 55, 0.2) !important;
+  color: #D4AF37 !important;
+}
+
+.leaflet-control-zoom-in {
+  border-radius: 12px 12px 0 0 !important;
+}
+
+.leaflet-control-zoom-out {
+  border-radius: 0 0 12px 12px !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: rgba(18, 18, 18, 0.95) !important;
+  color: #fff !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5) !important;
+}
+
+.leaflet-popup-tip {
+  background: rgba(18, 18, 18, 0.95) !important;
+}
+
+.leaflet-popup-close-button {
+  color: #fff !important;
+}
+
+/* Custom marker styles */
+.custom-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.driver-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.user-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Animation for ride request modal */
+@keyframes slide-in-from-bottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-in.slide-in-from-bottom {
+  animation: slide-in-from-bottom 0.3s ease-out;
+}
+
+/* Sonner toast customization */
+[data-sonner-toast] {
+  font-family: 'DM Sans', sans-serif !important;
+}
+
+[data-sonner-toast][data-type="success"] {
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+[data-sonner-toast][data-type="error"] {
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+/* Hide default scrollbar but keep functionality */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Input autofill styling for dark theme */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px #121212 inset !important;
+  -webkit-text-fill-color: #fff !important;
+  caret-color: #fff !important;
+}
+
+/* Focus visible outline */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 2px solid #D4AF37;
+  outline-offset: 2px;
+}
+
+/* Disable text selection on interactive elements */
+button, .no-select {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Smooth page transitions */
+.page-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.page-exit {
+  opacity: 1;
+}
+
+.page-exit-active {
+  opacity: 0;
+  transition: opacity 300ms;
 }
