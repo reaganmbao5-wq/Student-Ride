@@ -1,0 +1,118 @@
+{
+  "design_system": {
+    "identity": {
+      "name": "Mulungushi Ride",
+      "tone": "Luxury, Modern, Reliable, Student-Centric",
+      "aesthetic": "Uber Black meets Cyberpunk Glassmorphism",
+      "theme_mode": "dark"
+    },
+    "typography": {
+      "font_family": {
+        "headings": "Outfit, sans-serif",
+        "body": "DM Sans, sans-serif",
+        "accent": "Playfair Display, serif"
+      },
+      "scale": {
+        "h1": "text-4xl md:text-6xl font-bold tracking-tight",
+        "h2": "text-3xl md:text-5xl font-semibold tracking-tight",
+        "h3": "text-2xl md:text-3xl font-medium",
+        "body_lg": "text-lg leading-relaxed",
+        "body_base": "text-base leading-relaxed",
+        "caption": "text-sm text-muted-foreground"
+      },
+      "imports": [
+        "@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=DM+Sans:wght@400;500;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap');"
+      ]
+    },
+    "colors": {
+      "palette": {
+        "background": {
+          "default": "#0B0B0B",
+          "paper": "#121212",
+          "subtle": "#1A1A1A"
+        },
+        "primary": {
+          "default": "#D4AF37",
+          "hover": "#B5952F",
+          "foreground": "#000000"
+        },
+        "secondary": {
+          "default": "#2A2A2A",
+          "foreground": "#FFFFFF"
+        },
+        "accent": {
+          "default": "#D4AF37",
+          "glass": "rgba(212, 175, 55, 0.15)"
+        },
+        "text": {
+          "primary": "#EDEDED",
+          "secondary": "#A1A1AA",
+          "muted": "#52525B"
+        },
+        "status": {
+          "success": "#10B981",
+          "error": "#EF4444",
+          "warning": "#F59E0B",
+          "info": "#3B82F6"
+        }
+      },
+      "gradients": {
+        "gold_rush": "linear-gradient(135deg, #D4AF37 0%, #AA8C2C 100%)",
+        "dark_glass": "linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)"
+      }
+    },
+    "glassmorphism": {
+      "cards": "bg-white/5 backdrop-blur-xl border border-white/10 shadow-xl",
+      "overlays": "bg-black/60 backdrop-blur-md",
+      "inputs": "bg-white/5 border-white/10 focus:border-[#D4AF37]/50 focus:ring-[#D4AF37]/20"
+    },
+    "spacing": {
+      "container_padding": "p-6 md:p-12",
+      "section_gap": "gap-8 md:gap-16",
+      "radius": {
+        "default": "rounded-2xl",
+        "button": "rounded-full",
+        "card": "rounded-3xl"
+      }
+    }
+  },
+  "assets": {
+    "images": {
+      "hero_car": "https://images.pexels.com/photos/14832852/pexels-photo-14832852.jpeg",
+      "student_user": "https://images.pexels.com/photos/6623335/pexels-photo-6623335.jpeg",
+      "driver_profile": "https://images.pexels.com/photos/7144214/pexels-photo-7144214.jpeg",
+      "map_preview": "https://images.pexels.com/photos/9966011/pexels-photo-9966011.jpeg",
+      "auth_bg": "https://images.pexels.com/photos/21431027/pexels-photo-21431027.jpeg"
+    },
+    "icons": "Lucide React (default) or Phosphor Icons for premium feel"
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-[#D4AF37] text-black hover:bg-[#B5952F] rounded-full font-semibold px-8 py-6 transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(212,175,55,0.3)]",
+      "secondary": "bg-white/10 text-white hover:bg-white/20 rounded-full font-medium px-6 py-6 backdrop-blur-md border border-white/5",
+      "ghost": "text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:text-[#D4AF37]"
+    },
+    "cards": {
+      "glass": "bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl hover:border-[#D4AF37]/30 transition-colors",
+      "solid": "bg-[#121212] border border-white/5 rounded-3xl p-6"
+    },
+    "inputs": {
+      "default": "bg-black/20 border-white/10 text-white placeholder:text-white/30 rounded-xl h-12 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] transition-all"
+    }
+  },
+  "layout_strategies": {
+    "dashboard": "Grid layout: 'grid-cols-1 md:grid-cols-12 gap-6'. Sidebar: 'col-span-12 md:col-span-2'. Main Content: 'col-span-12 md:col-span-10'.",
+    "mobile_nav": "Fixed bottom navigation bar with glassmorphism effect for mobile users.",
+    "map_view": "Full-screen map container with floating glass panels for ride details."
+  },
+  "universal_guidelines": [
+    "ALWAYS use the 'Outfit' font for headings and 'DM Sans' for body text.",
+    "NEVER use pure black (#000000) for cards; use #121212 or glass effects.",
+    "Ensure all text on dark backgrounds has sufficient contrast (Text-Primary: #EDEDED).",
+    "Use the Gold (#D4AF37) accent sparingly for CTAs and key highlights only.",
+    "Implement 'Sonner' for all toast notifications.",
+    "All interactive elements must have a 'data-testid' attribute.",
+    "Mobile-first approach is MANDATORY. Test all layouts on 375px width."
+  ],
+  "instructions_to_main_agent": "1. Install fonts via Google Fonts import in index.css. 2. Configure tailwind.config.js with the custom colors and font families. 3. Create a 'Layout' component that handles the dark theme background and mobile navigation. 4. Build the 'GlassCard' reusable component first. 5. Use the provided image URLs for placeholders."
+}
