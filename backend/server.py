@@ -173,6 +173,24 @@ class PlatformSettings(BaseModel):
     per_km_rate: float
     per_minute_rate: float
 
+class DestinationCreate(BaseModel):
+    name: str
+    address: str
+    latitude: float
+    longitude: float
+    estimated_fare: float
+    is_active: bool = True
+
+class DestinationResponse(BaseModel):
+    id: str
+    name: str
+    address: str
+    latitude: float
+    longitude: float
+    estimated_fare: float
+    is_active: bool
+    created_at: str
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
