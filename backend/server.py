@@ -1138,6 +1138,64 @@ async def get_admin_logs(
     logs = await db.admin_logs.find({}, {"_id": 0}).sort("created_at", -1).to_list(limit)
     return [AdminLogResponse(**log) for log in logs]
 
+# ==================== DESTINATIONS MANAGEMENT ====================
+@api_router.get("/destinations", response_model=List[DestinationResponse])
+async def get_destinations(active_only: bool = True):
+    """Get all destinations (public endpoint for ride booking)"""
+    query = {"is_active": True} if active_only else {}
+    destinations = await db.destinations.find(query, {"_id": 0}).to_list(100)
+    return [DestinationResponse(**d) for d in destinations]
+
+@api_router.post("/admin/destinations", response_model=DestinationResponse)
+async def create_destination(dest: DestinationCreate, user: dict = Depends(require_admin)):
+    """Admin: Create a new destination"""
+    dest_id = str(uuid.uuid4())
+    destination = {
+        "id": dest_id,
+        "name": dest.name,
+        "address": dest.address,
+        "latitude": dest.latitude,
+        "longitude": dest.longitude,
+        "estimated_fare": dest.estimated_fare,
+        "is_active": dest.is_active,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.destinations.insert_one(destination)
+    await log_admin_action(user["id"], user["name"], "create_destination", dest_id, f"Created: {dest.name}")
+    return DestinationResponse(**destination)
+
+@api_router.put("/admin/destinations/{dest_id}", response_model=DestinationResponse)
+async def update_destination(dest_id: str, dest: DestinationCreate, user: dict = Depends(require_admin)):
+    """Admin: Update a destination"""
+    existing = await db.destinations.find_one({"id": dest_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Destination not found")
+    
+    update_data = {
+        "name": dest.name,
+        "address": dest.address,
+        "latitude": dest.latitude,
+        "longitude": dest.longitude,
+        "estimated_fare": dest.estimated_fare,
+        "is_active": dest.is_active
+    }
+    await db.destinations.update_one({"id": dest_id}, {"$set": update_data})
+    await log_admin_action(user["id"], user["name"], "update_destination", dest_id, f"Updated: {dest.name}")
+    
+    updated = await db.destinations.find_one({"id": dest_id}, {"_id": 0})
+    return DestinationResponse(**updated)
+
+@api_router.delete("/admin/destinations/{dest_id}")
+async def delete_destination(dest_id: str, user: dict = Depends(require_admin)):
+    """Admin: Delete a destination"""
+    existing = await db.destinations.find_one({"id": dest_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Destination not found")
+    
+    await db.destinations.delete_one({"id": dest_id})
+    await log_admin_action(user["id"], user["name"], "delete_destination", dest_id, f"Deleted: {existing['name']}")
+    return {"status": "deleted"}
+
 # ==================== FARE CALCULATION ====================
 @api_router.post("/rides/estimate-fare")
 async def estimate_fare(data: dict, user: dict = Depends(get_current_user)):
