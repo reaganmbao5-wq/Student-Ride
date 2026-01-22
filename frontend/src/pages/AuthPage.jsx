@@ -44,13 +44,14 @@ const AuthPage = () => {
           formData.email,
           formData.phone,
           formData.password,
-          isDriver ? 'student' : 'student' // Register as student first, then register as driver
+          'student' // Always register as student first
         );
         
         toast.success('Account created successfully!');
         
         if (isDriver) {
-          navigate('/driver/register');
+          // Navigate to driver registration with state to indicate flow
+          navigate('/driver/register', { state: { fromAuth: true } });
         } else {
           navigate('/dashboard');
         }
