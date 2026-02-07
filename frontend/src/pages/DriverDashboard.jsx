@@ -11,9 +11,9 @@ import { toast } from 'sonner';
 
 const DriverDashboard = () => {
   const navigate = useNavigate();
-  const { user, api, driverProfile, refreshDriverProfile } = useAuth();
-  const { newRideRequest, clearRideRequest, sendLocationUpdate } = useWebSocket();
-  
+  const { user, api, driverProfile, refreshDriverProfile, logout } = useAuth();
+  const { newRideRequest, clearRideRequest, sendLocationUpdate, rideUpdate } = useWebSocket();
+
   const [isOnline, setIsOnline] = useState(false);
   const [activeRide, setActiveRide] = useState(null);
   const [pendingRides, setPendingRides] = useState([]);
@@ -22,19 +22,24 @@ const DriverDashboard = () => {
   const [currentLocation, setCurrentLocation] = useState(null);
   const [showRideRequest, setShowRideRequest] = useState(false);
   const [incomingRide, setIncomingRide] = useState(null);
+  const [isSimulating, setIsSimulating] = useState(false);
+
 
   // Watch position when online
   const { startWatching, stopWatching, isWatching } = useWatchPosition(
     useCallback((location) => {
-      setCurrentLocation(location);
-      if (isOnline) {
-        sendLocationUpdate(location.lat, location.lng);
-        api.post('/drivers/location', {
-          latitude: location.lat,
-          longitude: location.lng
-        }).catch(console.error);
+      // Only use real GPS if not simulating
+      if (!isSimulating) {
+        setCurrentLocation(location);
+        if (isOnline) {
+          sendLocationUpdate(location.lat, location.lng);
+          api.post('/drivers/location', {
+            latitude: location.lat,
+            longitude: location.lng
+          }).catch(console.error);
+        }
       }
-    }, [isOnline, sendLocationUpdate, api]),
+    }, [isOnline, isSimulating, sendLocationUpdate, api]),
     { enableHighAccuracy: true }
   );
 
@@ -43,31 +48,68 @@ const DriverDashboard = () => {
   }, []);
 
   useEffect(() => {
+    if (rideUpdate && rideUpdate.type === 'rating_received') {
+      toast.success(`You received a ${rideUpdate.rating}-star rating!`);
+      // Update earnings state directly or fetch fresh data
+      setEarnings(prev => ({ ...prev, rating: rideUpdate.new_average }));
+      // Also refresh profile to ensure consistency
+      refreshDriverProfile();
+    }
+  }, [rideUpdate, refreshDriverProfile]);
+
+  // Simulation Logic
+  useEffect(() => {
+    let interval;
+    if (isSimulating && isOnline) {
+      interval = setInterval(() => {
+        setCurrentLocation(prev => {
+          // Default to Kabwe center if no location
+          const baseLat = prev?.lat || -14.42;
+          const baseLng = prev?.lng || 28.45;
+
+          // Simulate small movement (approx 10m northeast)
+          const newLat = baseLat + 0.0001;
+          const newLng = baseLng + 0.0001;
+
+          const newLoc = { lat: newLat, lng: newLng };
+
+          // Send update via WS
+          sendLocationUpdate(newLat, newLng);
+
+          // Also update backend occasionally if needed, but WS is primary for live tracking
+          return newLoc;
+        });
+      }, 2000); // Update every 2 seconds
+    }
+    return () => clearInterval(interval);
+  }, [isSimulating, isOnline, sendLocationUpdate]);
+
+  useEffect(() => {
     if (driverProfile) {
       setIsOnline(driverProfile.is_online);
     }
   }, [driverProfile]);
 
   useEffect(() => {
-    if (isOnline && !isWatching) {
+    if (isOnline && !isWatching && !isSimulating) {
       startWatching();
-    } else if (!isOnline && isWatching) {
+    } else if ((!isOnline || isSimulating) && isWatching) {
       stopWatching();
     }
-  }, [isOnline, isWatching, startWatching, stopWatching]);
+  }, [isOnline, isWatching, isSimulating, startWatching, stopWatching]);
 
   useEffect(() => {
     if (newRideRequest && isOnline && !activeRide) {
       setIncomingRide(newRideRequest);
       setShowRideRequest(true);
-      
+
       // Auto-dismiss after 30 seconds
       const timeout = setTimeout(() => {
         setShowRideRequest(false);
         setIncomingRide(null);
         clearRideRequest();
       }, 30000);
-      
+
       return () => clearTimeout(timeout);
     }
   }, [newRideRequest, isOnline, activeRide, clearRideRequest]);
@@ -79,7 +121,7 @@ const DriverDashboard = () => {
         api.get('/drivers/earnings'),
         api.get('/rides/pending')
       ]);
-      
+
       setActiveRide(activeRes.data);
       setEarnings(earningsRes.data);
       setPendingRides(pendingRes.data || []);
@@ -246,8 +288,8 @@ const DriverDashboard = () => {
               </div>
 
               <div className="flex gap-3">
-                <GoldButton 
-                  variant="secondary" 
+                <GoldButton
+                  variant="secondary"
                   className="flex-1"
                   onClick={handleDeclineRide}
                   data-testid="decline-ride-btn"
@@ -255,7 +297,7 @@ const DriverDashboard = () => {
                   <X className="w-5 h-5 mr-2" />
                   Decline
                 </GoldButton>
-                <GoldButton 
+                <GoldButton
                   className="flex-1"
                   onClick={() => handleAcceptRide(incomingRide.id)}
                   data-testid="accept-ride-btn"
@@ -278,20 +320,32 @@ const DriverDashboard = () => {
               {isOnline ? 'Waiting for ride requests...' : 'Go online to start accepting rides'}
             </p>
           </div>
-          <button
-            onClick={handleToggleOnline}
-            className={`relative w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${
-              isOnline 
-                ? 'bg-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.4)]' 
+          <div className="flex flex-col items-end gap-2">
+            <button
+              onClick={handleToggleOnline}
+              className={`relative w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${isOnline
+                ? 'bg-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.4)]'
                 : 'bg-white/10 hover:bg-white/20'
-            }`}
-            data-testid="online-toggle"
-          >
-            <Power className={`w-8 h-8 ${isOnline ? 'text-white' : 'text-white/40'}`} />
+                }`}
+              data-testid="online-toggle"
+            >
+              <Power className={`w-8 h-8 ${isOnline ? 'text-white' : 'text-white/40'}`} />
+              {isOnline && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-400 rounded-full animate-ping" />
+              )}
+            </button>
             {isOnline && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-400 rounded-full animate-ping" />
+              <button
+                onClick={() => setIsSimulating(!isSimulating)}
+                className={`text-xs px-2 py-1 rounded-lg border transition-colors ${isSimulating
+                  ? 'bg-gold/20 border-gold text-gold'
+                  : 'border-white/10 text-white/40 hover:bg-white/5'
+                  }`}
+              >
+                {isSimulating ? 'Simulating...' : 'Test GPS'}
+              </button>
             )}
-          </button>
+          </div>
         </div>
 
         {/* Active Ride */}
@@ -327,20 +381,20 @@ const DriverDashboard = () => {
                   <p className="text-sm text-white/50">{activeRide.student?.phone}</p>
                 </div>
               </div>
-              
+
               <div className="flex gap-2">
-                <GoldButton 
-                  variant="secondary" 
-                  size="sm" 
+                <GoldButton
+                  variant="secondary"
+                  size="sm"
                   className="flex-1"
                   onClick={() => navigate(`/ride/chat/${activeRide.id}`)}
                   data-testid="chat-passenger-btn"
                 >
                   Chat
                 </GoldButton>
-                <GoldButton 
-                  variant="secondary" 
-                  size="sm" 
+                <GoldButton
+                  variant="secondary"
+                  size="sm"
                   className="flex-1"
                   onClick={() => window.location.href = `tel:${activeRide.student?.phone}`}
                   data-testid="call-passenger-btn"
@@ -359,8 +413,8 @@ const DriverDashboard = () => {
                   <p className="text-white">{activeRide.pickup_location?.address}</p>
                 </div>
                 {activeRide.status === 'accepted' && (
-                  <GoldButton 
-                    size="icon" 
+                  <GoldButton
+                    size="icon"
                     variant="ghost"
                     onClick={() => openNavigation(activeRide.pickup_location)}
                     data-testid="navigate-pickup-btn"
@@ -376,8 +430,8 @@ const DriverDashboard = () => {
                   <p className="text-white">{activeRide.dropoff_location?.address}</p>
                 </div>
                 {activeRide.status === 'ongoing' && (
-                  <GoldButton 
-                    size="icon" 
+                  <GoldButton
+                    size="icon"
                     variant="ghost"
                     onClick={() => openNavigation(activeRide.dropoff_location)}
                     data-testid="navigate-dropoff-btn"
@@ -473,8 +527,8 @@ const DriverDashboard = () => {
                           <span className="text-white/60 truncate">{ride.dropoff_location?.address}</span>
                         </div>
                       </div>
-                      <GoldButton 
-                        size="sm" 
+                      <GoldButton
+                        size="sm"
                         className="w-full"
                         onClick={() => handleAcceptRide(ride.id)}
                       >
@@ -512,7 +566,7 @@ const DriverDashboard = () => {
           </GlassCard>
         )}
       </div>
-    </Layout>
+    </Layout >
   );
 };
 

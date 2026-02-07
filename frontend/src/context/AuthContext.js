@@ -11,10 +11,9 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [driverProfile, setDriverProfile] = useState(null);
 
-  const api = axios.create({
-    baseURL: API_URL,
-    headers: token ? { Authorization: `Bearer ${token}` } : {}
-  });
+  const api = React.useMemo(() => axios.create({
+    baseURL: API_URL
+  }), []);
 
   // Update axios headers when token changes
   useEffect(() => {
@@ -34,7 +33,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await api.get('/auth/me');
       setUser(response.data);
-      
+
       // Fetch driver profile if user is a driver
       if (response.data.role === 'driver') {
         try {
@@ -59,11 +58,11 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     const response = await api.post('/auth/login', { email, password });
     const { access_token, user: userData } = response.data;
-    
+
     localStorage.setItem('token', access_token);
     setToken(access_token);
     setUser(userData);
-    
+
     if (userData.role === 'driver') {
       try {
         const driverRes = await axios.get(`${API_URL}/drivers/me`, {
@@ -74,7 +73,7 @@ export const AuthProvider = ({ children }) => {
         console.log('No driver profile');
       }
     }
-    
+
     return userData;
   };
 
@@ -86,24 +85,62 @@ export const AuthProvider = ({ children }) => {
       password,
       role
     });
-    
+
     const { access_token, user: userData } = response.data;
-    
+
     localStorage.setItem('token', access_token);
     setToken(access_token);
     setUser(userData);
-    
+
     return userData;
   };
 
   const registerDriver = async (vehicleData) => {
-    const response = await api.post('/drivers/register', vehicleData);
-    setDriverProfile(response.data);
-    
-    // Refresh user to get updated role
-    await fetchUser();
-    
-    return response.data;
+    try {
+      const response = await api.post('/drivers/register', vehicleData);
+      setDriverProfile(response.data);
+
+      // Refresh user to get updated role immediately
+      await fetchUser();
+
+      return response.data;
+    } catch (error) {
+      console.error('Driver registration error:', error);
+      throw error;
+    }
+  };
+
+  const signupDriver = async (userData, vehicleData) => {
+    try {
+      // 1. Register User
+      const authResponse = await api.post('/auth/register', {
+        ...userData,
+        role: 'student' // Initial role
+      });
+
+      const { access_token, user: newUser } = authResponse.data;
+
+      // 2. Set Token Immediately (Crucial for next request)
+      localStorage.setItem('token', access_token);
+      setToken(access_token);
+      api.defaults.headers.Authorization = `Bearer ${access_token}`;
+
+      // 3. Register Driver Profile
+      const driverResponse = await api.post('/drivers/register', vehicleData, {
+        headers: { Authorization: `Bearer ${access_token}` }
+      });
+
+      // 4. Update State
+      setUser({ ...newUser, role: 'driver' });
+      setDriverProfile(driverResponse.data);
+
+      return newUser;
+    } catch (error) {
+      console.error('Driver signup error:', error);
+      // Clean up if step 2 failed (prevent ghost users)
+      logout();
+      throw error;
+    }
   };
 
   const logout = () => {
@@ -133,6 +170,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     registerDriver,
+    signupDriver,
     logout,
     refreshDriverProfile,
     isAuthenticated: !!user,

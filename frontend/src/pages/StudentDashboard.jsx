@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Clock, Car, Star, ChevronRight, Navigation } from 'lucide-react';
 import { GlassCard, GoldButton, StatusBadge, LoadingSpinner, EmptyState } from '../components/common/GlassComponents';
+import { RatingModal } from '../components/common/RatingModal';
 import { RideMap } from '../components/map/RideMap';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
@@ -14,7 +15,7 @@ const StudentDashboard = () => {
   const { user, api } = useAuth();
   const { rideUpdate, driverLocation, clearRideUpdate } = useWebSocket();
   const { location: userLocation } = useGeolocation();
-  
+
   const [activeRide, setActiveRide] = useState(null);
   const [recentRides, setRecentRides] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,6 +24,10 @@ const StudentDashboard = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [ratingRideId, setRatingRideId] = useState(null);
+  const [driverName, setDriverName] = useState('');
 
   useEffect(() => {
     if (rideUpdate) {
@@ -36,7 +41,10 @@ const StudentDashboard = () => {
         setActiveRide(prev => prev ? { ...prev, status: 'ongoing' } : null);
         toast.info('Your ride has started');
       } else if (rideUpdate.type === 'completed') {
-        toast.success('Ride completed! Don\'t forget to rate your driver.');
+        toast.success('Ride completed!');
+        setRatingRideId(activeRide?.id);
+        setDriverName(activeRide?.driver?.user?.name || 'Driver');
+        setShowRatingModal(true);
         setActiveRide(null);
         fetchData();
       } else if (rideUpdate.type === 'cancelled') {
@@ -45,7 +53,7 @@ const StudentDashboard = () => {
       }
       clearRideUpdate();
     }
-  }, [rideUpdate]);
+  }, [rideUpdate, activeRide]);
 
   useEffect(() => {
     if (driverLocation && activeRide) {
@@ -59,7 +67,7 @@ const StudentDashboard = () => {
         api.get('/rides/active'),
         api.get('/rides/history?limit=5')
       ]);
-      
+
       setActiveRide(activeRes.data);
       setRecentRides(historyRes.data);
     } catch (error) {
@@ -71,7 +79,7 @@ const StudentDashboard = () => {
 
   const handleCancelRide = async () => {
     if (!activeRide) return;
-    
+
     try {
       await api.post(`/rides/${activeRide.id}/cancel`);
       toast.success('Ride cancelled');
@@ -161,21 +169,21 @@ const StudentDashboard = () => {
                     <span className="text-white font-medium">{activeRide.driver.rating?.toFixed(1)}</span>
                   </div>
                 </div>
-                
+
                 {/* Contact Options */}
                 <div className="flex gap-2 mt-4">
-                  <GoldButton 
-                    variant="secondary" 
-                    size="sm" 
+                  <GoldButton
+                    variant="secondary"
+                    size="sm"
                     className="flex-1"
                     onClick={() => navigate(`/ride/chat/${activeRide.id}`)}
                     data-testid="chat-driver-btn"
                   >
                     Chat
                   </GoldButton>
-                  <GoldButton 
-                    variant="secondary" 
-                    size="sm" 
+                  <GoldButton
+                    variant="secondary"
+                    size="sm"
                     className="flex-1"
                     onClick={() => window.location.href = `tel:${activeRide.driver.user?.phone}`}
                     data-testid="call-driver-btn"
@@ -200,8 +208,8 @@ const StudentDashboard = () => {
             </div>
           </GlassCard>
         ) : (
-          <GlassCard 
-            className="p-6 cursor-pointer group" 
+          <GlassCard
+            className="p-6 cursor-pointer group"
             onClick={() => navigate('/ride')}
             data-testid="request-ride-card"
           >
@@ -248,7 +256,7 @@ const StudentDashboard = () => {
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-heading font-semibold text-white text-lg">Recent Rides</h2>
-            <button 
+            <button
               onClick={() => navigate('/history')}
               className="text-gold text-sm hover:underline"
             >
@@ -259,8 +267,8 @@ const StudentDashboard = () => {
           {recentRides.length > 0 ? (
             <div className="space-y-3">
               {recentRides.slice(0, 3).map((ride) => (
-                <GlassCard 
-                  key={ride.id} 
+                <GlassCard
+                  key={ride.id}
                   className="p-4"
                   onClick={() => navigate(`/ride/${ride.id}`)}
                   data-testid={`ride-history-${ride.id}`}
@@ -308,7 +316,19 @@ const StudentDashboard = () => {
           )}
         </div>
       </div>
-    </Layout>
+
+      <RatingModal
+        isOpen={showRatingModal}
+        onClose={() => setShowRatingModal(false)}
+        driverName={driverName}
+        rideId={ratingRideId}
+        onSubmit={async (data) => {
+          await api.post(`/rides/${ratingRideId}/rate`, data);
+          toast.success('Rating submitted successfully');
+          fetchData(); // Refresh history with new rating
+        }}
+      />
+    </Layout >
   );
 };
 

@@ -154,7 +154,6 @@ class MessageResponse(BaseModel):
     created_at: str
 
 class RatingCreate(BaseModel):
-    ride_id: str
     rating: int  # 1-5
     review: Optional[str] = None
 
@@ -178,7 +177,9 @@ class DestinationCreate(BaseModel):
     address: str
     latitude: float
     longitude: float
-    estimated_fare: float
+    estimated_fare: float  # Legacy support
+    base_price: Optional[float] = 0.0
+    estimated_distance_km: Optional[float] = 0.0
     is_active: bool = True
 
 class DestinationResponse(BaseModel):
@@ -188,6 +189,8 @@ class DestinationResponse(BaseModel):
     latitude: float
     longitude: float
     estimated_fare: float
+    base_price: Optional[float] = 0.0
+    estimated_distance_km: Optional[float] = 0.0
     is_active: bool
     created_at: str
 
@@ -410,6 +413,20 @@ async def get_me(user: dict = Depends(get_current_user)):
         is_active=user.get("is_active", True)
     )
 
+@api_router.delete("/users/me")
+async def delete_me(user: dict = Depends(get_current_user)):
+    """Allow a user to delete their own account."""
+    user_id = user["id"]
+    
+    # If user is a driver, delete driver profile too
+    if user["role"] == UserRole.DRIVER.value:
+        await db.drivers.delete_one({"user_id": user_id})
+        
+    # Delete the user
+    await db.users.delete_one({"id": user_id})
+    
+    return {"status": "deleted"}
+
 # ==================== DRIVER ROUTES ====================
 @api_router.post("/drivers/register", response_model=DriverResponse)
 async def register_driver(profile: DriverProfile, user: dict = Depends(get_current_user)):
@@ -434,7 +451,15 @@ async def register_driver(profile: DriverProfile, user: dict = Depends(get_curre
         "current_location": None,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
-    await db.drivers.insert_one(driver)
+    try:
+        await db.drivers.insert_one(driver)
+    except Exception as e:
+        logger.error(f"Error checking driver existence: {e}")
+        # Could be duplicate key if concurrent
+        existing = await db.drivers.find_one({"user_id": user["id"]})
+        if existing:
+             raise HTTPException(status_code=400, detail="Already registered as driver")
+        raise HTTPException(status_code=500, detail="Registration failed")
     
     # Update user role
     await db.users.update_one({"id": user["id"]}, {"$set": {"role": UserRole.DRIVER.value}})
@@ -534,6 +559,44 @@ async def get_available_drivers(user: dict = Depends(get_current_user)):
         result.append(DriverResponse(**driver))
     
     return result
+
+# ==================== DESTINATION ROUTES ====================
+
+@api_router.get("/destinations", response_model=List[DestinationResponse])
+async def get_destinations(active_only: bool = Query(False)):
+    query = {}
+    if active_only:
+        query["is_active"] = True
+    active_destinations = await db.destinations.find(query, {"_id": 0}).to_list(100)
+    return active_destinations
+
+@api_router.post("/admin/destinations", response_model=DestinationResponse)
+async def create_destination(destination: DestinationCreate, user: dict = Depends(require_admin)):
+    dest_id = str(uuid.uuid4())
+    new_dest = {
+        "id": dest_id,
+        "name": destination.name,
+        "address": destination.address,
+        "latitude": destination.latitude,
+        "longitude": destination.longitude,
+        "estimated_fare": destination.estimated_fare,
+        "is_active": destination.is_active,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.destinations.insert_one(new_dest)
+    
+    await log_admin_action(user["id"], user["name"], "create_destination", dest_id, f"Created {destination.name}")
+    
+    return DestinationResponse(**new_dest)
+
+@api_router.delete("/admin/destinations/{dest_id}")
+async def delete_destination(dest_id: str, user: dict = Depends(require_admin)):
+    result = await db.destinations.delete_one({"id": dest_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Destination not found")
+        
+    await log_admin_action(user["id"], user["name"], "delete_destination", dest_id)
+    return {"status": "deleted"}
 
 # ==================== RIDE ROUTES ====================
 @api_router.post("/rides/request", response_model=RideResponse)
@@ -764,10 +827,21 @@ async def rate_ride(ride_id: str, rating_data: RatingCreate, user: dict = Depend
         
         if driver_rides:
             avg_rating = sum(r["rating"] for r in driver_rides) / len(driver_rides)
+            new_rating = round(avg_rating, 1)
             await db.drivers.update_one(
                 {"id": ride["driver_id"]},
-                {"$set": {"rating": round(avg_rating, 1)}}
+                {"$set": {"rating": new_rating}}
             )
+            
+            # Notify driver via WebSocket
+            driver = await db.drivers.find_one({"id": ride["driver_id"]}, {"_id": 0})
+            if driver and "user_id" in driver:
+                await manager.send_personal_message({
+                    "type": "rating_received",
+                    "rating": rating_data.rating,
+                    "new_average": new_rating,
+                    "ride_id": ride_id
+                }, driver["user_id"])
     
     return {"status": "rated"}
 
@@ -1027,6 +1101,30 @@ async def activate_user(user_id: str, admin: dict = Depends(require_admin)):
     await log_admin_action(admin["id"], admin["name"], "activate_user", user_id)
     return {"status": "activated"}
 
+@api_router.delete("/admin/users/{user_id}")
+async def delete_user(user_id: str, admin: dict = Depends(require_admin)):
+    target_user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Permission Checks
+    if target_user["role"] == UserRole.SUPER_ADMIN.value:
+        raise HTTPException(status_code=403, detail="Cannot delete Super Admin")
+        
+    if target_user["role"] == UserRole.ADMIN.value and admin["role"] != UserRole.SUPER_ADMIN.value:
+        raise HTTPException(status_code=403, detail="Only Super Admin can delete Адmins")
+
+    # If user is a driver, delete driver profile too
+    if target_user["role"] == UserRole.DRIVER.value:
+        await db.drivers.delete_one({"user_id": user_id})
+        
+    # Delete the user
+    await db.users.delete_one({"id": user_id})
+    
+    await log_admin_action(admin["id"], admin["name"], "delete_user", user_id, f"Deleted user: {target_user['email']}")
+    
+    return {"status": "deleted"}
+
 @api_router.get("/admin/rides", response_model=List[RideResponse])
 async def get_all_rides(
     status: Optional[str] = None,
@@ -1157,6 +1255,8 @@ async def create_destination(dest: DestinationCreate, user: dict = Depends(requi
         "latitude": dest.latitude,
         "longitude": dest.longitude,
         "estimated_fare": dest.estimated_fare,
+        "base_price": dest.base_price,
+        "estimated_distance_km": dest.estimated_distance_km,
         "is_active": dest.is_active,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
@@ -1177,6 +1277,8 @@ async def update_destination(dest_id: str, dest: DestinationCreate, user: dict =
         "latitude": dest.latitude,
         "longitude": dest.longitude,
         "estimated_fare": dest.estimated_fare,
+        "base_price": dest.base_price,
+        "estimated_distance_km": dest.estimated_distance_km,
         "is_active": dest.is_active
     }
     await db.destinations.update_one({"id": dest_id}, {"$set": update_data})
@@ -1213,6 +1315,65 @@ async def estimate_fare(data: dict, user: dict = Depends(get_current_user)):
         "distance_charge": round(distance_km * settings["per_km_rate"], 2),
         "time_charge": round(duration_min * settings["per_minute_rate"], 2)
     }
+
+# ==================== CHAT ROUTES ====================
+@api_router.post("/chat/send", response_model=MessageResponse)
+async def send_message(message: MessageCreate, user: dict = Depends(get_current_user)):
+    # Verify user is part of the ride
+    ride = await db.rides.find_one({"id": message.ride_id}, {"_id": 0})
+    if not ride:
+        raise HTTPException(status_code=404, detail="Ride not found")
+    
+    # Check if user is student or driver for this ride (or admin)
+    is_student = ride["student_id"] == user["id"]
+    is_driver = ride.get("driver_id") and ride["driver_id"] == (await db.drivers.find_one({"user_id": user["id"]}))["id"]
+    
+    if not (is_student or is_driver):
+        raise HTTPException(status_code=403, detail="Not authorized for this chat")
+    
+    msg_id = str(uuid.uuid4())
+    new_message = {
+        "id": msg_id,
+        "ride_id": message.ride_id,
+        "sender_id": user["id"],
+        "sender_name": user["name"],
+        "content": message.content,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.messages.insert_one(new_message)
+    
+    # Broadcast via WebSocket
+    await manager.broadcast_to_ride({
+        "type": "new_message",
+        "message": new_message,
+        "ride_id": message.ride_id
+    }, message.ride_id)
+    
+    return MessageResponse(**new_message)
+
+@api_router.get("/chat/{ride_id}", response_model=List[MessageResponse])
+async def get_chat_history(ride_id: str, user: dict = Depends(get_current_user)):
+    ride = await db.rides.find_one({"id": ride_id}, {"_id": 0})
+    if not ride:
+        raise HTTPException(status_code=404, detail="Ride not found")
+    
+    # Check authorization
+    is_student = ride["student_id"] == user["id"]
+    is_driver_user = False
+    
+    if ride.get("driver_id"):
+        driver = await db.drivers.find_one({"id": ride["driver_id"]})
+        if driver and driver["user_id"] == user["id"]:
+            is_driver_user = True
+            
+    is_admin = user["role"] in [UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value]
+    
+    if not (is_student or is_driver_user or is_admin):
+         raise HTTPException(status_code=403, detail="Not authorized")
+         
+    messages = await db.messages.find({"ride_id": ride_id}, {"_id": 0}).sort("created_at", 1).to_list(1000)
+    return [MessageResponse(**m) for m in messages]
 
 # ==================== WEBSOCKET ENDPOINT ====================
 @app.websocket("/ws/{user_id}")
@@ -1258,7 +1419,7 @@ app.include_router(api_router)
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )

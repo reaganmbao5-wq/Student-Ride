@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, MapPin, Star, Car } from 'lucide-react';
 import { GlassCard, LoadingSpinner, StatusBadge, EmptyState, RatingStars } from '../components/common/GlassComponents';
+import { RatingModal } from '../components/common/RatingModal';
+import { toast } from 'sonner';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
 
@@ -21,6 +23,26 @@ const RideHistoryPage = () => {
       console.error('Error fetching history:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const [ratingRide, setRatingRide] = useState(null);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+
+  const handleRateClick = (ride) => {
+    setRatingRide(ride);
+    setShowRatingModal(true);
+  };
+
+  const handleRatingSubmit = async (data) => {
+    try {
+      await api.post(`/rides/${ratingRide.id}/rate`, data);
+      toast.success('Rating submitted successfully');
+      setShowRatingModal(false);
+      fetchHistory(); // Refresh list
+    } catch (error) {
+      console.error('Rating error:', error);
+      toast.error('Failed to submit rating');
     }
   };
 
@@ -117,7 +139,15 @@ const RideHistoryPage = () => {
                             <span className="text-white text-sm">{ride.rating}</span>
                           </>
                         ) : !isDriver && (
-                          <span className="text-xs text-white/40">Not rated</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRateClick(ride);
+                            }}
+                            className="text-xs text-gold hover:underline cursor-pointer font-medium"
+                          >
+                            Rate Driver
+                          </button>
                         )}
                       </div>
                     )}
@@ -141,6 +171,14 @@ const RideHistoryPage = () => {
             description="Your completed rides will appear here"
           />
         )}
+
+        <RatingModal
+          isOpen={showRatingModal}
+          onClose={() => setShowRatingModal(false)}
+          driverName={ratingRide?.driver?.user?.name || 'Driver'}
+          rideId={ratingRide?.id}
+          onSubmit={handleRatingSubmit}
+        />
       </div>
     </Layout>
   );

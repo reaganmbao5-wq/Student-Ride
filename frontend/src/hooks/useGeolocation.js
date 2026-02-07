@@ -14,7 +14,7 @@ export const useGeolocation = (options = {}) => {
 
   const getCurrentPosition = useCallback(() => {
     setLoading(true);
-    
+
     if (!navigator.geolocation) {
       setError('Geolocation is not supported by your browser');
       setLoading(false);
@@ -32,7 +32,13 @@ export const useGeolocation = (options = {}) => {
         setLoading(false);
       },
       (error) => {
-        setError(error.message);
+        // Fallback to Kabwe when geolocation fails (HTTP on phone requires HTTPS for geolocation)
+        setLocation({
+          lat: -14.42,
+          lng: 28.45,
+          accuracy: null
+        });
+        setError(`Location unavailable. Using default location (Kabwe).`);
         setLoading(false);
       },
       defaultOptions

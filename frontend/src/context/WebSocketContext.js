@@ -27,7 +27,7 @@ export const WebSocketProvider = ({ children }) => {
     ws.onclose = () => {
       console.log('WebSocket disconnected');
       setIsConnected(false);
-      
+
       // Reconnect after 3 seconds
       reconnectTimeoutRef.current = setTimeout(() => {
         connect();
@@ -41,7 +41,7 @@ export const WebSocketProvider = ({ children }) => {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        
+
         switch (data.type) {
           case 'new_ride_request':
             setNewRideRequest(data.ride);
@@ -66,6 +66,14 @@ export const WebSocketProvider = ({ children }) => {
             break;
           case 'new_message':
             setNewMessage(data.message);
+            break;
+          case 'rating_received':
+            setRideUpdate({
+              type: 'rating_received',
+              rating: data.rating,
+              new_average: data.new_average,
+              ride_id: data.ride_id
+            });
             break;
           case 'pong':
             // Keep-alive response

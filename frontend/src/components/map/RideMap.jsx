@@ -1,240 +1,209 @@
-import React, { useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-
-// Fix for default marker icons
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
-
-// Custom marker icons
-const createIcon = (color) => new L.DivIcon({
-  className: 'custom-marker',
-  html: `<div style="
-    width: 24px;
-    height: 24px;
-    background: ${color};
-    border: 3px solid white;
-    border-radius: 50%;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-  "></div>`,
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
-  popupAnchor: [0, -12]
-});
-
-const pickupIcon = createIcon('#D4AF37'); // Gold
-const dropoffIcon = createIcon('#10B981'); // Green
-const driverIcon = new L.DivIcon({
-  className: 'driver-marker',
-  html: `<div style="
-    width: 40px;
-    height: 40px;
-    background: #D4AF37;
-    border: 3px solid white;
-    border-radius: 50%;
-    box-shadow: 0 4px 12px rgba(212,175,55,0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  ">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="black">
-      <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
-    </svg>
-  </div>`,
-  iconSize: [40, 40],
-  iconAnchor: [20, 20],
-  popupAnchor: [0, -20]
-});
-
-const userIcon = new L.DivIcon({
-  className: 'user-marker',
-  html: `<div style="
-    width: 16px;
-    height: 16px;
-    background: #3B82F6;
-    border: 3px solid white;
-    border-radius: 50%;
-    box-shadow: 0 0 0 8px rgba(59,130,246,0.2);
-  "></div>`,
-  iconSize: [16, 16],
-  iconAnchor: [8, 8]
-});
-
-// Component to recenter map
-const RecenterMap = ({ position }) => {
-  const map = useMap();
-  useEffect(() => {
-    if (position) {
-      map.setView(position, map.getZoom());
-    }
-  }, [position, map]);
-  return null;
-};
-
-// Component to fit bounds
-const FitBounds = ({ bounds }) => {
-  const map = useMap();
-  useEffect(() => {
-    if (bounds && bounds.length >= 2) {
-      map.fitBounds(bounds, { padding: [50, 50] });
-    }
-  }, [bounds, map]);
-  return null;
-};
+import React, { useRef, useEffect } from 'react';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 
 export const RideMap = ({
-  center = [-14.4087, 28.2849], // Kabwe, Zambia coordinates
-  zoom = 14,
+  center = { lat: -14.42, lng: 28.45 }, // Kabwe
+  zoom = 13,
   pickup = null,
   dropoff = null,
   driverLocation = null,
   userLocation = null,
-  onMapClick = null,
-  showRoute = false,
   interactive = true,
   className = ""
 }) => {
-  const mapRef = useRef(null);
+  const mapContainer = useRef(null);
+  const map = useRef(null);
+  const markersRef = useRef([]);
+  const [isMapLoaded, setIsMapLoaded] = React.useState(false);
 
-  // Calculate bounds if we have multiple points
-  const bounds = [];
-  if (pickup) bounds.push([pickup.lat, pickup.lng]);
-  if (dropoff) bounds.push([dropoff.lat, dropoff.lng]);
-  if (driverLocation) bounds.push([driverLocation.lat, driverLocation.lng]);
+  useEffect(() => {
+    if (map.current) return; // Initialize map only once
 
-  // Simple route line between points
-  const routePositions = [];
-  if (pickup) routePositions.push([pickup.lat, pickup.lng]);
-  if (dropoff) routePositions.push([dropoff.lat, dropoff.lng]);
+    map.current = new maplibregl.Map({
+      container: mapContainer.current,
+      style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+      center: [center.lng, center.lat],
+      zoom: zoom,
+      interactive: interactive
+    });
 
-  return (
-    <div className={`relative rounded-2xl overflow-hidden ${className}`} data-testid="ride-map">
-      <MapContainer
-        ref={mapRef}
-        center={center}
-        zoom={zoom}
-        style={{ height: '100%', width: '100%' }}
-        zoomControl={interactive}
-        dragging={interactive}
-        scrollWheelZoom={interactive}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+    map.current.on('load', () => {
+      setIsMapLoaded(true);
+    });
 
-        {bounds.length >= 2 && <FitBounds bounds={bounds} />}
+    if (interactive) {
+      map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
+    }
+  }, []);
 
-        {/* User location */}
-        {userLocation && (
-          <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon}>
-            <Popup>Your location</Popup>
-          </Marker>
-        )}
+  // Update markers
+  useEffect(() => {
+    if (!map.current || !isMapLoaded) return;
 
-        {/* Pickup marker */}
-        {pickup && (
-          <Marker position={[pickup.lat, pickup.lng]} icon={pickupIcon}>
-            <Popup>
-              <div className="text-black font-medium">Pickup</div>
-              <div className="text-gray-600 text-sm">{pickup.address || 'Selected location'}</div>
-            </Popup>
-          </Marker>
-        )}
+    // Clear existing markers
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
 
-        {/* Dropoff marker */}
-        {dropoff && (
-          <Marker position={[dropoff.lat, dropoff.lng]} icon={dropoffIcon}>
-            <Popup>
-              <div className="text-black font-medium">Dropoff</div>
-              <div className="text-gray-600 text-sm">{dropoff.address || 'Selected location'}</div>
-            </Popup>
-          </Marker>
-        )}
+    // Add user location marker
+    if (userLocation) {
+      const el = document.createElement('div');
+      el.className = 'marker-user';
+      el.style.cssText = 'width:16px;height:16px;background:#3B82F6;border:3px solid white;border-radius:50%;box-shadow:0 0 0 8px rgba(59,130,246,0.2);';
+      const marker = new maplibregl.Marker({ element: el })
+        .setLngLat([userLocation.lng, userLocation.lat])
+        .addTo(map.current);
+      markersRef.current.push(marker);
+    }
 
-        {/* Driver marker */}
-        {driverLocation && (
-          <Marker position={[driverLocation.lat, driverLocation.lng]} icon={driverIcon}>
-            <Popup>Driver</Popup>
-          </Marker>
-        )}
+    // Add pickup marker
+    if (pickup) {
+      const el = document.createElement('div');
+      el.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="#D4AF37" stroke="white" stroke-width="2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`;
+      el.style.cssText = 'filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));';
+      const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+        .setLngLat([pickup.lng, pickup.lat])
+        .addTo(map.current);
+      markersRef.current.push(marker);
+    }
 
-        {/* Route line */}
-        {showRoute && routePositions.length >= 2 && (
-          <Polyline
-            positions={routePositions}
-            color="#D4AF37"
-            weight={4}
-            opacity={0.8}
-            dashArray="10, 10"
-          />
-        )}
-      </MapContainer>
-    </div>
-  );
+    // Add dropoff marker
+    if (dropoff) {
+      const el = document.createElement('div');
+      el.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="#10B981" stroke="white" stroke-width="2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`;
+      el.style.cssText = 'filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));';
+      const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+        .setLngLat([dropoff.lng, dropoff.lat])
+        .addTo(map.current);
+      markersRef.current.push(marker);
+    }
+
+    // Add driver marker
+    if (driverLocation) {
+      const el = document.createElement('div');
+      el.innerHTML = `<svg width="40" height="40" viewBox="0 0 24 24" fill="#D4AF37" stroke="white" stroke-width="2"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>`;
+      el.style.cssText = 'filter:drop-shadow(0 4px 12px rgba(212,175,55,0.5)); transition: transform 0.5s linear;';
+      const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+        .setLngLat([driverLocation.lng, driverLocation.lat])
+        .addTo(map.current);
+      markersRef.current.push(marker);
+
+      // Only fly to driver if it's a significant change or first time
+      if (!pickup && !dropoff) {
+        map.current.flyTo({ center: [driverLocation.lng, driverLocation.lat], duration: 1000 });
+      }
+    }
+
+    // Fit bounds if multiple points
+    const bounds = new maplibregl.LngLatBounds();
+    let hasPoints = false;
+    if (pickup) { bounds.extend([pickup.lng, pickup.lat]); hasPoints = true; }
+    if (dropoff) { bounds.extend([dropoff.lng, dropoff.lat]); hasPoints = true; }
+    if (driverLocation) { bounds.extend([driverLocation.lng, driverLocation.lat]); hasPoints = true; }
+
+    if (hasPoints) {
+      map.current.fitBounds(bounds, { padding: 50, duration: 1000 });
+    }
+
+    // Draw route line
+    if (pickup && dropoff) {
+      if (map.current.getSource('route')) {
+        map.current.removeLayer('route');
+        map.current.removeSource('route');
+      }
+
+      map.current.addSource('route', {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: [[pickup.lng, pickup.lat], [dropoff.lng, dropoff.lat]]
+          }
+        }
+      });
+
+      map.current.addLayer({
+        id: 'route',
+        type: 'line',
+        source: 'route',
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: { 'line-color': '#D4AF37', 'line-width': 4, 'line-opacity': 0.8 }
+      });
+    }
+  }, [pickup, dropoff, driverLocation, userLocation, isMapLoaded]);
+
+  return <div ref={mapContainer} className={`w-full h-full rounded-2xl ${className}`} />;
 };
 
 export const LocationPickerMap = ({
-  center = [-14.4087, 28.2849],
-  zoom = 15,
+  center = { lat: -14.42, lng: 28.45 },
+  zoom = 14,
   selectedLocation = null,
   onLocationSelect,
   className = ""
 }) => {
-  const MapClickHandler = () => {
-    const map = useMap();
-    
-    useEffect(() => {
-      map.on('click', (e) => {
-        if (onLocationSelect) {
-          onLocationSelect({
-            lat: e.latlng.lat,
-            lng: e.latlng.lng
-          });
-        }
-      });
-      
-      return () => {
-        map.off('click');
-      };
-    }, [map]);
-    
-    return null;
-  };
+  const mapContainer = useRef(null);
+  const map = useRef(null);
+  const marker = useRef(null);
+  const [isMapLoaded, setIsMapLoaded] = React.useState(false);
+  const onLocationSelectRef = useRef(onLocationSelect);
+
+  // Keep ref updated with latest callback
+  useEffect(() => {
+    onLocationSelectRef.current = onLocationSelect;
+  }, [onLocationSelect]);
+
+  useEffect(() => {
+    if (map.current) return;
+
+    map.current = new maplibregl.Map({
+      container: mapContainer.current,
+      style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+      center: [center.lng, center.lat],
+      zoom: zoom
+    });
+
+    map.current.on('load', () => {
+      setIsMapLoaded(true);
+    });
+
+    map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
+
+    map.current.on('click', (e) => {
+      if (onLocationSelectRef.current) {
+        onLocationSelectRef.current({
+          lat: e.lngLat.lat,
+          lng: e.lngLat.lng
+        });
+      }
+    });
+  }, []); // Only run on mount
+
+  useEffect(() => {
+    if (!map.current || !isMapLoaded) return;
+
+    if (marker.current) {
+      marker.current.remove();
+    }
+
+    if (selectedLocation) {
+      const el = document.createElement('div');
+      el.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="#D4AF37" stroke="white" stroke-width="2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`;
+      el.style.cssText = 'filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));';
+      marker.current = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+        .setLngLat([selectedLocation.lng, selectedLocation.lat])
+        .addTo(map.current);
+
+      map.current.flyTo({ center: [selectedLocation.lng, selectedLocation.lat], zoom: 15 });
+    }
+  }, [selectedLocation, isMapLoaded]);
 
   return (
-    <div className={`relative rounded-2xl overflow-hidden ${className}`} data-testid="location-picker-map">
-      <MapContainer
-        center={selectedLocation ? [selectedLocation.lat, selectedLocation.lng] : center}
-        zoom={zoom}
-        style={{ height: '100%', width: '100%' }}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        
-        <MapClickHandler />
-        
-        {selectedLocation && (
-          <>
-            <RecenterMap position={[selectedLocation.lat, selectedLocation.lng]} />
-            <Marker position={[selectedLocation.lat, selectedLocation.lng]} icon={pickupIcon}>
-              <Popup>Selected location</Popup>
-            </Marker>
-          </>
-        )}
-      </MapContainer>
-      
-      {/* Crosshair overlay */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="w-8 h-8 border-2 border-gold rounded-full opacity-50" />
-        <div className="absolute w-1 h-1 bg-gold rounded-full" />
+    <div className={`relative w-full h-full rounded-2xl ${className}`}>
+      <div ref={mapContainer} className="w-full h-full rounded-2xl" />
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 pointer-events-none">
+        <p className="text-xs text-white">Tap anywhere to select</p>
       </div>
     </div>
   );

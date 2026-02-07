@@ -8,19 +8,23 @@ import { toast } from 'sonner';
 const AuthPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { login, register } = useAuth();
-  
+  const { login, register, signupDriver } = useAuth();
+
   const [mode, setMode] = useState(searchParams.get('mode') === 'driver' ? 'register' : 'login');
   const [isDriver, setIsDriver] = useState(searchParams.get('mode') === 'driver');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    vehicle_type: 'car',
+    vehicle_model: '',
+    vehicle_color: '',
+    plate_number: ''
   });
 
   const handleChange = (e) => {
@@ -38,27 +42,34 @@ const AuthPage = () => {
           setLoading(false);
           return;
         }
-        
-        const user = await register(
-          formData.name,
-          formData.email,
-          formData.phone,
-          formData.password,
-          'student' // Always register as student first
-        );
-        
-        toast.success('Account created successfully!');
-        
+
+        let user;
         if (isDriver) {
-          // Navigate to driver registration with state to indicate flow
-          navigate('/driver/register', { state: { fromAuth: true } });
+          // Unified Driver Signup
+          user = await signupDriver(formData, {
+            vehicle_type: formData.vehicle_type,
+            vehicle_model: formData.vehicle_model,
+            vehicle_color: formData.vehicle_color,
+            plate_number: formData.plate_number
+          });
+          toast.success('Driver account created! Waiting for approval.');
+          navigate('/driver');
         } else {
+          // Normal Student Signup
+          user = await register(
+            formData.name,
+            formData.email,
+            formData.phone,
+            formData.password,
+            'student'
+          );
+          toast.success('Account created successfully!');
           navigate('/dashboard');
         }
       } else {
         const user = await login(formData.email, formData.password);
         toast.success(`Welcome back, ${user.name}!`);
-        
+
         // Redirect based on role
         if (user.role === 'admin' || user.role === 'super_admin') {
           navigate('/admin');
@@ -70,7 +81,11 @@ const AuthPage = () => {
       }
     } catch (error) {
       console.error('Auth error:', error);
-      toast.error(error.response?.data?.detail || 'Authentication failed');
+      const detail = error.response?.data?.detail;
+      const errorMessage = Array.isArray(detail)
+        ? detail.map(e => e.msg).join(', ') // Handle Pydantic validation errors
+        : detail || 'Authentication failed. Please check your inputs.';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -81,7 +96,7 @@ const AuthPage = () => {
       {/* Background Effects */}
       <div className="absolute inset-0">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-gold/5 rounded-full blur-[150px]" />
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center opacity-10"
           style={{ backgroundImage: `url(https://images.pexels.com/photos/21431027/pexels-photo-21431027.jpeg)` }}
         />
@@ -112,9 +127,9 @@ const AuthPage = () => {
               {mode === 'login' ? 'Welcome Back' : isDriver ? 'Become a Driver' : 'Create Account'}
             </h1>
             <p className="text-white/50 text-sm">
-              {mode === 'login' 
-                ? 'Sign in to continue your journey' 
-                : isDriver 
+              {mode === 'login'
+                ? 'Sign in to continue your journey'
+                : isDriver
                   ? 'Start earning with MuluRides'
                   : 'Join the MuluRides community'}
             </p>
@@ -125,11 +140,10 @@ const AuthPage = () => {
             <button
               type="button"
               onClick={() => setMode('login')}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                mode === 'login' 
-                  ? 'bg-gold text-black' 
-                  : 'text-white/60 hover:text-white'
-              }`}
+              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${mode === 'login'
+                ? 'bg-gold text-black'
+                : 'text-white/60 hover:text-white'
+                }`}
               data-testid="login-tab"
             >
               Sign In
@@ -137,11 +151,10 @@ const AuthPage = () => {
             <button
               type="button"
               onClick={() => setMode('register')}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                mode === 'register' 
-                  ? 'bg-gold text-black' 
-                  : 'text-white/60 hover:text-white'
-              }`}
+              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${mode === 'register'
+                ? 'bg-gold text-black'
+                : 'text-white/60 hover:text-white'
+                }`}
               data-testid="register-tab"
             >
               Sign Up
@@ -161,14 +174,12 @@ const AuthPage = () => {
                   <button
                     type="button"
                     onClick={() => setIsDriver(!isDriver)}
-                    className={`w-12 h-6 rounded-full transition-colors relative ${
-                      isDriver ? 'bg-gold' : 'bg-white/20'
-                    }`}
+                    className={`w-12 h-6 rounded-full transition-colors relative ${isDriver ? 'bg-gold' : 'bg-white/20'
+                      }`}
                     data-testid="driver-toggle"
                   >
-                    <div className={`w-5 h-5 rounded-full bg-white absolute top-0.5 transition-all ${
-                      isDriver ? 'right-0.5' : 'left-0.5'
-                    }`} />
+                    <div className={`w-5 h-5 rounded-full bg-white absolute top-0.5 transition-all ${isDriver ? 'right-0.5' : 'left-0.5'
+                      }`} />
                   </button>
                 </div>
 
@@ -258,6 +269,63 @@ const AuthPage = () => {
               </div>
             )}
 
+            {/* Vehicle Details (Only for Driver Registration) */}
+            {mode === 'register' && isDriver && (
+              <div className="space-y-4 pt-4 border-t border-white/10 animate-in slide-in-from-top">
+                <p className="text-white/60 text-sm font-medium">Vehicle Details</p>
+
+                {/* Vehicle Type */}
+                <div className="grid grid-cols-3 gap-2">
+                  {['car', 'motorcycle', 'bicycle'].map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, vehicle_type: type })}
+                      className={`p-2 rounded-lg text-xs capitalize transition-all ${formData.vehicle_type === type
+                        ? 'bg-gold text-black font-medium'
+                        : 'bg-white/5 text-white/60 hover:bg-white/10'
+                        }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Model & Color */}
+                <div className="grid grid-cols-2 gap-3">
+                  <GlassInput
+                    type="text"
+                    name="vehicle_model"
+                    placeholder="Model"
+                    value={formData.vehicle_model}
+                    onChange={handleChange}
+                    required
+                    className="text-sm"
+                  />
+                  <GlassInput
+                    type="text"
+                    name="vehicle_color"
+                    placeholder="Color"
+                    value={formData.vehicle_color}
+                    onChange={handleChange}
+                    required
+                    className="text-sm"
+                  />
+                </div>
+
+                {/* Plate Number */}
+                <GlassInput
+                  type="text"
+                  name="plate_number"
+                  placeholder="Plate Number"
+                  value={formData.plate_number}
+                  onChange={handleChange}
+                  required
+                  className="uppercase text-sm"
+                />
+              </div>
+            )}
+
             {/* Submit */}
             <GoldButton
               type="submit"
@@ -282,9 +350,9 @@ const AuthPage = () => {
             {mode === 'login' ? (
               <>
                 Don't have an account?{' '}
-                <button 
+                <button
                   type="button"
-                  onClick={() => setMode('register')} 
+                  onClick={() => setMode('register')}
                   className="text-gold hover:underline"
                 >
                   Sign up
@@ -293,9 +361,9 @@ const AuthPage = () => {
             ) : (
               <>
                 Already have an account?{' '}
-                <button 
+                <button
                   type="button"
-                  onClick={() => setMode('login')} 
+                  onClick={() => setMode('login')}
                   className="text-gold hover:underline"
                 >
                   Sign in

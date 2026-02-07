@@ -1,17 +1,42 @@
-import React from 'react';
-import { User, Mail, Phone, Shield, Car, LogOut } from 'lucide-react';
+import React, { useState } from 'react';
+import { User, Mail, Phone, Shield, Car, LogOut, Trash2, Loader2 } from 'lucide-react';
 import { GlassCard, GoldButton } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
 
 const ProfilePage = () => {
-  const { user, driverProfile, logout, isDriver, isAdmin, isSuperAdmin } = useAuth();
+  const { user, driverProfile, logout, isDriver, isAdmin, isSuperAdmin, api } = useAuth();
   const navigate = useNavigate();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/');
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      await api.delete('/users/me');
+      toast.success('Account deleted successfully');
+      logout();
+      navigate('/');
+    } catch (error) {
+      toast.error('Failed to delete account');
+      console.error(error);
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+    }
   };
 
   return (
@@ -40,12 +65,11 @@ const ProfilePage = () => {
             <div>
               <h2 className="font-heading text-xl font-semibold text-white">{user?.name}</h2>
               <div className="flex items-center gap-2 mt-1">
-                <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${
-                  isSuperAdmin ? 'bg-gold/20 text-gold' :
+                <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${isSuperAdmin ? 'bg-gold/20 text-gold' :
                   isAdmin ? 'bg-purple-500/20 text-purple-400' :
-                  isDriver ? 'bg-blue-500/20 text-blue-400' :
-                  'bg-white/10 text-white/60'
-                }`}>
+                    isDriver ? 'bg-blue-500/20 text-blue-400' :
+                      'bg-white/10 text-white/60'
+                  }`}>
                   {user?.role?.replace('_', ' ')}
                 </span>
               </div>
@@ -102,11 +126,10 @@ const ProfilePage = () => {
             <div className="mt-4 p-4 bg-white/5 rounded-xl">
               <div className="flex items-center justify-between">
                 <span className="text-white/60">Approval Status</span>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  driverProfile.is_approved 
-                    ? 'bg-green-500/20 text-green-400' 
-                    : 'bg-yellow-500/20 text-yellow-400'
-                }`}>
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${driverProfile.is_approved
+                  ? 'bg-green-500/20 text-green-400'
+                  : 'bg-yellow-500/20 text-yellow-400'
+                  }`}>
                   {driverProfile.is_approved ? 'Approved' : 'Pending Approval'}
                 </span>
               </div>
@@ -157,11 +180,61 @@ const ProfilePage = () => {
           variant="secondary"
           className="w-full"
           onClick={handleLogout}
-          data-testid="logout-btn"
         >
           <LogOut className="w-5 h-5 mr-2" />
           Sign Out
         </GoldButton>
+
+        {/* Danger Zone */}
+        <div className="pt-6 border-t border-white/10">
+          <h3 className="font-heading font-semibold text-red-400 mb-4">Danger Zone</h3>
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="w-full p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center gap-2 hover:bg-red-500/20 transition-all font-medium"
+            data-testid="delete-account-btn"
+          >
+            <Trash2 className="w-5 h-5" />
+            Delete Account
+          </button>
+        </div>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <DialogContent className="bg-[#121212] border-white/10 sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-white font-heading text-xl">Delete Account</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-start gap-3">
+                <div className="p-2 rounded-full bg-red-500/20 text-red-400 shrink-0">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-white font-medium mb-1">Permanently Delete Account?</h4>
+                  <p className="text-white/60 text-sm">
+                    Are you sure you want to delete your account? This action cannot be undone and will remove all your data, ride history, and profile information.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 mt-2">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors text-sm font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors text-sm font-medium shadow-lg shadow-red-500/20 flex items-center gap-2"
+                disabled={isDeleting}
+              >
+                {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                Delete Forever
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );

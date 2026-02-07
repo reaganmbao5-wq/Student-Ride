@@ -1,0 +1,23 @@
+# Task: Run Servers & Mobile Access
+
+- [x] Check Network Configuration <!-- id: 0 -->
+    - [x] Get Local IP Address <!-- id: 1 -->
+    - [x] Verify Backend Bind Address (`0.0.0.0`) <!-- id: 2 -->
+    - [x] Verify Frontend Bind Address (`0.0.0.0`) <!-- id: 3 -->
+- [ ] Database Setup <!-- id: 4 -->
+    - [x] Verify Database Connectivity (SQLite or other) <!-- id: 5 -->
+- [x] Start Servers <!-- id: 6 -->
+    - [x] Start Backend Server <!-- id: 7 -->
+    - [x] Start Frontend Server <!-- id: 8 -->
+- [x] Verify Access on Local Network <!-- id: 10 -->
+- [x] Create Project Status Review <!-- id: 11 -->
+- [x] Test Ride Request Flow <!-- id: 12 -->
+- [ ] Test Driver Workflow (Arrive, Start, Complete) <!-- id: 13 -->
+- [x] Fix Destination Map Click Selection <!-- id: 14 -->
+- [x] Fix Rating System (Interactive Stars & Comments) <!-- id: 15 -->
+- [x] Debug Rating Submission Failure <!-- id: 16 -->
+- [x] Verify Driver Rating Calculation & Display <!-- id: 17 -->
+- [x] Verify Driver Rating Calculation & Display <!-- id: 17 -->
+- [x] Implement Direct Driver Registration <!-- id: 18 -->
+- [x] Fix Mobile UI Overflow (Admin List & Driver Form) <!-- id: 19 -->
+- [x] Implement User Deletion in Admin Portal <!-- id: 20 -->

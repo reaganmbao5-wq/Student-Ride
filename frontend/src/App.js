@@ -19,6 +19,7 @@ import AdminUsersPage from "./pages/AdminUsersPage";
 import AdminDriversPage from "./pages/AdminDriversPage";
 import AdminRidesPage from "./pages/AdminRidesPage";
 import AdminSettingsPage from "./pages/AdminSettingsPage";
+import AdminDestinationsPage from "./pages/AdminDestinationsPage";
 import ChatPage from "./pages/ChatPage";
 import ProfilePage from "./pages/ProfilePage";
 
@@ -87,13 +88,13 @@ const AppRoutes = () => {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
-        <Route 
-          path="/auth" 
+        <Route
+          path="/auth"
           element={
             <PublicRoute>
               <AuthPage />
             </PublicRoute>
-          } 
+          }
         />
 
         {/* Student Routes */}
@@ -205,6 +206,14 @@ const AppRoutes = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/admin/destinations"
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+              <AdminDestinationsPage />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Profile Route */}
         <Route
@@ -229,8 +238,8 @@ function App() {
       <BrowserRouter>
         <AuthProvider>
           <AppRoutes />
-          <Toaster 
-            position="top-center" 
+          <Toaster
+            position="top-center"
             toastOptions={{
               style: {
                 background: 'rgba(18, 18, 18, 0.95)',

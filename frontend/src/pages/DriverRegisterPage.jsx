@@ -9,7 +9,7 @@ const DriverRegisterPage = () => {
   const navigate = useNavigate();
   const { registerDriver } = useAuth();
   const [loading, setLoading] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     vehicle_type: 'car',
     plate_number: '',
@@ -27,11 +27,14 @@ const DriverRegisterPage = () => {
 
     try {
       await registerDriver(formData);
-      toast.success('Driver profile created! Pending approval.');
-      navigate('/driver');
+      toast.success('Driver profile created! You are now a driver.');
+      // Small delay to ensure state propagation
+      setTimeout(() => {
+        navigate('/driver', { replace: true });
+      }, 500);
     } catch (error) {
       console.error('Registration error:', error);
-      toast.error(error.response?.data?.detail || 'Registration failed');
+      toast.error(error.response?.data?.detail || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -82,11 +85,10 @@ const DriverRegisterPage = () => {
                     key={type}
                     type="button"
                     onClick={() => setFormData({ ...formData, vehicle_type: type })}
-                    className={`p-3 rounded-xl text-sm capitalize transition-all ${
-                      formData.vehicle_type === type
+                    className={`p-3 rounded-xl text-sm capitalize transition-all ${formData.vehicle_type === type
                         ? 'bg-gold text-black font-medium'
                         : 'bg-white/5 text-white/60 hover:bg-white/10'
-                    }`}
+                      }`}
                     data-testid={`vehicle-type-${type}`}
                   >
                     {type}

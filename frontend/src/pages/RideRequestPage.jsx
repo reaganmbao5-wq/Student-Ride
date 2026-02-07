@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Navigation, ArrowLeft, Loader2, Maximize2, Minimize2, ChevronDown } from 'lucide-react';
 import { GlassCard, GlassInput, GoldButton, LoadingSpinner } from '../components/common/GlassComponents';
-import { LocationPickerMap, RideMap } from '../components/map/RideMap';
+import { RideMap, LocationPickerMap } from '../components/map/RideMap';
 import { useAuth } from '../context/AuthContext';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { toast } from 'sonner';
@@ -13,12 +13,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select';
+import { AddressSearch } from '../components/common/AddressSearch';
 
 const RideRequestPage = () => {
   const navigate = useNavigate();
   const { api } = useAuth();
   const { location: userLocation, loading: geoLoading, error: geoError, refresh: refreshLocation } = useGeolocation();
-  
+
   const [step, setStep] = useState('pickup'); // pickup, dropoff, confirm
   const [pickup, setPickup] = useState(null);
   const [dropoff, setDropoff] = useState(null);
@@ -30,6 +31,7 @@ const RideRequestPage = () => {
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
   const [destinations, setDestinations] = useState([]);
   const [selectedDestination, setSelectedDestination] = useState(null);
+
 
   // Fetch admin-defined destinations
   useEffect(() => {
@@ -57,31 +59,65 @@ const RideRequestPage = () => {
     }
   }, [userLocation, pickup]);
 
+  // Handle map click for location selection
+  const handleLocationSelect = async (location) => {
+    // Reverse geocode to get a readable address
+    let address = `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`;
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.lat}&lon=${location.lng}`,
+        { headers: { 'User-Agent': 'MulungushiRides/1.0' } }
+      );
+      const data = await response.json();
+      if (data.display_name) {
+        address = data.display_name;
+      }
+    } catch (error) {
+      console.error('Reverse geocoding error:', error);
+    }
+
+    const newLocation = {
+      lat: location.lat,
+      lng: location.lng,
+      address
+    };
+
+    if (step === 'pickup') {
+      setPickup(newLocation);
+      setPickupAddress(address);
+    } else if (step === 'dropoff') {
+      setDropoff(newLocation);
+      setDropoffAddress(address);
+      setSelectedDestination(null);
+    }
+  };
+
   // Calculate distance between two points (Haversine formula)
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371; // Earth's radius in km
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   };
 
   // Calculate fare estimate when both locations are set
   const calculateFare = useCallback(async () => {
     if (!pickup || !dropoff) return;
-    
+
     setLoading(true);
     try {
       const distance = calculateDistance(pickup.lat, pickup.lng, dropoff.lat, dropoff.lng);
       const duration = Math.round(distance * 3); // Rough estimate: 3 min per km
-      
+
       // If using admin-defined destination, use its estimated fare as base
       let estimatedFare = selectedDestination?.estimated_fare;
-      
+
       if (!estimatedFare) {
         // Calculate dynamically if no predefined fare
         const response = await api.post('/rides/estimate-fare', {
@@ -90,7 +126,7 @@ const RideRequestPage = () => {
         });
         estimatedFare = response.data.estimated_fare;
       }
-      
+
       setFareEstimate({
         estimated_fare: estimatedFare,
         distance,
@@ -124,14 +160,7 @@ const RideRequestPage = () => {
     }
   };
 
-  const handleLocationSelect = (location) => {
-    if (step === 'pickup') {
-      setPickup({ ...location, address: pickupAddress || 'Selected location' });
-    } else if (step === 'dropoff') {
-      setSelectedDestination(null); // Clear predefined when manually selecting
-      setDropoff({ ...location, address: dropoffAddress || 'Selected location' });
-    }
-  };
+
 
   const handleNext = () => {
     if (step === 'pickup' && pickup) {
@@ -153,7 +182,7 @@ const RideRequestPage = () => {
 
   const handleRequestRide = async () => {
     if (!pickup || !dropoff || !fareEstimate) return;
-    
+
     setRequesting(true);
     try {
       const response = await api.post('/rides/request', {
@@ -171,7 +200,7 @@ const RideRequestPage = () => {
         estimated_distance: fareEstimate.distance,
         estimated_duration: fareEstimate.duration
       });
-      
+
       toast.success('Ride requested! Finding a driver...');
       navigate('/dashboard');
     } catch (error) {
@@ -222,21 +251,14 @@ const RideRequestPage = () => {
               <h2 className="font-heading text-xl font-semibold text-white mb-2">Set Pickup Location</h2>
               <p className="text-white/50 text-sm">Tap on the map or use your current location</p>
             </div>
-            
-            <div className="relative mb-4">
-              <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gold" />
-              <GlassInput
-                type="text"
-                placeholder="Enter pickup address"
-                value={pickupAddress}
-                onChange={(e) => {
-                  setPickupAddress(e.target.value);
-                  if (pickup) {
-                    setPickup({ ...pickup, address: e.target.value });
-                  }
+
+            <div className="mb-4">
+              <AddressSearch
+                placeholder="Search for pickup location..."
+                onLocationSelect={(loc) => {
+                  setPickup(loc);
+                  setPickupAddress(loc.address);
                 }}
-                className="pl-12"
-                data-testid="pickup-input"
               />
             </div>
 
@@ -262,20 +284,13 @@ const RideRequestPage = () => {
               {geoLoading ? 'Getting location...' : 'Use Current Location'}
             </GoldButton>
 
+            {/* Map Picker */}
             <div className="relative h-64 rounded-2xl overflow-hidden mb-4">
               <LocationPickerMap
-                center={pickup ? [pickup.lat, pickup.lng] : userLocation ? [userLocation.lat, userLocation.lng] : [-14.4087, 28.2849]}
                 selectedLocation={pickup}
                 onLocationSelect={handleLocationSelect}
-                className="h-full"
+                center={userLocation ? { lat: userLocation.lat, lng: userLocation.lng } : undefined}
               />
-              <button
-                onClick={() => setIsMapFullscreen(true)}
-                className="absolute top-3 right-3 p-2 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 hover:bg-black/80 transition-colors"
-                data-testid="expand-map-btn"
-              >
-                <Maximize2 className="w-4 h-4 text-white" />
-              </button>
             </div>
           </>
         );
@@ -285,7 +300,7 @@ const RideRequestPage = () => {
           <>
             <div className="mb-4">
               <h2 className="font-heading text-xl font-semibold text-white mb-2">Set Destination</h2>
-              <p className="text-white/50 text-sm">Choose a destination or tap on map</p>
+              <p className="text-white/50 text-sm">Choose a destination or enter address</p>
             </div>
 
             {/* Predefined Destinations Dropdown */}
@@ -298,8 +313,8 @@ const RideRequestPage = () => {
                   </SelectTrigger>
                   <SelectContent className="bg-[#121212] border-white/10">
                     {destinations.map((dest) => (
-                      <SelectItem 
-                        key={dest.id} 
+                      <SelectItem
+                        key={dest.id}
                         value={dest.id}
                         className="text-white hover:bg-white/10 focus:bg-white/10"
                       >
@@ -313,39 +328,24 @@ const RideRequestPage = () => {
                 </Select>
               </div>
             )}
-            
-            <div className="relative mb-4">
-              <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />
-              <GlassInput
-                type="text"
-                placeholder="Or enter custom destination"
-                value={dropoffAddress}
-                onChange={(e) => {
-                  setDropoffAddress(e.target.value);
+
+            <div className="mb-4">
+              <AddressSearch
+                placeholder="Search for destination..."
+                onLocationSelect={(loc) => {
+                  setDropoff(loc);
+                  setDropoffAddress(loc.address);
                   setSelectedDestination(null);
-                  if (dropoff) {
-                    setDropoff({ ...dropoff, address: e.target.value });
-                  }
                 }}
-                className="pl-12"
-                data-testid="dropoff-input"
               />
             </div>
 
             <div className="relative h-64 rounded-2xl overflow-hidden mb-4">
               <LocationPickerMap
-                center={dropoff ? [dropoff.lat, dropoff.lng] : pickup ? [pickup.lat, pickup.lng] : [-14.4087, 28.2849]}
                 selectedLocation={dropoff}
                 onLocationSelect={handleLocationSelect}
-                className="h-full"
+                center={pickup ? { lat: pickup.lat, lng: pickup.lng } : undefined}
               />
-              <button
-                onClick={() => setIsMapFullscreen(true)}
-                className="absolute top-3 right-3 p-2 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 hover:bg-black/80 transition-colors"
-                data-testid="expand-map-btn"
-              >
-                <Maximize2 className="w-4 h-4 text-white" />
-              </button>
             </div>
           </>
         );
@@ -363,16 +363,8 @@ const RideRequestPage = () => {
               <RideMap
                 pickup={pickup}
                 dropoff={dropoff}
-                showRoute
                 interactive={false}
-                className="h-full"
               />
-              <button
-                onClick={() => setIsMapFullscreen(true)}
-                className="absolute top-3 right-3 p-2 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 hover:bg-black/80 transition-colors"
-              >
-                <Maximize2 className="w-4 h-4 text-white" />
-              </button>
             </div>
 
             {/* Trip Details */}
@@ -452,11 +444,10 @@ const RideRequestPage = () => {
             {['pickup', 'dropoff', 'confirm'].map((s, i) => (
               <div
                 key={s}
-                className={`h-1 flex-1 rounded-full transition-colors ${
-                  ['pickup', 'dropoff', 'confirm'].indexOf(step) >= i
-                    ? 'bg-gold'
-                    : 'bg-white/10'
-                }`}
+                className={`h-1 flex-1 rounded-full transition-colors ${['pickup', 'dropoff', 'confirm'].indexOf(step) >= i
+                  ? 'bg-gold'
+                  : 'bg-white/10'
+                  }`}
               />
             ))}
           </div>
