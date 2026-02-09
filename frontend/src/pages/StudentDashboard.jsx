@@ -125,6 +125,7 @@ const StudentDashboard = () => {
                 dropoff={activeRide.dropoff_location}
                 driverLocation={driverPos}
                 userLocation={userLocation}
+                routeGeometry={activeRide.verified_geometry}
                 showRoute
                 interactive={false}
                 className="h-full"

@@ -476,9 +476,28 @@ const DriverDashboard = () => {
           </GlassCard>
         ) : (
           <>
+            {/* Restriction Alert */}
+            {driverProfile?.wallet_status === 'restricted' && (
+              <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-4 flex items-start gap-4 mb-6">
+                <AlertCircle className="w-6 h-6 text-red-500 shrink-0 mt-1" />
+                <div>
+                  <h3 className="font-heading font-bold text-white text-lg">Wallet Restricted</h3>
+                  <p className="text-white/60 text-sm mb-2">
+                    Your balance (K{driverProfile?.wallet_balance?.toFixed(2)}) is below the minimum requirement.
+                    You cannot accept new rides until you top up.
+                  </p>
+                  <div className="bg-black/20 rounded px-2 py-1 inline-block">
+                    <span className="text-xs text-red-400 font-mono">
+                      Min Required: K{driverProfile?.minimum_required_balance?.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Earnings Summary */}
             {earnings && (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <GlassCard className="p-4" hover={false}>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center">
@@ -492,7 +511,28 @@ const DriverDashboard = () => {
                     </div>
                   </div>
                 </GlassCard>
+
                 <GlassCard className="p-4" hover={false}>
+                  <div className="flex items-center gap-3">
+                    {/* Wallet Card Concept */}
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${driverProfile?.wallet_status === 'restricted' ? 'bg-red-500/20' : 'bg-blue-500/10'
+                      }`}>
+                      <div className={`font-bold ${driverProfile?.wallet_status === 'restricted' ? 'text-red-400' : 'text-blue-400'
+                        }`}>
+                        W
+                      </div>
+                    </div>
+                    <div>
+                      <p className={`text-lg font-heading font-bold ${driverProfile?.wallet_status === 'restricted' ? 'text-red-400' : 'text-white'
+                        }`}>
+                        K{driverProfile?.wallet_balance?.toFixed(2)}
+                      </p>
+                      <p className="text-xs text-white/40">Wallet Bal</p>
+                    </div>
+                  </div>
+                </GlassCard>
+
+                <GlassCard className="p-4 col-span-2 md:col-span-1" hover={false}>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
                       <Clock className="w-5 h-5 text-emerald-400" />

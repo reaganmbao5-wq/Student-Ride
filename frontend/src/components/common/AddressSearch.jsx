@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Loader2 } from 'lucide-react';
+import { searchAddress } from '../../utils/nominatim';
 
 export const AddressSearch = ({ onLocationSelect, placeholder = "Search for a location..." }) => {
     const [query, setQuery] = useState('');
@@ -16,32 +15,16 @@ export const AddressSearch = ({ onLocationSelect, placeholder = "Search for a lo
         const timeoutId = setTimeout(async () => {
             setLoading(true);
             try {
-                // Nominatim API - Free geocoding from OpenStreetMap
-                // Bias search to Zambia/Kabwe area
-                const response = await fetch(
-                    `https://nominatim.openstreetmap.org/search?` +
-                    `q=${encodeURIComponent(query)}&` +
-                    `format=json&` +
-                    `limit=5&` +
-                    `countrycodes=zm&` + // Zambia
-                    `viewbox=28.0,14.0,29.0,15.0&` + // Kabwe area bounding box
-                    `bounded=0`,
-                    {
-                        headers: {
-                            'User-Agent': 'MulungushiRides/1.0' // Required by Nominatim
-                        }
-                    }
-                );
-                const data = await response.json();
+                const data = await searchAddress(query);
                 setResults(data);
                 setShowResults(true);
             } catch (error) {
-                console.error('Geocoding error:', error);
+                console.error('Search error:', error);
                 setResults([]);
             } finally {
                 setLoading(false);
             }
-        }, 500); // Debounce 500ms to respect rate limits
+        }, 500); // Keep debounce for UI responsiveness
 
         return () => clearTimeout(timeoutId);
     }, [query]);

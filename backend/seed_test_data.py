@@ -42,7 +42,7 @@ TEST_ACCOUNTS = {
         "role": "admin"
     },
     "super_admin": {
-        "email": "Reaganmbao5@gmail.com",
+        "email": "reaganmbao5@gmail.com",
         "password": "superadmin123",
         "name": "Reagan Mbao",
         "phone": "+260971234570",

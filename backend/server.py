@@ -10,11 +10,13 @@ from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone, timedelta
+from services.osrm_service import get_route
 import jwt
 import bcrypt
 import asyncio
 from enum import Enum
 import json
+import math
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -37,6 +39,12 @@ DEFAULT_COMMISSION_RATE = 15.0
 app = FastAPI(title="Mulungushi Rides API")
 api_router = APIRouter(prefix="/api")
 security = HTTPBearer()
+
+@app.on_event("startup")
+async def startup_db_client():
+    # Create geospatial index for driver location
+    await db.drivers.create_index([("location", "2dsphere")])
+    logger.info("Created 2dsphere index on drivers.location")
 
 # Configure logging
 logging.basicConfig(
@@ -64,6 +72,15 @@ class VehicleType(str, Enum):
     CAR = "car"
     MOTORCYCLE = "motorcycle"
     BICYCLE = "bicycle"
+
+class WalletStatus(str, Enum):
+    ACTIVE = "active"
+    RESTRICTED = "restricted"
+
+class TransactionType(str, Enum):
+    COMMISSION_DEDUCTION = "commission_deduction"
+    ADMIN_TOPUP = "admin_topup"
+    ADJUSTMENT = "adjustment"
 
 # ==================== MODELS ====================
 class UserBase(BaseModel):
@@ -108,11 +125,29 @@ class DriverResponse(BaseModel):
     is_online: bool = False
     is_approved: bool = False
     current_location: Optional[Dict[str, float]] = None
+    wallet_balance: float = 0.0
+    wallet_status: WalletStatus = WalletStatus.ACTIVE
+    minimum_required_balance: float = 50.0
+    total_commission_due: float = 0.0
+    total_commission_paid: float = 0.0
     created_at: str
+
+class DriverWalletTransaction(BaseModel):
+    id: str
+    driver_id: str
+    type: TransactionType
+    amount: float
+    ride_id: Optional[str] = None
+    description: Optional[str] = None
+    timestamp: str
 
 class LocationUpdate(BaseModel):
     latitude: float
     longitude: float
+
+class WalletTopUp(BaseModel):
+    amount: float
+    description: Optional[str] = None
 
 class RideRequest(BaseModel):
     pickup_location: Dict[str, Any]  # {lat, lng, address}
@@ -134,7 +169,11 @@ class RideResponse(BaseModel):
     commission: float
     driver_earning: float
     distance: float
-    duration: int
+    duration: float
+    verified_distance: Optional[float] = None
+    verified_duration: Optional[float] = None
+    verified_geometry: Optional[List[List[float]]] = None
+    route_source: Optional[str] = None
     rating: Optional[int] = None
     review: Optional[str] = None
     created_at: str
@@ -205,6 +244,16 @@ def hash_password(password: str) -> str:
 
 def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+
+def calculate_distance(lat1, lon1, lat2, lon2):
+    R = 6371  # Earth radius in km
+    dLat = math.radians(lat2 - lat1)
+    dLon = math.radians(lon2 - lon1)
+    a = math.sin(dLat/2) * math.sin(dLat/2) + \
+        math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * \
+        math.sin(dLon/2) * math.sin(dLon/2)
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    return R * c
 
 def create_token(user_id: str, role: str) -> str:
     payload = {
@@ -314,17 +363,41 @@ class ConnectionManager:
 
     async def update_driver_location(self, driver_id: str, location: dict):
         self.driver_locations[driver_id] = location
+        
+        # Create GeoJSON point
+        # MongoDB expects [longitude, latitude]
+        geo_location = {
+            "type": "Point",
+            "coordinates": [location["lng"], location["lat"]]
+        }
+        
         # Update in database
         await db.drivers.update_one(
             {"user_id": driver_id},
-            {"$set": {"current_location": location}}
+            {"$set": {
+                "current_location": location,
+                "location": geo_location
+            }}
         )
 
     async def broadcast_to_nearby_drivers(self, message: dict, location: dict, radius_km: float = 10):
-        """Broadcast ride request to nearby online drivers"""
+        """Broadcast ride request to nearby online drivers using geospatial query"""
+        # Convert radius to meters
+        max_distance_meters = radius_km * 1000
+        
         online_drivers = await db.drivers.find({
             "is_online": True,
-            "is_approved": True
+            "is_approved": True,
+            "wallet_status": {"$ne": WalletStatus.RESTRICTED.value},
+            "location": {
+                "$near": {
+                    "$geometry": {
+                        "type": "Point",
+                        "coordinates": [location["lng"], location["lat"]]
+                    },
+                    "$maxDistance": max_distance_meters
+                }
+            }
         }, {"_id": 0}).to_list(100)
         
         for driver in online_drivers:
@@ -449,6 +522,12 @@ async def register_driver(profile: DriverProfile, user: dict = Depends(get_curre
         "is_online": False,
         "is_approved": False,
         "current_location": None,
+        "location": None, # GeoJSON for indexing
+        "wallet_balance": 0.0,
+        "wallet_status": WalletStatus.ACTIVE.value,
+        "minimum_required_balance": 50.0,
+        "total_commission_due": 0.0,
+        "total_commission_paid": 0.0,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     try:
@@ -492,6 +571,9 @@ async def toggle_online_status(user: dict = Depends(require_driver)):
     
     if not driver["is_approved"]:
         raise HTTPException(status_code=403, detail="Driver not approved yet")
+    
+    if driver.get("wallet_status") == WalletStatus.RESTRICTED.value:
+        raise HTTPException(status_code=403, detail="Wallet restricted. Please top up to go online.")
     
     new_status = not driver["is_online"]
     await db.drivers.update_one(
@@ -560,6 +642,43 @@ async def get_available_drivers(user: dict = Depends(get_current_user)):
     
     return result
 
+@api_router.post("/admin/drivers/{driver_id}/topup")
+async def topup_driver_wallet(driver_id: str, topup: WalletTopUp, user: dict = Depends(require_admin)):
+    driver = await db.drivers.find_one({"id": driver_id})
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver not found")
+
+    new_balance = driver.get("wallet_balance", 0.0) + topup.amount
+    total_paid = driver.get("total_commission_paid", 0.0) + topup.amount
+    
+    wallet_status = driver.get("wallet_status", WalletStatus.ACTIVE.value)
+    if new_balance >= driver.get("minimum_required_balance", 50.0):
+        wallet_status = WalletStatus.ACTIVE.value
+    
+    await db.drivers.update_one(
+        {"id": driver_id},
+        {"$set": {
+            "wallet_balance": new_balance,
+            "total_commission_paid": total_paid,
+            "wallet_status": wallet_status
+        }}
+    )
+    
+    # Log transaction
+    transaction = {
+        "id": str(uuid.uuid4()),
+        "driver_id": driver_id,
+        "type": TransactionType.ADMIN_TOPUP.value,
+        "amount": topup.amount,
+        "description": topup.description or "Admin Top-up",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    await db.driver_wallet_transactions.insert_one(transaction)
+
+    await log_admin_action(user["id"], user["name"], "wallet_topup", driver_id, f"Topup {topup.amount}")
+    
+    return {"status": "success", "new_balance": new_balance, "wallet_status": wallet_status}
+
 # ==================== DESTINATION ROUTES ====================
 
 @api_router.get("/destinations", response_model=List[DestinationResponse])
@@ -601,49 +720,77 @@ async def delete_destination(dest_id: str, user: dict = Depends(require_admin)):
 # ==================== RIDE ROUTES ====================
 @api_router.post("/rides/request", response_model=RideResponse)
 async def request_ride(ride_data: RideRequest, user: dict = Depends(get_current_user)):
-    settings = await get_platform_settings()
-    
-    commission = ride_data.estimated_fare * (settings["commission_rate"] / 100)
-    driver_earning = ride_data.estimated_fare - commission
-    
-    ride_id = str(uuid.uuid4())
-    ride = {
-        "id": ride_id,
-        "student_id": user["id"],
-        "driver_id": None,
-        "pickup_location": ride_data.pickup_location,
-        "dropoff_location": ride_data.dropoff_location,
-        "status": RideStatus.REQUESTED.value,
-        "fare": ride_data.estimated_fare,
-        "commission": commission,
-        "driver_earning": driver_earning,
-        "distance": ride_data.estimated_distance,
-        "duration": ride_data.estimated_duration,
-        "rating": None,
-        "review": None,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "accepted_at": None,
-        "completed_at": None
-    }
-    await db.rides.insert_one(ride)
-    
-    # Broadcast to available drivers
-    await manager.broadcast_to_nearby_drivers({
-        "type": "new_ride_request",
-        "ride": ride
-    }, ride_data.pickup_location)
-    
-    ride["student"] = UserResponse(
-        id=user["id"],
-        email=user["email"],
-        name=user["name"],
-        phone=user["phone"],
-        role=UserRole(user["role"]),
-        created_at=user["created_at"],
-        is_active=user.get("is_active", True)
-    )
-    
-    return RideResponse(**ride)
+    try:
+        settings = await get_platform_settings()
+        
+        # DEBUG: Check data types
+        # print(f"Pickup: {ride_data.pickup_location}, Type: {type(ride_data.pickup_location)}")
+        
+        # Server-side calculation
+        # Server-side calculation with OSRM
+        route_data = await get_route(
+            ride_data.pickup_location["lat"], ride_data.pickup_location["lng"],
+            ride_data.dropoff_location["lat"], ride_data.dropoff_location["lng"]
+        )
+        
+        dist = route_data["distance_km"]
+        duration = route_data["duration_minutes"]
+        
+        # Ensure we have valid numbers
+        if dist < 0.1: dist = 0.1
+        if duration < 1: duration = 1
+        
+        calculated_fare = settings["base_fare"] + (dist * settings["per_km_rate"]) + (duration * settings["per_minute_rate"])
+        calculated_fare = round(calculated_fare, 2)
+        
+        commission = calculated_fare * (settings["commission_rate"] / 100)
+        driver_earning = calculated_fare - commission
+        
+        ride_id = str(uuid.uuid4())
+        ride = {
+            "id": ride_id,
+            "student_id": user["id"],
+            "driver_id": None,
+            "pickup_location": ride_data.pickup_location,
+            "dropoff_location": ride_data.dropoff_location,
+            "status": RideStatus.REQUESTED.value,
+            "fare": calculated_fare,
+            "commission": commission,
+            "driver_earning": driver_earning,
+            "distance": round(dist, 2),
+            "duration": round(duration, 1),
+            "verified_distance": round(dist, 2),
+            "verified_duration": round(duration, 1),
+            "verified_geometry": route_data["geometry"],
+            "route_source": route_data["source"],
+            "rating": None,
+            "review": None,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "accepted_at": None,
+            "completed_at": None
+        }
+        await db.rides.insert_one(ride)
+        
+        # Broadcast to available drivers
+        await manager.broadcast_to_nearby_drivers({
+            "type": "new_ride_request",
+            "ride": ride
+        }, ride_data.pickup_location)
+        
+        ride["student"] = UserResponse(
+            id=user["id"],
+            email=user["email"],
+            name=user["name"],
+            phone=user["phone"],
+            role=UserRole(user["role"]),
+            created_at=user["created_at"],
+            is_active=user.get("is_active", True)
+        )
+        
+        return RideResponse(**ride)
+    except Exception as e:
+        logger.error(f"Error in request_ride: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
 @api_router.post("/rides/{ride_id}/accept", response_model=RideResponse)
 async def accept_ride(ride_id: str, user: dict = Depends(require_driver)):
@@ -736,21 +883,49 @@ async def complete_ride(ride_id: str, user: dict = Depends(require_driver)):
     
     now = datetime.now(timezone.utc).isoformat()
     
-    await db.rides.update_one(
-        {"id": ride_id},
-        {"$set": {"status": RideStatus.COMPLETED.value, "completed_at": now}}
-    )
+    # Final commission deduction logic
+    # Re-verify fare just in case (optional, but good for Phase 2 strictness)
+    # For now, we use the accepted fare.
+    commission_amount = ride["commission"]
     
-    # Update driver stats
+    # Deduct from wallet
+    new_balance = driver.get("wallet_balance", 0.0) - commission_amount
+    total_due = driver.get("total_commission_due", 0.0) + commission_amount
+    
+    wallet_status = WalletStatus.ACTIVE.value
+    is_still_online = driver["is_online"]
+    
+    if new_balance < driver.get("minimum_required_balance", 50.0):
+        wallet_status = WalletStatus.RESTRICTED.value
+        is_still_online = False
+        
     await db.drivers.update_one(
         {"id": driver["id"]},
         {
+            "$set": {
+                "wallet_balance": new_balance,
+                "total_commission_due": total_due,
+                "wallet_status": wallet_status,
+                "is_online": is_still_online
+            },
             "$inc": {
                 "total_rides": 1,
                 "total_earnings": ride["driver_earning"]
             }
         }
     )
+    
+    # Log transaction
+    transaction = {
+        "id": str(uuid.uuid4()),
+        "driver_id": driver["id"],
+        "type": TransactionType.COMMISSION_DEDUCTION.value,
+        "amount": -commission_amount,
+        "ride_id": ride_id,
+        "description": f"Commission for ride {ride_id}",
+        "timestamp": now
+    }
+    await db.driver_wallet_transactions.insert_one(transaction)
     
     await manager.send_personal_message({
         "type": "ride_completed",

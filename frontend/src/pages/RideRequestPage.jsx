@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { AddressSearch } from '../components/common/AddressSearch';
+import { reverseGeocode } from '../utils/nominatim';
 
 const RideRequestPage = () => {
   const navigate = useNavigate();
@@ -65,12 +66,8 @@ const RideRequestPage = () => {
     let address = `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`;
 
     try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.lat}&lon=${location.lng}`,
-        { headers: { 'User-Agent': 'MulungushiRides/1.0' } }
-      );
-      const data = await response.json();
-      if (data.display_name) {
+      const data = await reverseGeocode(location.lat, location.lng);
+      if (data && data.display_name) {
         address = data.display_name;
       }
     } catch (error) {

@@ -1,139 +1,168 @@
-import React, { useRef, useEffect } from 'react';
-import maplibregl from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
+import React, { useEffect, useState } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix Leaflet default icon issue
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+let DefaultIcon = L.icon({
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41]
+});
+L.Marker.prototype.options.icon = DefaultIcon;
+
+// Custom Icons
+const createCustomIcon = (color, svgPath) => {
+  return L.divIcon({
+    className: 'custom-marker',
+    html: `<div style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="${color}" stroke="white" stroke-width="2">
+        ${svgPath}
+      </svg>
+    </div>`,
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32]
+  });
+};
+
+const userIcon = L.divIcon({
+  className: 'marker-user',
+  html: `<div style="width:16px;height:16px;background:#3B82F6;border:3px solid white;border-radius:50%;box-shadow:0 0 0 8px rgba(59,130,246,0.2);"></div>`,
+  iconSize: [16, 16],
+  iconAnchor: [8, 8]
+});
+
+const pickupIcon = createCustomIcon('#D4AF37', '<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>');
+const dropoffIcon = createCustomIcon('#10B981', '<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>');
+const driverIcon = createCustomIcon('#D4AF37', '<path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/>');
+
+// Component to update map center/zoom when props change
+const MapUpdater = ({ center, zoom, bounds }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (bounds) {
+      map.fitBounds(bounds, { padding: [50, 50] });
+    } else if (center) {
+      map.flyTo(center, zoom);
+    }
+  }, [center, zoom, bounds, map]);
+
+  return null;
+};
+
+// Component to handle map clicks
+const MapEvents = ({ onLocationSelect }) => {
+  useMapEvents({
+    click(e) {
+      if (onLocationSelect) {
+        onLocationSelect({
+          lat: e.latlng.lat,
+          lng: e.latlng.lng
+        });
+      }
+    },
+  });
+  return null;
+};
 
 export const RideMap = ({
-  center = { lat: -14.42, lng: 28.45 }, // Kabwe
+  center = { lat: -14.42, lng: 28.45 },
   zoom = 13,
   pickup = null,
   dropoff = null,
   driverLocation = null,
   userLocation = null,
+  routeGeometry = null,
   interactive = true,
   className = ""
 }) => {
-  const mapContainer = useRef(null);
-  const map = useRef(null);
-  const markersRef = useRef([]);
-  const [isMapLoaded, setIsMapLoaded] = React.useState(false);
+  const [bounds, setBounds] = useState(null);
 
   useEffect(() => {
-    if (map.current) return; // Initialize map only once
-
-    map.current = new maplibregl.Map({
-      container: mapContainer.current,
-      style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
-      center: [center.lng, center.lat],
-      zoom: zoom,
-      interactive: interactive
-    });
-
-    map.current.on('load', () => {
-      setIsMapLoaded(true);
-    });
-
-    if (interactive) {
-      map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
-    }
-  }, []);
-
-  // Update markers
-  useEffect(() => {
-    if (!map.current || !isMapLoaded) return;
-
-    // Clear existing markers
-    markersRef.current.forEach(marker => marker.remove());
-    markersRef.current = [];
-
-    // Add user location marker
-    if (userLocation) {
-      const el = document.createElement('div');
-      el.className = 'marker-user';
-      el.style.cssText = 'width:16px;height:16px;background:#3B82F6;border:3px solid white;border-radius:50%;box-shadow:0 0 0 8px rgba(59,130,246,0.2);';
-      const marker = new maplibregl.Marker({ element: el })
-        .setLngLat([userLocation.lng, userLocation.lat])
-        .addTo(map.current);
-      markersRef.current.push(marker);
-    }
-
-    // Add pickup marker
-    if (pickup) {
-      const el = document.createElement('div');
-      el.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="#D4AF37" stroke="white" stroke-width="2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`;
-      el.style.cssText = 'filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));';
-      const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
-        .setLngLat([pickup.lng, pickup.lat])
-        .addTo(map.current);
-      markersRef.current.push(marker);
-    }
-
-    // Add dropoff marker
-    if (dropoff) {
-      const el = document.createElement('div');
-      el.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="#10B981" stroke="white" stroke-width="2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`;
-      el.style.cssText = 'filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));';
-      const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
-        .setLngLat([dropoff.lng, dropoff.lat])
-        .addTo(map.current);
-      markersRef.current.push(marker);
-    }
-
-    // Add driver marker
-    if (driverLocation) {
-      const el = document.createElement('div');
-      el.innerHTML = `<svg width="40" height="40" viewBox="0 0 24 24" fill="#D4AF37" stroke="white" stroke-width="2"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>`;
-      el.style.cssText = 'filter:drop-shadow(0 4px 12px rgba(212,175,55,0.5)); transition: transform 0.5s linear;';
-      const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
-        .setLngLat([driverLocation.lng, driverLocation.lat])
-        .addTo(map.current);
-      markersRef.current.push(marker);
-
-      // Only fly to driver if it's a significant change or first time
-      if (!pickup && !dropoff) {
-        map.current.flyTo({ center: [driverLocation.lng, driverLocation.lat], duration: 1000 });
-      }
-    }
-
-    // Fit bounds if multiple points
-    const bounds = new maplibregl.LngLatBounds();
-    let hasPoints = false;
-    if (pickup) { bounds.extend([pickup.lng, pickup.lat]); hasPoints = true; }
-    if (dropoff) { bounds.extend([dropoff.lng, dropoff.lat]); hasPoints = true; }
-    if (driverLocation) { bounds.extend([driverLocation.lng, driverLocation.lat]); hasPoints = true; }
-
-    if (hasPoints) {
-      map.current.fitBounds(bounds, { padding: 50, duration: 1000 });
-    }
-
-    // Draw route line
     if (pickup && dropoff) {
-      if (map.current.getSource('route')) {
-        map.current.removeLayer('route');
-        map.current.removeSource('route');
+      const b = L.latLngBounds([pickup.lat, pickup.lng], [dropoff.lat, dropoff.lng]);
+      if (driverLocation) b.extend([driverLocation.lat, driverLocation.lng]);
+      if (userLocation) b.extend([userLocation.lat, userLocation.lng]);
+      setBounds(b);
+    } else if (pickup || dropoff || driverLocation || userLocation) {
+      const points = [];
+      if (pickup) points.push([pickup.lat, pickup.lng]);
+      if (dropoff) points.push([dropoff.lat, dropoff.lng]);
+      if (driverLocation) points.push([driverLocation.lat, driverLocation.lng]);
+      if (userLocation) points.push([userLocation.lat, userLocation.lng]);
+
+      if (points.length > 1) {
+        setBounds(L.latLngBounds(points));
+      } else {
+        setBounds(null); // Let center take over if only 1 point
       }
-
-      map.current.addSource('route', {
-        type: 'geojson',
-        data: {
-          type: 'Feature',
-          geometry: {
-            type: 'LineString',
-            coordinates: [[pickup.lng, pickup.lat], [dropoff.lng, dropoff.lat]]
-          }
-        }
-      });
-
-      map.current.addLayer({
-        id: 'route',
-        type: 'line',
-        source: 'route',
-        layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': '#D4AF37', 'line-width': 4, 'line-opacity': 0.8 }
-      });
     }
-  }, [pickup, dropoff, driverLocation, userLocation, isMapLoaded]);
+  }, [pickup, dropoff, driverLocation, userLocation]);
 
-  return <div ref={mapContainer} className={`w-full h-full rounded-2xl ${className}`} />;
+  // Determine effective center if no bounds
+  const effectiveCenter = pickup ? [pickup.lat, pickup.lng] :
+    userLocation ? [userLocation.lat, userLocation.lng] :
+      [center.lat, center.lng];
+
+  return (
+    <div className={`rounded-xl overflow-hidden z-0 ${className}`}>
+      <MapContainer
+        center={effectiveCenter}
+        zoom={zoom}
+        style={{ height: '100%', width: '100%' }}
+        zoomControl={interactive}
+        dragging={interactive}
+        touchZoom={interactive}
+        doubleClickZoom={interactive}
+        scrollWheelZoom={interactive}
+        attributionControl={false} // Clean look
+      >
+        {/* Dark Matter-like Tile Layer (CartoDB Dark Matter is Free/Open) */}
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        />
+
+        <MapUpdater center={effectiveCenter} zoom={zoom} bounds={bounds} />
+
+        {userLocation && (
+          <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon} />
+        )}
+
+        {pickup && (
+          <Marker position={[pickup.lat, pickup.lng]} icon={pickupIcon} />
+        )}
+
+        {dropoff && (
+          <Marker position={[dropoff.lat, dropoff.lng]} icon={dropoffIcon} />
+        )}
+
+        {driverLocation && (
+          <Marker position={[driverLocation.lat, driverLocation.lng]} icon={driverIcon} />
+        )}
+
+        {pickup && dropoff && (
+          routeGeometry ? (
+            <Polyline
+              positions={routeGeometry.map(coord => [coord[1], coord[0]])}
+              pathOptions={{ color: '#3B82F6', weight: 5, opacity: 0.8, lineCap: 'round', lineJoin: 'round' }}
+            />
+          ) : (
+            <Polyline
+              positions={[[pickup.lat, pickup.lng], [dropoff.lat, dropoff.lng]]}
+              pathOptions={{ color: '#D4AF37', weight: 4, opacity: 0.8, dashArray: '10, 10' }}
+            />
+          )
+        )}
+      </MapContainer>
+    </div>
+  );
 };
 
 export const LocationPickerMap = ({
@@ -143,67 +172,29 @@ export const LocationPickerMap = ({
   onLocationSelect,
   className = ""
 }) => {
-  const mapContainer = useRef(null);
-  const map = useRef(null);
-  const marker = useRef(null);
-  const [isMapLoaded, setIsMapLoaded] = React.useState(false);
-  const onLocationSelectRef = useRef(onLocationSelect);
-
-  // Keep ref updated with latest callback
-  useEffect(() => {
-    onLocationSelectRef.current = onLocationSelect;
-  }, [onLocationSelect]);
-
-  useEffect(() => {
-    if (map.current) return;
-
-    map.current = new maplibregl.Map({
-      container: mapContainer.current,
-      style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
-      center: [center.lng, center.lat],
-      zoom: zoom
-    });
-
-    map.current.on('load', () => {
-      setIsMapLoaded(true);
-    });
-
-    map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
-
-    map.current.on('click', (e) => {
-      if (onLocationSelectRef.current) {
-        onLocationSelectRef.current({
-          lat: e.lngLat.lat,
-          lng: e.lngLat.lng
-        });
-      }
-    });
-  }, []); // Only run on mount
-
-  useEffect(() => {
-    if (!map.current || !isMapLoaded) return;
-
-    if (marker.current) {
-      marker.current.remove();
-    }
-
-    if (selectedLocation) {
-      const el = document.createElement('div');
-      el.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="#D4AF37" stroke="white" stroke-width="2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`;
-      el.style.cssText = 'filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));';
-      marker.current = new maplibregl.Marker({ element: el, anchor: 'bottom' })
-        .setLngLat([selectedLocation.lng, selectedLocation.lat])
-        .addTo(map.current);
-
-      map.current.flyTo({ center: [selectedLocation.lng, selectedLocation.lat], zoom: 15 });
-    }
-  }, [selectedLocation, isMapLoaded]);
-
   return (
-    <div className={`relative w-full h-full rounded-2xl ${className}`}>
-      <div ref={mapContainer} className="w-full h-full rounded-2xl" />
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 pointer-events-none">
-        <p className="text-xs text-white">Tap anywhere to select</p>
+    <div className={`relative w-full h-full rounded-2xl overflow-hidden z-0 ${className}`}>
+      <MapContainer
+        center={[center.lat, center.lng]}
+        zoom={zoom}
+        style={{ height: '100%', width: '100%' }}
+        attributionControl={false}
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        />
+
+        <MapUpdater center={selectedLocation ? [selectedLocation.lat, selectedLocation.lng] : [center.lat, center.lng]} zoom={zoom} />
+        <MapEvents onLocationSelect={onLocationSelect} />
+
+        {selectedLocation && (
+          <Marker position={[selectedLocation.lat, selectedLocation.lng]} icon={pickupIcon} />
+        )}
+      </MapContainer>
+
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 pointer-events-none z-[400]">
+        <p className="text-xs text-white">Tap anywhere using OpenStreetMap</p>
       </div>
     </div>
   );
