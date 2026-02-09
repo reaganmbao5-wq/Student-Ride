@@ -2,8 +2,12 @@ from fastapi import FastAPI, APIRouter, HTTPException, Depends, WebSocket, WebSo
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
+import time
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr
@@ -44,7 +48,13 @@ security = HTTPBearer()
 async def startup_db_client():
     # Create geospatial index for driver location
     await db.drivers.create_index([("location", "2dsphere")])
-    logger.info("Created 2dsphere index on drivers.location")
+    
+    # Create indexes for ride queries
+    await db.rides.create_index("status")
+    await db.rides.create_index("driver_id")
+    await db.rides.create_index("student_id")
+    
+    logger.info("Created 2dsphere index and ride indexes")
 
 # Configure logging
 logging.basicConfig(
@@ -81,6 +91,7 @@ class TransactionType(str, Enum):
     COMMISSION_DEDUCTION = "commission_deduction"
     ADMIN_TOPUP = "admin_topup"
     ADJUSTMENT = "adjustment"
+    COMMISSION_SETTLEMENT = "commission_settlement"
 
 # ==================== MODELS ====================
 class UserBase(BaseModel):
@@ -152,9 +163,8 @@ class WalletTopUp(BaseModel):
 class RideRequest(BaseModel):
     pickup_location: Dict[str, Any]  # {lat, lng, address}
     dropoff_location: Dict[str, Any]  # {lat, lng, address}
-    estimated_fare: float
-    estimated_distance: float  # in km
-    estimated_duration: int  # in minutes
+    # REMOVED: estimated_fare, estimated_distance, estimated_duration
+    # Server is sole authority on pricing.
 
 class RideResponse(BaseModel):
     id: str
@@ -389,6 +399,7 @@ class ConnectionManager:
             "is_online": True,
             "is_approved": True,
             "wallet_status": {"$ne": WalletStatus.RESTRICTED.value},
+            "current_ride_id": None, # Filter out busy drivers
             "location": {
                 "$near": {
                     "$geometry": {
@@ -398,7 +409,7 @@ class ConnectionManager:
                     "$maxDistance": max_distance_meters
                 }
             }
-        }, {"_id": 0}).to_list(100)
+        }, {"_id": 0}).to_list(20) # Limit to 20 closest
         
         for driver in online_drivers:
             driver_id = driver["user_id"]
@@ -519,8 +530,10 @@ async def register_driver(profile: DriverProfile, user: dict = Depends(get_curre
         "rating": 5.0,
         "total_rides": 0,
         "total_earnings": 0.0,
+        "total_earnings": 0.0,
         "is_online": False,
         "is_approved": False,
+        "current_ride_id": None, # For locking
         "current_location": None,
         "location": None, # GeoJSON for indexing
         "wallet_balance": 0.0,
@@ -679,6 +692,58 @@ async def topup_driver_wallet(driver_id: str, topup: WalletTopUp, user: dict = D
     
     return {"status": "success", "new_balance": new_balance, "wallet_status": wallet_status}
 
+
+
+@api_router.post("/admin/settlement/daily")
+async def run_daily_settlement(user: dict = Depends(require_admin)):
+    """
+    Cron-like endpoint to settle accumulated commissions for all drivers.
+    Idempotent: Resets 'total_commission_due' to 0 and adds to 'total_commission_paid'.
+    """
+    # Find all drivers with commission due > 0
+    drivers_with_due = await db.drivers.find({"total_commission_due": {"$gt": 0}}).to_list(1000)
+    
+    settled_count = 0
+    total_amount = 0.0
+    
+    timestamp = datetime.now(timezone.utc).isoformat()
+    
+    for driver in drivers_with_due:
+        driver_id = driver["id"]
+        due_amount = driver["total_commission_due"]
+        
+        # Atomic update to reset due and inc paid
+        # Using optimistic locking on 'total_commission_due' to ensure we only settle what we saw
+        result = await db.drivers.update_one(
+            {"id": driver_id, "total_commission_due": due_amount},
+            {
+                "$set": {"total_commission_due": 0},
+                "$inc": {"total_commission_paid": due_amount}
+            }
+        )
+        
+        if result.modified_count > 0:
+            settled_count += 1
+            total_amount += due_amount
+            
+            # Log Settlement Transaction
+            await db.driver_wallet_transactions.insert_one({
+                "id": str(uuid.uuid4()),
+                "driver_id": driver_id,
+                "type": TransactionType.COMMISSION_SETTLEMENT.value,
+                "amount": due_amount,
+                "description": "Daily Commission Settlement",
+                "timestamp": timestamp
+            })
+            
+    await log_admin_action(user["id"], user["name"], "daily_settlement", None, f"Settled {settled_count} drivers, Total: {total_amount}")
+    
+    return {
+        "status": "success", 
+        "settled_drivers": settled_count, 
+        "total_settled_amount": total_amount
+    }
+
 # ==================== DESTINATION ROUTES ====================
 
 @api_router.get("/destinations", response_model=List[DestinationResponse])
@@ -733,6 +798,10 @@ async def request_ride(ride_data: RideRequest, user: dict = Depends(get_current_
             ride_data.dropoff_location["lat"], ride_data.dropoff_location["lng"]
         )
         
+        if route_data.get("source") != "osrm":
+             logger.error("OSRM Routing failed. Rejecting ride request for safety.")
+             raise HTTPException(status_code=503, detail="Routing service unavailable. Cannot calculate secure fare.")
+
         dist = route_data["distance_km"]
         duration = route_data["duration_minutes"]
         
@@ -798,27 +867,34 @@ async def accept_ride(ride_id: str, user: dict = Depends(require_driver)):
     if not driver:
         raise HTTPException(status_code=404, detail="Driver profile not found")
     
-    ride = await db.rides.find_one({"id": ride_id}, {"_id": 0})
-    if not ride:
-        raise HTTPException(status_code=404, detail="Ride not found")
-    
-    if ride["status"] != RideStatus.REQUESTED.value:
-        raise HTTPException(status_code=400, detail="Ride already taken or cancelled")
-    
-    # Update ride
+    # Check if driver is already on a ride
+    if driver.get("current_ride_id"):
+        raise HTTPException(status_code=400, detail="You are already on a ride")
+
+    # ATOMIC UPDATE: Only update if status is REQUESTED
     now = datetime.now(timezone.utc).isoformat()
-    await db.rides.update_one(
-        {"id": ride_id},
+    ride = await db.rides.find_one_and_update(
+        {"id": ride_id, "status": RideStatus.REQUESTED.value},
         {"$set": {
             "driver_id": driver["id"],
             "status": RideStatus.ACCEPTED.value,
             "accepted_at": now
-        }}
+        }},
+        return_document=True
     )
     
-    ride["driver_id"] = driver["id"]
-    ride["status"] = RideStatus.ACCEPTED.value
-    ride["accepted_at"] = now
+    if not ride:
+        # Check if ride exists at all to give better error
+        existing = await db.rides.find_one({"id": ride_id})
+        if not existing:
+            raise HTTPException(status_code=404, detail="Ride not found")
+        raise HTTPException(status_code=400, detail="Ride already taken or cancelled")
+
+    # Lock driver
+    await db.drivers.update_one(
+        {"id": driver["id"]},
+        {"$set": {"current_ride_id": ride_id}}
+    )
     
     # Notify student
     await manager.send_personal_message({
@@ -831,20 +907,28 @@ async def accept_ride(ride_id: str, user: dict = Depends(require_driver)):
     manager.add_to_ride(ride_id, ride["student_id"])
     manager.add_to_ride(ride_id, user["id"])
     
+    ride["driver"] = driver # Include driver details in response if needed, though schema has driver_id
     return RideResponse(**ride)
 
 @api_router.post("/rides/{ride_id}/arrived")
 async def driver_arrived(ride_id: str, user: dict = Depends(require_driver)):
     driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
-    ride = await db.rides.find_one({"id": ride_id}, {"_id": 0})
-    
-    if not ride or ride["driver_id"] != driver["id"]:
-        raise HTTPException(status_code=404, detail="Ride not found")
-    
-    await db.rides.update_one(
-        {"id": ride_id},
-        {"$set": {"status": RideStatus.DRIVER_ARRIVED.value}}
+    if not driver:
+         raise HTTPException(status_code=404, detail="Driver profile not found")
+
+    # ATOMIC UPDATE: Only update if status is ACCEPTED and assigned to this driver
+    ride = await db.rides.find_one_and_update(
+        {
+            "id": ride_id, 
+            "driver_id": driver["id"], 
+            "status": RideStatus.ACCEPTED.value
+        },
+        {"$set": {"status": RideStatus.DRIVER_ARRIVED.value}},
+        return_document=True
     )
+    
+    if not ride:
+        raise HTTPException(status_code=400, detail="Invalid transition. Ride must be ACCEPTED and assigned to you.")
     
     await manager.send_personal_message({
         "type": "driver_arrived",
@@ -856,15 +940,22 @@ async def driver_arrived(ride_id: str, user: dict = Depends(require_driver)):
 @api_router.post("/rides/{ride_id}/start")
 async def start_ride(ride_id: str, user: dict = Depends(require_driver)):
     driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
-    ride = await db.rides.find_one({"id": ride_id}, {"_id": 0})
-    
-    if not ride or ride["driver_id"] != driver["id"]:
-        raise HTTPException(status_code=404, detail="Ride not found")
-    
-    await db.rides.update_one(
-        {"id": ride_id},
-        {"$set": {"status": RideStatus.ONGOING.value}}
+    if not driver:
+         raise HTTPException(status_code=404, detail="Driver profile not found")
+
+    # ATOMIC UPDATE: Only update if status is DRIVER_ARRIVED and assigned to this driver
+    ride = await db.rides.find_one_and_update(
+        {
+            "id": ride_id, 
+            "driver_id": driver["id"], 
+            "status": RideStatus.DRIVER_ARRIVED.value
+        },
+        {"$set": {"status": RideStatus.ONGOING.value}},
+        return_document=True
     )
+    
+    if not ride:
+         raise HTTPException(status_code=400, detail="Invalid transition. Ride must be in DRIVER_ARRIVED state.")
     
     await manager.send_personal_message({
         "type": "ride_started",
@@ -876,16 +967,25 @@ async def start_ride(ride_id: str, user: dict = Depends(require_driver)):
 @api_router.post("/rides/{ride_id}/complete")
 async def complete_ride(ride_id: str, user: dict = Depends(require_driver)):
     driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
-    ride = await db.rides.find_one({"id": ride_id}, {"_id": 0})
+    if not driver:
+         raise HTTPException(status_code=404, detail="Driver profile not found")
+
+    # ATOMIC UPDATE: Only update if status is ONGOING and assigned to this driver
+    # This prevents double completion and double deduction
+    ride = await db.rides.find_one_and_update(
+        {
+            "id": ride_id, 
+            "driver_id": driver["id"], 
+            "status": RideStatus.ONGOING.value
+        },
+        {"$set": {"status": RideStatus.COMPLETED.value, "completed_at": datetime.now(timezone.utc).isoformat()}},
+        return_document=True
+    )
     
-    if not ride or ride["driver_id"] != driver["id"]:
-        raise HTTPException(status_code=404, detail="Ride not found")
+    if not ride:
+        raise HTTPException(status_code=400, detail="Invalid transition. Ride must be ONGOING.")
     
     now = datetime.now(timezone.utc).isoformat()
-    
-    # Final commission deduction logic
-    # Re-verify fare just in case (optional, but good for Phase 2 strictness)
-    # For now, we use the accepted fare.
     commission_amount = ride["commission"]
     
     # Deduct from wallet
@@ -902,15 +1002,17 @@ async def complete_ride(ride_id: str, user: dict = Depends(require_driver)):
     await db.drivers.update_one(
         {"id": driver["id"]},
         {
-            "$set": {
-                "wallet_balance": new_balance,
-                "total_commission_due": total_due,
-                "wallet_status": wallet_status,
-                "is_online": is_still_online
-            },
             "$inc": {
                 "total_rides": 1,
                 "total_earnings": ride["driver_earning"]
+            },
+            "$set": { # Unset current_ride_id separately or here? 
+                      # Wait, $set is already above. Merge them.
+                "wallet_balance": new_balance,
+                "total_commission_due": total_due,
+                "wallet_status": wallet_status,
+                "is_online": is_still_online,
+                "current_ride_id": None 
             }
         }
     )
@@ -958,6 +1060,13 @@ async def cancel_ride(ride_id: str, user: dict = Depends(get_current_user)):
         {"id": ride_id},
         {"$set": {"status": RideStatus.CANCELLED.value}}
     )
+    
+    # Unlock driver if assigned
+    if ride["driver_id"]:
+        await db.drivers.update_one(
+            {"id": ride["driver_id"]},
+            {"$set": {"current_ride_id": None}}
+        )
     
     # Notify both parties
     if ride["driver_id"]:
@@ -1551,44 +1660,100 @@ async def get_chat_history(ride_id: str, user: dict = Depends(get_current_user))
     return [MessageResponse(**m) for m in messages]
 
 # ==================== WEBSOCKET ENDPOINT ====================
-@app.websocket("/ws/{user_id}")
-async def websocket_endpoint(websocket: WebSocket, user_id: str):
-    await manager.connect(websocket, user_id)
+# ==================== WEBSOCKET ENDPOINT ====================
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket, token: str = Query(None)):
+    user_id = None
     try:
-        while True:
-            data = await websocket.receive_json()
-            
-            if data.get("type") == "location_update":
-                await manager.update_driver_location(user_id, data.get("location", {}))
+        if not token:
+             await websocket.close(code=4003)
+             return
+
+        try:
+            payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+            user_id = payload.get("sub")
+            if not user_id:
+                await websocket.close(code=4003)
+                return
+        except jwt.PyJWTError:
+            await websocket.close(code=4003)
+            return
+
+        await manager.connect(websocket, user_id)
+        try:
+            while True:
+                data = await websocket.receive_json()
                 
-                # If driver has active ride, broadcast to student
-                driver = await db.drivers.find_one({"user_id": user_id}, {"_id": 0})
-                if driver:
-                    active_ride = await db.rides.find_one({
-                        "driver_id": driver["id"],
-                        "status": {"$in": [RideStatus.ACCEPTED.value, RideStatus.DRIVER_ARRIVED.value, RideStatus.ONGOING.value]}
-                    }, {"_id": 0})
+                if data.get("type") == "location_update":
+                    await manager.update_driver_location(user_id, data.get("location", {}))
                     
-                    if active_ride:
-                        await manager.send_personal_message({
-                            "type": "driver_location",
-                            "location": data.get("location"),
-                            "ride_id": active_ride["id"]
-                        }, active_ride["student_id"])
-            
-            elif data.get("type") == "ping":
-                await websocket.send_json({"type": "pong"})
+                    # If driver has active ride, broadcast to student
+                    driver = await db.drivers.find_one({"user_id": user_id}, {"_id": 0})
+                    if driver:
+                        active_ride = await db.rides.find_one({
+                            "driver_id": driver["id"],
+                            "status": {"$in": [RideStatus.ACCEPTED.value, RideStatus.DRIVER_ARRIVED.value, RideStatus.ONGOING.value]}
+                        }, {"_id": 0})
+                        
+                        if active_ride:
+                            await manager.send_personal_message({
+                                "type": "driver_location",
+                                "location": data.get("location"),
+                                "ride_id": active_ride["id"]
+                            }, active_ride["student_id"])
+                
+                elif data.get("type") == "ping":
+                    await websocket.send_json({"type": "pong"})
     
-    except WebSocketDisconnect:
-        manager.disconnect(user_id)
-        # Set driver offline if disconnected
-        await db.drivers.update_one(
-            {"user_id": user_id},
-            {"$set": {"is_online": False}}
-        )
+        except WebSocketDisconnect:
+            manager.disconnect(user_id)
+            # Set driver offline if disconnected
+            await db.drivers.update_one(
+                {"user_id": user_id},
+                {"$set": {"is_online": False}}
+            )
+    except Exception as e:
+        logger.error(f"WebSocket Error: {e}")
+        await websocket.close(code=4000)
+
+# ==================== MIDDLEWARE ====================
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app):
+        super().__init__(app)
+        self.rate_limit_records = {} # {ip_path: [timestamps]}
+
+    async def dispatch(self, request: Request, call_next):
+        # Only rate limit specific sensitive routes
+        # Note: In production, use Redis. In-memory is per-worker.
+        if request.url.path in ["/api/auth/login", "/api/auth/register", "/api/rides/request"]:
+            client_ip = request.client.host
+            path = request.url.path
+            key = f"{client_ip}:{path}"
+            
+            now = time.time()
+            WINDOW = 60 # 1 minute
+            LIMIT = 10 # 10 requests per minute
+            
+            if path == "/api/auth/login":
+                LIMIT = 5 # Stricter for login
+            
+            # Get history and clean old
+            history = self.rate_limit_records.get(key, [])
+            history = [t for t in history if now - t < WINDOW]
+            
+            if len(history) >= LIMIT:
+                return JSONResponse({"detail": "Rate limit exceeded. Try again later."}, status_code=429)
+            
+            history.append(now)
+            self.rate_limit_records[key] = history
+            
+        return await call_next(request)
 
 # Include router
 app.include_router(api_router)
+
+# Add Rate Limit (First in stack essentially)
+app.add_middleware(RateLimitMiddleware)
 
 # CORS
 app.add_middleware(

@@ -17,7 +17,7 @@ export const WebSocketProvider = ({ children }) => {
     if (!user || !token) return;
 
     const wsUrl = process.env.REACT_APP_BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws://');
-    const ws = new WebSocket(`${wsUrl}/ws/${user.id}`);
+    const ws = new WebSocket(`${wsUrl}/ws?token=${token}`);
 
     ws.onopen = () => {
       console.log('WebSocket connected');
