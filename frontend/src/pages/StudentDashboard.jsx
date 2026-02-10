@@ -160,7 +160,7 @@ const StudentDashboard = () => {
                   <div className="flex-1">
                     <p className="font-medium text-white">{activeRide.driver.user?.name}</p>
                     <div className="flex items-center gap-2 text-sm text-white/50">
-                      <span>{activeRide.driver.vehicle_model}</span>
+                      <span className="capitalize">{activeRide.driver.vehicle_color} {activeRide.driver.vehicle_model}</span>
                       <span>•</span>
                       <span>{activeRide.driver.plate_number}</span>
                     </div>

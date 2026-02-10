@@ -23,7 +23,7 @@ const AdminDashboard = () => {
         api.get('/admin/stats'),
         api.get('/admin/rides?status=ongoing&limit=10')
       ]);
-      
+
       setStats(statsRes.data);
       setActiveRides(ridesRes.data);
     } catch (error) {
@@ -176,7 +176,7 @@ const AdminDashboard = () => {
             <h2 className="font-heading font-semibold text-white mb-4">Live Rides</h2>
             <div className="h-64 rounded-xl overflow-hidden mb-4">
               <RideMap
-                center={[-14.4087, 28.2849]}
+                center={{ lat: -14.4087, lng: 28.2849 }}
                 zoom={13}
                 className="h-full"
               />

@@ -32,6 +32,7 @@ const RideRequestPage = () => {
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
   const [destinations, setDestinations] = useState([]);
   const [selectedDestination, setSelectedDestination] = useState(null);
+  const [nearbyDrivers, setNearbyDrivers] = useState([]); // Phase 5: Nearby Drivers
 
 
   // Fetch admin-defined destinations
@@ -41,7 +42,7 @@ const RideRequestPage = () => {
 
   const fetchDestinations = async () => {
     try {
-      const response = await api.get('/destinations?active_only=true');
+      const response = await api.get('/popular-destinations?active_only=true');
       setDestinations(response.data);
     } catch (error) {
       console.error('Error fetching destinations:', error);
@@ -281,12 +282,13 @@ const RideRequestPage = () => {
               {geoLoading ? 'Getting location...' : 'Use Current Location'}
             </GoldButton>
 
-            {/* Map Picker */}
-            <div className="relative h-64 rounded-2xl overflow-hidden mb-4">
+            {/* Map Picker - Phase 6: Responsive Height */}
+            <div className="relative h-[50vh] min-h-[300px] rounded-2xl overflow-hidden mb-4">
               <LocationPickerMap
                 selectedLocation={pickup}
                 onLocationSelect={handleLocationSelect}
                 center={userLocation ? { lat: userLocation.lat, lng: userLocation.lng } : undefined}
+                nearbyDrivers={nearbyDrivers}
               />
             </div>
           </>
@@ -317,7 +319,7 @@ const RideRequestPage = () => {
                       >
                         <div className="flex items-center justify-between w-full">
                           <span>{dest.name}</span>
-                          <span className="text-gold ml-2">~K{dest.estimated_fare}</span>
+                          {/* Price is dynamic, so we don't show it here */}
                         </div>
                       </SelectItem>
                     ))}
@@ -337,7 +339,7 @@ const RideRequestPage = () => {
               />
             </div>
 
-            <div className="relative h-64 rounded-2xl overflow-hidden mb-4">
+            <div className="relative h-[50vh] min-h-[300px] rounded-2xl overflow-hidden mb-4">
               <LocationPickerMap
                 selectedLocation={dropoff}
                 onLocationSelect={handleLocationSelect}
@@ -361,6 +363,7 @@ const RideRequestPage = () => {
                 pickup={pickup}
                 dropoff={dropoff}
                 interactive={false}
+                className="h-full w-full"
               />
             </div>
 

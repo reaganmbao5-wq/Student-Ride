@@ -41,6 +41,16 @@ DEFAULT_COMMISSION_RATE = 15.0
 
 # Create the main app
 app = FastAPI(title="Mulungushi Rides API")
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False, # Must be False when origin is *
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 api_router = APIRouter(prefix="/api")
 security = HTTPBearer()
 
@@ -51,8 +61,25 @@ async def startup_db_client():
     
     # Create indexes for ride queries
     await db.rides.create_index("status")
-    await db.rides.create_index("driver_id")
     await db.rides.create_index("student_id")
+    
+    # Create indexes for pricing
+    await db.fixed_routes.create_index([("pickup_coordinates", "2dsphere")])
+    await db.fixed_routes.create_index([("dropoff_coordinates", "2dsphere")])
+    
+    # Initialize pricing settings if not exists
+    existing_settings = await db.pricing_settings.find_one({})
+    if not existing_settings:
+        default_settings = {
+            "base_fare": 15.0,
+            "per_km_rate": 5.0,
+            "per_minute_rate": 2.0,
+            "surge_multiplier": 1.0,
+            "minimum_fare": 20.0,
+            "updated_at": datetime.now(timezone.utc)
+        }
+        await db.pricing_settings.insert_one(default_settings)
+        logger.info("Initialized default pricing settings")
     
     logger.info("Created 2dsphere index and ride indexes")
 
@@ -143,6 +170,13 @@ class DriverResponse(BaseModel):
     total_commission_paid: float = 0.0
     created_at: str
 
+class NearbyDriverResponse(BaseModel):
+    id: str
+    latitude: float
+    longitude: float
+    heading: Optional[float] = 0.0
+    vehicle_type: VehicleType
+
 class DriverWalletTransaction(BaseModel):
     id: str
     driver_id: str
@@ -193,6 +227,31 @@ class RideResponse(BaseModel):
 class MessageCreate(BaseModel):
     ride_id: str
     content: str
+    
+# ==================== PRICING MODELS ====================
+class PricingSettings(BaseModel):
+    base_fare: float = Field(..., gt=0)
+    per_km_rate: float = Field(..., gt=0)
+    per_minute_rate: float = Field(..., gt=0)
+    surge_multiplier: float = Field(1.0, ge=1.0, le=5.0)
+    minimum_fare: float = Field(..., gt=0)
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class FixedRouteBase(BaseModel):
+    pickup_name: str
+    dropoff_name: str
+    pickup_coordinates: Dict[str, Any] # GeoJSON Point
+    dropoff_coordinates: Dict[str, Any] # GeoJSON Point
+    tolerance_radius_meters: float = Field(..., ge=50, le=1000)
+    fixed_price: float = Field(..., gt=0)
+    is_active: bool = True
+
+class FixedRouteResponse(FixedRouteBase):
+    id: str
+    created_at: datetime
+
+class FixedRouteCreate(FixedRouteBase):
+    pass
 
 class MessageResponse(BaseModel):
     id: str
@@ -291,9 +350,30 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         raise HTTPException(status_code=401, detail="Invalid token")
 
 async def require_admin(user: dict = Depends(get_current_user)) -> dict:
-    if user["role"] not in [UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value]:
+    role = user.get("role", UserRole.STUDENT.value)
+    if role not in [UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value]:
         raise HTTPException(status_code=403, detail="Admin access required")
     return user
+
+@api_router.get("/users/me", response_model=UserResponse)
+async def get_current_user_profile(user: dict = Depends(get_current_user)):
+    return user
+
+@api_router.get("/admin/users", response_model=List[UserResponse])
+async def get_all_users(user: dict = Depends(require_admin)):
+    users = await db.users.find({}, {"password_hash": 0, "_id": 0}).to_list(1000)
+    return users
+
+@api_router.get("/admin/drivers", response_model=List[DriverResponse])
+async def get_all_drivers(user: dict = Depends(require_admin)):
+    drivers = await db.drivers.find({}, {"_id": 0}).to_list(1000)
+    result = []
+    for driver in drivers:
+        driver_user = await db.users.find_one({"id": driver["user_id"]}, {"_id": 0, "password_hash": 0})
+        if driver_user:
+            driver["user"] = UserResponse(**driver_user)
+        result.append(driver)
+    return result
 
 async def require_super_admin(user: dict = Depends(get_current_user)) -> dict:
     if user["role"] != UserRole.SUPER_ADMIN.value:
@@ -318,17 +398,127 @@ async def log_admin_action(admin_id: str, admin_name: str, action: str, target_i
     await db.admin_logs.insert_one(log)
 
 async def get_platform_settings() -> dict:
-    settings = await db.settings.find_one({"type": "platform"}, {"_id": 0})
+    # Query the NEW pricing_settings collection
+    settings = await db.pricing_settings.find_one({})
+    
+    # Also get commission rate from legacy/platform settings if needed, 
+    # OR move commission to pricing_settings. Proper migration:
+    # For now, let's keep commission in generic settings or migrate it.
+    # The prompt asked for "pricing_settings" to have base_fare, etc.
+    # It didn't explicitly say commission is there, but typically it is.
+    # Let's fetch commission from old settings to be safe, or default.
+    
+    platform_settings = await db.settings.find_one({"type": "platform"}, {"_id": 0})
+    commission = DEFAULT_COMMISSION_RATE
+    if platform_settings:
+        commission = platform_settings.get("commission_rate", DEFAULT_COMMISSION_RATE)
+        
     if not settings:
-        settings = {
-            "type": "platform",
-            "commission_rate": DEFAULT_COMMISSION_RATE,
-            "base_fare": 10.0,
+        return {
+            "base_fare": 15.0,
             "per_km_rate": 5.0,
-            "per_minute_rate": 1.0
+            "per_minute_rate": 2.0,
+            "surge_multiplier": 1.0,
+            "minimum_fare": 20.0,
+            "commission_rate": commission,
+            "updated_at": datetime.now(timezone.utc)
         }
-        await db.settings.insert_one(settings)
+    
+    # Inject commission rate into the result so other parts of app don't break
+    settings["commission_rate"] = commission
     return settings
+
+async def calculate_ride_fare(pickup_loc: Dict[str, Any], dropoff_loc: Dict[str, Any], distance_km: float, duration_min: float) -> Dict[str, Any]:
+    """
+    Centralized Pricing Engine.
+    Hierarchy:
+    1. Fixed Route (if match)
+    2. Dynamic (Distance + Time) * Surge
+    3. Minimum Fare Floor
+    """
+    
+    # 1. Check Fixed Routes
+    active_routes = await db.fixed_routes.find({"is_active": True}).to_list(100)
+    
+    pickup_point = (pickup_loc["lat"], pickup_loc["lng"])
+    dropoff_point = (dropoff_loc["lat"], dropoff_loc["lng"])
+    
+    for route in active_routes:
+        # Check Pickup
+        # Ensure coordinates are extracted correctly from GeoJSON Point [lng, lat]
+        r_p_lng = route["pickup_coordinates"]["coordinates"][0]
+        r_p_lat = route["pickup_coordinates"]["coordinates"][1]
+        
+        r_d_lng = route["dropoff_coordinates"]["coordinates"][0]
+        r_d_lat = route["dropoff_coordinates"]["coordinates"][1]
+        
+        p_dist = calculate_haversine_distance(
+            pickup_point[0], pickup_point[1],
+            r_p_lat, r_p_lng
+        )
+        # Check Dropoff
+        d_dist = calculate_haversine_distance(
+            dropoff_point[0], dropoff_point[1],
+            r_d_lat, r_d_lng
+        )
+        
+        # Convert tolerance to km
+        tolerance_km = route["tolerance_radius_meters"] / 1000.0
+        
+        if p_dist <= tolerance_km and d_dist <= tolerance_km:
+            logger.info(f"Fixed Route Match: {route['pickup_name']} -> {route['dropoff_name']}")
+            return {
+                "fare": route["fixed_price"],
+                "is_fixed": True,
+                "route_name": f"{route['pickup_name']} to {route['dropoff_name']}",
+                "breakdown": {
+                    "base": 0,
+                    "distance": 0,
+                    "time": 0,
+                    "surge": 0
+                }
+            }
+
+    # 2. Dynamic Pricing
+    settings = await get_platform_settings()
+    
+    base_fare = settings.get("base_fare", 15.0)
+    per_km = settings.get("per_km_rate", 5.0)
+    per_min = settings.get("per_minute_rate", 2.0)
+    surge = settings.get("surge_multiplier", 1.0)
+    min_fare = settings.get("minimum_fare", 20.0)
+    
+    dist_cost = distance_km * per_km
+    time_cost = duration_min * per_min
+    
+    subtotal = base_fare + dist_cost + time_cost
+    surge_total = subtotal * surge
+    
+    final_fare = max(surge_total, min_fare)
+    final_fare = round(final_fare, 2)
+    
+    return {
+        "fare": final_fare,
+        "is_fixed": False,
+        "route_name": "Standard Ride",
+        "breakdown": {
+            "base": base_fare,
+            "distance": round(dist_cost, 2),
+            "time": round(time_cost, 2),
+            "surge_multiplier": surge,
+            "min_fare_applied": final_fare == min_fare
+        }
+    }
+
+def calculate_haversine_distance(lat1, lon1, lat2, lon2):
+    R = 6371  # Earth radius in km
+    dLat = math.radians(lat2 - lat1)
+    dLon = math.radians(lon2 - lon1)
+    a = math.sin(dLat / 2) * math.sin(dLat / 2) + \
+        math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * \
+        math.sin(dLon / 2) * math.sin(dLon / 2)
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
 
 # ==================== WEBSOCKET CONNECTION MANAGER ====================
 class ConnectionManager:
@@ -498,6 +688,7 @@ async def get_me(user: dict = Depends(get_current_user)):
     )
 
 @api_router.delete("/users/me")
+
 async def delete_me(user: dict = Depends(get_current_user)):
     """Allow a user to delete their own account."""
     user_id = user["id"]
@@ -512,6 +703,55 @@ async def delete_me(user: dict = Depends(get_current_user)):
     return {"status": "deleted"}
 
 # ==================== DRIVER ROUTES ====================
+@api_router.get("/drivers/nearby", response_model=List[NearbyDriverResponse])
+async def get_nearby_drivers(
+    latitude: float = Query(..., ge=-90, le=90),
+    longitude: float = Query(..., ge=-180, le=180),
+    radius_km: float = Query(5.0, ge=0.5, le=20.0),
+    user: dict = Depends(get_current_user)
+):
+    """
+    Fetch nearby AVAILABLE drivers for the pickup map.
+    Filters: Online, Approved, Active Wallet, Not in Ride.
+    Limit: 20 drivers.
+    """
+    max_distance_meters = radius_km * 1000
+    
+    online_drivers = await db.drivers.find({
+        "is_online": True,
+        "is_approved": True,
+        "wallet_status": {"$ne": WalletStatus.RESTRICTED.value},
+        "current_ride_id": None,
+        "location": {
+            "$near": {
+                "$geometry": {
+                    "type": "Point",
+                    "coordinates": [longitude, latitude]
+                },
+                "$maxDistance": max_distance_meters
+            }
+        }
+    }).to_list(20)
+    
+    results = []
+    for d in online_drivers:
+        # Extract lat/lng safely
+        loc = d.get("current_location", {})
+        lat = loc.get("lat")
+        lng = loc.get("lng")
+        heading = loc.get("heading", 0.0)
+        
+        if lat is not None and lng is not None:
+            results.append(NearbyDriverResponse(
+                id=d["user_id"],
+                latitude=lat,
+                longitude=lng,
+                heading=heading,
+                vehicle_type=d.get("vehicle_type", VehicleType.CAR)
+            ))
+            
+    return results
+
 @api_router.post("/drivers/register", response_model=DriverResponse)
 async def register_driver(profile: DriverProfile, user: dict = Depends(get_current_user)):
     # Check if already a driver
@@ -809,10 +1049,21 @@ async def request_ride(ride_data: RideRequest, user: dict = Depends(get_current_
         if dist < 0.1: dist = 0.1
         if duration < 1: duration = 1
         
-        calculated_fare = settings["base_fare"] + (dist * settings["per_km_rate"]) + (duration * settings["per_minute_rate"])
-        calculated_fare = round(calculated_fare, 2)
+        # PRICING ENGINE CALL
+        pricing_result = await calculate_ride_fare(
+            ride_data.pickup_location,
+            ride_data.dropoff_location,
+            dist,
+            duration
+        )
         
-        commission = calculated_fare * (settings["commission_rate"] / 100)
+        calculated_fare = pricing_result["fare"]
+        
+        # Commission calculation
+        settings = await get_platform_settings()
+        commission_rate = settings.get("commission_rate", DEFAULT_COMMISSION_RATE)
+        
+        commission = calculated_fare * (commission_rate / 100)
         driver_earning = calculated_fare - commission
         
         ride_id = str(uuid.uuid4())
@@ -1342,6 +1593,84 @@ async def get_all_drivers(user: dict = Depends(require_admin)):
 
 @api_router.post("/admin/drivers/{driver_id}/approve")
 async def approve_driver(driver_id: str, user: dict = Depends(require_admin)):
+    result = await db.drivers.update_one(
+        {"id": driver_id},
+        {"$set": {"is_approved": True}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Driver not found")
+    return {"status": "approved"}
+
+# ==================== POPULAR DESTINATIONS ====================
+
+class PopularDestinationBase(BaseModel):
+    name: str = Field(..., min_length=3, max_length=100)
+    latitude: float = Field(..., ge=-90, le=90)
+    longitude: float = Field(..., ge=-180, le=180)
+
+class PopularDestinationResponse(PopularDestinationBase):
+    id: str
+    is_active: bool
+    created_at: datetime
+
+@api_router.post("/admin/popular-destinations", response_model=PopularDestinationResponse)
+async def create_popular_destination(dest: PopularDestinationBase, user: dict = Depends(require_admin)):
+    # Check for duplicate name (optional, but good UX)
+    existing = await db.popular_destinations.find_one({"name": dest.name, "is_active": True})
+    if existing:
+        raise HTTPException(status_code=400, detail="Active destination with this name already exists")
+
+    new_dest = {
+        "id": str(uuid.uuid4()),
+        "name": dest.name,
+        "coordinates": {
+            "type": "Point",
+            "coordinates": [dest.longitude, dest.latitude]
+        },
+        "created_by": user["id"],
+        "is_active": True,
+        "created_at": datetime.now(timezone.utc),
+        # Flattened for easy response
+        "latitude": dest.latitude,
+        "longitude": dest.longitude
+    }
+    
+    await db.popular_destinations.insert_one(new_dest)
+    return new_dest
+
+@api_router.get("/popular-destinations", response_model=List[PopularDestinationResponse])
+async def get_popular_destinations(active_only: bool = True):
+    query = {}
+    if active_only:
+        query["is_active"] = True
+        
+    cursor = db.popular_destinations.find(query).sort("created_at", -1)
+    dests = await cursor.to_list(100)
+    
+    results = []
+    for d in dests:
+        # Map DB fields to response model
+        results.append({
+            "id": d["id"],
+            "name": d["name"],
+            "latitude": d["coordinates"]["coordinates"][1],
+            "longitude": d["coordinates"]["coordinates"][0],
+            "is_active": d["is_active"],
+            "created_at": d["created_at"]
+        })
+    return results
+
+@api_router.patch("/admin/popular-destinations/{dest_id}")
+async def deactivate_popular_destination(dest_id: str, active: bool = False, user: dict = Depends(require_admin)):
+    result = await db.popular_destinations.update_one(
+        {"id": dest_id},
+        {"$set": {"is_active": active}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Destination not found")
+    return {"status": "updated", "is_active": active}
+
+async def approve_driver(driver_id: str, user: dict = Depends(require_admin)):
     driver = await db.drivers.find_one({"id": driver_id}, {"_id": 0})
     if not driver:
         raise HTTPException(status_code=404, detail="Driver not found")
@@ -1470,6 +1799,103 @@ async def update_settings(settings: PlatformSettings, user: dict = Depends(requi
     )
     
     return {"status": "updated"}
+
+# ==================== PRICING & FIXED ROUTE MANAGEMENT ====================
+
+@api_router.get("/admin/pricing-settings", response_model=PricingSettings)
+async def get_pricing_settings(user: dict = Depends(require_admin)):
+    settings = await db.pricing_settings.find_one({})
+    if not settings:
+        # Should be initialized on startup, but fail-safe
+        return PricingSettings(
+            base_fare=15.0, per_km_rate=5.0, per_minute_rate=2.0,
+            surge_multiplier=1.0, minimum_fare=20.0
+        )
+    return PricingSettings(**settings)
+
+@api_router.put("/admin/pricing-settings")
+async def update_pricing_settings(settings: PricingSettings, user: dict = Depends(require_admin)):
+    # Update updated_at timestamp
+    settings.updated_at = datetime.now(timezone.utc)
+    
+    await db.pricing_settings.update_one(
+        {}, # Single document
+        {"$set": settings.dict()},
+        upsert=True
+    )
+    
+    await log_admin_action(
+        user["id"], user["name"], "update_pricing", 
+        details=f"Base: {settings.base_fare}, Km: {settings.per_km_rate}, Min: {settings.minimum_fare}, Surge: {settings.surge_multiplier}"
+    )
+    return {"status": "updated"}
+
+@api_router.get("/admin/fixed-routes", response_model=List[FixedRouteResponse])
+async def get_fixed_routes(user: dict = Depends(require_admin)):
+    routes = await db.fixed_routes.find({}).sort("created_at", -1).to_list(100)
+    return [FixedRouteResponse(**r) for r in routes]
+
+@api_router.post("/admin/fixed-routes", response_model=FixedRouteResponse)
+async def create_fixed_route(route: FixedRouteCreate, user: dict = Depends(require_admin)):
+    new_route = route.dict()
+    new_route["id"] = str(uuid.uuid4())
+    new_route["created_at"] = datetime.now(timezone.utc)
+    
+    # Ensure GeoJSON strict format for indexing
+    # The client might send {lat, lng}, we need {type: Point, coordinates: [lng, lat]}
+    # The model defines pickup_coordinates as Dict[str, Any], assuming it's already GeoJSON or we assume client sends GeoJSON.
+    # Let's enforce it here if needed, but for now assuming client sends valid GeoJSON Point structure matching the model.
+    # Actually, let's validate or construct it to be safe if the client sends raw coords.
+    # But the model says Dict[str, Any] # GeoJSON Point. I'll rely on frontend sending correct structure.
+    
+    await db.fixed_routes.insert_one(new_route)
+    
+    await log_admin_action(
+        user["id"], user["name"], "create_fixed_route", 
+        new_route["id"], f"{route.pickup_name} -> {route.dropoff_name} ({route.fixed_price})"
+    )
+    return FixedRouteResponse(**new_route)
+
+@api_router.put("/admin/fixed-routes/{route_id}")
+async def update_fixed_route(route_id: str, route: FixedRouteCreate, user: dict = Depends(require_admin)):
+    existing = await db.fixed_routes.find_one({"id": route_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Route not found")
+        
+    update_data = route.dict()
+    # Preserve id and created_at
+    update_data["id"] = route_id
+    update_data["created_at"] = existing["created_at"]
+    
+    await db.fixed_routes.replace_one({"id": route_id}, update_data)
+    
+    await log_admin_action(
+        user["id"], user["name"], "update_fixed_route", 
+        route_id, f"Updated: {route.pickup_name} -> {route.dropoff_name}"
+    )
+    return {"status": "updated"}
+
+@api_router.delete("/admin/fixed-routes/{route_id}")
+async def delete_fixed_route(route_id: str, user: dict = Depends(require_admin)):
+    result = await db.fixed_routes.delete_one({"id": route_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Route not found")
+        
+    await log_admin_action(user["id"], user["name"], "delete_fixed_route", route_id, "Deleted route")
+    return {"status": "deleted"}
+
+@api_router.patch("/admin/fixed-routes/{route_id}/toggle")
+async def toggle_fixed_route(route_id: str, user: dict = Depends(require_admin)):
+    route = await db.fixed_routes.find_one({"id": route_id})
+    if not route:
+        raise HTTPException(status_code=404, detail="Route not found")
+        
+    new_status = not route["is_active"]
+    await db.fixed_routes.update_one(
+        {"id": route_id},
+        {"$set": {"is_active": new_status}}
+    )
+    return {"status": "updated", "is_active": new_status}
 
 @api_router.post("/admin/create-admin")
 async def create_admin(admin_data: UserCreate, user: dict = Depends(require_super_admin)):
@@ -1680,11 +2106,18 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(None)):
             return
 
         await manager.connect(websocket, user_id)
+        last_loc_update = 0
         try:
             while True:
                 data = await websocket.receive_json()
                 
                 if data.get("type") == "location_update":
+                    now = time.time()
+                    if now - last_loc_update < 3.0:
+                        # Throttle: Ignore rapid updates
+                        continue
+                    last_loc_update = now
+
                     await manager.update_driver_location(user_id, data.get("location", {}))
                     
                     # If driver has active ride, broadcast to student

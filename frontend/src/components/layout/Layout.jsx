@@ -33,6 +33,8 @@ export const Layout = ({ children }) => {
     { to: '/admin/users', icon: Users, label: 'Users' },
     { to: '/admin/drivers', icon: Car, label: 'Drivers' },
     { to: '/admin/rides', icon: MapPin, label: 'Rides' },
+    { to: '/admin/destinations', icon: MapPin, label: 'Destinations' },
+    { to: '/admin/pricing', icon: DollarSign, label: 'Pricing' },
     { to: '/admin/settings', icon: Settings, label: 'Settings' }
   ];
 

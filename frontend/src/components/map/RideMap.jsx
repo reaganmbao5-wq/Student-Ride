@@ -170,6 +170,7 @@ export const LocationPickerMap = ({
   zoom = 14,
   selectedLocation = null,
   onLocationSelect,
+  nearbyDrivers = [],
   className = ""
 }) => {
   return (
@@ -188,13 +189,26 @@ export const LocationPickerMap = ({
         <MapUpdater center={selectedLocation ? [selectedLocation.lat, selectedLocation.lng] : [center.lat, center.lng]} zoom={zoom} />
         <MapEvents onLocationSelect={onLocationSelect} />
 
+        {/* Selected Pickup Location */}
         {selectedLocation && (
           <Marker position={[selectedLocation.lat, selectedLocation.lng]} icon={pickupIcon} />
         )}
+
+        {/* Nearby Drivers */}
+        {nearbyDrivers.map((driver) => (
+          <Marker
+            key={driver.id}
+            position={[driver.latitude, driver.longitude]}
+            icon={driverIcon}
+            rotationAngle={driver.heading} // If using leaflet-rotatedmarker, otherwise just marker
+          >
+            {/* Optional: Add Popup if needed, but prompt says just markers first */}
+          </Marker>
+        ))}
       </MapContainer>
 
       <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 pointer-events-none z-[400]">
-        <p className="text-xs text-white">Tap anywhere using OpenStreetMap</p>
+        <p className="text-xs text-white">Tap anywhere to select location</p>
       </div>
     </div>
   );

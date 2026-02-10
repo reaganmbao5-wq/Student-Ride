@@ -20,6 +20,7 @@ import AdminDriversPage from "./pages/AdminDriversPage";
 import AdminRidesPage from "./pages/AdminRidesPage";
 import AdminSettingsPage from "./pages/AdminSettingsPage";
 import AdminDestinationsPage from "./pages/AdminDestinationsPage";
+import AdminPricingPage from "./pages/AdminPricingPage";
 import ChatPage from "./pages/ChatPage";
 import ProfilePage from "./pages/ProfilePage";
 
@@ -211,6 +212,22 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
               <AdminDestinationsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/pricing"
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+              <AdminPricingPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/pricing"
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+              <AdminPricingPage />
             </ProtectedRoute>
           }
         />
