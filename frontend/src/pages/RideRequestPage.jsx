@@ -33,6 +33,7 @@ const RideRequestPage = () => {
   const [destinations, setDestinations] = useState([]);
   const [selectedDestination, setSelectedDestination] = useState(null);
   const [nearbyDrivers, setNearbyDrivers] = useState([]); // Phase 5: Nearby Drivers
+  const [routeGeometry, setRouteGeometry] = useState(null);
 
 
   // Fetch admin-defined destinations
@@ -104,14 +105,41 @@ const RideRequestPage = () => {
     return R * c;
   };
 
-  // Calculate fare estimate when both locations are set
+  // Calculate fare estimate and route when both locations are set
   const calculateFare = useCallback(async () => {
     if (!pickup || !dropoff) return;
 
     setLoading(true);
     try {
-      const distance = calculateDistance(pickup.lat, pickup.lng, dropoff.lat, dropoff.lng);
-      const duration = Math.round(distance * 3); // Rough estimate: 3 min per km
+      // 1. Get Route from OSRM
+      let routeDistance = 0;
+      let routeDuration = 0;
+      let geometry = null;
+
+      try {
+        const response = await fetch(
+          `https://router.project-osrm.org/route/v1/driving/${pickup.lng},${pickup.lat};${dropoff.lng},${dropoff.lat}?overview=full&geometries=geojson`
+        );
+        const data = await response.json();
+
+        if (data.routes && data.routes.length > 0) {
+          const route = data.routes[0];
+          routeDistance = route.distance / 1000; // Meters to KM
+          routeDuration = Math.round(route.duration / 60); // Seconds to Minutes
+          geometry = route.geometry.coordinates.map(coord => [coord[1], coord[0]]); // GeoJSON [lng, lat] to Leaflet [lat, lng]
+        }
+      } catch (err) {
+        console.error('OSRM fetch error:', err);
+        // Fallback to Haversine if OSRM fails
+      }
+
+      // If OSRM failed or returned no route, use Haversine
+      if (!routeDistance) {
+        routeDistance = calculateDistance(pickup.lat, pickup.lng, dropoff.lat, dropoff.lng);
+        routeDuration = Math.round(routeDistance * 3); // Rough estimate: 3 min per km
+      }
+
+      setRouteGeometry(geometry);
 
       // If using admin-defined destination, use its estimated fare as base
       let estimatedFare = selectedDestination?.estimated_fare;
@@ -119,16 +147,16 @@ const RideRequestPage = () => {
       if (!estimatedFare) {
         // Calculate dynamically if no predefined fare
         const response = await api.post('/rides/estimate-fare', {
-          distance_km: distance,
-          duration_min: duration
+          distance_km: routeDistance,
+          duration_min: routeDuration
         });
         estimatedFare = response.data.estimated_fare;
       }
 
       setFareEstimate({
         estimated_fare: estimatedFare,
-        distance,
-        duration,
+        distance: routeDistance,
+        duration: routeDuration,
         is_predefined: !!selectedDestination?.estimated_fare
       });
     } catch (error) {
@@ -362,6 +390,7 @@ const RideRequestPage = () => {
               <RideMap
                 pickup={pickup}
                 dropoff={dropoff}
+                routeGeometry={routeGeometry}
                 interactive={false}
                 className="h-full w-full"
               />
