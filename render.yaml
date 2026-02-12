@@ -1,31 +1,32 @@
 services:
-  # Python Backend Service
+  # Backend Service (Python/FastAPI)
   - type: web
     name: student-ride-backend
     env: python
-    region: oregon
     buildCommand: pip install -r backend/requirements.txt
-    startCommand: cd backend && gunicorn server:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
+    startCommand: uvicorn backend.server:app --host 0.0.0.0 --port 10000
     envVars:
-      - key: MONGO_URL
-        sync: false
-      - key: DB_NAME
-        value: student_ride_db
-      - key: JWT_SECRET
-        sync: false
       - key: PYTHON_VERSION
-        value: 3.11.0
+        value: 3.9.0
+      - key: MONGO_URL
+        sync: false # User must provide this in dashboard
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PORT
+        value: 10000
 
-  # React Frontend (Static Site)
-  - type: web
+  # Frontend Service (React/Static)
+  - type: static
     name: student-ride-frontend
-    env: node
-    region: oregon
-    buildCommand: cd frontend && npm install --legacy-peer-deps && npm run build
-    startCommand: cd frontend && npx serve -s build -l $PORT
+    env: static
+    buildCommand: |
+      cd frontend
+      npm install
+      npm run build
+    staticPublishPath: frontend/build
     envVars:
       - key: REACT_APP_BACKEND_URL
         fromService:
-          type: web
-          name: student-ride-backend
-          property: url
+            type: web
+            name: student-ride-backend
+            property: host
