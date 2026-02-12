@@ -16,7 +16,7 @@ services:
         value: 10000
 
   # Frontend Service (React/Static)
-  - type: static
+  - type: web
     name: student-ride-frontend
     env: static
     buildCommand: |
