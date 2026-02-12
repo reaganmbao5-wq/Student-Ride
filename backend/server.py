@@ -55,34 +55,42 @@ app.add_middleware(
 api_router = APIRouter(prefix="/api")
 security = HTTPBearer()
 
+@app.get("/")
+async def health_check():
+    return {"status": "ok", "service": "student-ride-backend"}
+
 @app.on_event("startup")
 async def startup_db_client():
-    # Create geospatial index for driver location
-    await db.drivers.create_index([("location", "2dsphere")])
-    
-    # Create indexes for ride queries
-    await db.rides.create_index("status")
-    await db.rides.create_index("student_id")
-    
-    # Create indexes for pricing
-    await db.fixed_routes.create_index([("pickup_coordinates", "2dsphere")])
-    await db.fixed_routes.create_index([("dropoff_coordinates", "2dsphere")])
-    
-    # Initialize pricing settings if not exists
-    existing_settings = await db.pricing_settings.find_one({})
-    if not existing_settings:
-        default_settings = {
-            "base_fare": 15.0,
-            "per_km_rate": 5.0,
-            "per_minute_rate": 2.0,
-            "surge_multiplier": 1.0,
-            "minimum_fare": 20.0,
-            "updated_at": datetime.now(timezone.utc)
-        }
-        await db.pricing_settings.insert_one(default_settings)
-        logger.info("Initialized default pricing settings")
-    
-    logger.info("Created 2dsphere index and ride indexes")
+    try:
+        # Create geospatial index for driver location
+        await db.drivers.create_index([("location", "2dsphere")])
+        
+        # Create indexes for ride queries
+        await db.rides.create_index("status")
+        await db.rides.create_index("student_id")
+        
+        # Create indexes for pricing
+        await db.fixed_routes.create_index([("pickup_coordinates", "2dsphere")])
+        await db.fixed_routes.create_index([("dropoff_coordinates", "2dsphere")])
+        
+        # Initialize pricing settings if not exists
+        existing_settings = await db.pricing_settings.find_one({})
+        if not existing_settings:
+            default_settings = {
+                "base_fare": 15.0,
+                "per_km_rate": 5.0,
+                "per_minute_rate": 2.0,
+                "surge_multiplier": 1.0,
+                "minimum_fare": 20.0,
+                "updated_at": datetime.now(timezone.utc)
+            }
+            await db.pricing_settings.insert_one(default_settings)
+            logger.info("Initialized default pricing settings")
+        
+        logger.info("Created 2dsphere index and ride indexes")
+    except Exception as e:
+        logger.error(f"Error initializing database: {e}")
+        # We don't raise here to allow app to start even if DB is flaky
 
 # Configure logging
 logging.basicConfig(
