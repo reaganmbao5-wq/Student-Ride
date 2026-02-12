@@ -43,10 +43,11 @@ DEFAULT_COMMISSION_RATE = 15.0
 app = FastAPI(title="Mulungushi Rides API")
 
 # Configure CORS
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False, # Must be False when origin is *
+    allow_origin_regex='https?://.*',
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -136,11 +137,11 @@ class UserLogin(BaseModel):
 
 class UserResponse(BaseModel):
     id: str
-    email: str
-    name: str
-    phone: str
-    role: UserRole
-    created_at: str
+    email: Optional[str] = None
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    role: Optional[UserRole] = None
+    created_at: Optional[str] = None
     is_active: bool = True
 
 class DriverProfile(BaseModel):
@@ -153,10 +154,10 @@ class DriverResponse(BaseModel):
     id: str
     user_id: str
     user: Optional[UserResponse] = None
-    vehicle_type: VehicleType
-    plate_number: str
-    vehicle_model: str
-    vehicle_color: str
+    vehicle_type: Optional[VehicleType] = None
+    plate_number: Optional[str] = None
+    vehicle_model: Optional[str] = None
+    vehicle_color: Optional[str] = None
     rating: float = 5.0
     total_rides: int = 0
     total_earnings: float = 0.0
@@ -168,7 +169,7 @@ class DriverResponse(BaseModel):
     minimum_required_balance: float = 50.0
     total_commission_due: float = 0.0
     total_commission_paid: float = 0.0
-    created_at: str
+    created_at: Optional[str] = None
 
 class NearbyDriverResponse(BaseModel):
     id: str
@@ -1578,17 +1579,28 @@ async def get_admin_stats(user: dict = Depends(require_admin)):
 @api_router.get("/admin/users", response_model=List[UserResponse])
 async def get_all_users(user: dict = Depends(require_admin)):
     users = await db.users.find({}, {"_id": 0, "password": 0}).to_list(1000)
-    return [UserResponse(**u) for u in users]
+    valid_users = []
+    for u in users:
+        try:
+            valid_users.append(UserResponse(**u))
+        except Exception as e:
+            logger.error(f"Skipping invalid user {u.get('id')}: {e}")
+            continue
+    return valid_users
 
 @api_router.get("/admin/drivers", response_model=List[DriverResponse])
 async def get_all_drivers(user: dict = Depends(require_admin)):
     drivers = await db.drivers.find({}, {"_id": 0}).to_list(1000)
     result = []
     for driver in drivers:
-        driver_user = await db.users.find_one({"id": driver["user_id"]}, {"_id": 0, "password": 0})
-        if driver_user:
-            driver["user"] = UserResponse(**driver_user)
-        result.append(DriverResponse(**driver))
+        try:
+            driver_user = await db.users.find_one({"id": driver["user_id"]}, {"_id": 0, "password": 0})
+            if driver_user:
+                driver["user"] = UserResponse(**driver_user)
+            result.append(DriverResponse(**driver))
+        except Exception as e:
+            logger.error(f"Skipping invalid driver {driver.get('id')}: {e}")
+            continue
     return result
 
 @api_router.post("/admin/drivers/{driver_id}/approve")
@@ -2011,9 +2023,36 @@ async def delete_destination(dest_id: str, user: dict = Depends(require_admin)):
 # ==================== FARE CALCULATION ====================
 @api_router.post("/rides/estimate-fare")
 async def estimate_fare(data: dict, user: dict = Depends(get_current_user)):
+    # Check if coordinates are provided for server-side calculation
+    pickup = data.get("pickup", {})
+    dropoff = data.get("dropoff", {})
+    
     distance_km = data.get("distance_km", 0)
     duration_min = data.get("duration_min", 0)
     
+    if "lat" in pickup and "lat" in dropoff:
+        # Server-side calculation
+        try:
+            route_data = await get_route(
+                pickup["lat"], pickup["lng"],
+                dropoff["lat"], dropoff["lng"]
+            )
+            distance_km = route_data["distance_km"]
+            duration_min = route_data["duration_minutes"]
+            verified_geometry = route_data.get("geometry")
+        except Exception as e:
+            logger.error(f"Routing failed in estimate: {e}")
+            verified_geometry = None
+            # Fallback to provided distance or Haversine if needed
+            if distance_km == 0:
+                distance_km = calculate_distance(
+                    pickup["lat"], pickup["lng"], 
+                    dropoff["lat"], dropoff["lng"]
+                )
+                duration_min = distance_km * 3 # Rough estimate
+    else:
+        verified_geometry = None
+
     settings = await get_platform_settings()
     
     fare = settings["base_fare"] + (distance_km * settings["per_km_rate"]) + (duration_min * settings["per_minute_rate"])
@@ -2023,7 +2062,10 @@ async def estimate_fare(data: dict, user: dict = Depends(get_current_user)):
         "estimated_fare": fare,
         "base_fare": settings["base_fare"],
         "distance_charge": round(distance_km * settings["per_km_rate"], 2),
-        "time_charge": round(duration_min * settings["per_minute_rate"], 2)
+        "time_charge": round(duration_min * settings["per_minute_rate"], 2),
+        "verified_distance": round(distance_km, 2),
+        "verified_duration": round(duration_min, 1),
+        "geometry": verified_geometry
     }
 
 # ==================== CHAT ROUTES ====================

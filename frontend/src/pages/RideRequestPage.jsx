@@ -111,52 +111,43 @@ const RideRequestPage = () => {
 
     setLoading(true);
     try {
-      // 1. Get Route from OSRM
-      let routeDistance = 0;
-      let routeDuration = 0;
-      let geometry = null;
+      // Server-Side Pricing & Routing Authority
+      // We send coordinates, server returns verified fare + geometry
+      let estimatedFare = 0;
+      let dist = 0;
+      let dur = 0;
+      let geom = null;
 
-      try {
-        const response = await fetch(
-          `https://router.project-osrm.org/route/v1/driving/${pickup.lng},${pickup.lat};${dropoff.lng},${dropoff.lat}?overview=full&geometries=geojson`
-        );
-        const data = await response.json();
+      // Always fetch from server to get geometry and verified distance/duration
+      const response = await api.post('/rides/estimate-fare', {
+        pickup,
+        dropoff
+      });
 
-        if (data.routes && data.routes.length > 0) {
-          const route = data.routes[0];
-          routeDistance = route.distance / 1000; // Meters to KM
-          routeDuration = Math.round(route.duration / 60); // Seconds to Minutes
-          geometry = route.geometry.coordinates.map(coord => [coord[1], coord[0]]); // GeoJSON [lng, lat] to Leaflet [lat, lng]
-        }
-      } catch (err) {
-        console.error('OSRM fetch error:', err);
-        // Fallback to Haversine if OSRM fails
+      const data = response.data;
+      estimatedFare = data.estimated_fare;
+      dist = data.verified_distance;
+      dur = data.verified_duration;
+      geom = data.geometry;
+
+      // If using admin-defined destination, override fare but keep geometry/distance
+      if (selectedDestination?.estimated_fare) {
+        estimatedFare = selectedDestination.estimated_fare;
       }
 
-      // If OSRM failed or returned no route, use Haversine
-      if (!routeDistance) {
-        routeDistance = calculateDistance(pickup.lat, pickup.lng, dropoff.lat, dropoff.lng);
-        routeDuration = Math.round(routeDistance * 3); // Rough estimate: 3 min per km
+      // Update route on map
+      // Backend returns geometry as array of [lng, lat]
+      if (geom && Array.isArray(geom)) {
+        setRouteGeometry(geom);
+      } else {
+        setRouteGeometry(null);
       }
 
-      setRouteGeometry(geometry);
-
-      // If using admin-defined destination, use its estimated fare as base
-      let estimatedFare = selectedDestination?.estimated_fare;
-
-      if (!estimatedFare) {
-        // Calculate dynamically if no predefined fare
-        const response = await api.post('/rides/estimate-fare', {
-          distance_km: routeDistance,
-          duration_min: routeDuration
-        });
-        estimatedFare = response.data.estimated_fare;
-      }
 
       setFareEstimate({
         estimated_fare: estimatedFare,
-        distance: routeDistance,
-        duration: routeDuration,
+        distance: dist,
+        duration: dur,
         is_predefined: !!selectedDestination?.estimated_fare
       });
     } catch (error) {
