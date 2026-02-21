@@ -223,6 +223,30 @@
   background: rgba(18, 18, 18, 0.95) !important;
 }
 
+/* Liquid Glass Navigation */
+.liquid-glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.82);
+}
+
+.liquid-item-active {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(212, 175, 55, 0.05) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.1);
+}
+
+/* Sidebar expansion transition */
+.sidebar-transition {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
+}
+
+.sidebar-label-transition {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
 /* Debug wrapper fix */
 [data-debug-wrapper="true"] {
   display: contents !important;

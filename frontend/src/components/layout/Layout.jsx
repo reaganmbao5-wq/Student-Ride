@@ -43,47 +43,51 @@ export const Layout = ({ children }) => {
   return (
     <div className="min-h-screen bg-[#0B0B0B] flex flex-col">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex fixed left-0 top-0 h-full w-64 flex-col bg-[#0B0B0B] border-r border-white/5 z-40">
+      <aside className="hidden md:flex fixed left-0 top-0 h-full w-20 hover:w-64 flex-col bg-[#0B0B0B] border-r border-white/5 z-50 sidebar-transition group">
         {/* Logo */}
-        <div className="p-6 border-b border-white/5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gold flex items-center justify-center">
-              <Car className="w-6 h-6 text-black" />
+        <div className="p-4 border-b border-white/5 h-20 flex items-center">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="w-12 h-12 min-w-[48px] rounded-xl bg-gold flex items-center justify-center">
+              <Car className="w-7 h-7 text-black" />
             </div>
-            <div>
-              <h1 className="font-heading font-bold text-white">MuluRides</h1>
-              <p className="text-xs text-white/50">Student Transport</p>
+            <div className="sidebar-label-transition opacity-0 group-hover:opacity-100 whitespace-nowrap">
+              <h1 className="font-heading font-bold text-white text-lg">MuluRides</h1>
+              <p className="text-[10px] text-white/50">Student Transport</p>
             </div>
           </div>
         </div>
 
         {/* Nav Items */}
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 p-3 space-y-2 overflow-hidden">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.to === '/dashboard' || item.to === '/driver' || item.to === '/admin'}
               className={({ isActive }) => cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
+                "flex items-center gap-3 p-3 rounded-xl transition-all",
                 isActive
                   ? "bg-gold/10 text-gold"
                   : "text-white/60 hover:text-white hover:bg-white/5"
               )}
             >
-              <item.icon className="w-5 h-5" />
-              <span className="font-medium">{item.label}</span>
+              <div className="w-6 flex justify-center">
+                <item.icon className="w-5 h-5 min-w-[20px]" />
+              </div>
+              <span className="font-medium sidebar-label-transition opacity-0 group-hover:opacity-100 whitespace-nowrap">
+                {item.label}
+              </span>
             </NavLink>
           ))}
         </nav>
 
         {/* User Info & Logout */}
-        <div className="p-4 border-t border-white/5">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+        <div className="p-3 border-t border-white/5">
+          <div className="flex items-center gap-3 mb-4 overflow-hidden">
+            <div className="w-10 h-10 min-w-[40px] rounded-full bg-white/10 flex items-center justify-center">
               <User className="w-5 h-5 text-white/60" />
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="sidebar-label-transition opacity-0 group-hover:opacity-100 flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">{user?.name}</p>
               <p className="text-xs text-white/50 capitalize flex items-center gap-1">
                 {user?.role === 'super_admin' && <Shield className="w-3 h-3" />}
@@ -93,15 +97,19 @@ export const Layout = ({ children }) => {
           </div>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-white/60 hover:text-red-400 hover:bg-red-500/10 transition-all"
+            className="flex items-center gap-3 p-3 w-full rounded-xl text-white/60 hover:text-red-400 hover:bg-red-500/10 transition-all overflow-hidden"
           >
-            <LogOut className="w-5 h-5" />
-            <span className="font-medium">Logout</span>
+            <div className="w-6 flex justify-center">
+              <LogOut className="w-5 h-5 min-w-[20px]" />
+            </div>
+            <span className="font-medium sidebar-label-transition opacity-0 group-hover:opacity-100 whitespace-nowrap">
+              Logout
+            </span>
           </button>
         </div>
       </aside>
 
-      {/* Mobile Header */}
+      {/* Mobile Header (Hidden as per modern PWA designs, but keeping it minimal or removing as sidebar is hidden) */}
       <header className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#0B0B0B]/80 backdrop-blur-xl border-b border-white/5 z-40 flex items-center justify-between px-4 safe-top">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-gold flex items-center justify-center">
@@ -109,72 +117,40 @@ export const Layout = ({ children }) => {
           </div>
           <h1 className="font-heading font-bold text-white">MuluRides</h1>
         </div>
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2 rounded-lg hover:bg-white/5"
-        >
-          {mobileMenuOpen ? <X className="w-6 h-6 text-white" /> : <Menu className="w-6 h-6 text-white" />}
-        </button>
+        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+          <User className="w-4 h-4 text-white/60" />
+        </div>
       </header>
 
-      {/* Mobile Menu Overlay */}
-      {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-30 bg-black/80 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)}>
-          <div className="absolute top-16 right-4 w-64 glass-card p-4" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-3 pb-4 border-b border-white/10 mb-4">
-              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-                <User className="w-5 h-5 text-white/60" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-white">{user?.name}</p>
-                <p className="text-xs text-white/50 capitalize">{user?.role?.replace('_', ' ')}</p>
-              </div>
-            </div>
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                onClick={() => setMobileMenuOpen(false)}
-                className={({ isActive }) => cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-lg transition-all",
-                  isActive ? "bg-gold/10 text-gold" : "text-white/60"
-                )}
-              >
-                <item.icon className="w-5 h-5" />
-                <span>{item.label}</span>
-              </NavLink>
-            ))}
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-red-400 mt-4"
-            >
-              <LogOut className="w-5 h-5" />
-              <span>Logout</span>
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Main Content */}
-      <main className="flex-1 md:ml-64 pt-16 md:pt-0 pb-20 md:pb-0">
-        {children}
+      <main className="flex-1 md:ml-20 pt-16 md:pt-8 pb-32">
+        <div className="max-w-7xl mx-auto px-4 md:px-8">
+          {children}
+        </div>
       </main>
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 mobile-nav z-40 safe-bottom">
-        <div className="flex items-center justify-around py-2">
-          {navItems.slice(0, 4).map((item) => (
+      {/* Liquid Glass Navigation Bar */}
+      <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-lg safe-bottom">
+        <div className="liquid-glass rounded-[2rem] p-2 flex items-center justify-around gap-1">
+          {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.to === '/dashboard' || item.to === '/driver' || item.to === '/admin'}
               className={({ isActive }) => cn(
-                "flex flex-col items-center py-2 px-4 rounded-xl transition-all",
-                isActive ? "text-gold" : "text-white/40"
+                "flex flex-col items-center gap-1 px-4 py-2 rounded-2xl transition-all duration-300 relative",
+                isActive ? "liquid-item-active text-gold scale-105" : "text-white/40 hover:text-white/70"
               )}
             >
-              <item.icon className="w-5 h-5 mb-1" />
-              <span className="text-[10px] font-medium">{item.label}</span>
+              {({ isActive }) => (
+                <>
+                  <item.icon className="w-5 h-5" />
+                  <span className="text-[10px] font-medium whitespace-nowrap">{item.label}</span>
+                  {isActive && (
+                    <div className="absolute -bottom-1 w-1 h-1 rounded-full bg-gold" />
+                  )}
+                </>
+              )}
             </NavLink>
           ))}
         </div>
