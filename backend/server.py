@@ -15,6 +15,7 @@ from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone, timedelta
 from services.osrm_service import get_route
+from services.notification_service import NotificationService
 import jwt
 import bcrypt
 import asyncio
@@ -29,6 +30,7 @@ load_dotenv(ROOT_DIR / '.env')
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ.get('DB_NAME', 'mulungushi_rides')]
+notification_service = NotificationService(db)
 
 # JWT Config
 JWT_SECRET = os.environ.get('JWT_SECRET', 'mulungushi-rides-secret-key-2024')
@@ -138,6 +140,11 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
     role: UserRole = UserRole.STUDENT
+
+class PushSubscriptionRequest(BaseModel):
+    endpoint: str
+    keys: Dict[str, str]
+    expirationTime: Optional[int] = None
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -282,6 +289,22 @@ class AdminLogResponse(BaseModel):
     target_id: Optional[str] = None
     details: Optional[str] = None
     created_at: str
+
+class NotificationLog(BaseModel):
+    id: str
+    title: str
+    message: str
+    target_role: str
+    total_sent: int
+    total_failed: int
+    created_by: str
+    created_at: str
+
+class AdminBroadcastRequest(BaseModel):
+    title: str
+    message: str
+    url: Optional[str] = None
+    target_role: str # "all", "student", "driver"
 
 class PlatformSettings(BaseModel):
     commission_rate: float
@@ -695,6 +718,18 @@ async def get_me(user: dict = Depends(get_current_user)):
         created_at=user["created_at"],
         is_active=user.get("is_active", True)
     )
+
+@api_router.post("/notifications/subscribe")
+async def subscribe_push(sub: PushSubscriptionRequest, user: dict = Depends(get_current_user)):
+    await notification_service.save_subscription(user["id"], user["role"], sub.dict())
+    return {"status": "success"}
+
+@api_router.get("/notifications/vapid-public-key")
+async def get_vapid_public_key():
+    key = os.environ.get("VAPID_PUBLIC_KEY")
+    if not key:
+        raise HTTPException(status_code=500, detail="VAPID_PUBLIC_KEY not configured")
+    return {"publicKey": key}
 
 @api_router.delete("/users/me")
 
@@ -1163,6 +1198,19 @@ async def accept_ride(ride_id: str, user: dict = Depends(require_driver)):
         "driver": driver
     }, ride["student_id"])
     
+    # Push notification
+    await notification_service.send(
+        user_id=ride["student_id"],
+        type="ride_accepted",
+        payload={
+            "title": "Ride Accepted",
+            "body": f"{user.get('name', 'Your driver')} is on the way!",
+            "url": f"/ride/{ride_id}",
+            "icon": "/logo192.png",
+            "badge": "/favicon-32x32.png"
+        }
+    )
+    
     # Add both to ride room
     manager.add_to_ride(ride_id, ride["student_id"])
     manager.add_to_ride(ride_id, user["id"])
@@ -1194,6 +1242,19 @@ async def driver_arrived(ride_id: str, user: dict = Depends(require_driver)):
         "type": "driver_arrived",
         "ride_id": ride_id
     }, ride["student_id"])
+    
+    # Push notification
+    await notification_service.send(
+        user_id=ride["student_id"],
+        type="ride_arrived",
+        payload={
+            "title": "Driver Arrived",
+            "body": "Your driver has arrived at the pickup location.",
+            "url": f"/ride/{ride_id}",
+            "icon": "/logo192.png",
+            "badge": "/favicon-32x32.png"
+        }
+    )
     
     return {"status": "arrived"}
 
@@ -1336,11 +1397,37 @@ async def cancel_ride(ride_id: str, user: dict = Depends(get_current_user)):
                 "type": "ride_cancelled",
                 "ride_id": ride_id
             }, driver["user_id"])
+            
+            if user["id"] == ride["student_id"]:
+                await notification_service.send(
+                    user_id=driver["user_id"],
+                    type="ride_cancelled",
+                    payload={
+                        "title": "Ride Cancelled",
+                        "body": "The student has cancelled the ride.",
+                        "url": "/",
+                        "icon": "/logo192.png",
+                        "badge": "/favicon-32x32.png"
+                    }
+                )
     
     await manager.send_personal_message({
         "type": "ride_cancelled",
         "ride_id": ride_id
     }, ride["student_id"])
+
+    if user["id"] != ride["student_id"]:
+        await notification_service.send(
+            user_id=ride["student_id"],
+            type="ride_cancelled",
+            payload={
+                "title": "Ride Cancelled",
+                "body": "Your ride has been cancelled.",
+                "url": "/",
+                "icon": "/logo192.png",
+                "badge": "/favicon-32x32.png"
+            }
+        )
     
     return {"status": "cancelled"}
 
@@ -2198,6 +2285,94 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(None)):
     except Exception as e:
         logger.error(f"WebSocket Error: {e}")
         await websocket.close(code=4000)
+
+# ==================== PUSH NOTIFICATIONS ====================
+@api_router.get("/notifications/vapid-public-key")
+async def get_vapid_public_key():
+    return {"public_key": os.environ.get("VAPID_PUBLIC_KEY")}
+
+@api_router.post("/notifications/subscribe")
+async def subscribe_push_notifications(
+    subscription: PushSubscriptionRequest,
+    user: dict = Depends(get_current_user)
+):
+    try:
+        user_id = user["id"]
+        role = user.get("role", "student")
+        await notification_service.save_subscription(
+            user_id=user_id,
+            role=role,
+            subscription_info=subscription.model_dump() if hasattr(subscription, 'model_dump') else subscription.dict()
+        )
+        return {"status": "success", "message": "Subscription saved"}
+    except Exception as e:
+        logger.error(f"Error saving subscription for {user.get('id')}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to save push subscription")
+
+@api_router.post("/admin/notifications/broadcast")
+async def broadcast_notification(
+    request: AdminBroadcastRequest,
+    admin: dict = Depends(require_admin)
+):
+    try:
+        query = {}
+        if request.target_role != "all":
+            query["role"] = request.target_role
+            
+        cursor = db.push_subscriptions.find(query)
+        subscriptions = await cursor.to_list(length=10000)
+        
+        if not subscriptions:
+            return {"status": "success", "sent": 0, "failed": 0, "message": "No active subscriptions found for target role"}
+
+        payload = {
+            "title": request.title,
+            "body": request.message,
+            "url": request.url or "/",
+            "icon": "/logo192.png",
+            "badge": "/favicon-32x32.png"
+        }
+        
+        users_sent = set()
+        total_sent = 0
+        total_failed = 0
+        
+        for sub in subscriptions:
+            user_id = sub["user_id"]
+            if user_id not in users_sent:
+                success = await notification_service.send(
+                    user_id=user_id,
+                    type="broadcast",
+                    payload=payload
+                )
+                if success:
+                    total_sent += 1
+                else:
+                    total_failed += 1
+                users_sent.add(user_id)
+                
+        # Log broadcast
+        log_entry = {
+            "id": str(uuid.uuid4()),
+            "title": request.title,
+            "message": request.message,
+            "target_role": request.target_role,
+            "total_sent": total_sent,
+            "total_failed": total_failed,
+            "created_by": admin["id"],
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.notification_logs.insert_one(log_entry)
+        
+        return {
+            "status": "success", 
+            "sent": total_sent, 
+            "failed": total_failed,
+            "message": f"Broadcast sent successfully: {total_sent} delivered, {total_failed} failed."
+        }
+    except Exception as e:
+        logger.error(f"Error executing admin broadcast: {e}")
+        raise HTTPException(status_code=500, detail="Failed to execute broadcast")
 
 # ==================== MIDDLEWARE ====================
 class RateLimitMiddleware(BaseHTTPMiddleware):

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { User, Mail, Phone, Shield, Car, LogOut, Trash2, Loader2 } from 'lucide-react';
 import { GlassCard, GoldButton } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
+import { MultiPlatformInstallSection } from '../components/common/MultiPlatformInstallSection';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -49,6 +50,9 @@ const ProfilePage = () => {
           </h1>
           <p className="text-white/50">Manage your account</p>
         </div>
+
+        {/* Permanent PWA Install Section */}
+        <MultiPlatformInstallSection />
 
         {/* User Info Card */}
         <GlassCard className="p-6">

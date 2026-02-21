@@ -3,7 +3,19 @@ import axios from 'axios';
 
 const AuthContext = createContext(null);
 
-const API_URL = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || window.location.origin;
+const API_URL = `${BACKEND_URL}/api`;
+
+const urlBase64ToUint8Array = (base64String) => {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -55,6 +67,39 @@ export const AuthProvider = ({ children }) => {
     fetchUser();
   }, [fetchUser]);
 
+  const subscribeUserToPush = async (accessToken) => {
+    try {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      if (Notification.permission === 'denied') return;
+
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') return;
+
+      const registration = await navigator.serviceWorker.ready;
+      let subscription = await registration.pushManager.getSubscription();
+
+      if (!subscription) {
+        const vapidRes = await axios.get(`${API_URL}/notifications/vapid-public-key`);
+        const vapidPublicKey = vapidRes.data.public_key;
+        if (!vapidPublicKey) return;
+
+        const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: convertedVapidKey
+        });
+      }
+
+      await axios.post(`${API_URL}/notifications/subscribe`, subscription, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      console.log('Successfully configured push notifications');
+    } catch (err) {
+      console.error('Failed to subscribe to push notifications:', err);
+    }
+  };
+
   const login = async (email, password) => {
     const response = await api.post('/auth/login', { email, password });
     const { access_token, user: userData } = response.data;
@@ -74,6 +119,9 @@ export const AuthProvider = ({ children }) => {
       }
     }
 
+    // Attempt push subscription after successful login
+    subscribeUserToPush(access_token);
+
     return userData;
   };
 
@@ -91,6 +139,9 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('token', access_token);
     setToken(access_token);
     setUser(userData);
+
+    // Attempt push subscription after successful registration
+    subscribeUserToPush(access_token);
 
     return userData;
   };
@@ -133,6 +184,8 @@ export const AuthProvider = ({ children }) => {
       // 4. Update State
       setUser({ ...newUser, role: 'driver' });
       setDriverProfile(driverResponse.data);
+
+      subscribeUserToPush(access_token);
 
       return newUser;
     } catch (error) {

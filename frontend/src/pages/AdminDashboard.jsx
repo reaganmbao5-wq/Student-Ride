@@ -4,6 +4,7 @@ import { GlassCard, LoadingSpinner, StatusBadge } from '../components/common/Gla
 import { RideMap } from '../components/map/RideMap';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
+import { AdminPushNotifications } from '../components/admin/AdminPushNotifications';
 
 const AdminDashboard = () => {
   const { api, isSuperAdmin } = useAuth();
@@ -170,37 +171,50 @@ const AdminDashboard = () => {
           </GlassCard>
         </div>
 
-        {/* Active Rides Map */}
-        {activeRides.length > 0 && (
-          <GlassCard className="p-4" hover={false}>
-            <h2 className="font-heading font-semibold text-white mb-4">Live Rides</h2>
-            <div className="h-64 rounded-xl overflow-hidden mb-4">
-              <RideMap
-                center={{ lat: -14.4087, lng: 28.2849 }}
-                zoom={13}
-                className="h-full"
-              />
-            </div>
-            <div className="space-y-3">
-              {activeRides.slice(0, 5).map((ride) => (
-                <div key={ride.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gold/10 flex items-center justify-center">
-                      <Car className="w-4 h-4 text-gold" />
+        {/* Map and Notifications Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Active Rides Map */}
+          {activeRides.length > 0 ? (
+            <GlassCard className="p-4" hover={false}>
+              <h2 className="font-heading font-semibold text-white mb-4">Live Rides</h2>
+              <div className="h-64 rounded-xl overflow-hidden mb-4">
+                <RideMap
+                  center={{ lat: -14.4087, lng: 28.2849 }}
+                  zoom={13}
+                  className="h-full"
+                />
+              </div>
+              <div className="space-y-3">
+                {activeRides.slice(0, 5).map((ride) => (
+                  <div key={ride.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-gold/10 flex items-center justify-center">
+                        <Car className="w-4 h-4 text-gold" />
+                      </div>
+                      <div>
+                        <p className="text-white text-sm font-medium">
+                          {ride.student?.name} → {ride.driver?.user?.name || 'Finding driver'}
+                        </p>
+                        <p className="text-white/40 text-xs">{ride.pickup_location?.address}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-white text-sm font-medium">
-                        {ride.student?.name} → {ride.driver?.user?.name || 'Finding driver'}
-                      </p>
-                      <p className="text-white/40 text-xs">{ride.pickup_location?.address}</p>
-                    </div>
+                    <StatusBadge status={ride.status} />
                   </div>
-                  <StatusBadge status={ride.status} />
-                </div>
-              ))}
-            </div>
-          </GlassCard>
-        )}
+                ))}
+              </div>
+            </GlassCard>
+          ) : (
+            <GlassCard className="p-4" hover={false}>
+              <h2 className="font-heading font-semibold text-white mb-4">Live Rides</h2>
+              <div className="h-64 rounded-xl border border-white/10 border-dashed flex items-center justify-center">
+                <p className="text-white/40 text-sm">No active rides at the moment</p>
+              </div>
+            </GlassCard>
+          )}
+
+          {/* Push Notifications Broadcast Panel */}
+          <AdminPushNotifications />
+        </div>
       </div>
     </Layout>
   );

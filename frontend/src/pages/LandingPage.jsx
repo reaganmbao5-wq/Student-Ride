@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Car, MapPin, Shield, Star, Smartphone, Clock, ChevronRight, Users, Wallet } from 'lucide-react';
 import { GlassCard, GoldButton } from '../components/common/GlassComponents';
+import { MultiPlatformInstallSection } from '../components/common/MultiPlatformInstallSection';
 import { useAuth } from '../context/AuthContext';
 
 const LandingPage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isDriver, isAdmin } = useAuth();
-  const [showInstallBanner, setShowInstallBanner] = useState(true);
 
   const handleGetStarted = () => {
     if (isAuthenticated) {
@@ -55,22 +55,6 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen bg-[#0B0B0B] overflow-hidden">
-      {/* Install PWA Banner */}
-      {showInstallBanner && (
-        <div className="bg-gold/10 border-b border-gold/20 py-2 px-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Smartphone className="w-4 h-4 text-gold" />
-            <span className="text-sm text-white/80">Install MuluRides for the best experience</span>
-          </div>
-          <button 
-            onClick={() => setShowInstallBanner(false)}
-            className="text-white/40 hover:text-white"
-          >
-            ×
-          </button>
-        </div>
-      )}
-
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center px-4 py-20">
         {/* Background Effects */}
@@ -95,13 +79,13 @@ const LandingPage = () => {
           </h1>
 
           <p className="text-lg sm:text-xl text-white/60 max-w-2xl mx-auto mb-10 font-body">
-            The premium ride-hailing platform designed exclusively for Mulungushi University students. 
+            The premium ride-hailing platform designed exclusively for Mulungushi University students.
             Safe, affordable, and always available.
           </p>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-            <GoldButton 
+            <GoldButton
               onClick={handleGetStarted}
               className="w-full sm:w-auto text-lg"
               data-testid="get-started-btn"
@@ -109,7 +93,7 @@ const LandingPage = () => {
               {isAuthenticated ? 'Go to Dashboard' : 'Get Started'}
               <ChevronRight className="w-5 h-5 ml-2 inline" />
             </GoldButton>
-            <GoldButton 
+            <GoldButton
               variant="secondary"
               onClick={() => navigate('/auth?mode=driver')}
               className="w-full sm:w-auto"
@@ -130,6 +114,11 @@ const LandingPage = () => {
                 <div className="text-xs sm:text-sm text-white/50">{stat.label}</div>
               </GlassCard>
             ))}
+          </div>
+
+          {/* Permanent PWA Install Section */}
+          <div className="max-w-3xl mx-auto mt-12 text-left">
+            <MultiPlatformInstallSection />
           </div>
         </div>
 
@@ -216,7 +205,7 @@ const LandingPage = () => {
                 Want to Earn as a Driver?
               </h2>
               <p className="text-white/50 mb-8 max-w-xl mx-auto">
-                Join our growing network of drivers. Set your own schedule, earn great commissions, 
+                Join our growing network of drivers. Set your own schedule, earn great commissions,
                 and become part of the MuluRides family.
               </p>
               <GoldButton onClick={() => navigate('/auth?mode=driver')} data-testid="driver-signup-cta">

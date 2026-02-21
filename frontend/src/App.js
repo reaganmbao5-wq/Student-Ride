@@ -4,6 +4,9 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { WebSocketProvider } from "./context/WebSocketContext";
 import { Toaster } from "./components/ui/sonner";
+import PWAInstallPrompt from "./components/common/PWAInstallPrompt";
+import PushNotificationManager from "./components/common/PushNotificationManager";
+import SWUpdateManager from "./components/common/SWUpdateManager";
 
 // Pages
 import LandingPage from "./pages/LandingPage";
@@ -255,6 +258,9 @@ function App() {
       <BrowserRouter>
         <AuthProvider>
           <AppRoutes />
+          <PWAInstallPrompt />
+          <PushNotificationManager />
+          <SWUpdateManager />
           <Toaster
             position="top-center"
             toastOptions={{
