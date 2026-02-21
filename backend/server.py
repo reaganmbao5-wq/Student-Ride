@@ -48,7 +48,7 @@ app = FastAPI(title="Mulungushi Rides API")
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex='https?://.*',
+    allow_origins=["*"], # Allow Render and Netlify cross-origin
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
