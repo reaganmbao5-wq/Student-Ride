@@ -93,14 +93,14 @@ export const AdminDestinations = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Create Section */}
                 <GlassCard className="p-6">
-                    <h2 className="text-xl font-heading font-semibold text-white mb-4 flex items-center gap-2">
+                    <h2 className="text-xl font-heading font-semibold text-foreground mb-4 flex items-center gap-2">
                         <Plus className="w-5 h-5 text-gold" />
                         Add New Destination
                     </h2>
 
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-sm text-white/60 mb-2">Destination Name</label>
+                            <label className="block text-sm text-muted-foreground mb-2">Destination Name</label>
                             <GlassInput
                                 placeholder="e.g. South Gate"
                                 value={newDestName}
@@ -146,14 +146,14 @@ export const AdminDestinations = () => {
 
                 {/* List Section */}
                 <GlassCard className="p-6">
-                    <h2 className="text-xl font-heading font-semibold text-white mb-4 flex items-center gap-2">
+                    <h2 className="text-xl font-heading font-semibold text-foreground mb-4 flex items-center gap-2">
                         <MapPin className="w-5 h-5 text-gold" />
                         Active Destinations
                     </h2>
 
                     <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
                         {destinations.length === 0 ? (
-                            <p className="text-white/40 text-center py-8">No active destinations found.</p>
+                            <p className="text-muted-foreground text-center py-8">No active destinations found.</p>
                         ) : (
                             destinations.map(dest => (
                                 <div key={dest.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
@@ -162,15 +162,15 @@ export const AdminDestinations = () => {
                                             <MapPin className="w-4 h-4 text-gold" />
                                         </div>
                                         <div>
-                                            <p className="font-semibold text-white">{dest.name}</p>
-                                            <p className="text-xs text-white/40">
+                                            <p className="font-semibold text-foreground">{dest.name}</p>
+                                            <p className="text-xs text-muted-foreground">
                                                 {dest.latitude.toFixed(4)}, {dest.longitude.toFixed(4)}
                                             </p>
                                         </div>
                                     </div>
                                     <button
                                         onClick={() => handleDeactivate(dest.id)}
-                                        className="p-2 text-white/40 hover:text-red-400 hover:bg-white/5 rounded-lg transition-colors"
+                                        className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                                         title="Deactivate"
                                     >
                                         <Trash2 className="w-4 h-4" />

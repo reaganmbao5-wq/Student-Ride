@@ -207,8 +207,8 @@ export const LocationPickerMap = ({
         ))}
       </MapContainer>
 
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 pointer-events-none z-[400]">
-        <p className="text-xs text-white">Tap anywhere to select location</p>
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-card/80 backdrop-blur-md px-4 py-2 rounded-full border border-border shadow-lg pointer-events-none z-[400]">
+        <p className="text-xs text-foreground">Tap anywhere to select location</p>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Clock, Car, Star, ChevronRight, Navigation } from 'lucide-react';
+import { MapPin, Clock, Car, Star, ChevronRight, Navigation, AlertCircle } from 'lucide-react';
 import { GlassCard, GoldButton, StatusBadge, LoadingSpinner, EmptyState } from '../components/common/GlassComponents';
 import { RatingModal } from '../components/common/RatingModal';
 import { RideMap } from '../components/map/RideMap';
@@ -89,6 +89,27 @@ const StudentDashboard = () => {
     }
   };
 
+  const handleSOS = async () => {
+    // 1. Redirect to phone dialer immediately for user safety
+    window.location.href = 'tel:+260976954518';
+
+    // 2. Secretly alert all admins via backend
+    if (!activeRide) return;
+    try {
+      await api.post('/emergency/sos', {
+        ride_id: activeRide.id,
+        location: userLocation,
+        message: "User triggered SOS from phone"
+      });
+      toast.error('Emergency alert sent to admins.', {
+        description: 'Help is on the way.',
+        duration: 10000
+      });
+    } catch (error) {
+      console.error('Failed to send SOS alert:', error);
+    }
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -103,18 +124,18 @@ const StudentDashboard = () => {
     <Layout>
       <div className="p-4 md:p-8 space-y-6" data-testid="student-dashboard">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="font-heading text-2xl md:text-3xl font-bold text-white mb-2">
+        <div className="mb-8 font-heading">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
             Hello, {user?.name?.split(' ')[0]} 👋
           </h1>
-          <p className="text-white/50">Where would you like to go today?</p>
+          <p className="text-muted-foreground">Where would you like to go today?</p>
         </div>
 
         {/* Active Ride or Request CTA */}
         {activeRide ? (
           <GlassCard className="overflow-hidden" data-testid="active-ride-card">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-heading font-semibold text-white text-lg">Active Ride</h2>
+              <h2 className="font-heading font-semibold text-foreground text-lg">Active Ride</h2>
               <StatusBadge status={activeRide.status} />
             </div>
 
@@ -137,15 +158,15 @@ const StudentDashboard = () => {
               <div className="flex items-start gap-3">
                 <div className="w-3 h-3 rounded-full bg-gold mt-1.5" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-white/40">Pickup</p>
-                  <p className="text-white truncate">{activeRide.pickup_location?.address || 'Selected location'}</p>
+                  <p className="text-xs text-muted-foreground">Pickup</p>
+                  <p className="text-foreground truncate">{activeRide.pickup_location?.address || 'Selected location'}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-3 h-3 rounded-full bg-emerald-500 mt-1.5" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-white/40">Dropoff</p>
-                  <p className="text-white truncate">{activeRide.dropoff_location?.address || 'Selected location'}</p>
+                  <p className="text-xs text-muted-foreground">Dropoff</p>
+                  <p className="text-foreground truncate">{activeRide.dropoff_location?.address || 'Selected location'}</p>
                 </div>
               </div>
             </div>
@@ -158,8 +179,8 @@ const StudentDashboard = () => {
                     <Car className="w-6 h-6 text-gold" />
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium text-white">{activeRide.driver.user?.name}</p>
-                    <div className="flex items-center gap-2 text-sm text-white/50">
+                    <p className="font-medium text-foreground">{activeRide.driver.user?.name}</p>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <span className="capitalize">{activeRide.driver.vehicle_color} {activeRide.driver.vehicle_model}</span>
                       <span>•</span>
                       <span>{activeRide.driver.plate_number}</span>
@@ -167,7 +188,7 @@ const StudentDashboard = () => {
                   </div>
                   <div className="flex items-center gap-1">
                     <Star className="w-4 h-4 text-gold fill-gold" />
-                    <span className="text-white font-medium">{activeRide.driver.rating?.toFixed(1)}</span>
+                    <span className="text-foreground font-medium">{activeRide.driver.rating?.toFixed(1)}</span>
                   </div>
                 </div>
 
@@ -198,15 +219,41 @@ const StudentDashboard = () => {
             {/* Fare & Actions */}
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-white/40">Estimated Fare</p>
+                <p className="text-xs text-muted-foreground">Estimated Fare</p>
                 <p className="text-xl font-heading font-bold text-gold">K{activeRide.fare?.toFixed(2)}</p>
               </div>
-              {activeRide.status === 'requested' && (
-                <GoldButton variant="ghost" size="sm" onClick={handleCancelRide} data-testid="cancel-ride-btn">
+              {['requested', 'accepted', 'driver_arrived'].includes(activeRide.status) && (
+                <GoldButton variant="ghost" size="sm" onClick={handleCancelRide} data-testid="cancel-ride-btn" className="text-red-500 hover:text-red-600 hover:bg-red-500/10 transition-colors">
                   Cancel Ride
                 </GoldButton>
               )}
             </div>
+
+            {/* Emergency SOS Button */}
+            {['accepted', 'driver_arrived', 'ongoing'].includes(activeRide.status) && (
+              <div className="mt-4">
+                <button
+                  onClick={handleSOS}
+                  className="w-full group relative overflow-hidden rounded-2xl bg-red-600/10 border border-red-500/20 p-4 transition-all hover:bg-red-600/20 active:scale-95"
+                >
+                  <div className="absolute inset-0 bg-red-600/5 animate-pulse" />
+                  <div className="relative z-10 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center shadow-lg shadow-red-600/40">
+                        <AlertCircle className="w-6 h-6 text-foreground animate-bounce" />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-red-500 font-bold text-sm uppercase tracking-wider">Emergency SOS</p>
+                        <p className="text-muted-foreground text-[10px]">Alerts admins & calls 911 equivalent</p>
+                      </div>
+                    </div>
+                    <div className="px-3 py-1 rounded-full bg-red-600/20 text-red-500 text-[10px] font-bold border border-red-500/30 group-hover:bg-red-500 group-hover:text-white transition-colors">
+                      TRIGGER NOW
+                    </div>
+                  </div>
+                </button>
+              </div>
+            )}
           </GlassCard>
         ) : (
           <GlassCard
@@ -219,10 +266,10 @@ const StudentDashboard = () => {
                 <Navigation className="w-7 h-7 text-gold" />
               </div>
               <div className="flex-1">
-                <h3 className="font-heading font-semibold text-white text-lg mb-1">Request a Ride</h3>
-                <p className="text-white/50 text-sm">Tap to set your pickup and destination</p>
+                <h3 className="font-heading font-semibold text-foreground text-lg mb-1">Request a Ride</h3>
+                <p className="text-muted-foreground text-sm">Tap to set your pickup and destination</p>
               </div>
-              <ChevronRight className="w-6 h-6 text-white/30 group-hover:text-gold transition-colors" />
+              <ChevronRight className="w-6 h-6 text-muted-foreground group-hover:text-gold transition-colors" />
             </div>
           </GlassCard>
         )}
@@ -235,8 +282,8 @@ const StudentDashboard = () => {
                 <Car className="w-5 h-5 text-blue-400" />
               </div>
               <div>
-                <p className="text-2xl font-heading font-bold text-white">{recentRides.length}</p>
-                <p className="text-xs text-white/40">Total Rides</p>
+                <p className="text-2xl font-heading font-bold text-foreground">{recentRides.length}</p>
+                <p className="text-xs text-muted-foreground">Total Rides</p>
               </div>
             </div>
           </GlassCard>
@@ -246,8 +293,8 @@ const StudentDashboard = () => {
                 <Star className="w-5 h-5 text-gold" />
               </div>
               <div>
-                <p className="text-2xl font-heading font-bold text-white">5.0</p>
-                <p className="text-xs text-white/40">Your Rating</p>
+                <p className="text-2xl font-heading font-bold text-foreground">5.0</p>
+                <p className="text-xs text-muted-foreground">Your Rating</p>
               </div>
             </div>
           </GlassCard>
@@ -256,7 +303,7 @@ const StudentDashboard = () => {
         {/* Recent Rides */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-heading font-semibold text-white text-lg">Recent Rides</h2>
+            <h2 className="font-heading font-semibold text-foreground text-lg">Recent Rides</h2>
             <button
               onClick={() => navigate('/history')}
               className="text-gold text-sm hover:underline"
@@ -276,27 +323,27 @@ const StudentDashboard = () => {
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-white/40" />
-                      <span className="text-sm text-white/60">
+                      <Clock className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
                         {new Date(ride.created_at).toLocaleDateString()}
                       </span>
                     </div>
                     <StatusBadge status={ride.status} />
                   </div>
-                  <div className="flex items-center gap-2 text-white mb-1">
+                  <div className="flex items-center gap-2 text-foreground mb-1">
                     <MapPin className="w-4 h-4 text-gold shrink-0" />
                     <span className="truncate text-sm">{ride.pickup_location?.address || 'Pickup location'}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-white/60">
+                  <div className="flex items-center gap-2 text-muted-foreground">
                     <MapPin className="w-4 h-4 text-emerald-500 shrink-0" />
                     <span className="truncate text-sm">{ride.dropoff_location?.address || 'Dropoff location'}</span>
                   </div>
-                  <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between">
+                  <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
                     <span className="text-gold font-semibold">K{ride.fare?.toFixed(2)}</span>
                     {ride.rating && (
                       <div className="flex items-center gap-1">
                         <Star className="w-4 h-4 text-gold fill-gold" />
-                        <span className="text-white/60 text-sm">{ride.rating}</span>
+                        <span className="text-muted-foreground text-sm">{ride.rating}</span>
                       </div>
                     )}
                   </div>

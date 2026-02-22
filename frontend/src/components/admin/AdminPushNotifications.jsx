@@ -41,18 +41,18 @@ export const AdminPushNotifications = () => {
                     <BellRing className="w-5 h-5 text-purple-400" />
                 </div>
                 <div>
-                    <h2 className="font-heading font-semibold text-white">Push Notifications</h2>
-                    <p className="text-white/50 text-xs mt-1">Broadcast messages to users</p>
+                    <h2 className="font-heading font-semibold text-foreground">Push Notifications</h2>
+                    <p className="text-muted-foreground text-xs mt-1">Broadcast messages to users</p>
                 </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                    <label className="block text-xs text-white/50 mb-1">Target Audience</label>
+                    <label className="block text-xs text-muted-foreground mb-1">Target Audience</label>
                     <select
                         value={formData.target_role}
                         onChange={e => setFormData({ ...formData, target_role: e.target.value })}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-gold transition-colors appearance-none"
+                        className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-gold transition-colors appearance-none"
                     >
                         <option value="all">All Users (Students & Drivers)</option>
                         <option value="student">Students Only</option>
@@ -61,35 +61,35 @@ export const AdminPushNotifications = () => {
                 </div>
 
                 <div>
-                    <label className="block text-xs text-white/50 mb-1">Title</label>
+                    <label className="block text-xs text-muted-foreground mb-1">Title</label>
                     <input
                         type="text"
                         placeholder="e.g. System Update"
                         value={formData.title}
                         onChange={e => setFormData({ ...formData, title: e.target.value })}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-gold transition-colors"
+                        className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-gold transition-colors"
                     />
                 </div>
 
                 <div>
-                    <label className="block text-xs text-white/50 mb-1">Message Body</label>
+                    <label className="block text-xs text-muted-foreground mb-1">Message Body</label>
                     <textarea
                         placeholder="Message content..."
                         rows={3}
                         value={formData.message}
                         onChange={e => setFormData({ ...formData, message: e.target.value })}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-gold transition-colors resize-none"
+                        className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-gold transition-colors resize-none"
                     />
                 </div>
 
                 <div>
-                    <label className="block text-xs text-white/50 mb-1">Click URL (Options)</label>
+                    <label className="block text-xs text-muted-foreground mb-1">Click URL (Options)</label>
                     <input
                         type="text"
                         placeholder="e.g. /profile or https://..."
                         value={formData.url}
                         onChange={e => setFormData({ ...formData, url: e.target.value })}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-gold transition-colors"
+                        className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-gold transition-colors"
                     />
                 </div>
 

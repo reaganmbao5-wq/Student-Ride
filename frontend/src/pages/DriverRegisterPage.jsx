@@ -50,7 +50,7 @@ const DriverRegisterPage = () => {
       {/* Back Button */}
       <button
         onClick={() => navigate('/dashboard')}
-        className="absolute top-6 left-6 flex items-center gap-2 text-white/60 hover:text-white transition-colors z-20"
+        className="absolute top-6 left-6 flex items-center gap-2 text-muted-foreground/60 hover:text-muted-foreground transition-colors z-20"
         data-testid="back-btn"
       >
         <ArrowLeft className="w-5 h-5" />
@@ -67,10 +67,10 @@ const DriverRegisterPage = () => {
 
         <GlassCard className="p-8" data-testid="driver-register-card">
           <div className="text-center mb-8">
-            <h1 className="font-heading text-2xl font-bold text-white mb-2">
+            <h1 className="font-heading text-2xl font-bold text-foreground mb-2">
               Complete Driver Setup
             </h1>
-            <p className="text-white/50 text-sm">
+            <p className="text-muted-foreground/50 text-sm">
               Add your vehicle details to start earning
             </p>
           </div>
@@ -78,7 +78,7 @@ const DriverRegisterPage = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Vehicle Type */}
             <div>
-              <label className="block text-sm text-white/60 mb-2">Vehicle Type</label>
+              <label className="block text-sm text-muted-foreground/60 mb-2">Vehicle Type</label>
               <div className="grid grid-cols-3 gap-2">
                 {['car', 'motorcycle', 'bicycle'].map((type) => (
                   <button
@@ -86,8 +86,8 @@ const DriverRegisterPage = () => {
                     type="button"
                     onClick={() => setFormData({ ...formData, vehicle_type: type })}
                     className={`p-3 rounded-xl text-sm capitalize transition-all ${formData.vehicle_type === type
-                        ? 'bg-gold text-black font-medium'
-                        : 'bg-white/5 text-white/60 hover:bg-white/10'
+                      ? 'bg-gold text-black font-medium'
+                      : 'bg-muted text-muted-foreground/60 hover:bg-muted/10'
                       }`}
                     data-testid={`vehicle-type-${type}`}
                   >
@@ -99,7 +99,7 @@ const DriverRegisterPage = () => {
 
             {/* Vehicle Model */}
             <div>
-              <label className="block text-sm text-white/60 mb-2">Vehicle Model</label>
+              <label className="block text-sm text-muted-foreground/60 mb-2">Vehicle Model</label>
               <GlassInput
                 type="text"
                 name="vehicle_model"
@@ -113,7 +113,7 @@ const DriverRegisterPage = () => {
 
             {/* Vehicle Color */}
             <div>
-              <label className="block text-sm text-white/60 mb-2">Vehicle Color</label>
+              <label className="block text-sm text-muted-foreground/60 mb-2">Vehicle Color</label>
               <GlassInput
                 type="text"
                 name="vehicle_color"
@@ -127,7 +127,7 @@ const DriverRegisterPage = () => {
 
             {/* Plate Number */}
             <div>
-              <label className="block text-sm text-white/60 mb-2">Plate Number</label>
+              <label className="block text-sm text-muted-foreground/60 mb-2">Plate Number</label>
               <GlassInput
                 type="text"
                 name="plate_number"
@@ -156,7 +156,7 @@ const DriverRegisterPage = () => {
             </div>
           </form>
 
-          <p className="text-center text-white/40 text-xs mt-6">
+          <p className="text-center text-muted-foreground/40 text-xs mt-6">
             Your account will be reviewed by our team before you can start accepting rides.
           </p>
         </GlassCard>

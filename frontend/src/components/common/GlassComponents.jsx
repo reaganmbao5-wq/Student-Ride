@@ -6,7 +6,7 @@ export const GlassCard = React.forwardRef(({ className, children, hover = true, 
     <div
       ref={ref}
       className={cn(
-        "bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-glass transition-all duration-300",
+        "bg-white/5 dark:bg-white/5 bg-black/5 backdrop-blur-xl border border-border rounded-3xl p-6 shadow-glass transition-all duration-300",
         hover && "hover:border-gold/30",
         className
       )}
@@ -24,7 +24,7 @@ export const GlassInput = React.forwardRef(({ className, ...props }, ref) => {
     <input
       ref={ref}
       className={cn(
-        "w-full bg-black/30 border border-white/10 rounded-xl h-12 px-4 text-white placeholder:text-white/30",
+        "w-full bg-black/30 dark:bg-black/30 bg-white/50 border border-border rounded-xl h-12 px-4 text-foreground placeholder:text-muted-foreground",
         "focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none transition-all",
         "backdrop-blur-md",
         className
@@ -39,7 +39,7 @@ GlassInput.displayName = "GlassInput";
 export const GoldButton = React.forwardRef(({ className, children, variant = "primary", size = "default", ...props }, ref) => {
   const variants = {
     primary: "bg-gold text-black hover:bg-gold-dark shadow-gold",
-    secondary: "bg-white/10 text-white hover:bg-white/20 border border-white/5 backdrop-blur-md",
+    secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border backdrop-blur-md",
     ghost: "text-gold hover:bg-gold/10"
   };
 
@@ -147,13 +147,13 @@ export const EmptyState = ({ icon: Icon, title, description, action }) => {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
       {Icon && (
-        <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
-          <Icon className="w-8 h-8 text-white/40" />
+        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+          <Icon className="w-8 h-8 text-muted-foreground" />
         </div>
       )}
-      <h3 className="text-lg font-heading font-medium text-white mb-2">{title}</h3>
+      <h3 className="text-lg font-heading font-medium text-foreground mb-2">{title}</h3>
       {description && (
-        <p className="text-sm text-white/60 max-w-sm mb-4">{description}</p>
+        <p className="text-sm text-muted-foreground max-w-sm mb-4">{description}</p>
       )}
       {action}
     </div>

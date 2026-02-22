@@ -126,11 +126,11 @@ export const MultiPlatformInstallSection = () => {
     const { logo, label, enabled } = getButtonConfig();
 
     return (
-        <div className="p-6 bg-white/5 border border-white/10 rounded-2xl mb-6 backdrop-blur-sm">
+        <div className="p-6 bg-muted border border-border rounded-2xl mb-6 backdrop-blur-sm">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                    <h3 className="font-heading font-semibold text-white text-lg">Download Our App</h3>
-                    <p className="text-white/60 text-sm mt-1 max-w-sm">
+                    <h3 className="font-heading font-semibold text-foreground text-lg">Download Our App</h3>
+                    <p className="text-muted-foreground text-sm mt-1 max-w-sm">
                         Get the full MuluRides experience on your home screen for faster booking, real-time tracking, and instant alerts.
                     </p>
                 </div>
@@ -141,7 +141,7 @@ export const MultiPlatformInstallSection = () => {
                     className={`shrink-0 inline-flex items-center gap-3 px-6 py-3 rounded-xl font-medium transition-all duration-300
             ${(enabled || os === 'iOS')
                             ? 'bg-transparent border-2 border-gold text-gold hover:bg-gold hover:text-black shadow-lg hover:shadow-gold/20'
-                            : 'bg-white/5 border-2 border-transparent text-white/30 cursor-not-allowed'
+                            : 'bg-muted border-2 border-transparent text-muted-foreground/30 cursor-not-allowed'
                         }`}
                 >
                     {logo}
@@ -158,31 +158,31 @@ export const MultiPlatformInstallSection = () => {
 
             {/* iOS Manual Installation Instructions Modal */}
             <Dialog open={showIOSModal} onOpenChange={setShowIOSModal}>
-                <DialogContent className="bg-[#121212] border-white/10 sm:max-w-md">
+                <DialogContent className="bg-card border-border sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle className="text-white font-heading text-xl">Install on iOS</DialogTitle>
-                        <DialogDescription className="text-white/60">
+                        <DialogTitle className="text-foreground font-heading text-xl">Install on iOS</DialogTitle>
+                        <DialogDescription className="text-muted-foreground">
                             Install MuluRides directly to your home screen across iPhone or iPad.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-6 py-4">
-                        <div className="flex items-start gap-4 p-4 rounded-xl bg-white/5">
+                        <div className="flex items-start gap-4 p-4 rounded-xl bg-muted">
                             <div className="w-10 h-10 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
                                 <Share className="w-5 h-5" />
                             </div>
                             <div className="pt-2">
-                                <p className="text-white text-sm font-medium">1. Tap the Share button</p>
-                                <p className="text-white/50 text-xs mt-1">Found at the bottom or top of your Safari browser.</p>
+                                <p className="text-foreground text-sm font-medium">1. Tap the Share button</p>
+                                <p className="text-muted-foreground text-xs mt-1">Found at the bottom or top of your Safari browser.</p>
                             </div>
                         </div>
 
-                        <div className="flex items-start gap-4 p-4 rounded-xl bg-white/5">
-                            <div className="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center shrink-0">
+                        <div className="flex items-start gap-4 p-4 rounded-xl bg-muted">
+                            <div className="w-10 h-10 rounded-full bg-muted border border-border text-foreground flex items-center justify-center shrink-0">
                                 <PlusSquare className="w-5 h-5" />
                             </div>
                             <div className="pt-2">
-                                <p className="text-white text-sm font-medium">2. Tap "Add to Home Screen"</p>
-                                <p className="text-white/50 text-xs mt-1">Scroll down the share menu list until you see this option.</p>
+                                <p className="text-foreground text-sm font-medium">2. Tap "Add to Home Screen"</p>
+                                <p className="text-muted-foreground text-xs mt-1">Scroll down the share menu list until you see this option.</p>
                             </div>
                         </div>
                     </div>
@@ -199,31 +199,31 @@ export const MultiPlatformInstallSection = () => {
 
             {/* Android Manual Installation Instructions Modal */}
             <Dialog open={showAndroidModal} onOpenChange={setShowAndroidModal}>
-                <DialogContent className="bg-[#121212] border-white/10 sm:max-w-md">
+                <DialogContent className="bg-card border-border sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle className="text-white font-heading text-xl">Install on Android</DialogTitle>
-                        <DialogDescription className="text-white/60">
+                        <DialogTitle className="text-foreground font-heading text-xl">Install on Android</DialogTitle>
+                        <DialogDescription className="text-muted-foreground">
                             Automatic installation is currently blocked by your browser. You can still install MuluRides manually.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-6 py-4">
-                        <div className="flex items-start gap-4 p-4 rounded-xl bg-white/5">
+                        <div className="flex items-start gap-4 p-4 rounded-xl bg-muted">
                             <div className="w-10 h-10 rounded-full bg-green-500/10 text-green-400 flex items-center justify-center shrink-0">
                                 <span className="text-xl font-bold align-middle mb-2">⋮</span>
                             </div>
                             <div className="pt-2">
-                                <p className="text-white text-sm font-medium">1. Tap the 3-dot menu</p>
-                                <p className="text-white/50 text-xs mt-1">Found in the top-right corner of your Chrome browser.</p>
+                                <p className="text-foreground text-sm font-medium">1. Tap the 3-dot menu</p>
+                                <p className="text-muted-foreground text-xs mt-1">Found in the top-right corner of your Chrome browser.</p>
                             </div>
                         </div>
 
-                        <div className="flex items-start gap-4 p-4 rounded-xl bg-white/5">
-                            <div className="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center shrink-0">
+                        <div className="flex items-start gap-4 p-4 rounded-xl bg-muted">
+                            <div className="w-10 h-10 rounded-full bg-muted border border-border text-foreground flex items-center justify-center shrink-0">
                                 <Smartphone className="w-5 h-5" />
                             </div>
                             <div className="pt-2">
-                                <p className="text-white text-sm font-medium">2. Tap "Install App"</p>
-                                <p className="text-white/50 text-xs mt-1">Or "Add to Home Screen" depending on your device.</p>
+                                <p className="text-foreground text-sm font-medium">2. Tap "Install App"</p>
+                                <p className="text-muted-foreground text-xs mt-1">Or "Add to Home Screen" depending on your device.</p>
                             </div>
                         </div>
                     </div>

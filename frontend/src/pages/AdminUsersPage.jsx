@@ -115,7 +115,7 @@ const AdminUsersPage = () => {
       case 'driver':
         return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
       default:
-        return 'bg-white/10 text-white/60 border-white/10';
+        return 'bg-muted text-muted-foreground border-border';
     }
   };
 
@@ -135,10 +135,10 @@ const AdminUsersPage = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="font-heading text-2xl md:text-3xl font-bold text-white mb-2">
+            <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-2">
               User Management
             </h1>
-            <p className="text-white/50">{users.length} total users</p>
+            <p className="text-muted-foreground">{users.length} total users</p>
           </div>
 
           {isSuperAdmin && (
@@ -149,9 +149,9 @@ const AdminUsersPage = () => {
                   Add Admin
                 </GoldButton>
               </DialogTrigger>
-              <DialogContent className="bg-[#121212] border-white/10">
+              <DialogContent className="bg-card border-border">
                 <DialogHeader>
-                  <DialogTitle className="text-white font-heading">Create New Admin</DialogTitle>
+                  <DialogTitle className="text-foreground font-heading">Create New Admin</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleAddAdmin} className="space-y-4 mt-4">
                   <GlassInput
@@ -197,7 +197,7 @@ const AdminUsersPage = () => {
 
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <GlassInput
             type="text"
             placeholder="Search users..."
@@ -215,24 +215,24 @@ const AdminUsersPage = () => {
               <GlassCard key={user.id} className="p-4" data-testid={`user-card-${user.id}`}>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-4 w-full sm:w-auto">
-                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center shrink-0">
                       {user.role === 'super_admin' ? (
                         <Shield className="w-6 h-6 text-gold" />
                       ) : (
-                        <span className="text-white font-heading font-bold text-lg">
+                        <span className="text-foreground font-heading font-bold text-lg">
                           {user.name.charAt(0)}
                         </span>
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <p className="font-medium text-white truncate">{user.name}</p>
+                        <p className="font-medium text-foreground truncate">{user.name}</p>
                         {!user.is_active && (
                           <span className="text-xs text-red-400 shrink-0 bg-red-500/10 px-2 py-0.5 rounded-full">Suspended</span>
                         )}
                       </div>
-                      <p className="text-sm text-white/50 truncate">{user.email}</p>
-                      <p className="text-xs text-white/30">{user.phone}</p>
+                      <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                      <p className="text-xs text-muted-foreground">{user.phone}</p>
                     </div>
                   </div>
 
@@ -299,9 +299,9 @@ const AdminUsersPage = () => {
 
         {/* Delete Confirmation Dialog */}
         <Dialog open={!!deleteConfirmation} onOpenChange={(open) => !open && setDeleteConfirmation(null)}>
-          <DialogContent className="bg-[#121212] border-white/10 sm:max-w-md">
+          <DialogContent className="bg-card border-border sm:max-w-md">
             <DialogHeader>
-              <DialogTitle className="text-white font-heading text-xl">Confirm Deletion</DialogTitle>
+              <DialogTitle className="text-foreground font-heading text-xl">Confirm Deletion</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-start gap-3">
@@ -309,9 +309,9 @@ const AdminUsersPage = () => {
                   <Trash2 className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="text-white font-medium mb-1">Permanently Delete User?</h4>
-                  <p className="text-white/60 text-sm">
-                    Are you sure you want to delete <span className="text-white font-bold">{deleteConfirmation?.name}</span>?
+                  <h4 className="text-foreground font-medium mb-1">Permanently Delete User?</h4>
+                  <p className="text-muted-foreground text-sm">
+                    Are you sure you want to delete <span className="text-foreground font-bold">{deleteConfirmation?.name}</span>?
                     This action cannot be undone and will remove all associated data (rides, history, profile).
                   </p>
                 </div>
@@ -320,7 +320,7 @@ const AdminUsersPage = () => {
             <div className="flex items-center justify-end gap-3 mt-2">
               <button
                 onClick={() => setDeleteConfirmation(null)}
-                className="px-4 py-2 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors text-sm font-medium"
+                className="px-4 py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors text-sm font-medium"
               >
                 Cancel
               </button>

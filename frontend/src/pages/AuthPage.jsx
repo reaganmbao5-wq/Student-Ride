@@ -92,7 +92,7 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0B0B] flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden transition-colors duration-300">
       {/* Background Effects */}
       <div className="absolute inset-0">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-gold/5 rounded-full blur-[150px]" />
@@ -105,7 +105,7 @@ const AuthPage = () => {
       {/* Back Button */}
       <button
         onClick={() => navigate('/')}
-        className="absolute top-6 left-6 flex items-center gap-2 text-white/60 hover:text-white transition-colors z-20"
+        className="absolute top-6 left-6 flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors z-20"
         data-testid="back-btn"
       >
         <ArrowLeft className="w-5 h-5" />
@@ -123,10 +123,10 @@ const AuthPage = () => {
         <GlassCard className="p-8" data-testid="auth-card">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="font-heading text-2xl font-bold text-white mb-2">
+            <h1 className="font-heading text-2xl font-bold text-foreground mb-2">
               {mode === 'login' ? 'Welcome Back' : isDriver ? 'Become a Driver' : 'Create Account'}
             </h1>
-            <p className="text-white/50 text-sm">
+            <p className="text-muted-foreground text-sm">
               {mode === 'login'
                 ? 'Sign in to continue your journey'
                 : isDriver
@@ -136,13 +136,13 @@ const AuthPage = () => {
           </div>
 
           {/* Mode Toggle */}
-          <div className="flex p-1 bg-white/5 rounded-xl mb-8">
+          <div className="flex p-1 bg-muted rounded-xl mb-8">
             <button
               type="button"
               onClick={() => setMode('login')}
               className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${mode === 'login'
-                ? 'bg-gold text-black'
-                : 'text-white/60 hover:text-white'
+                ? 'bg-gold text-black shadow-lg shadow-gold/20'
+                : 'text-muted-foreground hover:text-foreground'
                 }`}
               data-testid="login-tab"
             >
@@ -152,8 +152,8 @@ const AuthPage = () => {
               type="button"
               onClick={() => setMode('register')}
               className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${mode === 'register'
-                ? 'bg-gold text-black'
-                : 'text-white/60 hover:text-white'
+                ? 'bg-gold text-black shadow-lg shadow-gold/20'
+                : 'text-muted-foreground hover:text-foreground'
                 }`}
               data-testid="register-tab"
             >
@@ -166,15 +166,15 @@ const AuthPage = () => {
             {mode === 'register' && (
               <>
                 {/* Driver Toggle */}
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl mb-4">
+                <div className="flex items-center justify-between p-4 bg-muted rounded-xl mb-4">
                   <div className="flex items-center gap-3">
                     <Car className="w-5 h-5 text-gold" />
-                    <span className="text-white text-sm">Register as Driver</span>
+                    <span className="text-foreground text-sm">Register as Driver</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setIsDriver(!isDriver)}
-                    className={`w-12 h-6 rounded-full transition-colors relative ${isDriver ? 'bg-gold' : 'bg-white/20'
+                    className={`w-12 h-6 rounded-full transition-colors relative ${isDriver ? 'bg-gold' : 'bg-muted-foreground/30'
                       }`}
                     data-testid="driver-toggle"
                   >
@@ -185,7 +185,7 @@ const AuthPage = () => {
 
                 {/* Name */}
                 <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <GlassInput
                     type="text"
                     name="name"
@@ -200,7 +200,7 @@ const AuthPage = () => {
 
                 {/* Phone */}
                 <div className="relative">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <GlassInput
                     type="tel"
                     name="phone"
@@ -217,7 +217,7 @@ const AuthPage = () => {
 
             {/* Email */}
             <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <GlassInput
                 type="email"
                 name="email"
@@ -232,7 +232,7 @@ const AuthPage = () => {
 
             {/* Password */}
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <GlassInput
                 type={showPassword ? 'text' : 'password'}
                 name="password"
@@ -246,7 +246,7 @@ const AuthPage = () => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
@@ -255,7 +255,7 @@ const AuthPage = () => {
             {/* Confirm Password */}
             {mode === 'register' && (
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <GlassInput
                   type={showPassword ? 'text' : 'password'}
                   name="confirmPassword"
@@ -271,8 +271,8 @@ const AuthPage = () => {
 
             {/* Vehicle Details (Only for Driver Registration) */}
             {mode === 'register' && isDriver && (
-              <div className="space-y-4 pt-4 border-t border-white/10 animate-in slide-in-from-top">
-                <p className="text-white/60 text-sm font-medium">Vehicle Details</p>
+              <div className="space-y-4 pt-4 border-t border-border animate-in slide-in-from-top">
+                <p className="text-muted-foreground text-sm font-medium">Vehicle Details</p>
 
                 {/* Vehicle Type */}
                 <div className="grid grid-cols-3 gap-2">
@@ -282,8 +282,8 @@ const AuthPage = () => {
                       type="button"
                       onClick={() => setFormData({ ...formData, vehicle_type: type })}
                       className={`p-2 rounded-lg text-xs capitalize transition-all ${formData.vehicle_type === type
-                        ? 'bg-gold text-black font-medium'
-                        : 'bg-white/5 text-white/60 hover:bg-white/10'
+                        ? 'bg-gold text-black font-medium shadow-md shadow-gold/10'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
                         }`}
                     >
                       {type}
@@ -346,7 +346,7 @@ const AuthPage = () => {
           </form>
 
           {/* Footer */}
-          <p className="text-center text-white/40 text-sm mt-6">
+          <p className="text-center text-muted-foreground text-sm mt-6">
             {mode === 'login' ? (
               <>
                 Don't have an account?{' '}

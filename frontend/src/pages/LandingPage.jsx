@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Car, MapPin, Shield, Star, Smartphone, Clock, ChevronRight, Users, Wallet } from 'lucide-react';
+import { Car, MapPin, Shield, Star, Smartphone, Clock, ChevronRight, Users, Wallet, Sun, Moon } from 'lucide-react';
 import { GlassCard, GoldButton } from '../components/common/GlassComponents';
 import { MultiPlatformInstallSection } from '../components/common/MultiPlatformInstallSection';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 const LandingPage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isDriver, isAdmin } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const handleGetStarted = () => {
     if (isAuthenticated) {
@@ -54,7 +56,18 @@ const LandingPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0B0B0B] overflow-hidden">
+    <div className="min-h-screen bg-background overflow-hidden transition-colors duration-300">
+      {/* Theme Toggle Floating Button */}
+      <div className="absolute top-4 right-4 z-50">
+        <button
+          onClick={toggleTheme}
+          className="p-3 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 text-foreground transition-all backdrop-blur-sm"
+          aria-label="Toggle theme"
+        >
+          {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+        </button>
+      </div>
+
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center px-4 py-20">
         {/* Background Effects */}
@@ -72,13 +85,14 @@ const LandingPage = () => {
           </div>
 
           {/* Headline */}
-          <h1 className="font-heading text-4xl sm:text-5xl lg:text-7xl font-bold text-white mb-6 tracking-tight">
+          <h1 className="font-heading text-4xl sm:text-5xl lg:text-7xl font-bold text-foreground mb-6 tracking-tight">
             Your Campus Ride,
             <br />
             <span className="text-gold-gradient">One Tap Away</span>
           </h1>
+          Broadway
 
-          <p className="text-lg sm:text-xl text-white/60 max-w-2xl mx-auto mb-10 font-body">
+          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 font-body">
             The premium ride-hailing platform designed exclusively for Mulungushi University students.
             Safe, affordable, and always available.
           </p>
@@ -111,7 +125,7 @@ const LandingPage = () => {
                 <div className="text-2xl sm:text-3xl font-heading font-bold text-gold mb-1">
                   {stat.value}
                 </div>
-                <div className="text-xs sm:text-sm text-white/50">{stat.label}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">{stat.label}</div>
               </GlassCard>
             ))}
           </div>
@@ -124,7 +138,7 @@ const LandingPage = () => {
 
         {/* Scroll indicator */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-          <div className="w-6 h-10 border-2 border-white/20 rounded-full flex items-start justify-center p-2">
+          <div className="w-6 h-10 border-2 border-border rounded-full flex items-start justify-center p-2">
             <div className="w-1.5 h-1.5 bg-gold rounded-full animate-pulse" />
           </div>
         </div>
@@ -134,10 +148,10 @@ const LandingPage = () => {
       <section className="py-20 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="font-heading text-3xl sm:text-4xl font-bold text-white mb-4">
+            <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground mb-4">
               Why Choose MuluRides?
             </h2>
-            <p className="text-white/50 max-w-xl mx-auto">
+            <p className="text-muted-foreground max-w-xl mx-auto">
               Built for students, by students. Experience transportation like never before.
             </p>
           </div>
@@ -148,10 +162,10 @@ const LandingPage = () => {
                 <div className="w-12 h-12 rounded-xl bg-gold/10 flex items-center justify-center mb-4 group-hover:bg-gold/20 transition-colors">
                   <feature.icon className="w-6 h-6 text-gold" />
                 </div>
-                <h3 className="font-heading font-semibold text-white text-lg mb-2">
+                <h3 className="font-heading font-semibold text-foreground text-lg mb-2">
                   {feature.title}
                 </h3>
-                <p className="text-white/50 text-sm leading-relaxed">
+                <p className="text-muted-foreground text-sm leading-relaxed">
                   {feature.description}
                 </p>
               </GlassCard>
@@ -164,7 +178,7 @@ const LandingPage = () => {
       <section className="py-20 px-4 bg-white/[0.02]">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="font-heading text-3xl sm:text-4xl font-bold text-white mb-4">
+            <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground mb-4">
               How It Works
             </h2>
           </div>
@@ -179,10 +193,10 @@ const LandingPage = () => {
                 <div className="text-6xl font-heading font-bold text-gold/10 mb-4">
                   {item.step}
                 </div>
-                <h3 className="font-heading font-semibold text-white text-xl mb-2">
+                <h3 className="font-heading font-semibold text-foreground text-xl mb-2">
                   {item.title}
                 </h3>
-                <p className="text-white/50">{item.desc}</p>
+                <p className="text-muted-foreground">{item.desc}</p>
                 {idx < 2 && (
                   <ChevronRight className="hidden sm:block absolute top-1/2 -right-4 w-8 h-8 text-gold/30 -translate-y-1/2" />
                 )}
@@ -201,10 +215,10 @@ const LandingPage = () => {
               <div className="w-16 h-16 rounded-2xl bg-gold/10 flex items-center justify-center mx-auto mb-6">
                 <Users className="w-8 h-8 text-gold" />
               </div>
-              <h2 className="font-heading text-2xl sm:text-3xl font-bold text-white mb-4">
+              <h2 className="font-heading text-2xl sm:text-3xl font-bold text-foreground mb-4">
                 Want to Earn as a Driver?
               </h2>
-              <p className="text-white/50 mb-8 max-w-xl mx-auto">
+              <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
                 Join our growing network of drivers. Set your own schedule, earn great commissions,
                 and become part of the MuluRides family.
               </p>
@@ -218,7 +232,7 @@ const LandingPage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-4 border-t border-white/5">
+      <footer className="py-12 px-4 border-t border-border">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-3">
@@ -226,11 +240,11 @@ const LandingPage = () => {
                 <Car className="w-5 h-5 text-black" />
               </div>
               <div>
-                <h3 className="font-heading font-bold text-white">MuluRides</h3>
-                <p className="text-xs text-white/40">Mulungushi University</p>
+                <h3 className="font-heading font-bold text-foreground">MuluRides</h3>
+                <p className="text-xs text-muted-foreground">Mulungushi University</p>
               </div>
             </div>
-            <div className="flex items-center gap-6 text-sm text-white/40">
+            <div className="flex items-center gap-6 text-sm text-muted-foreground">
               <span>© 2024 MuluRides</span>
               <span>•</span>
               <span>Kabwe, Zambia</span>

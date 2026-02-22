@@ -65,10 +65,10 @@ const AdminSettingsPage = () => {
       <div className="p-4 md:p-8 space-y-6" data-testid="admin-settings-page">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="font-heading text-2xl md:text-3xl font-bold text-white mb-2">
+          <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-2">
             Platform Settings
           </h1>
-          <p className="text-white/50">Configure pricing and commission rates</p>
+          <p className="text-muted-foreground">Configure pricing and commission rates</p>
         </div>
 
         {/* Permission Warning */}
@@ -76,7 +76,7 @@ const AdminSettingsPage = () => {
           <GlassCard className="p-4 border-yellow-500/30" hover={false}>
             <div className="flex items-center gap-3">
               <AlertCircle className="w-5 h-5 text-yellow-400" />
-              <p className="text-white/80 text-sm">
+              <p className="text-muted-foreground text-sm">
                 Only Super Admin can modify platform settings. Contact the Super Admin to make changes.
               </p>
             </div>
@@ -90,8 +90,8 @@ const AdminSettingsPage = () => {
               <Percent className="w-6 h-6 text-gold" />
             </div>
             <div>
-              <h2 className="font-heading font-semibold text-white text-lg">Commission Rate</h2>
-              <p className="text-white/50 text-sm">Percentage taken from each ride</p>
+              <h2 className="font-heading font-semibold text-foreground text-lg">Commission Rate</h2>
+              <p className="text-muted-foreground text-sm">Percentage taken from each ride</p>
             </div>
           </div>
 
@@ -107,10 +107,10 @@ const AdminSettingsPage = () => {
               className="text-2xl font-heading font-bold"
               data-testid="commission-rate-input"
             />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 text-xl">%</span>
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground text-xl">%</span>
           </div>
 
-          <p className="text-white/40 text-sm mt-3">
+          <p className="text-muted-foreground text-sm mt-3">
             Example: On a K50 ride, platform earns K{(50 * settings.commission_rate / 100).toFixed(2)}
           </p>
         </GlassCard>
@@ -122,14 +122,14 @@ const AdminSettingsPage = () => {
               <DollarSign className="w-6 h-6 text-emerald-400" />
             </div>
             <div>
-              <h2 className="font-heading font-semibold text-white text-lg">Fare Calculation</h2>
-              <p className="text-white/50 text-sm">Configure base fare and rates</p>
+              <h2 className="font-heading font-semibold text-foreground text-lg">Fare Calculation</h2>
+              <p className="text-muted-foreground text-sm">Configure base fare and rates</p>
             </div>
           </div>
 
           <div className="grid sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm text-white/60 mb-2">Base Fare (K)</label>
+              <label className="block text-sm text-muted-foreground mb-2">Base Fare (K)</label>
               <GlassInput
                 type="number"
                 value={settings.base_fare}
@@ -141,7 +141,7 @@ const AdminSettingsPage = () => {
               />
             </div>
             <div>
-              <label className="block text-sm text-white/60 mb-2">Per KM (K)</label>
+              <label className="block text-sm text-muted-foreground mb-2">Per KM (K)</label>
               <GlassInput
                 type="number"
                 value={settings.per_km_rate}
@@ -153,7 +153,7 @@ const AdminSettingsPage = () => {
               />
             </div>
             <div>
-              <label className="block text-sm text-white/60 mb-2">Per Minute (K)</label>
+              <label className="block text-sm text-muted-foreground mb-2">Per Minute (K)</label>
               <GlassInput
                 type="number"
                 value={settings.per_minute_rate}
@@ -166,12 +166,12 @@ const AdminSettingsPage = () => {
             </div>
           </div>
 
-          <div className="mt-6 p-4 bg-white/5 rounded-xl">
-            <h3 className="text-white font-medium mb-2">Fare Formula</h3>
-            <p className="text-white/60 text-sm font-mono">
+          <div className="mt-6 p-4 bg-muted rounded-xl">
+            <h3 className="text-foreground font-medium mb-2">Fare Formula</h3>
+            <p className="text-muted-foreground text-sm font-mono">
               Total = K{settings.base_fare} + (distance × K{settings.per_km_rate}) + (time × K{settings.per_minute_rate})
             </p>
-            <p className="text-white/40 text-sm mt-2">
+            <p className="text-muted-foreground text-sm mt-2">
               Example: 5km, 15 min ride = K{(settings.base_fare + 5 * settings.per_km_rate + 15 * settings.per_minute_rate).toFixed(2)}
             </p>
           </div>
@@ -199,8 +199,8 @@ const AdminSettingsPage = () => {
         {/* Admin Logs Info */}
         <GlassCard className="p-4" hover={false}>
           <div className="flex items-center gap-3">
-            <Clock className="w-5 h-5 text-white/40" />
-            <p className="text-white/50 text-sm">
+            <Clock className="w-5 h-5 text-muted-foreground" />
+            <p className="text-muted-foreground text-sm">
               All setting changes are logged in the admin activity log
             </p>
           </div>

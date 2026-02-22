@@ -61,10 +61,10 @@ const RideHistoryPage = () => {
       <div className="p-4 md:p-8 space-y-6" data-testid="ride-history-page">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="font-heading text-2xl md:text-3xl font-bold text-white mb-2">
+          <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-2">
             Ride History
           </h1>
-          <p className="text-white/50">{rides.length} trips</p>
+          <p className="text-muted-foreground/50">{rides.length} trips</p>
         </div>
 
         {/* Rides List */}
@@ -74,8 +74,8 @@ const RideHistoryPage = () => {
               <GlassCard key={ride.id} className="p-4" data-testid={`history-ride-${ride.id}`}>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-white/40" />
-                    <span className="text-sm text-white/60">
+                    <Clock className="w-4 h-4 text-muted-foreground/40" />
+                    <span className="text-sm text-muted-foreground/60">
                       {new Date(ride.created_at).toLocaleDateString('en-US', {
                         weekday: 'short',
                         month: 'short',
@@ -93,8 +93,8 @@ const RideHistoryPage = () => {
                   <div className="flex items-start gap-3">
                     <div className="w-3 h-3 rounded-full bg-gold mt-1" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-white/40">Pickup</p>
-                      <p className="text-white text-sm truncate">
+                      <p className="text-xs text-muted-foreground/40">Pickup</p>
+                      <p className="text-foreground text-sm truncate">
                         {ride.pickup_location?.address || 'Location'}
                       </p>
                     </div>
@@ -102,8 +102,8 @@ const RideHistoryPage = () => {
                   <div className="flex items-start gap-3">
                     <div className="w-3 h-3 rounded-full bg-emerald-500 mt-1" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-white/40">Dropoff</p>
-                      <p className="text-white text-sm truncate">
+                      <p className="text-xs text-muted-foreground/40">Dropoff</p>
+                      <p className="text-foreground text-sm truncate">
                         {ride.dropoff_location?.address || 'Location'}
                       </p>
                     </div>
@@ -111,18 +111,18 @@ const RideHistoryPage = () => {
                 </div>
 
                 {/* Bottom Section */}
-                <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                <div className="flex items-center justify-between pt-3 border-t border-border/5">
                   <div className="flex items-center gap-4">
                     {/* Driver/Student Info */}
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-                        <Car className="w-4 h-4 text-white/40" />
+                        <Car className="w-4 h-4 text-muted-foreground/40" />
                       </div>
                       <div>
-                        <p className="text-sm text-white">
+                        <p className="text-sm text-foreground">
                           {isDriver ? ride.student?.name : ride.driver?.user?.name || 'Driver'}
                         </p>
-                        <p className="text-xs text-white/40">
+                        <p className="text-xs text-muted-foreground/40">
                           {isDriver ? 'Passenger' : ride.driver?.plate_number || 'N/A'}
                         </p>
                       </div>
@@ -136,7 +136,7 @@ const RideHistoryPage = () => {
                         {ride.rating ? (
                           <>
                             <Star className="w-4 h-4 text-gold fill-gold" />
-                            <span className="text-white text-sm">{ride.rating}</span>
+                            <span className="text-foreground text-sm">{ride.rating}</span>
                           </>
                         ) : !isDriver && (
                           <button
@@ -157,7 +157,7 @@ const RideHistoryPage = () => {
                       <p className="text-gold font-heading font-bold">
                         K{isDriver ? ride.driver_earning?.toFixed(2) : ride.fare?.toFixed(2)}
                       </p>
-                      <p className="text-xs text-white/40">{ride.distance?.toFixed(1)} km</p>
+                      <p className="text-xs text-muted-foreground/40">{ride.distance?.toFixed(1)} km</p>
                     </div>
                   </div>
                 </div>

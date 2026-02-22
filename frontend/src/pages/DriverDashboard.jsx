@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Power, MapPin, Clock, DollarSign, Star, Navigation, AlertCircle, Bell, Check, X } from 'lucide-react';
+import { Power, MapPin, Clock, DollarSign, Star, Navigation, AlertCircle, Bell, Check, X, Upload, FileText } from 'lucide-react';
 import { GlassCard, GoldButton, StatusBadge, LoadingSpinner, EmptyState } from '../components/common/GlassComponents';
 import { RideMap } from '../components/map/RideMap';
 import { Layout } from '../components/layout/Layout';
@@ -17,12 +17,14 @@ const DriverDashboard = () => {
   const [isOnline, setIsOnline] = useState(false);
   const [activeRide, setActiveRide] = useState(null);
   const [pendingRides, setPendingRides] = useState([]);
+  const [routeGeometry, setRouteGeometry] = useState(null);
   const [earnings, setEarnings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentLocation, setCurrentLocation] = useState(null);
   const [showRideRequest, setShowRideRequest] = useState(false);
   const [incomingRide, setIncomingRide] = useState(null);
   const [isSimulating, setIsSimulating] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
 
   // Watch position when online
@@ -113,6 +115,30 @@ const DriverDashboard = () => {
       return () => clearTimeout(timeout);
     }
   }, [newRideRequest, isOnline, activeRide, clearRideRequest]);
+
+  useEffect(() => {
+    if (activeRide?.pickup_location && activeRide?.dropoff_location) {
+      api.post('/rides/estimate-fare', {
+        pickup: activeRide.pickup_location,
+        dropoff: activeRide.dropoff_location
+      }).then(res => {
+        if (res.data?.geometry) {
+          setRouteGeometry(res.data.geometry);
+        }
+      }).catch(err => console.error("Could not fetch route geometry:", err));
+    } else {
+      setRouteGeometry(null);
+    }
+  }, [activeRide?.id, activeRide?.pickup_location, activeRide?.dropoff_location, api]);
+
+  const formatAddress = (location) => {
+    if (!location?.address) return "Location not provided";
+    // Check if address is just coordinates (e.g., "-29.8486, 31.0049" or similar)
+    if (/^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(location.address)) {
+      return "Current Location";
+    }
+    return location.address;
+  };
 
   const fetchData = async () => {
     try {
@@ -217,6 +243,32 @@ const DriverDashboard = () => {
     window.open(url, '_blank');
   };
 
+  const handleFileUpload = async (e, type) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('File too large. Max 2MB allowed.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setUploading(true);
+    try {
+      await api.post(`/drivers/documents?doc_type=${type}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} uploaded successfully`);
+      refreshDriverProfile();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -236,16 +288,40 @@ const DriverDashboard = () => {
             <div className="w-16 h-16 rounded-full bg-yellow-500/10 flex items-center justify-center mx-auto mb-4">
               <AlertCircle className="w-8 h-8 text-yellow-400" />
             </div>
-            <h2 className="font-heading text-xl font-semibold text-white mb-2">
+            <h2 className="font-heading text-xl font-semibold text-foreground mb-2">
               Pending Approval
             </h2>
-            <p className="text-white/50 mb-6">
+            <p className="text-muted-foreground mb-6">
               Your driver account is being reviewed. You'll be notified once approved.
             </p>
-            <div className="p-4 bg-white/5 rounded-xl text-left">
-              <p className="text-sm text-white/60 mb-2">Vehicle Details:</p>
-              <p className="text-white">{driverProfile.vehicle_model} • {driverProfile.vehicle_color}</p>
-              <p className="text-white/60">{driverProfile.plate_number}</p>
+            <div className="p-4 bg-muted rounded-xl text-left mb-6 font-body border border-border">
+              <p className="text-sm text-muted-foreground mb-2">Vehicle Details:</p>
+              <p className="text-foreground">{driverProfile.vehicle_model} • {driverProfile.vehicle_color}</p>
+              <p className="text-muted-foreground">{driverProfile.plate_number}</p>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-white font-medium text-sm flex items-center gap-2">
+                <FileText className="w-4 h-4 text-gold" />
+                Required Documents
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <DocumentUploadCard
+                  title="Driver's License"
+                  type="license"
+                  url={driverProfile.verification_docs?.license}
+                  onUpload={(e) => handleFileUpload(e, 'license')}
+                  uploading={uploading}
+                />
+                <DocumentUploadCard
+                  title="Vehicle Registration"
+                  type="registration"
+                  url={driverProfile.verification_docs?.registration}
+                  onUpload={(e) => handleFileUpload(e, 'registration')}
+                  uploading={uploading}
+                />
+              </div>
             </div>
           </GlassCard>
         </div>
@@ -265,8 +341,8 @@ const DriverDashboard = () => {
                   <Bell className="w-6 h-6 text-gold" />
                 </div>
                 <div>
-                  <h3 className="font-heading font-semibold text-white">New Ride Request!</h3>
-                  <p className="text-white/50 text-sm">K{incomingRide.fare?.toFixed(2)} • {incomingRide.distance?.toFixed(1)} km</p>
+                  <h3 className="font-heading font-semibold text-foreground">New Ride Request!</h3>
+                  <p className="text-muted-foreground text-sm">K{incomingRide.fare?.toFixed(2)} • {incomingRide.distance?.toFixed(1)} km</p>
                 </div>
               </div>
 
@@ -274,15 +350,15 @@ const DriverDashboard = () => {
                 <div className="flex items-start gap-3">
                   <div className="w-3 h-3 rounded-full bg-gold mt-1.5" />
                   <div>
-                    <p className="text-xs text-white/40">Pickup</p>
-                    <p className="text-white text-sm">{incomingRide.pickup_location?.address}</p>
+                    <p className="text-xs text-muted-foreground">Pickup</p>
+                    <p className="text-foreground text-sm">{incomingRide.pickup_location?.address}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-3 h-3 rounded-full bg-emerald-500 mt-1.5" />
                   <div>
-                    <p className="text-xs text-white/40">Dropoff</p>
-                    <p className="text-white text-sm">{incomingRide.dropoff_location?.address}</p>
+                    <p className="text-xs text-muted-foreground">Dropoff</p>
+                    <p className="text-foreground text-sm">{incomingRide.dropoff_location?.address}</p>
                   </div>
                 </div>
               </div>
@@ -313,10 +389,10 @@ const DriverDashboard = () => {
         {/* Header with Online Toggle */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-heading text-2xl md:text-3xl font-bold text-white mb-1">
+            <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-1">
               {isOnline ? 'Ready for Rides' : 'You\'re Offline'}
             </h1>
-            <p className="text-white/50">
+            <p className="text-muted-foreground">
               {isOnline ? 'Waiting for ride requests...' : 'Go online to start accepting rides'}
             </p>
           </div>
@@ -325,11 +401,11 @@ const DriverDashboard = () => {
               onClick={handleToggleOnline}
               className={`relative w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${isOnline
                 ? 'bg-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.4)]'
-                : 'bg-white/10 hover:bg-white/20'
+                : 'bg-muted hover:bg-muted/80 border border-border'
                 }`}
               data-testid="online-toggle"
             >
-              <Power className={`w-8 h-8 ${isOnline ? 'text-white' : 'text-white/40'}`} />
+              <Power className={`w-8 h-8 ${isOnline ? 'text-white' : 'text-muted-foreground'}`} />
               {isOnline && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-400 rounded-full animate-ping" />
               )}
@@ -339,7 +415,7 @@ const DriverDashboard = () => {
                 onClick={() => setIsSimulating(!isSimulating)}
                 className={`text-xs px-2 py-1 rounded-lg border transition-colors ${isSimulating
                   ? 'bg-gold/20 border-gold text-gold'
-                  : 'border-white/10 text-white/40 hover:bg-white/5'
+                  : 'border-border text-muted-foreground hover:bg-muted'
                   }`}
               >
                 {isSimulating ? 'Simulating...' : 'Test GPS'}
@@ -352,7 +428,7 @@ const DriverDashboard = () => {
         {activeRide ? (
           <GlassCard className="overflow-hidden" data-testid="active-ride-card">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-heading font-semibold text-white text-lg">Active Ride</h2>
+              <h2 className="font-heading font-semibold text-foreground text-lg">Active Ride</h2>
               <StatusBadge status={activeRide.status} />
             </div>
 
@@ -362,6 +438,7 @@ const DriverDashboard = () => {
                 pickup={activeRide.pickup_location}
                 dropoff={activeRide.dropoff_location}
                 driverLocation={currentLocation}
+                routeGeometry={routeGeometry}
                 showRoute
                 interactive={false}
                 className="h-full"
@@ -369,16 +446,16 @@ const DriverDashboard = () => {
             </div>
 
             {/* Passenger Info */}
-            <div className="p-4 bg-white/5 rounded-xl mb-4">
+            <div className="p-4 bg-muted rounded-xl mb-4 border border-border">
               <div className="flex items-center gap-4 mb-3">
                 <div className="w-12 h-12 rounded-full bg-gold/20 flex items-center justify-center">
                   <span className="text-gold font-heading font-bold text-lg">
-                    {activeRide.student?.name?.charAt(0)}
+                    {activeRide.student?.name?.charAt(0) || '?'}
                   </span>
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-white">{activeRide.student?.name}</p>
-                  <p className="text-sm text-white/50">{activeRide.student?.phone}</p>
+                  <p className="font-medium text-foreground">{activeRide.student?.name || 'Passenger'}</p>
+                  <p className="text-sm text-muted-foreground">{activeRide.student?.phone || 'No phone provided'}</p>
                 </div>
               </div>
 
@@ -409,8 +486,8 @@ const DriverDashboard = () => {
               <div className="flex items-start gap-3">
                 <div className="w-3 h-3 rounded-full bg-gold mt-1.5" />
                 <div className="flex-1">
-                  <p className="text-xs text-white/40">Pickup</p>
-                  <p className="text-white">{activeRide.pickup_location?.address}</p>
+                  <p className="text-xs text-muted-foreground">Pickup</p>
+                  <p className="text-foreground">{formatAddress(activeRide.pickup_location)}</p>
                 </div>
                 {activeRide.status === 'accepted' && (
                   <GoldButton
@@ -426,8 +503,8 @@ const DriverDashboard = () => {
               <div className="flex items-start gap-3">
                 <div className="w-3 h-3 rounded-full bg-emerald-500 mt-1.5" />
                 <div className="flex-1">
-                  <p className="text-xs text-white/40">Dropoff</p>
-                  <p className="text-white">{activeRide.dropoff_location?.address}</p>
+                  <p className="text-xs text-muted-foreground">Dropoff</p>
+                  <p className="text-foreground">{formatAddress(activeRide.dropoff_location)}</p>
                 </div>
                 {activeRide.status === 'ongoing' && (
                   <GoldButton
@@ -444,7 +521,7 @@ const DriverDashboard = () => {
 
             {/* Fare */}
             <div className="flex items-center justify-between p-4 bg-gold/10 rounded-xl mb-4">
-              <span className="text-white/60">Your Earning</span>
+              <span className="text-muted-foreground">Your Earning</span>
               <span className="font-heading font-bold text-gold text-xl">
                 K{activeRide.driver_earning?.toFixed(2)}
               </span>
@@ -481,8 +558,8 @@ const DriverDashboard = () => {
               <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-4 flex items-start gap-4 mb-6">
                 <AlertCircle className="w-6 h-6 text-red-500 shrink-0 mt-1" />
                 <div>
-                  <h3 className="font-heading font-bold text-white text-lg">Wallet Restricted</h3>
-                  <p className="text-white/60 text-sm mb-2">
+                  <h3 className="font-heading font-bold text-foreground text-lg">Wallet Restricted</h3>
+                  <p className="text-muted-foreground text-sm mb-2">
                     Your balance (K{driverProfile?.wallet_balance?.toFixed(2)}) is below the minimum requirement.
                     You cannot accept new rides until you top up.
                   </p>
@@ -504,10 +581,10 @@ const DriverDashboard = () => {
                       <DollarSign className="w-5 h-5 text-gold" />
                     </div>
                     <div>
-                      <p className="text-lg font-heading font-bold text-white">
+                      <p className="text-lg font-heading font-bold text-foreground">
                         K{earnings.today_earnings?.toFixed(2)}
                       </p>
-                      <p className="text-xs text-white/40">Today</p>
+                      <p className="text-xs text-muted-foreground">Today</p>
                     </div>
                   </div>
                 </GlassCard>
@@ -523,11 +600,11 @@ const DriverDashboard = () => {
                       </div>
                     </div>
                     <div>
-                      <p className={`text-lg font-heading font-bold ${driverProfile?.wallet_status === 'restricted' ? 'text-red-400' : 'text-white'
+                      <p className={`text-lg font-heading font-bold ${driverProfile?.wallet_status === 'restricted' ? 'text-red-400' : 'text-foreground'
                         }`}>
                         K{driverProfile?.wallet_balance?.toFixed(2)}
                       </p>
-                      <p className="text-xs text-white/40">Wallet Bal</p>
+                      <p className="text-xs text-muted-foreground">Wallet Bal</p>
                     </div>
                   </div>
                 </GlassCard>
@@ -538,8 +615,8 @@ const DriverDashboard = () => {
                       <Clock className="w-5 h-5 text-emerald-400" />
                     </div>
                     <div>
-                      <p className="text-lg font-heading font-bold text-white">{earnings.total_rides}</p>
-                      <p className="text-xs text-white/40">Total Rides</p>
+                      <p className="text-lg font-heading font-bold text-foreground">{earnings.total_rides}</p>
+                      <p className="text-xs text-muted-foreground">Total Rides</p>
                     </div>
                   </div>
                 </GlassCard>
@@ -549,22 +626,22 @@ const DriverDashboard = () => {
             {/* Pending Rides */}
             {isOnline && pendingRides.length > 0 && (
               <div>
-                <h2 className="font-heading font-semibold text-white text-lg mb-4">Available Rides</h2>
+                <h2 className="font-heading font-semibold text-foreground text-lg mb-4">Available Rides</h2>
                 <div className="space-y-3">
                   {pendingRides.map((ride) => (
                     <GlassCard key={ride.id} className="p-4" data-testid={`pending-ride-${ride.id}`}>
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-gold font-heading font-bold">K{ride.fare?.toFixed(2)}</span>
-                        <span className="text-white/50 text-sm">{ride.distance?.toFixed(1)} km</span>
+                        <span className="text-muted-foreground text-sm">{ride.distance?.toFixed(1)} km</span>
                       </div>
                       <div className="space-y-2 mb-4">
                         <div className="flex items-center gap-2 text-sm">
                           <MapPin className="w-4 h-4 text-gold" />
-                          <span className="text-white truncate">{ride.pickup_location?.address}</span>
+                          <span className="text-foreground truncate">{ride.pickup_location?.address}</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
                           <MapPin className="w-4 h-4 text-emerald-500" />
-                          <span className="text-white/60 truncate">{ride.dropoff_location?.address}</span>
+                          <span className="text-muted-foreground truncate">{ride.dropoff_location?.address}</span>
                         </div>
                       </div>
                       <GoldButton
@@ -595,10 +672,10 @@ const DriverDashboard = () => {
         {earnings && (
           <GlassCard className="p-4" hover={false}>
             <div className="flex items-center justify-between">
-              <span className="text-white/60">Your Rating</span>
+              <span className="text-muted-foreground">Your Rating</span>
               <div className="flex items-center gap-2">
                 <Star className="w-5 h-5 text-gold fill-gold" />
-                <span className="font-heading font-bold text-white text-lg">
+                <span className="font-heading font-bold text-foreground text-lg">
                   {earnings.rating?.toFixed(1)}
                 </span>
               </div>
@@ -609,5 +686,45 @@ const DriverDashboard = () => {
     </Layout >
   );
 };
+
+const DocumentUploadCard = ({ title, type, url, onUpload, uploading }) => (
+  <div className="relative group">
+    <div className={`p-4 rounded-xl border transition-all ${url
+      ? 'border-emerald-500/30 bg-emerald-500/5'
+      : 'border-white/10 bg-white/5 hover:border-gold/30'
+      }`}>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-medium text-muted-foreground">{title}</span>
+        {url && <Check className="w-3 h-3 text-emerald-400" />}
+      </div>
+
+      {url ? (
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+            <Check className="w-4 h-4 text-emerald-400" />
+          </div>
+          <span className="text-[10px] text-emerald-400 font-medium uppercase">Uploaded</span>
+        </div>
+      ) : (
+        <label className="flex items-center gap-2 cursor-pointer">
+          <div className={`w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center transition-colors ${uploading ? 'animate-pulse' : 'group-hover:bg-gold/20'
+            }`}>
+            <Upload className="w-4 h-4 text-gold" />
+          </div>
+          <span className="text-[10px] text-muted-foreground font-medium uppercase group-hover:text-foreground">
+            {uploading ? 'Uploading...' : 'Tap to Upload'}
+          </span>
+          <input
+            type="file"
+            className="hidden"
+            accept="image/*,.pdf"
+            onChange={onUpload}
+            disabled={uploading}
+          />
+        </label>
+      )}
+    </div>
+  </div>
+);
 
 export default DriverDashboard;

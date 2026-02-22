@@ -1,11 +1,13 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Home, MapPin, Clock, User, Settings, Car, DollarSign, Users, BarChart3, Shield, LogOut, Menu, X } from 'lucide-react';
+import { Home, MapPin, Clock, User, Settings, Car, DollarSign, Users, BarChart3, Shield, LogOut, Menu, X, Sun, Moon } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
 import { cn } from '../../lib/utils';
 
 export const Layout = ({ children }) => {
   const { user, isDriver, isAdmin, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
@@ -41,18 +43,18 @@ export const Layout = ({ children }) => {
   const navItems = isAdmin ? adminNavItems : isDriver ? driverNavItems : studentNavItems;
 
   return (
-    <div className="min-h-screen bg-[#0B0B0B] flex flex-col">
+    <div className="min-h-screen bg-background text-foreground flex flex-col transition-colors duration-300">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex fixed left-0 top-0 h-full w-20 hover:w-64 flex-col bg-[#0B0B0B] border-r border-white/5 z-50 sidebar-transition group">
+      <aside className="hidden md:flex fixed left-0 top-0 h-full w-20 hover:w-64 flex-col bg-background border-r border-border z-50 sidebar-transition group">
         {/* Logo */}
-        <div className="p-4 border-b border-white/5 h-20 flex items-center">
+        <div className="p-4 border-b border-border h-20 flex items-center">
           <div className="flex items-center gap-3 overflow-hidden">
             <div className="w-12 h-12 min-w-[48px] rounded-xl bg-gold flex items-center justify-center">
               <Car className="w-7 h-7 text-black" />
             </div>
             <div className="sidebar-label-transition opacity-0 group-hover:opacity-100 whitespace-nowrap">
-              <h1 className="font-heading font-bold text-white text-lg">MuluRides</h1>
-              <p className="text-[10px] text-white/50">Student Transport</p>
+              <h1 className="font-heading font-bold text-foreground text-lg">MuluRides</h1>
+              <p className="text-[10px] text-muted-foreground">Student Transport</p>
             </div>
           </div>
         </div>
@@ -67,8 +69,8 @@ export const Layout = ({ children }) => {
               className={({ isActive }) => cn(
                 "flex items-center gap-3 p-3 rounded-xl transition-all",
                 isActive
-                  ? "bg-gold/10 text-gold"
-                  : "text-white/60 hover:text-white hover:bg-white/5"
+                  ? "bg-gold/10 text-gold shadow-[0_0_20px_rgba(212,175,55,0.1)]"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
               )}
             >
               <div className="w-6 flex justify-center">
@@ -82,43 +84,86 @@ export const Layout = ({ children }) => {
         </nav>
 
         {/* User Info & Logout */}
-        <div className="p-3 border-t border-white/5">
+        <div className="p-3 border-t border-border">
           <div className="flex items-center gap-3 mb-4 overflow-hidden">
-            <div className="w-10 h-10 min-w-[40px] rounded-full bg-white/10 flex items-center justify-center">
-              <User className="w-5 h-5 text-white/60" />
+            <div className="w-10 h-10 min-w-[40px] rounded-full bg-muted flex items-center justify-center">
+              <User className="w-5 h-5 text-muted-foreground" />
             </div>
             <div className="sidebar-label-transition opacity-0 group-hover:opacity-100 flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{user?.name}</p>
-              <p className="text-xs text-white/50 capitalize flex items-center gap-1">
-                {user?.role === 'super_admin' && <Shield className="w-3 h-3" />}
+              <p className="text-sm font-medium text-foreground truncate">{user?.name}</p>
+              <p className="text-xs text-muted-foreground capitalize flex items-center gap-1">
+                {user?.role === 'super_admin' && <Shield className="w-3 h-3 text-gold" />}
                 {user?.role?.replace('_', ' ')}
               </p>
             </div>
           </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 p-3 w-full rounded-xl text-white/60 hover:text-red-400 hover:bg-red-500/10 transition-all overflow-hidden"
-          >
-            <div className="w-6 flex justify-center">
-              <LogOut className="w-5 h-5 min-w-[20px]" />
-            </div>
-            <span className="font-medium sidebar-label-transition opacity-0 group-hover:opacity-100 whitespace-nowrap">
-              Logout
-            </span>
-          </button>
+
+          <div className="space-y-1">
+            <button
+              onClick={toggleTheme}
+              className="flex items-center gap-3 p-3 w-full rounded-xl text-muted-foreground/60 hover:text-gold hover:bg-gold/10 transition-all overflow-hidden"
+            >
+              <div className="w-6 flex justify-center">
+                {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </div>
+              <span className="font-medium sidebar-label-transition opacity-0 group-hover:opacity-100 whitespace-nowrap">
+                {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+              </span>
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 p-3 w-full rounded-xl text-muted-foreground/60 hover:text-red-400 hover:bg-red-500/10 transition-all overflow-hidden"
+            >
+              <div className="w-6 flex justify-center">
+                <LogOut className="w-5 h-5 min-w-[20px]" />
+              </div>
+              <span className="font-medium sidebar-label-transition opacity-0 group-hover:opacity-100 whitespace-nowrap">
+                Logout
+              </span>
+            </button>
+          </div>
         </div>
       </aside>
 
-      {/* Mobile Header (Hidden as per modern PWA designs, but keeping it minimal or removing as sidebar is hidden) */}
-      <header className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#0B0B0B]/80 backdrop-blur-xl border-b border-white/5 z-40 flex items-center justify-between px-4 safe-top">
+      {/* Mobile Header */}
+      <header className="md:hidden fixed top-0 left-0 right-0 h-16 bg-background/80 backdrop-blur-xl border-b border-border z-40 flex items-center justify-between px-4 safe-top">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-gold flex items-center justify-center">
             <Car className="w-5 h-5 text-black" />
           </div>
-          <h1 className="font-heading font-bold text-white">MuluRides</h1>
+          <h1 className="font-heading font-bold text-foreground">MuluRides</h1>
         </div>
-        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-          <User className="w-4 h-4 text-white/60" />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleTheme}
+            className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-gold transition-colors"
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+
+          <div className="relative group">
+            <button className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground border border-border">
+              <User className="w-4 h-4" />
+            </button>
+            <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-xl shadow-xl py-2 opacity-0 invisible group-focus-within:opacity-100 group-focus-within:visible transition-all z-[100]">
+              <div className="px-4 py-2 border-b border-border mb-1">
+                <p className="text-xs font-bold text-foreground truncate">{user?.name}</p>
+                <p className="text-[10px] text-muted-foreground capitalize">{user?.role?.replace('_', ' ')}</p>
+              </div>
+              <NavLink to="/profile" className="flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors">
+                <Settings className="w-4 h-4" />
+                Profile
+              </NavLink>
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-500/10 transition-colors text-left"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -131,28 +176,30 @@ export const Layout = ({ children }) => {
 
       {/* Liquid Glass Navigation Bar */}
       <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-lg safe-bottom">
-        <div className="liquid-glass rounded-[2rem] p-2 flex items-center justify-around gap-1">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/dashboard' || item.to === '/driver' || item.to === '/admin'}
-              className={({ isActive }) => cn(
-                "flex flex-col items-center gap-1 px-4 py-2 rounded-2xl transition-all duration-300 relative",
-                isActive ? "liquid-item-active text-gold scale-105" : "text-white/40 hover:text-white/70"
-              )}
-            >
-              {({ isActive }) => (
-                <>
-                  <item.icon className="w-5 h-5" />
-                  <span className="text-[10px] font-medium whitespace-nowrap">{item.label}</span>
-                  {isActive && (
-                    <div className="absolute -bottom-1 w-1 h-1 rounded-full bg-gold" />
-                  )}
-                </>
-              )}
-            </NavLink>
-          ))}
+        <div className="liquid-glass rounded-[2rem] p-2 flex items-center justify-around gap-1 overflow-x-auto no-scrollbar scroll-smooth">
+          <div className="flex items-center gap-1 min-w-max px-2">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === '/dashboard' || item.to === '/driver' || item.to === '/admin'}
+                className={({ isActive }) => cn(
+                  "flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all duration-300 relative min-w-[64px]",
+                  isActive ? "liquid-item-active text-gold scale-105" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {({ isActive }) => (
+                  <>
+                    <item.icon className="w-5 h-5" />
+                    <span className="text-[10px] font-medium whitespace-nowrap">{item.label}</span>
+                    {isActive && (
+                      <div className="absolute -bottom-1 w-1 h-1 rounded-full bg-gold" />
+                    )}
+                  </>
+                )}
+              </NavLink>
+            ))}
+          </div>
         </div>
       </nav>
     </div>

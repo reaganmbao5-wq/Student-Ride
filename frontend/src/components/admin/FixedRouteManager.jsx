@@ -142,7 +142,7 @@ const FixedRouteManager = () => {
     return (
         <div className="space-y-6">
             <GlassCard className="p-6">
-                <h2 className="text-xl font-heading font-semibold text-white mb-6 flex items-center gap-2">
+                <h2 className="text-xl font-heading font-semibold text-foreground mb-6 flex items-center gap-2">
                     <Navigation className="w-5 h-5 text-gold" />
                     Create New Fixed Route
                 </h2>
@@ -152,7 +152,7 @@ const FixedRouteManager = () => {
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm text-white/60 mb-2">Pickup Name</label>
+                                <label className="block text-sm text-muted-foreground mb-2">Pickup Name</label>
                                 <GlassInput
                                     value={form.pickup_name}
                                     onChange={e => setForm({ ...form, pickup_name: e.target.value })}
@@ -163,7 +163,7 @@ const FixedRouteManager = () => {
                                     type="button"
                                     onClick={() => setSelectionMode('pickup')}
                                     className={`mt-2 w-full py-2 px-3 rounded-xl text-sm transition-colors flex items-center justify-center gap-2
-                                        ${pickupCoords ? 'bg-emerald-500/20 text-emerald-400' : selectionMode === 'pickup' ? 'bg-gold text-black animate-pulse' : 'bg-white/10 text-white'}`}
+                                        ${pickupCoords ? 'bg-emerald-500/20 text-emerald-400' : selectionMode === 'pickup' ? 'bg-gold text-black animate-pulse' : 'bg-muted text-foreground'}`}
                                 >
                                     <MapPin className="w-4 h-4" />
                                     {pickupCoords ? 'Pickup Set' : selectionMode === 'pickup' ? 'Click on Map...' : 'Set on Map'}
@@ -171,7 +171,7 @@ const FixedRouteManager = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm text-white/60 mb-2">Dropoff Name</label>
+                                <label className="block text-sm text-muted-foreground mb-2">Dropoff Name</label>
                                 <GlassInput
                                     value={form.dropoff_name}
                                     onChange={e => setForm({ ...form, dropoff_name: e.target.value })}
@@ -182,7 +182,7 @@ const FixedRouteManager = () => {
                                     type="button"
                                     onClick={() => setSelectionMode('dropoff')}
                                     className={`mt-2 w-full py-2 px-3 rounded-xl text-sm transition-colors flex items-center justify-center gap-2
-                                        ${dropoffCoords ? 'bg-red-500/20 text-red-400' : selectionMode === 'dropoff' ? 'bg-gold text-black animate-pulse' : 'bg-white/10 text-white'}`}
+                                        ${dropoffCoords ? 'bg-red-500/20 text-red-400' : selectionMode === 'dropoff' ? 'bg-gold text-black animate-pulse' : 'bg-muted text-foreground'}`}
                                 >
                                     <MapPin className="w-4 h-4" />
                                     {dropoffCoords ? 'Dropoff Set' : selectionMode === 'dropoff' ? 'Click on Map...' : 'Set on Map'}
@@ -192,7 +192,7 @@ const FixedRouteManager = () => {
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm text-white/60 mb-2">Fixed Price (K)</label>
+                                <label className="block text-sm text-muted-foreground mb-2">Fixed Price (K)</label>
                                 <GlassInput
                                     type="number"
                                     step="0.5"
@@ -202,7 +202,7 @@ const FixedRouteManager = () => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm text-white/60 mb-2">Tolerance (m)</label>
+                                <label className="block text-sm text-muted-foreground mb-2">Tolerance (m)</label>
                                 <GlassInput
                                     type="number"
                                     step="10"
@@ -217,7 +217,7 @@ const FixedRouteManager = () => {
                             {loading ? "Creating..." : "Create Route"}
                         </GoldButton>
 
-                        <div className="text-xs text-white/40 bg-white/5 p-3 rounded-lg">
+                        <div className="text-xs text-muted-foreground bg-muted p-3 rounded-lg">
                             <p>ℹ️ <strong>How it works:</strong> If a student requests a ride starting near the Pickup point and ending near the Dropoff point (within tolerance), this Fixed Price will be used instead of the distance calculation.</p>
                         </div>
                     </form>
@@ -259,11 +259,11 @@ const FixedRouteManager = () => {
 
             {/* List */}
             <GlassCard className="p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Existing Routes</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-4">Existing Routes</h3>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="text-white/40 text-sm border-b border-white/10">
+                            <tr className="text-muted-foreground text-sm border-b border-border">
                                 <th className="pb-3">Route</th>
                                 <th className="pb-3">Fixed Price</th>
                                 <th className="pb-3">Tolerance</th>
@@ -271,9 +271,9 @@ const FixedRouteManager = () => {
                                 <th className="pb-3 text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="text-white/80">
+                        <tbody className="text-foreground">
                             {routes.map(route => (
-                                <tr key={route.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                <tr key={route.id} className="border-b border-border hover:bg-muted/50 transition-colors">
                                     <td className="py-3 pr-4">
                                         <div className="font-medium">{route.pickup_name} → {route.dropoff_name}</div>
                                     </td>
@@ -287,7 +287,7 @@ const FixedRouteManager = () => {
                                     <td className="py-3 text-right">
                                         <button
                                             onClick={() => handleDelete(route.id)}
-                                            className="p-2 hover:bg-white/10 rounded-lg text-white/40 hover:text-red-400 transition-colors"
+                                            className="p-2 hover:bg-muted/50 rounded-lg text-muted-foreground hover:text-red-500 transition-colors"
                                         >
                                             <Trash2 className="w-4 h-4" />
                                         </button>
@@ -296,7 +296,7 @@ const FixedRouteManager = () => {
                             ))}
                             {routes.length === 0 && (
                                 <tr>
-                                    <td colSpan="5" className="py-8 text-center text-white/40">No fixed routes defined.</td>
+                                    <td colSpan="5" className="py-8 text-center text-muted-foreground">No fixed routes defined.</td>
                                 </tr>
                             )}
                         </tbody>

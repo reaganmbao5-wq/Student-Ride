@@ -38,17 +38,17 @@ const DriverEarningsPage = () => {
     <Layout>
       <div className="p-4 md:p-8 space-y-6" data-testid="driver-earnings-page">
         <div className="mb-8">
-          <h1 className="font-heading text-2xl md:text-3xl font-bold text-white mb-2">
+          <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-2">
             Earnings
           </h1>
-          <p className="text-white/50">Track your income and performance</p>
+          <p className="text-muted-foreground">Track your income and performance</p>
         </div>
 
         {/* Total Earnings Card */}
         <GlassCard className="p-6 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-40 h-40 bg-gold/10 rounded-full blur-[60px]" />
           <div className="relative z-10">
-            <p className="text-white/60 mb-2">Total Earnings</p>
+            <p className="text-muted-foreground/80 mb-2">Total Earnings</p>
             <p className="font-heading text-4xl md:text-5xl font-bold text-gold mb-4">
               K{earnings?.total_earnings?.toFixed(2) || '0.00'}
             </p>
@@ -66,9 +66,9 @@ const DriverEarningsPage = () => {
               <div className="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center">
                 <DollarSign className="w-5 h-5 text-gold" />
               </div>
-              <span className="text-white/60 text-sm">Today</span>
+              <span className="text-muted-foreground text-sm">Today</span>
             </div>
-            <p className="font-heading text-2xl font-bold text-white">
+            <p className="font-heading text-2xl font-bold text-foreground">
               K{earnings?.today_earnings?.toFixed(2) || '0.00'}
             </p>
           </GlassCard>
@@ -78,9 +78,9 @@ const DriverEarningsPage = () => {
               <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
                 <Calendar className="w-5 h-5 text-blue-400" />
               </div>
-              <span className="text-white/60 text-sm">This Week</span>
+              <span className="text-muted-foreground text-sm">This Week</span>
             </div>
-            <p className="font-heading text-2xl font-bold text-white">
+            <p className="font-heading text-2xl font-bold text-foreground">
               K{earnings?.week_earnings?.toFixed(2) || '0.00'}
             </p>
           </GlassCard>
@@ -90,9 +90,9 @@ const DriverEarningsPage = () => {
               <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
                 <TrendingUp className="w-5 h-5 text-purple-400" />
               </div>
-              <span className="text-white/60 text-sm">This Month</span>
+              <span className="text-muted-foreground text-sm">This Month</span>
             </div>
-            <p className="font-heading text-2xl font-bold text-white">
+            <p className="font-heading text-2xl font-bold text-foreground">
               K{earnings?.month_earnings?.toFixed(2) || '0.00'}
             </p>
           </GlassCard>
@@ -106,10 +106,10 @@ const DriverEarningsPage = () => {
                 <Clock className="w-5 h-5 text-emerald-400" />
               </div>
               <div>
-                <p className="font-heading text-2xl font-bold text-white">
+                <p className="font-heading text-2xl font-bold text-foreground">
                   {earnings?.total_rides || 0}
                 </p>
-                <p className="text-xs text-white/40">Total Rides</p>
+                <p className="text-xs text-muted-foreground">Total Rides</p>
               </div>
             </div>
           </GlassCard>
@@ -120,10 +120,10 @@ const DriverEarningsPage = () => {
                 <Star className="w-5 h-5 text-yellow-400" />
               </div>
               <div>
-                <p className="font-heading text-2xl font-bold text-white">
+                <p className="font-heading text-2xl font-bold text-foreground">
                   {earnings?.rating?.toFixed(1) || '5.0'}
                 </p>
-                <p className="text-xs text-white/40">Your Rating</p>
+                <p className="text-xs text-muted-foreground">Your Rating</p>
               </div>
             </div>
           </GlassCard>
@@ -131,8 +131,8 @@ const DriverEarningsPage = () => {
 
         {/* Commission Info */}
         <GlassCard className="p-4" hover={false}>
-          <h3 className="font-heading font-semibold text-white mb-3">How Earnings Work</h3>
-          <div className="space-y-2 text-sm text-white/60">
+          <h3 className="font-heading font-semibold text-foreground mb-3">How Earnings Work</h3>
+          <div className="space-y-2 text-sm text-muted-foreground/60">
             <p>• You receive your fare minus the platform commission</p>
             <p>• Payments are collected in cash from passengers</p>
             <p>• Commission rates may vary based on promotions</p>

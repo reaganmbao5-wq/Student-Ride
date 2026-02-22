@@ -32,17 +32,46 @@
     --chart-5: 27 87% 67%;
     --radius: 0.75rem;
   }
+
+  .light {
+    --background: 0 0% 98%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 43 75% 52%;
+    --primary-foreground: 43 75% 10%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 92%;
+    --muted-foreground: 240 3.8% 25%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 88%;
+    --input: 240 5.9% 88%;
+    --ring: 43 75% 52%;
+  }
 }
 
 @layer base {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
     font-family: 'DM Sans', sans-serif;
   }
-  h1, h2, h3, h4, h5, h6 {
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: 'Outfit', sans-serif;
   }
 }
@@ -68,19 +97,24 @@
 
 /* Glass morphism utilities */
 .glass {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--theme-glass-bg, rgba(255, 255, 255, 0.05));
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--theme-glass-border, rgba(255, 255, 255, 0.1));
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--theme-glass-bg, rgba(255, 255, 255, 0.05));
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--theme-glass-border, rgba(255, 255, 255, 0.1));
   border-radius: 1.5rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2);
+}
+
+.light .glass-card {
+  --theme-glass-bg: rgba(0, 0, 0, 0.04);
+  --theme-glass-border: rgba(0, 0, 0, 0.1);
 }
 
 .glass-card:hover {
@@ -113,18 +147,44 @@
 
 /* Animations */
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 @keyframes pulse-gold {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); }
-  50% { box-shadow: 0 0 20px 5px rgba(212, 175, 55, 0.2); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 20px 5px rgba(212, 175, 55, 0.2);
+  }
 }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
 
 .animate-float {
@@ -194,17 +254,32 @@
 }
 
 /* Ride status colors */
-.status-requested { color: #F59E0B; }
-.status-accepted { color: #3B82F6; }
-.status-ongoing { color: #10B981; }
-.status-completed { color: #10B981; }
-.status-cancelled { color: #EF4444; }
+.status-requested {
+  color: #F59E0B;
+}
+
+.status-accepted {
+  color: #3B82F6;
+}
+
+.status-ongoing {
+  color: #10B981;
+}
+
+.status-completed {
+  color: #10B981;
+}
+
+.status-cancelled {
+  color: #EF4444;
+}
 
 /* PWA safe areas */
 @supports (padding: max(0px)) {
   .safe-bottom {
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
+
   .safe-top {
     padding-top: max(1rem, env(safe-area-inset-top));
   }
@@ -225,11 +300,17 @@
 
 /* Liquid Glass Navigation */
 .liquid-glass {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--theme-liquid-bg, rgba(255, 255, 255, 0.03));
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.82);
+  border: 1px solid var(--theme-liquid-border, rgba(255, 255, 255, 0.08));
+  box-shadow: 0 8px 32px 0 var(--theme-liquid-shadow, rgba(0, 0, 0, 0.82));
+}
+
+.light .liquid-glass {
+  --theme-liquid-bg: rgba(0, 0, 0, 0.02);
+  --theme-liquid-border: rgba(0, 0, 0, 0.05);
+  --theme-liquid-shadow: rgba(0, 0, 0, 0.1);
 }
 
 .liquid-item-active {

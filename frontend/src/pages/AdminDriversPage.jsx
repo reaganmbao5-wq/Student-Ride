@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Car, Search, Check, X, Star, AlertCircle, Wallet, Plus, Loader2 } from 'lucide-react';
+import { Car, Search, Check, X, Star, AlertCircle, Wallet, Plus, Loader2, FileText, Eye } from 'lucide-react';
 import { GlassCard, GlassInput, GoldButton, LoadingSpinner, EmptyState } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
@@ -24,6 +24,8 @@ const AdminDriversPage = () => {
   const [topUpAmount, setTopUpAmount] = useState('');
   const [topUpDescription, setTopUpDescription] = useState('Admin Top-up');
   const [isSubmittingTopUp, setIsSubmittingTopUp] = useState(false);
+  const [verificationModalOpen, setVerificationModalOpen] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   useEffect(() => {
     fetchDrivers();
@@ -41,19 +43,25 @@ const AdminDriversPage = () => {
     }
   };
 
-  const handleApprove = async (driverId) => {
+  const handleVerify = async (driverId, status) => {
+    setIsVerifying(true);
     try {
-      await api.post(`/admin/drivers/${driverId}/approve`);
-      toast.success('Driver approved');
+      await api.post(`/admin/drivers/${driverId}/verify?status=${status}`);
+      toast.success(`Driver ${status}`);
+      setVerificationModalOpen(false);
       fetchDrivers();
     } catch (error) {
-      toast.error('Failed to approve driver');
+      toast.error(`Failed to ${status} driver`);
+    } finally {
+      setIsVerifying(false);
     }
   };
 
   const handleSuspend = async (driverId) => {
     try {
-      await api.post(`/admin/drivers/${driverId}/suspend`);
+      // Suspend is basically rejecting an already approved driver or setting a status
+      // For now we use rejection as suspension if they are already approved
+      await api.post(`/admin/drivers/${driverId}/verify?status=rejected`);
       toast.success('Driver suspended');
       fetchDrivers();
     } catch (error) {
@@ -131,10 +139,10 @@ const AdminDriversPage = () => {
       <div className="p-4 md:p-8 space-y-6" data-testid="admin-drivers-page">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="font-heading text-2xl md:text-3xl font-bold text-white mb-2">
+          <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-2">
             Driver Management
           </h1>
-          <p className="text-white/50">{drivers.length} total drivers</p>
+          <p className="text-muted-foreground">{drivers.length} total drivers</p>
         </div>
 
         {/* Alerts Grid */}
@@ -147,8 +155,8 @@ const AdminDriversPage = () => {
                   <AlertCircle className="w-5 h-5 text-yellow-400" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-white font-medium">{pendingCount} driver(s) pending approval</p>
-                  <p className="text-white/50 text-sm">Review applications</p>
+                  <p className="text-foreground font-medium">{pendingCount} driver(s) pending approval</p>
+                  <p className="text-muted-foreground text-sm">Review applications</p>
                 </div>
                 <GoldButton size="sm" onClick={() => setFilter('pending')}>
                   Review
@@ -165,8 +173,8 @@ const AdminDriversPage = () => {
                   <Wallet className="w-5 h-5 text-red-400" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-white font-medium">{restrictedCount} driver(s) restricted</p>
-                  <p className="text-white/50 text-sm">Low wallet balance</p>
+                  <p className="text-foreground font-medium">{restrictedCount} driver(s) restricted</p>
+                  <p className="text-muted-foreground text-sm">Low wallet balance</p>
                 </div>
                 <GoldButton size="sm" onClick={() => setFilter('restricted')} className="bg-red-500 text-white hover:bg-red-600 border-none">
                   Check
@@ -179,7 +187,7 @@ const AdminDriversPage = () => {
         {/* Search & Filter */}
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <GlassInput
               type="text"
               placeholder="Search drivers or plates..."
@@ -195,8 +203,8 @@ const AdminDriversPage = () => {
                 key={f}
                 onClick={() => setFilter(f)}
                 className={`px-4 py-2 rounded-xl text-sm font-medium capitalize transition-colors ${filter === f
-                    ? 'bg-gold text-black'
-                    : 'bg-white/5 text-white/60 hover:bg-white/10'
+                  ? 'bg-gold text-black shadow-lg shadow-gold/20'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
                   }`}
               >
                 {f}
@@ -217,7 +225,7 @@ const AdminDriversPage = () => {
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="font-medium text-white">{driver.user?.name}</p>
+                        <p className="font-medium text-foreground">{driver.user?.name}</p>
                         {driver.is_online && (
                           <span className="w-2 h-2 rounded-full bg-emerald-500" title="Online" />
                         )}
@@ -228,9 +236,9 @@ const AdminDriversPage = () => {
                           <span className="px-2 py-0.5 rounded bg-red-500/20 text-red-400 text-[10px] uppercase tracking-wider">Restricted</span>
                         )}
                       </div>
-                      <p className="text-sm text-white/50">{driver.user?.phone}</p>
-                      <div className="flex items-center gap-2 mt-1 text-xs text-white/40">
-                        <span className="font-mono bg-white/5 px-1.5 py-0.5 rounded">{driver.plate_number}</span>
+                      <p className="text-sm text-muted-foreground">{driver.user?.phone}</p>
+                      <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                        <span className="font-mono bg-muted px-1.5 py-0.5 rounded">{driver.plate_number}</span>
                         <span>{driver.vehicle_model}</span>
                       </div>
                     </div>
@@ -243,11 +251,11 @@ const AdminDriversPage = () => {
                         <p className={`font-bold font-heading ${driver.wallet_balance < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
                           K{driver.wallet_balance?.toFixed(2)}
                         </p>
-                        <p className="text-xs text-white/40">Balance</p>
+                        <p className="text-xs text-muted-foreground">Balance</p>
                       </div>
                       <div className="text-right hidden md:block">
-                        <p className="text-white font-medium">K{driver.total_commission_paid?.toFixed(2)}</p>
-                        <p className="text-xs text-white/40">Comm. Paid</p>
+                        <p className="text-foreground font-medium">K{driver.total_commission_paid?.toFixed(2)}</p>
+                        <p className="text-xs text-muted-foreground">Comm. Paid</p>
                       </div>
                     </div>
 
@@ -268,15 +276,15 @@ const AdminDriversPage = () => {
                             <Plus className="w-4 h-4" />
                           </button>
                         </DialogTrigger>
-                        <DialogContent className="bg-[#121212] border-white/10">
+                        <DialogContent className="bg-card border-border">
                           <DialogHeader>
-                            <DialogTitle className="text-white font-heading">Top Up Wallet</DialogTitle>
+                            <DialogTitle className="text-foreground font-heading">Top Up Wallet</DialogTitle>
                           </DialogHeader>
                           <form onSubmit={handleTopUp} className="space-y-4 mt-4">
-                            <div className="p-4 bg-white/5 rounded-xl">
-                              <p className="text-sm text-white/50 mb-1">Driver</p>
-                              <p className="text-white font-bold">{selectedDriver?.user?.name}</p>
-                              <p className="text-sm text-white/70">Current Balance: <span className={selectedDriver?.wallet_balance < 0 ? 'text-red-400' : 'text-emerald-400'}>K{selectedDriver?.wallet_balance?.toFixed(2)}</span></p>
+                            <div className="p-4 bg-muted rounded-xl">
+                              <p className="text-sm text-muted-foreground mb-1">Driver</p>
+                              <p className="text-foreground font-bold">{selectedDriver?.user?.name}</p>
+                              <p className="text-sm text-muted-foreground">Current Balance: <span className={selectedDriver?.wallet_balance < 0 ? 'text-red-400' : 'text-emerald-400'}>K{selectedDriver?.wallet_balance?.toFixed(2)}</span></p>
                             </div>
 
                             <GlassInput
@@ -311,10 +319,16 @@ const AdminDriversPage = () => {
                           <X className="w-4 h-4" />
                         </button>
                       ) : (
-                        <GoldButton size="sm" onClick={() => handleApprove(driver.id)}>
-                          <Check className="w-4 h-4 mr-1" />
-                          Approve
-                        </GoldButton>
+                        <button
+                          onClick={() => {
+                            setSelectedDriver(driver);
+                            setVerificationModalOpen(true);
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-gold text-black text-sm font-medium flex items-center gap-2 hover:bg-gold/90 transition-colors"
+                        >
+                          <Eye className="w-4 h-4" />
+                          Review
+                        </button>
                       )}
                     </div>
                   </div>
@@ -329,9 +343,80 @@ const AdminDriversPage = () => {
             description={searchQuery ? 'Try a different search term' : 'No drivers matching criteria'}
           />
         )}
+
+        {/* Verification Modal */}
+        <Dialog open={verificationModalOpen} onOpenChange={setVerificationModalOpen}>
+          <DialogContent className="bg-card border-border max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-foreground font-heading">Verify Driver Documents</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6 mt-4">
+              <div className="flex items-center gap-4 p-4 bg-muted rounded-xl">
+                <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center">
+                  <Car className="w-6 h-6 text-gold" />
+                </div>
+                <div>
+                  <p className="text-foreground font-bold">{selectedDriver?.user?.name}</p>
+                  <p className="text-sm text-muted-foreground">{selectedDriver?.vehicle_model} • {selectedDriver?.plate_number}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <DocumentPreviewCard
+                  title="Driver's License"
+                  url={selectedDriver?.verification_docs?.license}
+                />
+                <DocumentPreviewCard
+                  title="Vehicle Registration"
+                  url={selectedDriver?.verification_docs?.registration}
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <GoldButton
+                  variant="secondary"
+                  className="flex-1 bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20"
+                  onClick={() => handleVerify(selectedDriver.id, 'rejected')}
+                  disabled={isVerifying}
+                >
+                  Reject Application
+                </GoldButton>
+                <GoldButton
+                  className="flex-1"
+                  onClick={() => handleVerify(selectedDriver.id, 'approved')}
+                  disabled={isVerifying}
+                >
+                  {isVerifying ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Approve Driver'}
+                </GoldButton>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );
 };
+
+const DocumentPreviewCard = ({ title, url }) => (
+  <div className="p-4 rounded-xl border border-border bg-muted">
+    <p className="text-xs font-medium text-muted-foreground mb-3 lowercase tracking-wider">{title}</p>
+    {url ? (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block aspect-video rounded-lg bg-card border border-border flex flex-col items-center justify-center gap-2 hover:bg-card/80 transition-all group"
+      >
+        <FileText className="w-8 h-8 text-gold/50 group-hover:text-gold transition-colors" />
+        <span className="text-[10px] text-muted-foreground uppercase font-bold">View Document</span>
+      </a>
+    ) : (
+      <div className="aspect-video rounded-lg bg-black/20 border border-white/5 border-dashed flex flex-col items-center justify-center gap-2">
+        <AlertCircle className="w-6 h-6 text-muted-foreground/20" />
+        <span className="text-[10px] text-muted-foreground uppercase font-bold">Not Uploaded</span>
+      </div>
+    )}
+  </div>
+);
 
 export default AdminDriversPage;

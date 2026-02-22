@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Navigation, ArrowLeft, Loader2, Maximize2, Minimize2, ChevronDown } from 'lucide-react';
+import { MapPin, Navigation, ArrowLeft, Loader2, Maximize2, Minimize2, ChevronDown, AlertCircle, TrendingUp } from 'lucide-react';
 import { GlassCard, GlassInput, GoldButton, LoadingSpinner } from '../components/common/GlassComponents';
 import { RideMap, LocationPickerMap } from '../components/map/RideMap';
 import { useAuth } from '../context/AuthContext';
@@ -145,10 +145,12 @@ const RideRequestPage = () => {
 
 
       setFareEstimate({
-        estimated_fare: estimatedFare,
-        distance: dist,
-        duration: dur,
-        is_predefined: !!selectedDestination?.estimated_fare
+        estimated_fare: data.estimated_fare,
+        distance: data.verified_distance,
+        duration: data.verified_duration,
+        is_predefined: !!selectedDestination?.estimated_fare,
+        is_surge: !!data.surge_reason,
+        surge_reason: data.surge_reason
       });
     } catch (error) {
       console.error('Error calculating fare:', error);
@@ -228,22 +230,24 @@ const RideRequestPage = () => {
     }
   };
 
+
+
   // Fullscreen map modal
   if (isMapFullscreen) {
     return (
-      <div className="fixed inset-0 z-50 bg-[#0B0B0B]" data-testid="fullscreen-map">
+      <div className="fixed inset-0 z-50 bg-background" data-testid="fullscreen-map">
         <div className="absolute top-4 left-4 z-50">
           <button
             onClick={() => setIsMapFullscreen(false)}
-            className="p-3 rounded-xl bg-black/80 backdrop-blur-md border border-white/10 hover:bg-black transition-colors"
+            className="p-3 rounded-xl bg-card/80 backdrop-blur-md border border-border hover:bg-card transition-colors"
             data-testid="exit-fullscreen-btn"
           >
-            <Minimize2 className="w-5 h-5 text-white" />
+            <Minimize2 className="w-5 h-5 text-foreground" />
           </button>
         </div>
         <div className="absolute top-4 right-4 z-50 max-w-xs">
           <GlassCard className="p-3" hover={false}>
-            <p className="text-white text-sm">Tap on map to select {step === 'pickup' ? 'pickup' : 'dropoff'} location</p>
+            <p className="text-foreground text-sm">Tap on map to select {step === 'pickup' ? 'pickup' : 'dropoff'} location</p>
           </GlassCard>
         </div>
         <LocationPickerMap
@@ -265,8 +269,8 @@ const RideRequestPage = () => {
         return (
           <>
             <div className="mb-4">
-              <h2 className="font-heading text-xl font-semibold text-white mb-2">Set Pickup Location</h2>
-              <p className="text-white/50 text-sm">Tap on the map or use your current location</p>
+              <h2 className="font-heading text-xl font-semibold text-foreground mb-2">Set Pickup Location</h2>
+              <p className="text-muted-foreground text-sm">Tap on the map or use your current location</p>
             </div>
 
             <div className="mb-4">
@@ -317,24 +321,24 @@ const RideRequestPage = () => {
         return (
           <>
             <div className="mb-4">
-              <h2 className="font-heading text-xl font-semibold text-white mb-2">Set Destination</h2>
-              <p className="text-white/50 text-sm">Choose a destination or enter address</p>
+              <h2 className="font-heading text-xl font-semibold text-foreground mb-2">Set Destination</h2>
+              <p className="text-muted-foreground text-sm">Choose a destination or enter address</p>
             </div>
 
             {/* Predefined Destinations Dropdown */}
             {destinations.length > 0 && (
               <div className="mb-4">
-                <label className="block text-sm text-white/60 mb-2">Quick Select Destination</label>
+                <label className="block text-sm text-muted-foreground mb-2">Quick Select Destination</label>
                 <Select onValueChange={handleDestinationSelect}>
-                  <SelectTrigger className="w-full bg-black/30 border-white/10 text-white h-12 rounded-xl">
+                  <SelectTrigger className="w-full bg-muted border-border text-foreground h-12 rounded-xl">
                     <SelectValue placeholder="Choose a popular destination" />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#121212] border-white/10">
+                  <SelectContent className="bg-card border-border">
                     {destinations.map((dest) => (
                       <SelectItem
                         key={dest.id}
                         value={dest.id}
-                        className="text-white hover:bg-white/10 focus:bg-white/10"
+                        className="text-foreground hover:bg-muted focus:bg-muted"
                       >
                         <div className="flex items-center justify-between w-full">
                           <span>{dest.name}</span>
@@ -372,8 +376,8 @@ const RideRequestPage = () => {
         return (
           <>
             <div className="mb-4">
-              <h2 className="font-heading text-xl font-semibold text-white mb-2">Confirm Your Ride</h2>
-              <p className="text-white/50 text-sm">Review your trip details</p>
+              <h2 className="font-heading text-xl font-semibold text-foreground mb-2">Confirm Your Ride</h2>
+              <p className="text-muted-foreground text-sm">Review your trip details</p>
             </div>
 
             {/* Map Preview */}
@@ -393,16 +397,16 @@ const RideRequestPage = () => {
                 <div className="flex items-start gap-3">
                   <div className="w-3 h-3 rounded-full bg-gold mt-1.5" />
                   <div className="flex-1">
-                    <p className="text-xs text-white/40">Pickup</p>
-                    <p className="text-white">{pickup?.address || pickupAddress || 'Selected location'}</p>
+                    <p className="text-xs text-muted-foreground">Pickup</p>
+                    <p className="text-foreground">{pickup?.address || pickupAddress || 'Selected location'}</p>
                   </div>
                 </div>
-                <div className="border-l-2 border-dashed border-white/10 ml-1.5 h-4" />
+                <div className="border-l-2 border-dashed border-border ml-1.5 h-4" />
                 <div className="flex items-start gap-3">
                   <div className="w-3 h-3 rounded-full bg-emerald-500 mt-1.5" />
                   <div className="flex-1">
-                    <p className="text-xs text-white/40">Dropoff</p>
-                    <p className="text-white">{dropoff?.address || dropoffAddress || 'Selected location'}</p>
+                    <p className="text-xs text-muted-foreground">Dropoff</p>
+                    <p className="text-foreground">{dropoff?.address || dropoffAddress || 'Selected location'}</p>
                   </div>
                 </div>
               </div>
@@ -410,34 +414,52 @@ const RideRequestPage = () => {
 
             {/* Fare Breakdown */}
             {fareEstimate && (
-              <GlassCard className="p-4 mb-4" hover={false}>
-                <h3 className="font-heading font-semibold text-white mb-3">Fare Estimate</h3>
+              <GlassCard className={`p-4 mb-4 relative overflow-hidden ${fareEstimate.is_surge ? 'border-gold/50 bg-gold/5' : ''}`} hover={false}>
+                {fareEstimate.is_surge && (
+                  <div className="absolute top-0 right-0 px-3 py-1 bg-gold text-black text-[10px] font-bold uppercase tracking-wider rounded-bl-xl animate-pulse">
+                    {fareEstimate.surge_reason || 'Peak Surge'}
+                  </div>
+                )}
+                <h3 className="font-heading font-semibold text-foreground mb-3 flex items-center gap-2">
+                  Fare Estimate
+                  {fareEstimate.is_surge && <TrendingUp className="w-4 h-4 text-gold" />}
+                </h3>
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between text-white/60">
+                  <div className="flex justify-between text-muted-foreground">
                     <span>Distance</span>
                     <span>{fareEstimate.distance?.toFixed(1)} km</span>
                   </div>
-                  <div className="flex justify-between text-white/60">
+                  <div className="flex justify-between text-muted-foreground">
                     <span>Est. Duration</span>
                     <span>{fareEstimate.duration} min</span>
                   </div>
+                  {fareEstimate.is_surge && (
+                    <div className="flex justify-between text-gold/80 italic">
+                      <span>Demand Multiplier</span>
+                      <span>Applied</span>
+                    </div>
+                  )}
                   {fareEstimate.is_predefined && (
-                    <div className="flex justify-between text-white/60">
+                    <div className="flex justify-between text-muted-foreground">
                       <span>Preset Route Fare</span>
                       <span className="text-gold">✓</span>
                     </div>
                   )}
-                  <div className="border-t border-white/10 pt-2 mt-2 flex justify-between">
-                    <span className="font-semibold text-white">Total</span>
-                    <span className="font-heading font-bold text-gold text-lg">
-                      K{fareEstimate.estimated_fare?.toFixed(2)}
-                    </span>
+                  <div className="border-t border-border pt-2 mt-2 flex justify-between">
+                    <span className="font-semibold text-foreground">Total</span>
+                    <div className="text-right">
+                      <span className={`font-heading font-bold ${fareEstimate.is_surge ? 'text-gold-gradient shadow-gold' : 'text-gold'} text-lg`}>
+                        K{fareEstimate.estimated_fare?.toFixed(2)}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </GlassCard>
             )}
 
-            <p className="text-center text-white/40 text-xs mb-4">
+
+
+            <p className="text-center text-muted-foreground text-xs mb-4">
               Payment: Cash to driver after trip
             </p>
           </>
@@ -449,15 +471,15 @@ const RideRequestPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0B0B] p-4" data-testid="ride-request-page">
+    <div className="min-h-screen bg-background p-4 pb-12 transition-colors duration-300 overflow-y-auto" data-testid="ride-request-page">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <button
           onClick={handleBack}
-          className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
+          className="p-2 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
           data-testid="back-btn"
         >
-          <ArrowLeft className="w-5 h-5 text-white" />
+          <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
         <div className="flex-1">
           <div className="flex gap-2">
@@ -466,7 +488,7 @@ const RideRequestPage = () => {
                 key={s}
                 className={`h-1 flex-1 rounded-full transition-colors ${['pickup', 'dropoff', 'confirm'].indexOf(step) >= i
                   ? 'bg-gold'
-                  : 'bg-white/10'
+                  : 'bg-muted'
                   }`}
               />
             ))}

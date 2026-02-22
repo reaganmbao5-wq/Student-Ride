@@ -45,7 +45,7 @@ export const AddressSearch = ({ onLocationSelect, placeholder = "Search for a lo
     return (
         <div className="relative">
             <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40 z-10" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground z-10" />
                 <input
                     type="text"
                     value={query}
@@ -53,7 +53,7 @@ export const AddressSearch = ({ onLocationSelect, placeholder = "Search for a lo
                     onFocus={() => results.length > 0 && setShowResults(true)}
                     onBlur={() => setTimeout(() => setShowResults(false), 200)}
                     placeholder={placeholder}
-                    className="w-full h-12 pl-12 pr-12 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/50 transition-all font-medium"
+                    className="w-full h-12 pl-12 pr-12 bg-muted/50 border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/50 transition-all font-medium"
                 />
                 {loading && (
                     <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gold animate-spin" />
@@ -71,10 +71,10 @@ export const AddressSearch = ({ onLocationSelect, placeholder = "Search for a lo
                         >
                             <MapPin className="w-4 h-4 text-gold mt-1 flex-shrink-0" />
                             <div className="flex-1 min-w-0">
-                                <p className="text-white text-sm font-medium truncate">
+                                <p className="text-foreground text-sm font-medium truncate">
                                     {result.display_name.split(',')[0]}
                                 </p>
-                                <p className="text-white/50 text-xs truncate">
+                                <p className="text-muted-foreground text-xs truncate">
                                     {result.display_name}
                                 </p>
                             </div>
@@ -86,7 +86,7 @@ export const AddressSearch = ({ onLocationSelect, placeholder = "Search for a lo
             {/* No Results */}
             {showResults && !loading && query.length >= 3 && results.length === 0 && (
                 <div className="absolute z-50 w-full mt-2 rounded-xl overflow-hidden border border-white/10 bg-[#1A1A1A] shadow-xl">
-                    <div className="px-4 py-3 text-white/50 text-sm text-center">
+                    <div className="px-4 py-3 text-muted-foreground text-sm text-center">
                         No locations found. Try clicking on the map instead.
                     </div>
                 </div>

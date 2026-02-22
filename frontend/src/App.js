@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { WebSocketProvider } from "./context/WebSocketContext";
 import { Toaster } from "./components/ui/sonner";
+import { ThemeProvider } from "./context/ThemeContext";
 import PWAInstallPrompt from "./components/common/PWAInstallPrompt";
 import PushNotificationManager from "./components/common/PushNotificationManager";
 import SWUpdateManager from "./components/common/SWUpdateManager";
@@ -256,23 +257,15 @@ function App() {
   return (
     <div className="App">
       <BrowserRouter>
-        <AuthProvider>
-          <AppRoutes />
-          <PWAInstallPrompt />
-          <PushNotificationManager />
-          <SWUpdateManager />
-          <Toaster
-            position="top-center"
-            toastOptions={{
-              style: {
-                background: 'rgba(18, 18, 18, 0.95)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                color: '#fff',
-                backdropFilter: 'blur(10px)'
-              }
-            }}
-          />
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <AppRoutes />
+            <PWAInstallPrompt />
+            <PushNotificationManager />
+            <SWUpdateManager />
+            <Toaster position="top-center" />
+          </AuthProvider>
+        </ThemeProvider>
       </BrowserRouter>
     </div>
   );

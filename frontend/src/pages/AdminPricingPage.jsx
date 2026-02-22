@@ -14,8 +14,8 @@ const AdminPricingPage = () => {
             <div className="space-y-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-heading font-bold text-white">Pricing Control</h1>
-                        <p className="text-white/60">Manage platform rates and fixed routes</p>
+                        <h1 className="text-2xl font-heading font-bold text-foreground">Pricing Control</h1>
+                        <p className="text-muted-foreground/60">Manage platform rates and fixed routes</p>
                     </div>
                 </div>
 
@@ -24,7 +24,7 @@ const AdminPricingPage = () => {
                     <button
                         onClick={() => setActiveTab('global')}
                         className={`pb-3 px-4 flex items-center gap-2 transition-all relative
-                            ${activeTab === 'global' ? 'text-gold' : 'text-white/60 hover:text-white'}`}
+                            ${activeTab === 'global' ? 'text-gold' : 'text-muted-foreground hover:text-foreground'}`}
                     >
                         <Calculator className="w-4 h-4" />
                         Global Settings
@@ -36,7 +36,7 @@ const AdminPricingPage = () => {
                     <button
                         onClick={() => setActiveTab('fixed')}
                         className={`pb-3 px-4 flex items-center gap-2 transition-all relative
-                            ${activeTab === 'fixed' ? 'text-gold' : 'text-white/60 hover:text-white'}`}
+                            ${activeTab === 'fixed' ? 'text-gold' : 'text-muted-foreground hover:text-foreground'}`}
                     >
                         <Map className="w-4 h-4" />
                         Fixed Routes

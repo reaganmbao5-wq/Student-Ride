@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, WebSocket, WebSocketDisconnect, status, Query
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, WebSocket, WebSocketDisconnect, status, Query, File, UploadFile
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -184,6 +184,8 @@ class DriverResponse(BaseModel):
     minimum_required_balance: float = 50.0
     total_commission_due: float = 0.0
     total_commission_paid: float = 0.0
+    verification_docs: Optional[Dict[str, str]] = None # {"license": "url", "id": "url"}
+    verification_status: str = "none" # none, pending, approved, rejected
     created_at: Optional[str] = None
 
 class NearbyDriverResponse(BaseModel):
@@ -243,6 +245,11 @@ class RideResponse(BaseModel):
 class MessageCreate(BaseModel):
     ride_id: str
     content: str
+
+class EmergencyRequest(BaseModel):
+    ride_id: str
+    message: Optional[str] = None
+    location: Optional[Dict[str, float]] = None
     
 # ==================== PRICING MODELS ====================
 class PricingSettings(BaseModel):
@@ -520,11 +527,27 @@ async def calculate_ride_fare(pickup_loc: Dict[str, Any], dropoff_loc: Dict[str,
     surge = settings.get("surge_multiplier", 1.0)
     min_fare = settings.get("minimum_fare", 20.0)
     
+    # Time-based Surge Logic
+    current_hour = datetime.now(timezone.utc).hour + 2 # Adjusting to local Lusaka time (UTC+2)
+    if current_hour >= 24: current_hour -= 24
+    
+    time_multiplier = 1.0
+    surge_reason = None
+    
+    if current_hour >= 22 or current_hour < 5:
+        time_multiplier = 1.5
+        surge_reason = "Late Night Surge"
+    elif 7 <= current_hour <= 9:
+        time_multiplier = 1.2
+        surge_reason = "Morning Peak Surge"
+        
+    final_surge = surge * time_multiplier
+    
     dist_cost = distance_km * per_km
     time_cost = duration_min * per_min
     
     subtotal = base_fare + dist_cost + time_cost
-    surge_total = subtotal * surge
+    surge_total = subtotal * final_surge
     
     final_fare = max(surge_total, min_fare)
     final_fare = round(final_fare, 2)
@@ -533,6 +556,7 @@ async def calculate_ride_fare(pickup_loc: Dict[str, Any], dropoff_loc: Dict[str,
         "fare": final_fare,
         "is_fixed": False,
         "route_name": "Standard Ride",
+        "surge_reason": surge_reason,
         "breakdown": {
             "base": base_fare,
             "distance": round(dist_cost, 2),
@@ -880,6 +904,78 @@ async def toggle_online_status(user: dict = Depends(require_driver)):
     
     return {"is_online": new_status}
 
+@api_router.post("/drivers/documents")
+async def upload_driver_documents(
+    doc_type: str = Query(...), 
+    file: UploadFile = File(...), 
+    user: dict = Depends(require_driver)
+):
+    """
+    Uploads driver verification documents. Max 2MB.
+    """
+    # 2MB Limit
+    MAX_SIZE = 2 * 1024 * 1024
+    content = await file.read()
+    if len(content) > MAX_SIZE:
+        raise HTTPException(status_code=413, detail="File too large. Maximum size is 2MB.")
+    
+    # Reset cursor after reading
+    await file.seek(0)
+    
+    # Save file
+    upload_dir = ROOT_DIR / "uploads" / "drivers" / user["id"]
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    
+    file_ext = os.path.splitext(file.filename)[1]
+    filename = f"{doc_type}_{uuid.uuid4()}{file_ext}"
+    file_path = upload_dir / filename
+    
+    with open(file_path, "wb") as buffer:
+        buffer.write(content)
+        
+    # Update driver record
+    doc_url = f"/api/uploads/drivers/{user['id']}/{filename}"
+    await db.drivers.update_one(
+        {"user_id": user["id"]},
+        {
+            "$set": {
+                f"verification_docs.{doc_type}": doc_url,
+                "verification_status": "pending"
+            }
+        }
+    )
+    
+    return {"status": "success", "url": doc_url}
+
+@api_router.post("/admin/drivers/{driver_id}/verify")
+async def verify_driver(
+    driver_id: str, 
+    status: str = Query(..., regex="^(approved|rejected)$"),
+    user: dict = Depends(require_admin)
+):
+    """
+    Admin verification of driver documents.
+    """
+    driver = await db.drivers.find_one({"id": driver_id})
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver not found")
+        
+    await db.drivers.update_one(
+        {"id": driver_id},
+        {"$set": {
+            "verification_status": status,
+            "is_approved": status == "approved"
+        }}
+    )
+    
+    # Update role to driver only if approved
+    if status == "approved":
+        await db.users.update_one({"id": driver["user_id"]}, {"$set": {"role": UserRole.DRIVER.value}})
+    
+    await log_admin_action(user["id"], user["name"], "verify_driver", driver_id, f"Status: {status}")
+    
+    return {"status": "success", "verification_status": status}
+
 @api_router.post("/drivers/location")
 async def update_location(location: LocationUpdate, user: dict = Depends(require_driver)):
     loc_data = {"lat": location.latitude, "lng": location.longitude}
@@ -1026,6 +1122,59 @@ async def run_daily_settlement(user: dict = Depends(require_admin)):
         "status": "success", 
         "settled_drivers": settled_count, 
         "total_settled_amount": total_amount
+    }
+
+@api_router.get("/admin/analytics")
+async def get_admin_analytics(user: dict = Depends(require_admin)):
+    """
+    Detailed analytics for the admin dashboard.
+    """
+    # 1. Revenue & Ride Trends (Last 30 days)
+    thirty_days_ago = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+    
+    # Simple aggregation using python since we're using Motor and small dataset
+    # For large scale, we'd use MongoDB aggregation framework
+    rides = await db.rides.find({
+        "created_at": {"$gte": thirty_days_ago},
+        "status": RideStatus.COMPLETED.value
+    }).to_list(5000)
+    
+    daily_stats = {}
+    dest_stats = {}
+    
+    for ride in rides:
+        # Daily Stats
+        date = datetime.fromisoformat(ride["created_at"]).strftime("%Y-%m-%d")
+        if date not in daily_stats:
+            daily_stats[date] = {"date": date, "revenue": 0.0, "rides": 0}
+        daily_stats[date]["revenue"] += ride.get("fare", 0.0)
+        daily_stats[date]["rides"] += 1
+        
+        # Destination Stats
+        dest_name = ride["dropoff_location"].get("address", "Unknown")
+        # Try to find common name if address is long
+        if "," in dest_name:
+            dest_name = dest_name.split(",")[0]
+            
+        if dest_name not in dest_stats:
+            dest_stats[dest_name] = {"name": dest_name, "value": 0}
+        dest_stats[dest_name]["value"] += 1
+        
+    revenue_chart = sorted(daily_stats.values(), key=lambda x: x["date"])
+    destination_chart = sorted(dest_stats.values(), key=lambda x: x["value"], reverse=True)[:10]
+    
+    # Online Drivers vs Busy Drivers
+    online_drivers = await db.drivers.count_documents({"is_online": True})
+    busy_drivers = await db.drivers.count_documents({"is_online": True, "current_ride_id": {"$ne": None}})
+    
+    return {
+        "revenue_trends": revenue_chart,
+        "popular_destinations": destination_chart,
+        "driver_activity": {
+            "online": online_drivers,
+            "busy": busy_drivers,
+            "available": online_drivers - busy_drivers
+        }
     }
 
 # ==================== DESTINATION ROUTES ====================
@@ -1430,6 +1579,58 @@ async def cancel_ride(ride_id: str, user: dict = Depends(get_current_user)):
         )
     
     return {"status": "cancelled"}
+
+@api_router.post("/emergency/sos")
+async def trigger_sos(request: EmergencyRequest, user: dict = Depends(get_current_user)):
+    """
+    Triggers an emergency SOS alert.
+    Redirects user to phone dialer and notifies all admins via push.
+    """
+    ride = await db.rides.find_one({"id": request.ride_id})
+    if not ride:
+        raise HTTPException(status_code=404, detail="Ride not found")
+        
+    # Safety check: only the student or driver can trigger SOS
+    if user["id"] != ride["student_id"] and user["id"] != ride.get("driver_id"):
+        raise HTTPException(status_code=403, detail="Not authorized to trigger SOS for this ride")
+
+    # Get all admins and super admins
+    admins = await db.users.find({
+        "role": {"$in": [UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value]}
+    }).to_list(100)
+    
+    # Broadcast push notification to all admins
+    admin_count = 0
+    for admin in admins:
+        success = await notification_service.send(
+            user_id=admin["id"],
+            type="emergency_sos",
+            payload={
+                "title": "🚨 EMERGENCY SOS",
+                "body": f"SOS triggered by {user['name']} in Ride #{ride['id'][:8]}. User is in danger!",
+                "url": f"/admin/rides/{ride['id']}",
+                "icon": "/logo192.png",
+                "badge": "/favicon-32x32.png",
+                "tag": f"emergency-{ride['id']}"
+            }
+        )
+        if success:
+            admin_count += 1
+            
+    # Log the emergency action
+    await log_admin_action(
+        admin_id=user["id"],
+        admin_name=user["name"],
+        action="emergency_sos",
+        target_id=request.ride_id,
+        details=f"SOS triggered. Location: {request.location or 'Unknown'}. Message: {request.message or 'None'}"
+    )
+    
+    return {
+        "status": "triggered",
+        "admins_notified": admin_count,
+        "emergency_contact": "+260976954518"
+    }
 
 @api_router.post("/rides/{ride_id}/rate")
 async def rate_ride(ride_id: str, rating_data: RatingCreate, user: dict = Depends(get_current_user)):

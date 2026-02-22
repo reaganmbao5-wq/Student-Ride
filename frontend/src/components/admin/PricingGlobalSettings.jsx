@@ -55,104 +55,106 @@ const PricingGlobalSettings = () => {
         }
     };
 
-    if (fetching) return <div className="text-white/60 p-8 text-center">Loading settings...</div>;
+    if (fetching) return <div className="text-muted-foreground p-8 text-center">Loading settings...</div>;
 
     return (
         <GlassCard className="p-6">
-            <h2 className="text-xl font-heading font-semibold text-white mb-6 flex items-center gap-2">
+            <h2 className="text-xl font-heading font-semibold text-foreground mb-6 flex items-center gap-2">
                 <Settings className="w-5 h-5 text-gold" />
                 Global Pricing Configuration
             </h2>
 
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
-                    <h3 className="text-white/80 font-medium border-b border-white/10 pb-2">Base Rates</h3>
-
-                    <div>
-                        <label className="block text-sm text-white/60 mb-2">Base Fare (Starting Price)</label>
-                        <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40">K</span>
-                            <GlassInput
-                                name="base_fare"
-                                type="number"
-                                step="0.5"
-                                value={settings.base_fare}
-                                onChange={handleChange}
-                                className="pl-8"
-                            />
+                    <h3 className="text-foreground font-medium border-b border-border pb-2">Base Rates</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                        <div>
+                            <label className="block text-sm text-muted-foreground mb-2">Base Fare (Starting Price)</label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">K</span>
+                                <GlassInput
+                                    name="base_fare"
+                                    type="number"
+                                    step="0.5"
+                                    value={settings.base_fare}
+                                    onChange={handleChange}
+                                    className="pl-8"
+                                />
+                            </div>
                         </div>
-                    </div>
 
-                    <div>
-                        <label className="block text-sm text-white/60 mb-2">Cost Per Kilometer</label>
-                        <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40">K</span>
-                            <GlassInput
-                                name="per_km_rate"
-                                type="number"
-                                step="0.5"
-                                value={settings.per_km_rate}
-                                onChange={handleChange}
-                                className="pl-8"
-                            />
+                        <div>
+                            <label className="block text-sm text-muted-foreground mb-2">Cost Per Kilometer</label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">K</span>
+                                <GlassInput
+                                    name="per_km_rate"
+                                    type="number"
+                                    step="0.5"
+                                    value={settings.per_km_rate}
+                                    onChange={handleChange}
+                                    className="pl-8"
+                                />
+                            </div>
                         </div>
-                    </div>
 
-                    <div>
-                        <label className="block text-sm text-white/60 mb-2">Cost Per Minute</label>
-                        <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40">K</span>
-                            <GlassInput
-                                name="per_minute_rate"
-                                type="number"
-                                step="0.5"
-                                value={settings.per_minute_rate}
-                                onChange={handleChange}
-                                className="pl-8"
-                            />
+                        <div>
+                            <label className="block text-sm text-muted-foreground mb-2">Cost Per Minute</label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">K</span>
+                                <GlassInput
+                                    name="per_minute_rate"
+                                    type="number"
+                                    step="0.5"
+                                    value={settings.per_minute_rate}
+                                    onChange={handleChange}
+                                    className="pl-8"
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div className="space-y-4">
-                    <h3 className="text-white/80 font-medium border-b border-white/10 pb-2">Multipliers & Limits</h3>
-
-                    <div>
-                        <label className="block text-sm text-white/60 mb-2">Surge Multiplier (1.0 = Normal)</label>
-                        <GlassInput
-                            name="surge_multiplier"
-                            type="number"
-                            step="0.1"
-                            min="1.0"
-                            max="5.0"
-                            value={settings.surge_multiplier}
-                            onChange={handleChange}
-                        />
-                        <p className="text-xs text-white/40 mt-1">Multiplies the total dynamic fare.</p>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm text-white/60 mb-2">Minimum Fare Floor</label>
-                        <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40">K</span>
+                    <h3 className="text-foreground font-medium border-b border-border pb-2">Multipliers & Limits</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                        <div>
+                            <label className="block text-sm text-muted-foreground mb-2">Surge Multiplier (1.0 = Normal)</label>
                             <GlassInput
-                                name="minimum_fare"
+                                name="surge_multiplier"
                                 type="number"
-                                step="1.0"
-                                value={settings.minimum_fare}
+                                step="0.1"
+                                min="1.0"
+                                max="5.0"
+                                value={settings.surge_multiplier}
                                 onChange={handleChange}
-                                className="pl-8"
                             />
+                            <p className="text-xs text-muted-foreground mt-1">Multiplies the total dynamic fare.</p>
                         </div>
-                        <p className="text-xs text-white/40 mt-1">The absolute minimum price for a ride.</p>
+
+                        <div>
+                            <label className="block text-sm text-muted-foreground mb-2">Minimum Fare Floor</label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">K</span>
+                                <GlassInput
+                                    name="minimum_fare"
+                                    type="number"
+                                    step="1.0"
+                                    value={settings.minimum_fare}
+                                    onChange={handleChange}
+                                    className="pl-8"
+                                />
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">The absolute minimum price for a ride.</p>
+                        </div>
                     </div>
                 </div>
 
-                <div className="md:col-span-2 pt-4 border-t border-white/10 flex justify-end gap-3">
+                <div className="md:col-span-2 pt-4 border-t border-border flex justify-end gap-3">
                     <button
                         type="button"
                         onClick={fetchSettings}
-                        className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-colors flex items-center gap-2"
+                        className="px-4 py-2 rounded-xl bg-muted hover:bg-muted/80 text-foreground transition-colors flex items-center gap-2"
                     >
                         <RefreshCw className="w-4 h-4" /> Reset
                     </button>
