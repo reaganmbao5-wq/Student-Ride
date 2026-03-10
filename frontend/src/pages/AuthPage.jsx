@@ -108,14 +108,24 @@ const AuthPage = () => {
         throw new Error(data.detail || 'Google authentication failed');
       }
 
-      // Instead of reinventing the wheel, we should inject the user into the auth context
-      // The context needs a way to set the token & user directly, but we can just use localStorage for now
-      // and force a reload, OR update context if possible.
-      localStorage.setItem('access_token', data.access_token);
-      localStorage.setItem('user_role', data.user.role);
+      // Save token using the correct key that AuthContext reads
+      localStorage.setItem('token', data.access_token);
 
-      window.location.href = data.user.role === 'admin' || data.user.role === 'super_admin' ? '/admin'
-        : data.user.role === 'driver' ? '/driver' : '/dashboard';
+      if (data.is_new_user) {
+        // New Google user — send to complete-profile page (Uber style)
+        navigate('/complete-profile', {
+          state: {
+            name: data.user.name,
+            email: data.user.email,
+            token: data.access_token,
+          }
+        });
+      } else {
+        // Existing user — redirect straight to their dashboard
+        const role = data.user.role;
+        window.location.href = role === 'admin' || role === 'super_admin' ? '/admin'
+          : role === 'driver' ? '/driver' : '/dashboard';
+      }
 
     } catch (error) {
       console.error('Google auth error:', error);

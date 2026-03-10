@@ -15,6 +15,7 @@ import AuthPage from "./pages/AuthPage";
 import StudentDashboard from "./pages/StudentDashboard";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import CompleteProfilePage from "./pages/CompleteProfilePage";
 import RideRequestPage from "./pages/RideRequestPage";
 import RideHistoryPage from "./pages/RideHistoryPage";
 import DriverDashboard from "./pages/DriverDashboard";
@@ -118,6 +119,10 @@ const AppRoutes = () => {
               <ResetPasswordPage />
             </PublicRoute>
           }
+        />
+        <Route
+          path="/complete-profile"
+          element={<CompleteProfilePage />}
         />
 
         {/* Student Routes */}

@@ -428,6 +428,32 @@ async def require_admin(user: dict = Depends(get_current_user)) -> dict:
 async def get_current_user_profile(user: dict = Depends(get_current_user)):
     return user
 
+class UpdateProfileRequest(BaseModel):
+    phone: Optional[str] = None
+    role: Optional[str] = None
+
+@api_router.patch("/users/me")
+async def update_my_profile(updates: UpdateProfileRequest, user: dict = Depends(get_current_user)):
+    """Let a user update their own phone number and optionally their role (student → driver)."""
+    update_fields = {}
+    if updates.phone is not None:
+        update_fields["phone"] = updates.phone.strip()
+    if updates.role in [UserRole.STUDENT.value, UserRole.DRIVER.value]:
+        update_fields["role"] = updates.role
+    if not update_fields:
+        raise HTTPException(status_code=400, detail="No valid fields to update")
+    await db.users.update_one({"id": user["id"]}, {"$set": update_fields})
+    updated = await db.users.find_one({"id": user["id"]}, {"_id": 0})
+    return UserResponse(
+        id=updated["id"],
+        email=updated["email"],
+        name=updated["name"],
+        phone=updated.get("phone", ""),
+        role=UserRole(updated["role"]),
+        created_at=updated["created_at"],
+        is_active=updated.get("is_active", True)
+    )
+
 @api_router.get("/admin/users", response_model=List[UserResponse])
 async def get_all_users(user: dict = Depends(require_admin)):
     users = await db.users.find({}, {"password_hash": 0, "_id": 0}).to_list(1000)
@@ -896,8 +922,10 @@ async def google_login(request: GoogleLoginRequest):
 
         # Check if user exists
         user = await db.users.find_one({"email": email.lower()}, {"_id": 0})
+        is_new_user = False
         
         if not user:
+            is_new_user = True
             # Create a new user account automatically
             user_id = str(uuid.uuid4())
             user = {
@@ -918,18 +946,19 @@ async def google_login(request: GoogleLoginRequest):
         # Generate JWT token
         token = create_token(user["id"], user["role"])
         
-        return TokenResponse(
-            access_token=token,
-            user=UserResponse(
-                id=user["id"],
-                email=user["email"],
-                name=user["name"],
-                phone=user["phone"],
-                role=UserRole(user["role"]),
-                created_at=user["created_at"],
-                is_active=user.get("is_active", True)
-            )
-        )
+        return {
+            "access_token": token,
+            "is_new_user": is_new_user,
+            "user": {
+                "id": user["id"],
+                "email": user["email"],
+                "name": user["name"],
+                "phone": user["phone"],
+                "role": user["role"],
+                "created_at": user["created_at"],
+                "is_active": user.get("is_active", True)
+            }
+        }
 
     except ValueError:
         # Invalid token
