@@ -3001,7 +3001,7 @@ async def upload_file(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail="Failed to upload file")
 
 # Include router
-app.include_router(api_router)
+app.include_router(api_router, prefix="/api")
 
 # Add Rate Limit (First in stack essentially)
 app.add_middleware(RateLimitMiddleware)
