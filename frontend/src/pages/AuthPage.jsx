@@ -4,6 +4,7 @@ import { Car, Eye, EyeOff, ArrowLeft, Mail, Phone, User, Lock } from 'lucide-rea
 import { GlassCard, GlassInput, GoldButton, LoadingSpinner } from '../components/common/GlassComponents';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
+import { GoogleLogin } from '@react-oauth/google';
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -86,6 +87,39 @@ const AuthPage = () => {
         ? detail.map(e => e.msg).join(', ') // Handle Pydantic validation errors
         : detail || 'Authentication failed. Please check your inputs.';
       toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setLoading(true);
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
+      const response = await fetch(`${backendUrl}/api/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_token: credentialResponse.credential }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || 'Google authentication failed');
+      }
+
+      // Instead of reinventing the wheel, we should inject the user into the auth context
+      // The context needs a way to set the token & user directly, but we can just use localStorage for now
+      // and force a reload, OR update context if possible.
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('user_role', data.user.role);
+
+      window.location.href = data.user.role === 'admin' || data.user.role === 'super_admin' ? '/admin'
+        : data.user.role === 'driver' ? '/driver' : '/dashboard';
+
+    } catch (error) {
+      console.error('Google auth error:', error);
+      toast.error(error.message);
     } finally {
       setLoading(false);
     }
@@ -248,9 +282,20 @@ const AuthPage = () => {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
+
+            {mode === 'login' && (
+              <div className="flex justify-end mt-1 mb-2">
+                <button
+                  type="button"
+                  onClick={() => navigate('/forgot-password')}
+                  className="text-sm font-medium text-gold hover:text-gold/80 transition-colors"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+            )}
 
             {/* Confirm Password */}
             {mode === 'register' && (
@@ -343,6 +388,31 @@ const AuthPage = () => {
                 'Create Account'
               )}
             </GoldButton>
+
+            {/* Divider */}
+            <div className="relative mt-6 mb-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-muted px-2 text-muted-foreground">Or continue with</span>
+              </div>
+            </div>
+
+            {/* Google Authentication */}
+            <div className="flex justify-center flex-col items-center gap-2">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => {
+                  toast.error('Google authentication failed');
+                }}
+                useOneTap={false}
+                shape="rect"
+                theme="filled_black"
+                text="continue_with"
+                size="large"
+              />
+            </div>
           </form>
 
           {/* Footer */}
