@@ -126,7 +126,7 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden transition-colors duration-300">
+    <div className="min-h-screen bg-background flex items-start justify-center p-4 pt-16 pb-8 relative overflow-y-auto transition-colors duration-300">
       {/* Background Effects */}
       <div className="absolute inset-0">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-gold/5 rounded-full blur-[150px]" />
@@ -146,7 +146,7 @@ const AuthPage = () => {
         <span>Back</span>
       </button>
 
-      <div className="relative z-10 w-full max-w-md">
+      <div className="relative z-10 w-full max-w-md my-auto">
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-8">
           <div className="w-14 h-14 rounded-2xl bg-gold flex items-center justify-center shadow-gold">
