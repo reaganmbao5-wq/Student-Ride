@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Car, Eye, EyeOff, ArrowLeft, Mail, Phone, User, Lock } from 'lucide-react';
+import { Car, Eye, EyeOff, ArrowLeft, Mail, Phone, User, Lock, UploadCloud, FileText, CheckCircle2 } from 'lucide-react';
 import { GlassCard, GlassInput, GoldButton, LoadingSpinner } from '../components/common/GlassComponents';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -9,12 +9,18 @@ import { GoogleLogin } from '@react-oauth/google';
 const AuthPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { login, register, signupDriver } = useAuth();
+  const { login, register, signupDriver, api } = useAuth();
 
   const [mode, setMode] = useState(searchParams.get('mode') === 'driver' ? 'register' : 'login');
   const [isDriver, setIsDriver] = useState(searchParams.get('mode') === 'driver');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  
+  const [docs, setDocs] = useState({
+    license: null,
+    registration: null
+  });
+  const [uploadingDocs, setUploadingDocs] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -32,6 +38,22 @@ const AuthPage = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setDocs({ ...docs, [e.target.name]: file });
+    }
+  };
+
+  const uploadFile = async (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await api.post('/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data.url;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -46,13 +68,30 @@ const AuthPage = () => {
 
         let user;
         if (isDriver) {
+          setUploadingDocs(true);
+          // 1. Upload the documents first
+          let licenseUrl = "";
+          let registrationUrl = "";
+          
+          if (docs.license) {
+            licenseUrl = await uploadFile(docs.license);
+          }
+          if (docs.registration) {
+            registrationUrl = await uploadFile(docs.registration);
+          }
+          
           // Unified Driver Signup
           user = await signupDriver(formData, {
             vehicle_type: formData.vehicle_type,
             vehicle_model: formData.vehicle_model,
             vehicle_color: formData.vehicle_color,
-            plate_number: formData.plate_number
+            plate_number: formData.plate_number,
+            verification_docs: {
+              license: licenseUrl,
+              registration: registrationUrl
+            }
           });
+          setUploadingDocs(false);
           toast.success('Driver account created! Waiting for approval.');
           navigate('/driver');
         } else {
@@ -378,22 +417,77 @@ const AuthPage = () => {
                   required
                   className="uppercase text-sm"
                 />
+
+                {/* KYC Documents */}
+                <div className="pt-2 border-t border-border mt-4 mb-2">
+                  <label className="block text-sm text-foreground font-medium mb-3">Verification Documents</label>
+                  <div className="space-y-3">
+                    
+                    {/* Driver's License */}
+                    <div className="relative">
+                      <input
+                        type="file"
+                        name="license"
+                        id="auth_license_upload"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                      <label 
+                        htmlFor="auth_license_upload"
+                        className={`flex items-center justify-between p-3 rounded-xl border border-dashed cursor-pointer transition-colors ${docs.license ? 'bg-gold/10 border-gold/50 text-gold' : 'bg-background border-white/10 text-muted-foreground hover:bg-muted/80'}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <FileText className="w-5 h-5" />
+                          <span className="text-sm font-medium">{docs.license ? docs.license.name : "Driver's License"}</span>
+                        </div>
+                        {docs.license ? <CheckCircle2 className="w-5 h-5" /> : <UploadCloud className="w-5 h-5" />}
+                      </label>
+                    </div>
+
+                    {/* Vehicle Registration */}
+                    <div className="relative">
+                      <input
+                        type="file"
+                        name="registration"
+                        id="auth_registration_upload"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                      <label 
+                        htmlFor="auth_registration_upload"
+                        className={`flex items-center justify-between p-3 rounded-xl border border-dashed cursor-pointer transition-colors ${docs.registration ? 'bg-gold/10 border-gold/50 text-gold' : 'bg-background border-white/10 text-muted-foreground hover:bg-muted/80'}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <FileText className="w-5 h-5" />
+                          <span className="text-sm font-medium">{docs.registration ? docs.registration.name : "Vehicle Registration"}</span>
+                        </div>
+                        {docs.registration ? <CheckCircle2 className="w-5 h-5" /> : <UploadCloud className="w-5 h-5" />}
+                      </label>
+                    </div>
+                    
+                  </div>
+                </div>
+
               </div>
             )}
 
-            {/* Submit */}
             <GoldButton
               type="submit"
               className="w-full mt-6"
-              disabled={loading}
+              disabled={loading || uploadingDocs}
               data-testid="submit-btn"
             >
-              {loading ? (
-                <LoadingSpinner size="sm" className="mx-auto" />
+              {loading || uploadingDocs ? (
+                <div className="flex flex-col items-center">
+                  <LoadingSpinner size="sm" className="mx-auto" />
+                  {uploadingDocs && <span className="text-xs mt-1">Uploading...</span>}
+                </div>
               ) : mode === 'login' ? (
                 'Sign In'
               ) : isDriver ? (
-                'Continue to Driver Setup'
+                'Create Driver Account'
               ) : (
                 'Create Account'
               )}

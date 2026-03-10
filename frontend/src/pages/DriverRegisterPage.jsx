@@ -1,14 +1,21 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Car, ArrowLeft, Loader2 } from 'lucide-react';
+import { Car, ArrowLeft, Loader2, UploadCloud, FileText, CheckCircle2 } from 'lucide-react';
 import { GlassCard, GlassInput, GoldButton } from '../components/common/GlassComponents';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 
 const DriverRegisterPage = () => {
   const navigate = useNavigate();
-  const { registerDriver } = useAuth();
+  const { registerDriver, api } = useAuth();
   const [loading, setLoading] = useState(false);
+  
+  const [docs, setDocs] = useState({
+    license: null,
+    registration: null
+  });
+  
+  const [uploadingDocs, setUploadingDocs] = useState(false);
 
   const [formData, setFormData] = useState({
     vehicle_type: 'car',
@@ -17,16 +24,50 @@ const DriverRegisterPage = () => {
     vehicle_color: ''
   });
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setDocs({ ...docs, [e.target.name]: file });
+    }
+  };
+
+  const uploadFile = async (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await api.post('/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data.url;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setUploadingDocs(true);
 
     try {
-      await registerDriver(formData);
+      // 1. Upload the documents first
+      let licenseUrl = "";
+      let registrationUrl = "";
+      
+      if (docs.license) {
+        licenseUrl = await uploadFile(docs.license);
+      }
+      if (docs.registration) {
+        registrationUrl = await uploadFile(docs.registration);
+      }
+      
+      // 2. Add URLs to the form payload
+      const payload = {
+        ...formData,
+        verification_docs: {
+          license: licenseUrl,
+          registration: registrationUrl
+        }
+      };
+
+      await registerDriver(payload);
+      setUploadingDocs(false);
       toast.success('Driver profile created! You are now a driver.');
       // Small delay to ensure state propagation
       setTimeout(() => {
@@ -140,6 +181,58 @@ const DriverRegisterPage = () => {
               />
             </div>
 
+            {/* KYC Documents */}
+            <div className="pt-2 border-t border-border mt-4 mb-2">
+              <label className="block text-sm text-foreground font-medium mb-3">Verification Documents</label>
+              <div className="space-y-3">
+                
+                {/* Driver's License */}
+                <div className="relative">
+                  <input
+                    type="file"
+                    name="license"
+                    id="license_upload"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  <label 
+                    htmlFor="license_upload"
+                    className={`flex items-center justify-between p-3 rounded-xl border border-dashed cursor-pointer transition-colors ${docs.license ? 'bg-gold/10 border-gold/50 text-gold' : 'bg-muted border-white/10 text-muted-foreground hover:bg-muted/80'}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <FileText className="w-5 h-5" />
+                      <span className="text-sm font-medium">{docs.license ? docs.license.name : "Upload Driver's License"}</span>
+                    </div>
+                    {docs.license ? <CheckCircle2 className="w-5 h-5" /> : <UploadCloud className="w-5 h-5" />}
+                  </label>
+                </div>
+
+                {/* Vehicle Registration */}
+                <div className="relative">
+                  <input
+                    type="file"
+                    name="registration"
+                    id="registration_upload"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  <label 
+                    htmlFor="registration_upload"
+                    className={`flex items-center justify-between p-3 rounded-xl border border-dashed cursor-pointer transition-colors ${docs.registration ? 'bg-gold/10 border-gold/50 text-gold' : 'bg-muted border-white/10 text-muted-foreground hover:bg-muted/80'}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <FileText className="w-5 h-5" />
+                      <span className="text-sm font-medium">{docs.registration ? docs.registration.name : "Upload Vehicle Registration"}</span>
+                    </div>
+                    {docs.registration ? <CheckCircle2 className="w-5 h-5" /> : <UploadCloud className="w-5 h-5" />}
+                  </label>
+                </div>
+                
+              </div>
+            </div>
+
             <div className="pt-4">
               <GoldButton
                 type="submit"
@@ -148,7 +241,10 @@ const DriverRegisterPage = () => {
                 data-testid="submit-btn"
               >
                 {loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>{uploadingDocs ? "Uploading Documents..." : "Saving Profile..."}</span>
+                  </div>
                 ) : (
                   'Complete Registration'
                 )}

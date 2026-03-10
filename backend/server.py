@@ -1,4 +1,5 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, WebSocket, WebSocketDisconnect, status, Query, File, UploadFile, Response
+from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -66,8 +67,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-api_router = APIRouter(prefix="/api")
+api_router = APIRouter()
 security = HTTPBearer()
+
+# Configure Static Files for Uploads
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 @app.get("/")
 async def health_check():
@@ -194,6 +200,7 @@ class DriverProfile(BaseModel):
     plate_number: str
     vehicle_model: str
     vehicle_color: str
+    verification_docs: Optional[Dict[str, str]] = None
 
 class DriverResponse(BaseModel):
     id: str
@@ -1094,6 +1101,7 @@ async def register_driver(profile: DriverProfile, user: dict = Depends(get_curre
         "minimum_required_balance": 50.0,
         "total_commission_due": 0.0,
         "total_commission_paid": 0.0,
+        "verification_docs": profile.verification_docs or {},
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     try:
@@ -2971,6 +2979,26 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             self.rate_limit_records[key] = history
             
         return await call_next(request)
+
+@api_router.post("/upload")
+async def upload_file(file: UploadFile = File(...)):
+    """Handles image uploads for KYC documents."""
+    try:
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="No file selected")
+            
+        file_ext = file.filename.split(".")[-1]
+        unique_filename = f"{uuid.uuid4().hex}.{file_ext}"
+        file_path = os.path.join(UPLOAD_DIR, unique_filename)
+        
+        with open(file_path, "wb") as buffer:
+            content = await file.read()
+            buffer.write(content)
+            
+        return {"url": f"{os.environ.get('REACT_APP_BACKEND_URL', 'http://localhost:8000')}/uploads/{unique_filename}"}
+    except Exception as e:
+        logger.error(f"File upload error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to upload file")
 
 # Include router
 app.include_router(api_router)
