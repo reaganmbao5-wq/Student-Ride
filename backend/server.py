@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone, timedelta
+from enum import Enum
 from services.osrm_service import get_route
 from services.notification_service import NotificationService
 import jwt
