@@ -162,7 +162,11 @@ const AuthPage = () => {
       } else {
         // Existing user — redirect straight to their dashboard
         const role = data.user.role;
+        // If driver, check if they need registration (profile data exists in data.user usually if backend is thorough)
+        // But the safest way is to go to dashboard which now handles the redirect, 
+        // OR better: if they are a driver, let them go to /driver and let dashboard handle it.
         window.location.href = role === 'admin' || role === 'super_admin' ? '/admin'
+          : role === 'driver' && !data.user.driver_profile_complete ? '/driver/register' // Assuming backend sends driver_profile_complete
           : role === 'driver' ? '/driver' : '/dashboard';
       }
 

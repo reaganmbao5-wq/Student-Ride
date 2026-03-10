@@ -1090,7 +1090,6 @@ async def register_driver(profile: DriverProfile, user: dict = Depends(get_curre
         "rating": 5.0,
         "total_rides": 0,
         "total_earnings": 0.0,
-        "total_earnings": 0.0,
         "is_online": False,
         "is_approved": False,
         "current_ride_id": None, # For locking
@@ -1180,7 +1179,9 @@ async def upload_driver_documents(
         metadata={"driver_id": user["id"], "content_type": file.content_type}
     )
     
-    doc_url = f"/api/documents/{str(file_id)}"
+    # Generate absolute URL
+    backend_url = os.environ.get('BACKEND_URL', 'https://student-ride-backend-manual.onrender.com').rstrip('/')
+    doc_url = f"{backend_url}/api/documents/{str(file_id)}"
     
     await db.drivers.update_one(
         {"user_id": user["id"]},
@@ -2981,23 +2982,28 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 @api_router.post("/upload")
-async def upload_file(file: UploadFile = File(...)):
-    """Handles image uploads for KYC documents."""
+async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+    """Handles image uploads for KYC documents using GridFS."""
     try:
         if not file.filename:
             raise HTTPException(status_code=400, detail="No file selected")
             
-        file_ext = file.filename.split(".")[-1]
-        unique_filename = f"{uuid.uuid4().hex}.{file_ext}"
-        file_path = os.path.join(UPLOAD_DIR, unique_filename)
+        content = await file.read()
+        fs = AsyncIOMotorGridFSBucket(db)
         
-        with open(file_path, "wb") as buffer:
-            content = await file.read()
-            buffer.write(content)
-            
-        return {"url": f"{os.environ.get('REACT_APP_BACKEND_URL', 'http://localhost:8000')}/uploads/{unique_filename}"}
+        file_id = await fs.upload_from_stream(
+            file.filename,
+            content,
+            metadata={"user_id": user["id"], "content_type": file.content_type}
+        )
+        
+        backend_url = os.environ.get('BACKEND_URL', 'https://student-ride-backend-manual.onrender.com').rstrip('/')
+        doc_url = f"{backend_url}/api/documents/{str(file_id)}"
+        
+        return {"url": doc_url}
     except Exception as e:
         logger.error(f"File upload error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to upload file")
         raise HTTPException(status_code=500, detail="Failed to upload file")
 
 # Include router

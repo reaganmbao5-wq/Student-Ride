@@ -151,9 +151,19 @@ const DriverDashboard = () => {
       setActiveRide(activeRes.data);
       setEarnings(earningsRes.data);
       setPendingRides(pendingRes.data || []);
-      await refreshDriverProfile();
+      
+      const profile = await refreshDriverProfile();
+      if (!profile) {
+        console.log("No driver profile found, redirecting to registration...");
+        navigate('/driver/register');
+        return;
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
+      // If we get a 404 on profile, redirected to register
+      if (error.response?.status === 404) {
+        navigate('/driver/register');
+      }
     } finally {
       setLoading(false);
     }

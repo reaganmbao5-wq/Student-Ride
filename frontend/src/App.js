@@ -171,7 +171,7 @@ const AppRoutes = () => {
         <Route
           path="/driver/register"
           element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute allowedRoles={['student', 'driver']}>
               <DriverRegisterPage />
             </ProtectedRoute>
           }

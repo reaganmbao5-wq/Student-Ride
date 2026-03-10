@@ -208,10 +208,13 @@ export const AuthProvider = ({ children }) => {
       try {
         const response = await api.get('/drivers/me');
         setDriverProfile(response.data);
+        return response.data;
       } catch (e) {
         console.error('Error refreshing driver profile:', e);
+        return null;
       }
     }
+    return null;
   };
 
   const value = {

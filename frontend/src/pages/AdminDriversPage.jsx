@@ -401,15 +401,38 @@ const DocumentPreviewCard = ({ title, url }) => (
   <div className="p-4 rounded-xl border border-border bg-muted">
     <p className="text-xs font-medium text-muted-foreground mb-3 lowercase tracking-wider">{title}</p>
     {url ? (
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block aspect-video rounded-lg bg-card border border-border flex flex-col items-center justify-center gap-2 hover:bg-card/80 transition-all group"
-      >
-        <FileText className="w-8 h-8 text-gold/50 group-hover:text-gold transition-colors" />
-        <span className="text-[10px] text-muted-foreground uppercase font-bold">View Document</span>
-      </a>
+      <div className="space-y-3">
+        <div className="aspect-video rounded-lg bg-card border border-border overflow-hidden relative group">
+          <img 
+            src={url} 
+            alt={title} 
+            className="w-full h-full object-cover transition-transform group-hover:scale-110"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = 'https://placehold.co/400x225?text=Document';
+            }}
+          />
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 rounded-full bg-gold text-black"
+            >
+              <Eye className="w-5 h-5" />
+            </a>
+          </div>
+        </div>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 text-[10px] text-gold uppercase font-bold hover:underline"
+        >
+          <FileText className="w-3 h-3" />
+          View Full Document
+        </a>
+      </div>
     ) : (
       <div className="aspect-video rounded-lg bg-black/20 border border-white/5 border-dashed flex flex-col items-center justify-center gap-2">
         <AlertCircle className="w-6 h-6 text-muted-foreground/20" />
