@@ -1,5 +1,5 @@
 // Mulu Rides Service Worker
-const CACHE_NAME = 'mulu-rides-cache-v2';
+const CACHE_NAME = 'mulu-rides-cache-v3';
 const OFFLINE_URL = '/offline.html';
 
 self.addEventListener('install', (event) => {

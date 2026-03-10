@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, RedirectResponse
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
 from bson import ObjectId
 import os
@@ -839,6 +839,12 @@ async def get_me(user: dict = Depends(get_current_user)):
         is_active=user.get("is_active", True)
     )
 
+@api_router.get("/auth/password-reset/redirect")
+async def password_reset_redirect(token: str):
+    """Redirects to the frontend reset page. Using the backend domain helps bypass PWA deep linking issues."""
+    frontend_url = os.environ.get("REACT_APP_FRONTEND_URL", "https://mulungushistudentride.site")
+    return RedirectResponse(url=f"{frontend_url}/reset-password?token={token}")
+
 @api_router.post("/auth/password-reset/request")
 async def request_password_reset(request: PasswordResetRequest):
     user = await db.users.find_one({"email": request.email.lower()})
@@ -861,8 +867,8 @@ async def request_password_reset(request: PasswordResetRequest):
     )
     
     try:
-        frontend_url = os.environ.get("REACT_APP_FRONTEND_URL", "https://mulungushistudentride.site")
-        reset_link = f"{frontend_url}/reset-password?token={reset_token}"
+        backend_url = os.environ.get('BACKEND_URL', 'https://student-ride-backend-manual.onrender.com').rstrip('/')
+        reset_link = f"{backend_url}/api/auth/password-reset/redirect?token={reset_token}"
         
         from_email = os.environ.get("RESEND_FROM_EMAIL", "noreply@mulungushistudentride.site")
         
