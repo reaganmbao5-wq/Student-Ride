@@ -389,31 +389,32 @@ const AuthPage = () => {
               )}
             </GoldButton>
 
-            {/* Divider */}
-            <div className="relative mt-6 mb-4">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-muted px-2 text-muted-foreground">Or continue with</span>
-              </div>
-            </div>
-
-            {/* Google Authentication */}
-            <div className="flex justify-center flex-col items-center gap-2">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => {
-                  toast.error('Google authentication failed');
-                }}
-                useOneTap={false}
-                shape="rect"
-                theme="filled_black"
-                text="continue_with"
-                size="large"
-              />
-            </div>
           </form>
+
+          {/* Divider */}
+          <div className="relative mt-6 mb-4">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+            </div>
+          </div>
+
+          {/* Google Authentication */}
+          <div className="flex justify-center flex-col items-center gap-2">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => {
+                toast.error('Google authentication failed');
+              }}
+              useOneTap={false}
+              shape="rect"
+              theme="filled_black"
+              text="continue_with"
+              size="large"
+            />
+          </div>
 
           {/* Footer */}
           <p className="text-center text-muted-foreground text-sm mt-6">
