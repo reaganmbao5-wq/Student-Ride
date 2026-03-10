@@ -1,10 +1,9 @@
 // Mulu Rides Service Worker
-const CACHE_NAME = 'mulu-rides-cache-v1';
+const CACHE_NAME = 'mulu-rides-cache-v2';
 const OFFLINE_URL = '/offline.html';
 
 self.addEventListener('install', (event) => {
-    // Skip waiting will be called manually via message from the client
-    // Cache offline fallback page (Phase 6)
+    self.skipWaiting(); // Activate immediately on install
     event.waitUntil((async () => {
         const cache = await caches.open(CACHE_NAME);
         await cache.add(new Request(OFFLINE_URL, { cache: 'reload' }));
@@ -18,7 +17,14 @@ self.addEventListener('message', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-    event.waitUntil(self.clients.claim());
+    event.waitUntil((async () => {
+        // Delete ALL old caches
+        const keys = await caches.keys();
+        await Promise.all(
+            keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+        );
+        await self.clients.claim();
+    })());
 });
 
 // Push Notification Listener (Phase 10)
