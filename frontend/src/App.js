@@ -107,17 +107,13 @@ const AppRoutes = () => {
         <Route
           path="/forgot-password"
           element={
-            <PublicRoute>
-              <ForgotPasswordPage />
-            </PublicRoute>
+            <ForgotPasswordPage />
           }
         />
         <Route
           path="/reset-password"
           element={
-            <PublicRoute>
-              <ResetPasswordPage />
-            </PublicRoute>
+            <ResetPasswordPage />
           }
         />
         <Route
