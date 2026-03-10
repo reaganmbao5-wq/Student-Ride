@@ -861,10 +861,10 @@ async def request_password_reset(request: PasswordResetRequest):
     )
     
     try:
-        frontend_url = os.environ.get("REACT_APP_FRONTEND_URL", "http://localhost:3000")
+        frontend_url = os.environ.get("REACT_APP_FRONTEND_URL", "https://mulungushistudentride.site")
         reset_link = f"{frontend_url}/reset-password?token={reset_token}"
         
-        from_email = os.environ.get("RESEND_FROM_EMAIL", "onboarding@resend.dev")
+        from_email = os.environ.get("RESEND_FROM_EMAIL", "noreply@mulungushistudentride.site")
         
         # If we are using the test address, we cannot use a display name wrapper (e.g. MuluRides <...>)
         # Resend strictly validates this.
@@ -971,12 +971,21 @@ async def google_login(request: GoogleLoginRequest):
         if not user.get("is_active", True):
             raise HTTPException(status_code=403, detail="Account suspended")
 
+        # Check if driver profile is complete
+        driver_profile_complete = False
+        if user.get("role") == UserRole.DRIVER.value:
+            profile = await db.drivers.find_one({"user_id": user["id"]})
+            # A profile is "complete" if it exists and has verification status set (even if pending)
+            if profile:
+                driver_profile_complete = True
+
         # Generate JWT token
         token = create_token(user["id"], user["role"])
         
         return {
             "access_token": token,
             "is_new_user": is_new_user,
+            "driver_profile_complete": driver_profile_complete,
             "user": {
                 "id": user["id"],
                 "email": user["email"],
