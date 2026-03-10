@@ -409,17 +409,19 @@ def create_token(user_id: str, role: str) -> str:
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 async def get_current_user(
-    request: Request,
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    query_token: Optional[str] = Query(None, alias="token")
 ) -> dict:
     token = None
-    if credentials:
+    if credentials and credentials.credentials:
         token = credentials.credentials
-    else:
-        # Fallback to query parameter for <img> tags
-        token = request.query_params.get("token")
+        # logger.info("Auth: Found token in headers")
+    elif query_token:
+        token = query_token
+        # logger.info("Auth: Found token in query params")
         
     if not token:
+        # logger.info("Auth: No token found in headers or query params")
         raise HTTPException(status_code=401, detail="Not authenticated")
         
     try:
