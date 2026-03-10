@@ -299,7 +299,7 @@ const AuthPage = () => {
               <div className="flex justify-end mt-1 mb-2">
                 <button
                   type="button"
-                  onClick={() => navigate('/forgot-password')}
+                  onClick={() => navigate('/forgot-password', { state: { email: formData.email } })}
                   className="text-sm font-medium text-gold hover:text-gold/80 transition-colors"
                 >
                   Forgot Password?

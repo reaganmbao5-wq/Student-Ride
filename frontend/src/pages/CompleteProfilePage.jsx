@@ -36,9 +36,9 @@ export default function CompleteProfilePage() {
         try {
             // Update the user profile with phone and optionally role
             const updateBody = { phone };
-            if (isDriver) {
-                updateBody.role = 'driver';
-            }
+            // DO NOT pre-emptively strictly set role to driver here.
+            // The DriverRegisterPage requires the user to be a 'student' to fill out the form,
+            // which THEN upgrades their role to 'driver'.
 
             const res = await fetch(`${BACKEND_URL}/api/users/me`, {
                 method: 'PATCH',

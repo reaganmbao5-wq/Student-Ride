@@ -842,8 +842,14 @@ async def request_password_reset(request: PasswordResetRequest):
         frontend_url = os.environ.get("REACT_APP_FRONTEND_URL", "http://localhost:3000")
         reset_link = f"{frontend_url}/reset-password?token={reset_token}"
         
+        from_email = os.environ.get("RESEND_FROM_EMAIL", "onboarding@resend.dev")
+        
+        # If we are using the test address, we cannot use a display name wrapper (e.g. MuluRides <...>)
+        # Resend strictly validates this.
+        sender = from_email if "onboarding@resend.dev" in from_email else f"MuluRides <{from_email}>"
+        
         email_params = {
-            "from": "MuluRides <noreply@mulurides.com>",
+            "from": sender,
             "to": [user["email"]],
             "subject": "Reset your MuluRides Password",
             "html": f"""
@@ -2033,6 +2039,8 @@ async def get_active_ride(user: dict = Depends(get_current_user)):
         driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
         if driver:
             query["driver_id"] = driver["id"]
+        else:
+            return None # Prevent finding random rides if driver profile is missing
     else:
         query["student_id"] = user["id"]
     
@@ -2084,6 +2092,8 @@ async def get_ride_history(
         driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
         if driver:
             query["driver_id"] = driver["id"]
+        else:
+            return [] # Prevent dumping entire DB history if driver profile doesn't exist yet
     else:
         query["student_id"] = user["id"]
     

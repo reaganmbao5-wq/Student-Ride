@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Mail, ArrowLeft, KeySquare } from 'lucide-react';
 import { GlassCard, GlassInput, GoldButton } from '../components/common/GlassComponents';
 import { toast } from 'sonner';
 
 const ForgotPasswordPage = () => {
-    const [email, setEmail] = useState('');
+    const location = useLocation();
+    const [email, setEmail] = useState(location.state?.email || '');
     const [isLoading, setIsLoading] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     const navigate = useNavigate();
+    const isEmailLocked = !!location.state?.email;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -84,8 +86,9 @@ const ForgotPasswordPage = () => {
                                 placeholder="Email Address"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="pl-12"
+                                className={`pl-12 ${isEmailLocked ? 'opacity-75 cursor-not-allowed' : ''}`}
                                 required
+                                readOnly={isEmailLocked}
                             />
                         </div>
 
