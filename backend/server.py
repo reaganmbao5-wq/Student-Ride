@@ -408,9 +408,22 @@ def create_token(user_id: str, role: str) -> str:
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
+async def get_current_user(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+) -> dict:
+    token = None
+    if credentials:
+        token = credentials.credentials
+    else:
+        # Fallback to query parameter for <img> tags
+        token = request.query_params.get("token")
+        
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+        
     try:
-        payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         user_id = payload.get("sub")
         if not user_id:
             raise HTTPException(status_code=401, detail="Invalid token")
@@ -3003,7 +3016,6 @@ async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_cur
         return {"url": doc_url}
     except Exception as e:
         logger.error(f"File upload error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to upload file")
         raise HTTPException(status_code=500, detail="Failed to upload file")
 
 # Include router

@@ -13,11 +13,29 @@ import {
 } from '../components/ui/dialog';
 
 const AdminDriversPage = () => {
-  const { api } = useAuth();
+  const { api, token } = useAuth();
   const [drivers, setDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState('all'); // all, pending, approved, restricted
+
+  // Helper to ensure absolute URL with auth token for images/links
+  const getAbsoluteDocUrl = (url) => {
+    if (!url) return null;
+    
+    // Use the live backend URL directly to avoid proxy issues with images
+    const BASE = 'https://student-ride-backend-manual.onrender.com';
+    let absoluteUrl = url;
+    
+    if (url.startsWith('/')) {
+      absoluteUrl = `${BASE}${url}`;
+    } else if (!url.startsWith('http')) {
+      absoluteUrl = `${BASE}/api${url.startsWith('/') ? '' : '/'}${url}`;
+    }
+    
+    // Append token for authentication in <img> tags
+    return `${absoluteUrl}${absoluteUrl.includes('?') ? '&' : '?'}token=${token}`;
+  };
 
   const [topUpModalOpen, setTopUpModalOpen] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState(null);
@@ -364,11 +382,11 @@ const AdminDriversPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <DocumentPreviewCard
                   title="Driver's License"
-                  url={selectedDriver?.verification_docs?.license}
+                  url={getAbsoluteDocUrl(selectedDriver?.verification_docs?.license)}
                 />
                 <DocumentPreviewCard
                   title="Vehicle Registration"
-                  url={selectedDriver?.verification_docs?.registration}
+                  url={getAbsoluteDocUrl(selectedDriver?.verification_docs?.registration)}
                 />
               </div>
 
