@@ -23,11 +23,14 @@ simple-websocket==1.1.0
 
 # HTTP
 httpx==0.28.1
-requests==2.32.5
+requests==2.31.0
 
 # Utilities
 pydantic==2.12.5
 typing_extensions==4.15.0
 gunicorn==21.2.0
 pywebpush==2.0.0
-aiohttp==3.8.6
+aiohttp>=3.9.3
+resend==0.8.0
+google-auth==2.28.2
+google-auth-oauthlib==1.2.0

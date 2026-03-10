@@ -2,12 +2,17 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import "@/index.css";
 import App from "@/App";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
+const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || "613545438163-5eo9e0tpustjgotq6u7m7elsas8gkjst.apps.googleusercontent.com";
+
 root.render(
   <React.StrictMode>
-    <App />
-  </React.StrictMode>,
+    <GoogleOAuthProvider clientId={clientId}>
+      <App />
+    </GoogleOAuthProvider>
+  </React.StrictMode>
 );
 
 // Register Service Worker for PWA

@@ -1,11 +1,12 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, WebSocket, WebSocketDisconnect, status, Query, File, UploadFile
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, WebSocket, WebSocketDisconnect, status, Query, File, UploadFile, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
-from motor.motor_asyncio import AsyncIOMotorClient
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
+from bson import ObjectId
 import os
 import time
 import logging
@@ -14,14 +15,18 @@ from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone, timedelta
+from enum import Enum
 from services.osrm_service import get_route
 from services.notification_service import NotificationService
 import jwt
 import bcrypt
 import asyncio
-from enum import Enum
-import json
-import math
+import resend
+import secrets
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+from typing import List, Optional, Dict, Any
+import requests
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -31,6 +36,13 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ.get('DB_NAME', 'mulungushi_rides')]
 notification_service = NotificationService(db)
+
+# Resend API Configuration
+resend.api_key = os.environ.get('RESEND_API_KEY')
+
+# Google OAuth Configuration
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
 
 # JWT Config
 JWT_SECRET = os.environ.get('JWT_SECRET', 'mulungushi-rides-secret-key-2024')
@@ -66,6 +78,14 @@ async def startup_db_client():
     try:
         # Create geospatial index for driver location
         await db.drivers.create_index([("location", "2dsphere")])
+        
+        # Create index for TTL temporary driver location tracking
+        await db.driver_locations.create_index("driver_id", unique=True)
+        await db.driver_locations.create_index([("location", "2dsphere")])
+        await db.driver_locations.create_index("updated_at", expireAfterSeconds=30)
+        
+        # Create TTL index for chat messages cleanup (24 hours = 86400 seconds)
+        await db.messages.create_index("expires_at", expireAfterSeconds=86400)
         
         # Create indexes for ride queries
         await db.rides.create_index("status")
@@ -149,6 +169,16 @@ class PushSubscriptionRequest(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str
+
+class GoogleLoginRequest(BaseModel):
+    id_token: str
 
 class UserResponse(BaseModel):
     id: str
@@ -581,6 +611,7 @@ class ConnectionManager:
     def __init__(self):
         self.active_connections: Dict[str, WebSocket] = {}
         self.driver_locations: Dict[str, Dict] = {}
+        self.driver_last_active: Dict[str, float] = {}
         self.ride_connections: Dict[str, List[str]] = {}  # ride_id -> [user_ids]
 
     async def connect(self, websocket: WebSocket, user_id: str):
@@ -593,6 +624,8 @@ class ConnectionManager:
             del self.active_connections[user_id]
         if user_id in self.driver_locations:
             del self.driver_locations[user_id]
+        if user_id in self.driver_last_active:
+            del self.driver_last_active[user_id]
         logger.info(f"User {user_id} disconnected")
 
     async def send_personal_message(self, message: dict, user_id: str):
@@ -619,6 +652,7 @@ class ConnectionManager:
 
     async def update_driver_location(self, driver_id: str, location: dict):
         self.driver_locations[driver_id] = location
+        self.driver_last_active[driver_id] = time.time()
         
         # Create GeoJSON point
         # MongoDB expects [longitude, latitude]
@@ -627,7 +661,21 @@ class ConnectionManager:
             "coordinates": [location["lng"], location["lat"]]
         }
         
-        # Update in database
+        # Update temporary location table with TTL
+        await db.driver_locations.update_one(
+            {"driver_id": driver_id},
+            {"$set": {
+                "latitude": location["lat"],
+                "longitude": location["lng"],
+                "heading": location.get("heading", 0.0),
+                "speed": location.get("speed", 0.0),
+                "location": geo_location,
+                "updated_at": datetime.now(timezone.utc)
+            }},
+            upsert=True
+        )
+        
+        # Also update drivers collection
         await db.drivers.update_one(
             {"user_id": driver_id},
             {"$set": {
@@ -636,7 +684,7 @@ class ConnectionManager:
             }}
         )
 
-    async def broadcast_to_nearby_drivers(self, message: dict, location: dict, radius_km: float = 10):
+    async def broadcast_to_nearby_drivers(self, message: dict, location: dict, radius_km: float = 3.0):
         """Broadcast ride request to nearby online drivers using geospatial query"""
         # Convert radius to meters
         max_distance_meters = radius_km * 1000
@@ -743,17 +791,149 @@ async def get_me(user: dict = Depends(get_current_user)):
         is_active=user.get("is_active", True)
     )
 
-@api_router.post("/notifications/subscribe")
-async def subscribe_push(sub: PushSubscriptionRequest, user: dict = Depends(get_current_user)):
-    await notification_service.save_subscription(user["id"], user["role"], sub.dict())
-    return {"status": "success"}
+@api_router.post("/auth/password-reset/request")
+async def request_password_reset(request: PasswordResetRequest):
+    user = await db.users.find_one({"email": request.email.lower()})
+    if not user:
+        return {"status": "success", "message": "If an account with that email exists, a password reset link has been sent."}
+    
+    # Prepend the user ID to the token so we can look it up later without scanning the whole DB
+    raw_secret = secrets.token_urlsafe(32)
+    # The token given to the user is: base64(user_id) + "." + raw_secret
+    import base64
+    b64_uid = base64.urlsafe_b64encode(user["id"].encode()).decode().rstrip("=")
+    reset_token = f"{b64_uid}.{raw_secret}"
+    
+    hashed_token = hash_password(reset_token)
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+    
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"reset_token": hashed_token, "reset_token_expires": expires_at.isoformat()}}
+    )
+    
+    try:
+        frontend_url = os.environ.get("REACT_APP_FRONTEND_URL", "http://localhost:3000")
+        reset_link = f"{frontend_url}/reset-password?token={reset_token}"
+        
+        email_params = {
+            "from": "MuluRides <noreply@mulurides.com>",
+            "to": [user["email"]],
+            "subject": "Reset your MuluRides Password",
+            "html": f"""
+            <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+                <h2>Password Reset Request</h2>
+                <p>Hello {user.get('name', 'User')},</p>
+                <p>We received a request to reset your password. Click the button below to choose a new password:</p>
+                <a href="{reset_link}" style="display: inline-block; padding: 12px 24px; background-color: #2563eb; color: #ffffff; text-decoration: none; border-radius: 6px; margin: 20px 0;">Reset Password</a>
+                <p>If you didn't request this, you can safely ignore this email.</p>
+                <p>This link will expire in 1 hour.</p>
+                <hr style="border: none; border-top: 1px solid #eaeaea; margin-top: 30px;"/>
+                <p style="font-size: 12px; color: #888;">MuluRides Support Team</p>
+            </div>
+            """
+        }
+        resend.Emails.send(email_params)
+        logger.info(f"Password reset email sent to {user['email']}")
+    except Exception as e:
+        logger.error(f"Failed to send password reset email: {e}")
+        # We don't fail the request so we don't leak user existence
+    
+    return {"status": "success", "message": "If an account with that email exists, a password reset link has been sent."}
 
-@api_router.get("/notifications/vapid-public-key")
-async def get_vapid_public_key():
-    key = os.environ.get("VAPID_PUBLIC_KEY")
-    if not key:
-        raise HTTPException(status_code=500, detail="VAPID_PUBLIC_KEY not configured")
-    return {"publicKey": key}
+@api_router.post("/auth/password-reset/confirm")
+async def confirm_password_reset(request: PasswordResetConfirm):
+    import base64
+    
+    try:
+        if "." not in request.token:
+            raise ValueError()
+        b64_uid, _ = request.token.split(".", 1)
+        # Add padding back if necessary
+        padding = "=" * (4 - (len(b64_uid) % 4))
+        user_id = base64.urlsafe_b64decode(b64_uid + padding).decode()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid token format")
+        
+    user = await db.users.find_one({"id": user_id})
+    if not user or not user.get("reset_token") or not user.get("reset_token_expires"):
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+        
+    # Check expiry
+    expires_at = datetime.fromisoformat(user["reset_token_expires"])
+    if datetime.now(timezone.utc) > expires_at:
+        raise HTTPException(status_code=400, detail="Reset token has expired")
+        
+    # Verify hash
+    if not verify_password(request.token, user["reset_token"]):
+        raise HTTPException(status_code=400, detail="Invalid reset token")
+        
+    # Update password
+    hashed_password = hash_password(request.new_password)
+    await db.users.update_one(
+        {"id": user_id},
+        {
+            "$set": {"password": hashed_password},
+            "$unset": {"reset_token": "", "reset_token_expires": ""}
+        }
+    )
+    
+    return {"status": "success", "message": "Password successfully reset"}
+
+@api_router.post("/auth/google")
+async def google_login(request: GoogleLoginRequest):
+    try:
+        # Verify the ID token with Google
+        idinfo = id_token.verify_oauth2_token(
+            request.id_token, google_requests.Request(), GOOGLE_CLIENT_ID
+        )
+
+        email = idinfo.get("email")
+        name = idinfo.get("name")
+
+        if not email:
+            raise HTTPException(status_code=400, detail="No email provided by Google")
+
+        # Check if user exists
+        user = await db.users.find_one({"email": email.lower()}, {"_id": 0})
+        
+        if not user:
+            # Create a new user account automatically
+            user_id = str(uuid.uuid4())
+            user = {
+                "id": user_id,
+                "email": email.lower(),
+                "name": name,
+                "phone": "",  # Google doesn't provide phone number by default
+                "password": hash_password(secrets.token_urlsafe(32)), # Random unusable password
+                "role": UserRole.STUDENT.value,
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.users.insert_one(user)
+
+        if not user.get("is_active", True):
+            raise HTTPException(status_code=403, detail="Account suspended")
+
+        # Generate JWT token
+        token = create_token(user["id"], user["role"])
+        
+        return TokenResponse(
+            access_token=token,
+            user=UserResponse(
+                id=user["id"],
+                email=user["email"],
+                name=user["name"],
+                phone=user["phone"],
+                role=UserRole(user["role"]),
+                created_at=user["created_at"],
+                is_active=user.get("is_active", True)
+            )
+        )
+
+    except ValueError:
+        # Invalid token
+        raise HTTPException(status_code=401, detail="Invalid Google token")
 
 @api_router.delete("/users/me")
 
@@ -775,7 +955,7 @@ async def delete_me(user: dict = Depends(get_current_user)):
 async def get_nearby_drivers(
     latitude: float = Query(..., ge=-90, le=90),
     longitude: float = Query(..., ge=-180, le=180),
-    radius_km: float = Query(5.0, ge=0.5, le=20.0),
+    radius_km: float = Query(3.0, ge=0.5, le=20.0),
     user: dict = Depends(get_current_user)
 ):
     """
@@ -783,35 +963,65 @@ async def get_nearby_drivers(
     Filters: Online, Approved, Active Wallet, Not in Ride.
     Limit: 20 drivers.
     """
-    max_distance_meters = radius_km * 1000
+    nearby_driver_ids = []
     
-    online_drivers = await db.drivers.find({
-        "is_online": True,
-        "is_approved": True,
-        "wallet_status": {"$ne": WalletStatus.RESTRICTED.value},
-        "current_ride_id": None,
-        "location": {
-            "$near": {
-                "$geometry": {
-                    "type": "Point",
-                    "coordinates": [longitude, latitude]
-                },
-                "$maxDistance": max_distance_meters
-            }
-        }
-    }).to_list(20)
-    
+    # TRICK 1 - CACHE: Check memory cache first
+    now = time.time()
+    for driver_id, loc in list(manager.driver_locations.items()):
+        # TRICK 4: Driver Activity Check
+        last_active = manager.driver_last_active.get(driver_id, 0)
+        if now - last_active > 30:
+            manager.driver_locations.pop(driver_id, None)
+            manager.driver_last_active.pop(driver_id, None)
+            asyncio.create_task(db.drivers.update_one({"user_id": driver_id}, {"$set": {"is_online": False}}))
+            continue
+            
+        if loc and "lat" in loc and "lng" in loc:
+            dist = calculate_haversine_distance(latitude, longitude, loc["lat"], loc["lng"])
+            if dist <= radius_km:
+                nearby_driver_ids.append(driver_id)
+                
     results = []
+    
+    # If cache is populated, fetch their statuses from main DB directly
+    if nearby_driver_ids:
+        online_drivers = await db.drivers.find({
+            "user_id": {"$in": nearby_driver_ids},
+            "is_online": True,
+            "is_approved": True,
+            "wallet_status": {"$ne": WalletStatus.RESTRICTED.value},
+            "current_ride_id": None
+        }).to_list(100)
+    else:
+        # Fallback to DB geospatial query if cache empty
+        max_distance_meters = radius_km * 1000
+        online_drivers = await db.drivers.find({
+            "is_online": True,
+            "is_approved": True,
+            "wallet_status": {"$ne": WalletStatus.RESTRICTED.value},
+            "current_ride_id": None,
+            "location": {
+                "$near": {
+                    "$geometry": {
+                        "type": "Point",
+                        "coordinates": [longitude, latitude]
+                    },
+                    "$maxDistance": max_distance_meters
+                }
+            }
+        }).to_list(20)
+        
     for d in online_drivers:
-        # Extract lat/lng safely
-        loc = d.get("current_location", {})
+        # Prefer cache location as it's more realtime
+        driver_id = d["user_id"]
+        loc = manager.driver_locations.get(driver_id) or d.get("current_location", {})
         lat = loc.get("lat")
         lng = loc.get("lng")
         heading = loc.get("heading", 0.0)
         
         if lat is not None and lng is not None:
             results.append(NearbyDriverResponse(
-                id=d["user_id"],
+                id=driver_id,
                 latitude=lat,
                 longitude=lng,
                 heading=heading,
@@ -918,23 +1128,17 @@ async def upload_driver_documents(
     content = await file.read()
     if len(content) > MAX_SIZE:
         raise HTTPException(status_code=413, detail="File too large. Maximum size is 2MB.")
-    
-    # Reset cursor after reading
-    await file.seek(0)
-    
-    # Save file
-    upload_dir = ROOT_DIR / "uploads" / "drivers" / user["id"]
-    upload_dir.mkdir(parents=True, exist_ok=True)
-    
-    file_ext = os.path.splitext(file.filename)[1]
-    filename = f"{doc_type}_{uuid.uuid4()}{file_ext}"
-    file_path = upload_dir / filename
-    
-    with open(file_path, "wb") as buffer:
-        buffer.write(content)
         
-    # Update driver record
-    doc_url = f"/api/uploads/drivers/{user['id']}/{filename}"
+    fs = AsyncIOMotorGridFSBucket(db)
+    
+    file_id = await fs.upload_from_stream(
+        file.filename,
+        content,
+        metadata={"driver_id": user["id"], "content_type": file.content_type}
+    )
+    
+    doc_url = f"/api/documents/{str(file_id)}"
+    
     await db.drivers.update_one(
         {"user_id": user["id"]},
         {
@@ -946,6 +1150,24 @@ async def upload_driver_documents(
     )
     
     return {"status": "success", "url": doc_url}
+
+@api_router.get("/documents/{file_id}")
+async def get_document(file_id: str, user: dict = Depends(get_current_user)):
+    fs = AsyncIOMotorGridFSBucket(db)
+    try:
+        grid_out = await fs.open_download_stream(ObjectId(file_id))
+        metadata = grid_out.metadata or {}
+        doc_driver_id = metadata.get("driver_id")
+        
+        # Access rules
+        if user["role"] not in [UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value]:
+            if user["id"] != doc_driver_id:
+                raise HTTPException(status_code=403, detail="Not authorized to view this document")
+                
+        content = await grid_out.read()
+        return Response(content=content, media_type=metadata.get("content_type", "image/jpeg"))
+    except Exception as e:
+        raise HTTPException(status_code=404, detail="Document not found")
 
 @api_router.post("/admin/drivers/{driver_id}/verify")
 async def verify_driver(
@@ -1219,6 +1441,23 @@ async def delete_destination(dest_id: str, user: dict = Depends(require_admin)):
 @api_router.post("/rides/request", response_model=RideResponse)
 async def request_ride(ride_data: RideRequest, user: dict = Depends(get_current_user)):
     try:
+        # User Penalty Check
+        user_doc = await db.users.find_one({"id": user["id"]}, {"_id": 0})
+        if user_doc and user_doc.get("pending_penalty", 0.0) > 0:
+            penalty = user_doc["pending_penalty"]
+            raise HTTPException(
+                status_code=403, 
+                detail=f"You have an outstanding penalty of K{penalty:0.2f}. Please clear it before requesting a new ride."
+            )
+
+        # Ride Spam / Concurrency Check
+        active_ride = await db.rides.find_one({
+            "student_id": user["id"],
+            "status": {"$in": [RideStatus.REQUESTED.value, RideStatus.ACCEPTED.value, RideStatus.DRIVER_ARRIVED.value, RideStatus.ONGOING.value]}
+        })
+        if active_ride:
+            raise HTTPException(status_code=429, detail="You already have an active ride request.")
+
         settings = await get_platform_settings()
         
         # DEBUG: Check data types
@@ -1314,6 +1553,15 @@ async def accept_ride(ride_id: str, user: dict = Depends(require_driver)):
     # Check if driver is already on a ride
     if driver.get("current_ride_id"):
         raise HTTPException(status_code=400, detail="You are already on a ride")
+
+    # TRICK 3: Rate Limit Driver Requests
+    ten_seconds_ago = (datetime.now(timezone.utc) - timedelta(seconds=10)).isoformat()
+    recent_accepts = await db.rides.count_documents({
+        "driver_id": driver["id"],
+        "accepted_at": {"$gte": ten_seconds_ago}
+    })
+    if recent_accepts >= 3:
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in a few seconds.")
 
     # ATOMIC UPDATE: Only update if status is REQUESTED
     now = datetime.now(timezone.utc).isoformat()
@@ -1420,7 +1668,10 @@ async def start_ride(ride_id: str, user: dict = Depends(require_driver)):
             "driver_id": driver["id"], 
             "status": RideStatus.DRIVER_ARRIVED.value
         },
-        {"$set": {"status": RideStatus.ONGOING.value}},
+        {"$set": {
+            "status": RideStatus.ONGOING.value,
+            "started_at": datetime.now(timezone.utc).isoformat()
+        }},
         return_document=True
     )
     
@@ -1439,6 +1690,15 @@ async def complete_ride(ride_id: str, user: dict = Depends(require_driver)):
     driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
     if not driver:
          raise HTTPException(status_code=404, detail="Driver profile not found")
+
+    # FRAUD PROTECTION: Prevent instant completes
+    ride_check = await db.rides.find_one({"id": ride_id})
+    if ride_check:
+        started_at_str = ride_check.get("started_at")
+        if started_at_str:
+            started_at = datetime.fromisoformat(started_at_str)
+            if (datetime.now(timezone.utc) - started_at).total_seconds() < 60:
+                raise HTTPException(status_code=400, detail="Fraud Protection: Cannot complete ride instantly.")
 
     # ATOMIC UPDATE: Only update if status is ONGOING and assigned to this driver
     # This prevents double completion and double deduction
@@ -1518,13 +1778,67 @@ async def cancel_ride(ride_id: str, user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="Ride not found")
     
     # Check permission
-    if ride["student_id"] != user["id"] and user["role"] not in [UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value]:
+    is_driver = False
+    is_rider = False
+    
+    if ride["student_id"] == user["id"]:
+        is_rider = True
+    elif user["role"] not in [UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value]:
         driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
         if not driver or ride["driver_id"] != driver["id"]:
             raise HTTPException(status_code=403, detail="Not authorized")
+        is_driver = True
     
-    if ride["status"] in [RideStatus.COMPLETED.value, RideStatus.CANCELLED.value]:
+    status = ride["status"]
+    if status in [RideStatus.COMPLETED.value, RideStatus.CANCELLED.value]:
         raise HTTPException(status_code=400, detail="Cannot cancel this ride")
+        
+    # SECTION 11: Driver Fraud Protection - cannot cancel after start
+    if is_driver and status == RideStatus.ONGOING.value:
+        raise HTTPException(status_code=403, detail="Fraud Protection: Drivers cannot cancel a ride after it has started.")
+        
+    # SECTION 9: Fraud-Proof Cancellation Logic
+    penalty_amount = 0
+    penalty_reason = ""
+    
+    if is_driver:
+        if status in [RideStatus.ACCEPTED.value, RideStatus.DRIVER_ARRIVED.value]:
+            penalty_amount = 3.0
+            penalty_reason = "Driver cancelled after accepting"
+    elif is_rider:
+        if status == RideStatus.ACCEPTED.value:
+            penalty_amount = 2.0
+            penalty_reason = "Rider cancelled after driver accepted"
+        elif status == RideStatus.DRIVER_ARRIVED.value:
+            penalty_amount = 5.0
+            penalty_reason = "Rider cancelled after driver arrived"
+            
+    # Apply driver penalty automatically to driver wallet
+    if is_driver and penalty_amount > 0 and ride.get("driver_id"):
+        driver_db = await db.drivers.find_one({"id": ride["driver_id"]})
+        if driver_db:
+            new_balance = driver_db.get("wallet_balance", 0.0) - penalty_amount
+            new_due = driver_db.get("total_commission_due", 0.0) + penalty_amount
+            await db.drivers.update_one(
+                {"id": driver_db["id"]},
+                {"$set": {"wallet_balance": new_balance, "total_commission_due": new_due}}
+            )
+            await db.driver_wallet_transactions.insert_one({
+                "id": str(uuid.uuid4()),
+                "driver_id": driver_db["id"],
+                "type": TransactionType.COMMISSION_DEDUCTION.value,
+                "amount": -penalty_amount,
+                "ride_id": ride_id,
+                "description": penalty_reason,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            })
+            
+    # Apply rider penalty (placeholder for future billing)
+    if is_rider and penalty_amount > 0:
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$inc": {"pending_penalty": penalty_amount}}
+        )
     
     await db.rides.update_one(
         {"id": ride_id},
@@ -2386,7 +2700,8 @@ async def send_message(message: MessageCreate, user: dict = Depends(get_current_
         "sender_id": user["id"],
         "sender_name": user["name"],
         "content": message.content,
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "expires_at": datetime.now(timezone.utc)
     }
     
     await db.messages.insert_one(new_message)
@@ -2447,7 +2762,17 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(None)):
         last_loc_update = 0
         try:
             while True:
-                data = await websocket.receive_json()
+                # Add size protection for WebSocket messages
+                text_data = await websocket.receive_text()
+                if len(text_data) > 8192:  # 8KB max payload
+                    logger.error(f"WebSocket message too large from user {user_id}")
+                    await websocket.close(code=1009)
+                    break
+                
+                try:
+                    data = json.loads(text_data)
+                except json.JSONDecodeError:
+                    continue  # Ignore malformed JSON payload
                 
                 if data.get("type") == "location_update":
                     now = time.time()

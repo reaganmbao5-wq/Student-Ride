@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -13,6 +13,8 @@ import SWUpdateManager from "./components/common/SWUpdateManager";
 import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
 import StudentDashboard from "./pages/StudentDashboard";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import RideRequestPage from "./pages/RideRequestPage";
 import RideHistoryPage from "./pages/RideHistoryPage";
 import DriverDashboard from "./pages/DriverDashboard";
@@ -98,6 +100,22 @@ const AppRoutes = () => {
           element={
             <PublicRoute>
               <AuthPage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            <PublicRoute>
+              <ForgotPasswordPage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/reset-password"
+          element={
+            <PublicRoute>
+              <ResetPasswordPage />
             </PublicRoute>
           }
         />
@@ -253,6 +271,19 @@ const AppRoutes = () => {
   );
 };
 
+// Ensure backend stays awake on free tiers
+const KeepAlive = () => {
+  useEffect(() => {
+    // Ping every 10 minutes (600,000 ms)
+    const interval = setInterval(() => {
+      fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api/health`)
+        .catch(() => { }); // ignore errors, just a keep-awake ping
+    }, 600000);
+    return () => clearInterval(interval);
+  }, []);
+  return null;
+};
+
 function App() {
   return (
     <div className="App">
@@ -263,6 +294,7 @@ function App() {
             <PWAInstallPrompt />
             <PushNotificationManager />
             <SWUpdateManager />
+            <KeepAlive />
             <Toaster position="top-center" />
           </AuthProvider>
         </ThemeProvider>

@@ -12,6 +12,7 @@ export const WebSocketProvider = ({ children }) => {
   const [newMessage, setNewMessage] = useState(null);
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
+  const reconnectAttemptRef = useRef(0);
 
   const connect = useCallback(() => {
     if (!user || !token) return;
@@ -23,16 +24,23 @@ export const WebSocketProvider = ({ children }) => {
     ws.onopen = () => {
       console.log('WebSocket connected');
       setIsConnected(true);
+      reconnectAttemptRef.current = 0;
     };
 
     ws.onclose = () => {
       console.log('WebSocket disconnected');
       setIsConnected(false);
 
-      // Reconnect after 3 seconds
+      // Exponential backoff reconnect: 3s, 6s, 12s, 30s, 60s
+      const backoffIntervals = [3000, 6000, 12000, 30000, 60000];
+      const attempt = reconnectAttemptRef.current;
+      const delay = attempt < backoffIntervals.length ? backoffIntervals[attempt] : 60000;
+
+      reconnectAttemptRef.current += 1;
+
       reconnectTimeoutRef.current = setTimeout(() => {
         connect();
-      }, 3000);
+      }, delay);
     };
 
     ws.onerror = (error) => {
