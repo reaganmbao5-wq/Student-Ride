@@ -68,7 +68,7 @@ app.add_middleware(
 )
 
 api_router = APIRouter()
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 # Configure Static Files for Uploads
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
