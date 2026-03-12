@@ -15,8 +15,8 @@ root.render(
   </React.StrictMode>
 );
 
-// Register Service Worker for PWA
-if ('serviceWorker' in navigator) {
+// Register Service Worker for PWA (Only in production to avoid local 'Offline' trap)
+if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/service-worker.js').then(registration => {
       console.log('SW registered: ', registration);

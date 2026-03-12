@@ -245,7 +245,7 @@ const LandingPage = () => {
               </div>
             </div>
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
-              <span>© 2024 MuluRides</span>
+              <span>© {new Date().getFullYear()} MuluRides</span>
               <span>•</span>
               <span>Kabwe, Zambia</span>
             </div>

@@ -1,0 +1,37 @@
+﻿MULUNGUSHI RIDES - FULL SYSTEM CHECK
+Backend: http://localhost:8000/api
+
+==================================================
+  AUTH: Register - syscheck@mulungushi.edu.zm
+==================================================
+  Status: 400
+  RESPONSE: {"detail":"Email already registered"}
+
+==================================================
+  AUTH: Login - syscheck@mulungushi.edu.zm
+==================================================
+  Status: 200
+  SUCCESS: Logged in as student
+
+==================================================
+  RIDE: Estimate Fare (math fix verification)
+==================================================
+  Status: 200
+  SUCCESS: Fare = K166.77, Distance = 9.36 km
+
+[PASS] FARE CALCULATION FIX: VERIFIED WORKING
+
+==================================================
+  PUBLIC: Destinations
+==================================================
+  Status: 200
+  SUCCESS: 3 destinations found
+
+==================================================
+  ADMIN: Login Test (Reaganmbao5@gmail.com)
+==================================================
+  WARN: Could not log in with known passwords. Admin may require a password reset.
+
+==================================================
+  SYSTEM CHECK COMPLETE
+==================================================

@@ -28,6 +28,8 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from typing import List, Optional, Dict, Any
 import requests
+import math
+import json
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -48,7 +50,7 @@ GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
 # JWT Config
 JWT_SECRET = os.environ.get('JWT_SECRET', 'mulungushi-rides-secret-key-2024')
 JWT_ALGORITHM = "HS256"
-JWT_EXPIRATION_HOURS = 24 * 7  # 7 days
+JWT_EXPIRATION_HOURS = 24 * 14  # 14 days
 
 # Super Admin Email
 SUPER_ADMIN_EMAIL = "Reaganmbao5@gmail.com"
@@ -158,6 +160,18 @@ class TransactionType(str, Enum):
     COMMISSION_SETTLEMENT = "commission_settlement"
 
 # ==================== MODELS ====================
+# ==================== HELPERS ====================
+def sanitize_for_json(obj):
+    if isinstance(obj, dict):
+        return {k: sanitize_for_json(v) for k, v in obj.items() if k != "_id"}
+    elif isinstance(obj, list):
+        return [sanitize_for_json(i) for i in obj]
+    elif isinstance(obj, ObjectId):
+        return str(obj)
+    elif isinstance(obj, datetime):
+        return obj.isoformat()
+    return obj
+
 class UserBase(BaseModel):
     email: EmailStr
     name: str
@@ -679,7 +693,8 @@ class ConnectionManager:
     async def send_personal_message(self, message: dict, user_id: str):
         if user_id in self.active_connections:
             try:
-                await self.active_connections[user_id].send_json(message)
+                sanitized = sanitize_for_json(message)
+                await self.active_connections[user_id].send_json(sanitized)
             except Exception as e:
                 logger.error(f"Error sending message to {user_id}: {e}")
 
@@ -701,6 +716,7 @@ class ConnectionManager:
     async def update_driver_location(self, driver_id: str, location: dict):
         self.driver_locations[driver_id] = location
         self.driver_last_active[driver_id] = time.time()
+        logger.info(f"Updating location for driver {driver_id}: {location}")
         
         # Create GeoJSON point
         # MongoDB expects [longitude, latitude]
@@ -736,6 +752,7 @@ class ConnectionManager:
         """Broadcast ride request to nearby online drivers using geospatial query"""
         # Convert radius to meters
         max_distance_meters = radius_km * 1000
+        logger.info(f"Broadcasting ride request to drivers near {location} within {radius_km}km")
         
         online_drivers = await db.drivers.find({
             "is_online": True,
@@ -751,12 +768,19 @@ class ConnectionManager:
                     "$maxDistance": max_distance_meters
                 }
             }
-        }, {"_id": 0}).to_list(20) # Limit to 20 closest
+        }, {"_id": 0}).to_list(20)
+        logger.info(f"Found {len(online_drivers)} nearby drivers for location {location}")
         
         for driver in online_drivers:
             driver_id = driver["user_id"]
             if driver_id in self.active_connections:
-                await self.send_personal_message(message, driver_id)
+                try:
+                    await self.send_personal_message(message, driver_id)
+                    logger.info(f"Broadcast sent to driver {driver_id}")
+                except Exception as e:
+                    logger.error(f"Failed to send broadcast to driver {driver_id}: {e}")
+            else:
+                logger.info(f"Driver {driver_id} is online in DB but NOT in active_connections")
 
 manager = ConnectionManager()
 
@@ -1532,6 +1556,10 @@ async def request_ride(ride_data: RideRequest, user: dict = Depends(get_current_
         if active_ride:
             raise HTTPException(status_code=429, detail="You already have an active ride request.")
 
+        # DEBUG: Check available drivers
+        online_count = await db.drivers.count_documents({"is_online": True, "is_approved": True})
+        logger.info(f"DEBUG: {online_count} drivers online and approved in DB before request.")
+
         settings = await get_platform_settings()
         
         # DEBUG: Check data types
@@ -1596,6 +1624,7 @@ async def request_ride(ride_data: RideRequest, user: dict = Depends(get_current_
             "completed_at": None
         }
         await db.rides.insert_one(ride)
+        ride.pop("_id", None)
         
         # Broadcast to available drivers
         await manager.broadcast_to_nearby_drivers({
@@ -1648,6 +1677,7 @@ async def accept_ride(ride_id: str, user: dict = Depends(require_driver)):
         }},
         return_document=True
     )
+    if ride: ride.pop("_id", None)
     
     if not ride:
         # Check if ride exists at all to give better error
@@ -1705,6 +1735,7 @@ async def driver_arrived(ride_id: str, user: dict = Depends(require_driver)):
         {"$set": {"status": RideStatus.DRIVER_ARRIVED.value}},
         return_document=True
     )
+    if ride: ride.pop("_id", None)
     
     if not ride:
         raise HTTPException(status_code=400, detail="Invalid transition. Ride must be ACCEPTED and assigned to you.")
@@ -1748,6 +1779,7 @@ async def start_ride(ride_id: str, user: dict = Depends(require_driver)):
         }},
         return_document=True
     )
+    if ride: ride.pop("_id", None)
     
     if not ride:
          raise HTTPException(status_code=400, detail="Invalid transition. Ride must be in DRIVER_ARRIVED state.")
@@ -1771,7 +1803,9 @@ async def complete_ride(ride_id: str, user: dict = Depends(require_driver)):
         started_at_str = ride_check.get("started_at")
         if started_at_str:
             started_at = datetime.fromisoformat(started_at_str)
-            if (datetime.now(timezone.utc) - started_at).total_seconds() < 60:
+            delta = (datetime.now(timezone.utc) - started_at).total_seconds()
+            logger.info(f"FRAUD CHECK: Ride {ride_id} started at {started_at_str}. Current delta: {delta}s")
+            if delta < 60:
                 raise HTTPException(status_code=400, detail="Fraud Protection: Cannot complete ride instantly.")
 
     # ATOMIC UPDATE: Only update if status is ONGOING and assigned to this driver
@@ -1785,6 +1819,7 @@ async def complete_ride(ride_id: str, user: dict = Depends(require_driver)):
         {"$set": {"status": RideStatus.COMPLETED.value, "completed_at": datetime.now(timezone.utc).isoformat()}},
         return_document=True
     )
+    if ride: ride.pop("_id", None)
     
     if not ride:
         raise HTTPException(status_code=400, detail="Invalid transition. Ride must be ONGOING.")

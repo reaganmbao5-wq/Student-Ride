@@ -11,14 +11,14 @@ from dotenv import load_dotenv
 load_dotenv()
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017")
 client = AsyncIOMotorClient(MONGO_URL)
-db = client.student_ride
+db = client[os.getenv("DB_NAME", "mulungushi_rides")]
 
 def hash_password(password: str) -> str:
     salt = bcrypt.gensalt()
     return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
 
 async def restore_admin():
-    target_email = "reaganmbao5@gmail.com"
+    target_email = "chabotasiyingwa77@gmail.com"
     print(f"Checking for user {target_email}...")
     
     user = await db.users.find_one({"email": target_email})

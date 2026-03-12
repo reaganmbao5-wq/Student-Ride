@@ -428,7 +428,7 @@ const DriverDashboard = () => {
                   : 'border-border text-muted-foreground hover:bg-muted'
                   }`}
               >
-                {isSimulating ? 'Simulating...' : 'Test GPS'}
+                {isSimulating ? 'Simulating...' : 'Update Location'}
               </button>
             )}
           </div>
