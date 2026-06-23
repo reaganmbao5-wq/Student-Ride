@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Bell, X } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { PushNotifications } from '@capacitor/push-notifications';
+import { PermissionsService } from '../../services/PermissionsService';
 
 // Utility to convert Base64 VAPID key to Uint8Array
 const urlBase64ToUint8Array = (base64String) => {
@@ -22,26 +25,27 @@ const PushNotificationManager = () => {
         if (!isAuthenticated) return;
 
         const checkPermission = async () => {
-            // Check if service workers and push manager are supported
-            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-                return;
-            }
-
-            // Check if we already asked
             const hasAsked = localStorage.getItem('mulu_rides_push_asked');
             if (hasAsked) return;
 
-            if (Notification.permission === 'default') {
-                // We show a custom soft-prompt first
-                setShowPrompt(true);
-            } else if (Notification.permission === 'granted') {
-                // If already granted but maybe we haven't subscribed this specific device/session
-                // Optionally subscribe silently
-                await subscribeUser(false);
+            if (Capacitor.isNativePlatform()) {
+                const permStatus = await PushNotifications.checkPermissions();
+                if (permStatus.receive === 'prompt') {
+                    setShowPrompt(true);
+                } else if (permStatus.receive === 'granted') {
+                    await subscribeUser(false);
+                }
+            } else {
+                if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+                
+                if (Notification.permission === 'default') {
+                    setShowPrompt(true);
+                } else if (Notification.permission === 'granted') {
+                    await subscribeUser(false);
+                }
             }
         };
 
-        // Slight delay so it doesn't overwhelm right after login
         const timer = setTimeout(() => {
             checkPermission();
         }, 3000);
@@ -51,47 +55,87 @@ const PushNotificationManager = () => {
 
     const subscribeUser = async (isExplicit = true) => {
         try {
-            if (isExplicit) {
-                const permission = await Notification.requestPermission();
-                if (permission !== 'granted') {
-                    console.log('Push permission denied.');
-                    localStorage.setItem('mulu_rides_push_asked', 'true');
-                    setShowPrompt(false);
-                    return;
-                }
-            }
-
-            const registration = await navigator.serviceWorker.ready;
-
-            // Get VAPID public key from backend
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
             const backendUrl = process.env.REACT_APP_BACKEND_URL || window.location.origin;
-            const keyResponse = await fetch(`${backendUrl}/api/notifications/vapid-public-key`, {
-                headers
-            });
 
-            const { publicKey } = await keyResponse.json();
-            const convertedVapidKey = urlBase64ToUint8Array(publicKey);
+            if (Capacitor.isNativePlatform()) {
+                const hasPermission = await PermissionsService.requestPushPermission();
+                if (!hasPermission) {
+                    console.log('Push permission denied natively.');
+                    if (isExplicit) {
+                        localStorage.setItem('mulu_rides_push_asked', 'true');
+                        setShowPrompt(false);
+                    }
+                    return;
+                }
 
-            const subscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: convertedVapidKey,
-            });
+                // Register with native FCM
+                await PushNotifications.register();
 
-            // Send subscription to backend
-            await fetch(`${backendUrl}/api/notifications/subscribe`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...headers,
-                },
-                body: JSON.stringify(subscription),
-            });
+                PushNotifications.addListener('registration', async (fcmToken) => {
+                    console.log('FCM Token generated:', fcmToken.value);
+                    try {
+                        // Register device token with backend using existing endpoint
+                        // We format it as a PushSubscriptionRequest to satisfy the backend model schema
+                        await fetch(`${backendUrl}/api/notifications/subscribe`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                ...headers,
+                            },
+                            body: JSON.stringify({
+                                endpoint: `FCM_TOKEN:${fcmToken.value}`,
+                                keys: { p256dh: "native", auth: "native" }
+                            }),
+                        });
+                        console.log('Native push subscription registered with backend');
+                    } catch (err) {
+                        console.error('Failed to register native token to backend:', err);
+                    }
+                });
 
-            console.log('Push subscription successful');
-            if (isExplicit) {
-                localStorage.setItem('mulu_rides_push_asked', 'true');
-                setShowPrompt(false);
+                PushNotifications.addListener('registrationError', (error) => {
+                    console.error('Push registration error:', JSON.stringify(error));
+                });
+
+                if (isExplicit) {
+                    localStorage.setItem('mulu_rides_push_asked', 'true');
+                    setShowPrompt(false);
+                }
+
+            } else {
+                // WEB VAPID LOGIC
+                if (isExplicit) {
+                    const permission = await Notification.requestPermission();
+                    if (permission !== 'granted') {
+                        console.log('Push permission denied.');
+                        localStorage.setItem('mulu_rides_push_asked', 'true');
+                        setShowPrompt(false);
+                        return;
+                    }
+                }
+
+                const registration = await navigator.serviceWorker.ready;
+                const keyResponse = await fetch(`${backendUrl}/api/notifications/vapid-public-key`, { headers });
+                const { publicKey } = await keyResponse.json();
+                const convertedVapidKey = urlBase64ToUint8Array(publicKey);
+
+                const subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: convertedVapidKey,
+                });
+
+                await fetch(`${backendUrl}/api/notifications/subscribe`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...headers },
+                    body: JSON.stringify(subscription),
+                });
+
+                console.log('Web Push subscription successful');
+                if (isExplicit) {
+                    localStorage.setItem('mulu_rides_push_asked', 'true');
+                    setShowPrompt(false);
+                }
             }
         } catch (error) {
             console.error('Failed to subscribe user:', error);

@@ -1,10 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Car, Eye, EyeOff, ArrowLeft, Mail, Phone, User, Lock, UploadCloud, FileText, CheckCircle2 } from 'lucide-react';
-import { GlassCard, GlassInput, GoldButton, LoadingSpinner } from '../components/common/GlassComponents';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { GoogleLogin } from '@react-oauth/google';
+import { GoogleAuth } from '@daniele-rolli/capacitor-google-auth';
+import { Capacitor } from '@capacitor/core';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { motion, AnimatePresence } from 'framer-motion';
+import { PermissionsService } from '../services/PermissionsService';
+
+const GlassInput = React.forwardRef(({ className, ...props }, ref) => (
+  <input
+    ref={ref}
+    className={`w-full bg-zinc-900/50 border border-zinc-800/80 rounded-xl px-4 py-3 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 transition-all ${className}`}
+    {...props}
+  />
+));
+GlassInput.displayName = 'GlassInput';
+
+const LoadingSpinner = ({ className = "" }) => (
+  <svg className={`animate-spin h-5 w-5 text-gold ${className}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+  </svg>
+);
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -15,6 +35,14 @@ const AuthPage = () => {
   const [isDriver, setIsDriver] = useState(searchParams.get('mode') === 'driver');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    GoogleAuth.initialize({
+      clientId: '613545438163-5eo9e0tpustjgotq6u7m7elsas8gkjst.apps.googleusercontent.com',
+      scopes: ['profile', 'email'],
+      grantOfflineAccess: true,
+    });
+  }, []);
   
   const [docs, setDocs] = useState({
     license: null,
@@ -45,6 +73,29 @@ const AuthPage = () => {
     }
   };
 
+  const handleNativeCapture = async (docId) => {
+    const hasPermission = await PermissionsService.requestCameraPermission();
+    if (!hasPermission) return;
+
+    try {
+      const image = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.Uri,
+        source: CameraSource.Prompt // Prompts user to choose Camera or Gallery
+      });
+      
+      // Convert URI to Blob to mock a File object for the existing uploadFile API
+      const response = await fetch(image.webPath);
+      const blob = await response.blob();
+      const file = new File([blob], `${docId}_capture.${image.format}`, { type: `image/${image.format}` });
+      
+      setDocs({ ...docs, [docId]: file });
+    } catch (e) {
+      console.warn("Camera cancelled or failed:", e);
+    }
+  };
+
   const uploadFile = async (file) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -69,7 +120,6 @@ const AuthPage = () => {
         let user;
         if (isDriver) {
           setUploadingDocs(true);
-          // 1. Upload the documents first
           let licenseUrl = "";
           let registrationUrl = "";
           
@@ -80,7 +130,6 @@ const AuthPage = () => {
             registrationUrl = await uploadFile(docs.registration);
           }
           
-          // Unified Driver Signup
           user = await signupDriver(formData, {
             vehicle_type: formData.vehicle_type,
             vehicle_model: formData.vehicle_model,
@@ -95,7 +144,6 @@ const AuthPage = () => {
           toast.success('Driver account created! Waiting for approval.');
           navigate('/driver');
         } else {
-          // Normal Student Signup
           user = await register(
             formData.name,
             formData.email,
@@ -110,7 +158,6 @@ const AuthPage = () => {
         const user = await login(formData.email, formData.password);
         toast.success(`Welcome back, ${user.name}!`);
 
-        // Redirect based on role
         if (user.role === 'admin' || user.role === 'super_admin') {
           navigate('/admin');
         } else if (user.role === 'driver') {
@@ -123,7 +170,7 @@ const AuthPage = () => {
       console.error('Auth error:', error);
       const detail = error.response?.data?.detail;
       const errorMessage = Array.isArray(detail)
-        ? detail.map(e => e.msg).join(', ') // Handle Pydantic validation errors
+        ? detail.map(e => e.msg).join(', ')
         : detail || 'Authentication failed. Please check your inputs.';
       toast.error(errorMessage);
     } finally {
@@ -134,7 +181,7 @@ const AuthPage = () => {
   const handleGoogleSuccess = async (credentialResponse) => {
     setLoading(true);
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://student-ride-backend.onrender.com';
       const response = await fetch(`${backendUrl}/api/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -147,11 +194,9 @@ const AuthPage = () => {
         throw new Error(data.detail || 'Google authentication failed');
       }
 
-      // Save token using the correct key that AuthContext reads
       localStorage.setItem('token', data.access_token);
 
       if (data.is_new_user) {
-        // New Google user — send to complete-profile page (Uber style)
         navigate('/complete-profile', {
           state: {
             name: data.user.name,
@@ -160,11 +205,7 @@ const AuthPage = () => {
           }
         });
       } else {
-        // Existing user — redirect straight to their dashboard
         const role = data.user.role;
-        // If driver, check if they need registration (profile data exists in data.user usually if backend is thorough)
-        // But the safest way is to go to dashboard which now handles the redirect, 
-        // OR better: if they are a driver, let them go to /driver and let dashboard handle it.
         window.location.href = role === 'admin' || role === 'super_admin' ? '/admin'
           : role === 'driver' && !data.driver_profile_complete ? '/driver/register'
           : role === 'driver' ? '/driver' : '/dashboard';
@@ -179,167 +220,192 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-start justify-center p-4 pt-16 pb-8 relative overflow-y-auto transition-colors duration-300">
-      {/* Background Effects */}
-      <div className="absolute inset-0">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-gold/5 rounded-full blur-[150px]" />
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-10"
-          style={{ backgroundImage: `url(https://images.pexels.com/photos/21431027/pexels-photo-21431027.jpeg)` }}
+    <div className="fixed inset-0 bg-zinc-950 text-zinc-50 overflow-hidden flex flex-col justify-end">
+      {/* Dynamic Background */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <motion.div 
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.15, 0.25, 0.15],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="absolute -top-1/4 -left-1/4 w-[150vw] h-[150vw] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gold/20 via-zinc-950/0 to-zinc-950/0 rounded-full blur-3xl"
         />
+        {/* Subtle grid pattern */}
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik02MCAwaDF2NjBoLTF6TTAgNTloNjB2MWgtNnoiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wMykiIC8+PC9nPjwvc3ZnPg==')] opacity-30" />
       </div>
 
-      {/* Back Button */}
-      <button
-        onClick={() => navigate('/')}
-        className="absolute top-6 left-6 flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors z-20"
-        data-testid="back-btn"
-      >
-        <ArrowLeft className="w-5 h-5" />
-        <span>Back</span>
-      </button>
+      {/* Header Area (Visible before sheet) */}
+      <div className="absolute top-0 left-0 right-0 p-6 z-10">
+        <button
+          onClick={() => navigate('/')}
+          className="w-10 h-10 rounded-full bg-zinc-900/80 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-all backdrop-blur-sm"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+      </div>
 
-      <div className="relative z-10 w-full max-w-md my-auto">
-        {/* Logo */}
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-gold flex items-center justify-center shadow-gold">
-            <Car className="w-7 h-7 text-black" />
-          </div>
+      <div className="absolute top-1/4 left-0 right-0 flex flex-col items-center justify-center z-0">
+        <motion.div 
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.8 }}
+          className="w-20 h-20 rounded-3xl bg-gradient-to-br from-gold to-yellow-600 flex items-center justify-center shadow-lg shadow-gold/20 mb-4"
+        >
+          <Car className="w-10 h-10 text-black" />
+        </motion.div>
+        <motion.h1 
+          initial={{ y: 10, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.4, duration: 0.8 }}
+          className="text-3xl font-bold tracking-tight text-white"
+        >
+          MuluRides
+        </motion.h1>
+      </div>
+
+      {/* Animated Bottom Sheet */}
+      <motion.div 
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        transition={{ type: "spring", damping: 25, stiffness: 200, delay: 0.1 }}
+        className={`relative z-20 w-full md:max-w-md md:mx-auto md:mb-auto md:mt-32 bg-zinc-950/80 backdrop-blur-xl border-t md:border border-zinc-800/80 rounded-t-[2.5rem] md:rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black overflow-y-auto transition-[height] duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] ${mode === 'login' ? 'h-[65vh]' : 'h-[90vh]'}`}
+      >
+        <div className="w-12 h-1.5 bg-zinc-800 rounded-full mx-auto mb-6 md:hidden" />
+
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-zinc-100 mb-1">
+            {mode === 'login' ? 'Welcome Back' : isDriver ? 'Become a Driver' : 'Create Account'}
+          </h2>
+          <p className="text-zinc-400 text-sm">
+            {mode === 'login'
+              ? 'Sign in to continue your journey'
+              : isDriver
+                ? 'Start earning with MuluRides'
+                : 'Join the MuluRides community'}
+          </p>
         </div>
 
-        <GlassCard className="p-8" data-testid="auth-card">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="font-heading text-2xl font-bold text-foreground mb-2">
-              {mode === 'login' ? 'Welcome Back' : isDriver ? 'Become a Driver' : 'Create Account'}
-            </h1>
-            <p className="text-muted-foreground text-sm">
-              {mode === 'login'
-                ? 'Sign in to continue your journey'
-                : isDriver
-                  ? 'Start earning with MuluRides'
-                  : 'Join the MuluRides community'}
-            </p>
-          </div>
+        {/* Mode Toggle Tabs */}
+        <div className="flex p-1 bg-zinc-900/80 rounded-xl mb-8 border border-zinc-800/50">
+          <button
+            type="button"
+            onClick={() => setMode('login')}
+            className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 ${mode === 'login'
+              ? 'bg-gold text-zinc-950 shadow-md shadow-gold/20'
+              : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+          >
+            Sign In
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('register')}
+            className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 ${mode === 'register'
+              ? 'bg-gold text-zinc-950 shadow-md shadow-gold/20'
+              : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+          >
+            Sign Up
+          </button>
+        </div>
 
-          {/* Mode Toggle */}
-          <div className="flex p-1 bg-muted rounded-xl mb-8">
-            <button
-              type="button"
-              onClick={() => setMode('login')}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${mode === 'login'
-                ? 'bg-gold text-black shadow-lg shadow-gold/20'
-                : 'text-muted-foreground hover:text-foreground'
-                }`}
-              data-testid="login-tab"
-            >
-              Sign In
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('register')}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${mode === 'register'
-                ? 'bg-gold text-black shadow-lg shadow-gold/20'
-                : 'text-muted-foreground hover:text-foreground'
-                }`}
-              data-testid="register-tab"
-            >
-              Sign Up
-            </button>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Form Container with Layout Animation */}
+        <AnimatePresence mode="popLayout">
+          <motion.form 
+            key={mode}
+            initial={{ opacity: 0, x: mode === 'login' ? -20 : 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: mode === 'login' ? 20 : -20 }}
+            transition={{ duration: 0.2 }}
+            onSubmit={handleSubmit} 
+            className="space-y-4"
+          >
             {mode === 'register' && (
-              <>
-                {/* Driver Toggle */}
-                <div className="flex items-center justify-between p-4 bg-muted rounded-xl mb-4">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <div className="flex items-center justify-between p-4 bg-zinc-900/50 rounded-xl mb-4 border border-zinc-800/50">
                   <div className="flex items-center gap-3">
                     <Car className="w-5 h-5 text-gold" />
-                    <span className="text-foreground text-sm">Register as Driver</span>
+                    <span className="text-zinc-200 text-sm font-medium">Register as Driver</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setIsDriver(!isDriver)}
-                    className={`w-12 h-6 rounded-full transition-colors relative ${isDriver ? 'bg-gold' : 'bg-muted-foreground/30'
-                      }`}
-                    data-testid="driver-toggle"
+                    className={`w-12 h-6 rounded-full transition-colors relative ${isDriver ? 'bg-gold' : 'bg-zinc-800'}`}
                   >
-                    <div className={`w-5 h-5 rounded-full bg-white absolute top-0.5 transition-all ${isDriver ? 'right-0.5' : 'left-0.5'
-                      }`} />
+                    <div className={`w-5 h-5 rounded-full bg-zinc-50 absolute top-0.5 transition-all ${isDriver ? 'right-0.5' : 'left-0.5'}`} />
                   </button>
                 </div>
 
-                {/* Name */}
-                <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <GlassInput
-                    type="text"
-                    name="name"
-                    placeholder="Full Name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="pl-12"
-                    required
-                    data-testid="name-input"
-                  />
-                </div>
+                <div className="space-y-4 mb-4">
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                    <GlassInput
+                      type="text"
+                      name="name"
+                      placeholder="Full Name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      className="pl-11"
+                      required
+                    />
+                  </div>
 
-                {/* Phone */}
-                <div className="relative">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <GlassInput
-                    type="tel"
-                    name="phone"
-                    placeholder="Phone Number"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="pl-12"
-                    required
-                    data-testid="phone-input"
-                  />
+                  <div className="relative">
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                    <GlassInput
+                      type="tel"
+                      name="phone"
+                      placeholder="Phone Number"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      className="pl-11"
+                      required
+                    />
+                  </div>
                 </div>
-              </>
+              </motion.div>
             )}
 
-            {/* Email */}
             <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
               <GlassInput
                 type="email"
                 name="email"
                 placeholder="Email Address"
                 value={formData.email}
                 onChange={handleChange}
-                className="pl-12"
+                className="pl-11"
                 required
-                data-testid="email-input"
               />
             </div>
 
-            {/* Password */}
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
               <GlassInput
                 type={showPassword ? 'text' : 'password'}
                 name="password"
                 placeholder="Password"
                 value={formData.password}
                 onChange={handleChange}
-                className="pl-12 pr-12"
+                className="pl-11 pr-11"
                 required
-                data-testid="password-input"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
               >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
 
             {mode === 'login' && (
-              <div className="flex justify-end mt-1 mb-2">
+              <div className="flex justify-end pt-1 pb-2">
                 <button
                   type="button"
                   onClick={() => navigate('/forgot-password', { state: { email: formData.email } })}
@@ -350,38 +416,34 @@ const AuthPage = () => {
               </div>
             )}
 
-            {/* Confirm Password */}
             {mode === 'register' && (
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                 <GlassInput
                   type={showPassword ? 'text' : 'password'}
                   name="confirmPassword"
                   placeholder="Confirm Password"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="pl-12"
+                  className="pl-11"
                   required
-                  data-testid="confirm-password-input"
                 />
               </div>
             )}
 
-            {/* Vehicle Details (Only for Driver Registration) */}
             {mode === 'register' && isDriver && (
-              <div className="space-y-4 pt-4 border-t border-border animate-in slide-in-from-top">
-                <p className="text-muted-foreground text-sm font-medium">Vehicle Details</p>
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="space-y-4 pt-4">
+                <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider">Vehicle Details</p>
 
-                {/* Vehicle Type */}
                 <div className="grid grid-cols-3 gap-2">
                   {['car', 'motorcycle', 'bicycle'].map((type) => (
                     <button
                       key={type}
                       type="button"
                       onClick={() => setFormData({ ...formData, vehicle_type: type })}
-                      className={`p-2 rounded-lg text-xs capitalize transition-all ${formData.vehicle_type === type
-                        ? 'bg-gold text-black font-medium shadow-md shadow-gold/10'
-                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                      className={`p-2.5 rounded-xl text-xs font-semibold capitalize transition-all ${formData.vehicle_type === type
+                        ? 'bg-gold text-zinc-950 shadow-md shadow-gold/10'
+                        : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:bg-zinc-800'
                         }`}
                     >
                       {type}
@@ -389,7 +451,6 @@ const AuthPage = () => {
                   ))}
                 </div>
 
-                {/* Model & Color */}
                 <div className="grid grid-cols-2 gap-3">
                   <GlassInput
                     type="text"
@@ -398,7 +459,6 @@ const AuthPage = () => {
                     value={formData.vehicle_model}
                     onChange={handleChange}
                     required
-                    className="text-sm"
                   />
                   <GlassInput
                     type="text"
@@ -407,11 +467,9 @@ const AuthPage = () => {
                     value={formData.vehicle_color}
                     onChange={handleChange}
                     required
-                    className="text-sm"
                   />
                 </div>
 
-                {/* Plate Number */}
                 <GlassInput
                   type="text"
                   name="plate_number"
@@ -419,74 +477,63 @@ const AuthPage = () => {
                   value={formData.plate_number}
                   onChange={handleChange}
                   required
-                  className="uppercase text-sm"
+                  className="uppercase"
                 />
 
-                {/* KYC Documents */}
-                <div className="pt-2 border-t border-border mt-4 mb-2">
-                  <label className="block text-sm text-foreground font-medium mb-3">Verification Documents</label>
+                <div className="pt-2">
+                  <label className="block text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-3">Documents</label>
                   <div className="space-y-3">
-                    
-                    {/* Driver's License */}
-                    <div className="relative">
-                      <input
-                        type="file"
-                        name="license"
-                        id="auth_license_upload"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        className="hidden"
-                      />
-                      <label 
-                        htmlFor="auth_license_upload"
-                        className={`flex items-center justify-between p-3 rounded-xl border border-dashed cursor-pointer transition-colors ${docs.license ? 'bg-gold/10 border-gold/50 text-gold' : 'bg-background border-white/10 text-muted-foreground hover:bg-muted/80'}`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <FileText className="w-5 h-5" />
-                          <span className="text-sm font-medium">{docs.license ? docs.license.name : "Driver's License"}</span>
-                        </div>
-                        {docs.license ? <CheckCircle2 className="w-5 h-5" /> : <UploadCloud className="w-5 h-5" />}
-                      </label>
-                    </div>
-
-                    {/* Vehicle Registration */}
-                    <div className="relative">
-                      <input
-                        type="file"
-                        name="registration"
-                        id="auth_registration_upload"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        className="hidden"
-                      />
-                      <label 
-                        htmlFor="auth_registration_upload"
-                        className={`flex items-center justify-between p-3 rounded-xl border border-dashed cursor-pointer transition-colors ${docs.registration ? 'bg-gold/10 border-gold/50 text-gold' : 'bg-background border-white/10 text-muted-foreground hover:bg-muted/80'}`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <FileText className="w-5 h-5" />
-                          <span className="text-sm font-medium">{docs.registration ? docs.registration.name : "Vehicle Registration"}</span>
-                        </div>
-                        {docs.registration ? <CheckCircle2 className="w-5 h-5" /> : <UploadCloud className="w-5 h-5" />}
-                      </label>
-                    </div>
-                    
+                    {[{ id: 'license', label: "Driver's License" }, { id: 'registration', label: "Vehicle Registration" }].map(doc => (
+                      <div key={doc.id} className="relative">
+                        {!Capacitor.isNativePlatform() ? (
+                          <>
+                            <input
+                              type="file"
+                              name={doc.id}
+                              id={`auth_${doc.id}_upload`}
+                              accept="image/*"
+                              onChange={handleFileChange}
+                              className="hidden"
+                            />
+                            <label 
+                              htmlFor={`auth_${doc.id}_upload`}
+                              className={`flex items-center justify-between p-3.5 rounded-xl border border-dashed cursor-pointer transition-colors ${docs[doc.id] ? 'bg-gold/10 border-gold/50 text-gold' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800/80'}`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <FileText className="w-5 h-5" />
+                                <span className="text-sm font-medium">{docs[doc.id] ? docs[doc.id].name : doc.label}</span>
+                              </div>
+                              {docs[doc.id] ? <CheckCircle2 className="w-5 h-5" /> : <UploadCloud className="w-5 h-5" />}
+                            </label>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleNativeCapture(doc.id)}
+                            className={`w-full flex items-center justify-between p-3.5 rounded-xl border border-dashed cursor-pointer transition-colors ${docs[doc.id] ? 'bg-gold/10 border-gold/50 text-gold' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800/80'}`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <FileText className="w-5 h-5" />
+                              <span className="text-sm font-medium">{docs[doc.id] ? docs[doc.id].name : doc.label}</span>
+                            </div>
+                            {docs[doc.id] ? <CheckCircle2 className="w-5 h-5" /> : <UploadCloud className="w-5 h-5" />}
+                          </button>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
-
-              </div>
+              </motion.div>
             )}
 
-            <GoldButton
+            <button
               type="submit"
-              className="w-full mt-6"
               disabled={loading || uploadingDocs}
-              data-testid="submit-btn"
+              className="w-full mt-8 bg-zinc-50 hover:bg-zinc-200 text-zinc-950 font-semibold py-3.5 rounded-xl transition-colors shadow-lg flex justify-center items-center h-[52px]"
             >
               {loading || uploadingDocs ? (
                 <div className="flex flex-col items-center">
-                  <LoadingSpinner size="sm" className="mx-auto" />
-                  {uploadingDocs && <span className="text-xs mt-1">Uploading...</span>}
+                  <LoadingSpinner className="!text-zinc-950 mx-auto" />
                 </div>
               ) : mode === 'login' ? (
                 'Sign In'
@@ -495,63 +542,62 @@ const AuthPage = () => {
               ) : (
                 'Create Account'
               )}
-            </GoldButton>
+            </button>
 
-          </form>
-
-          {/* Divider */}
-          <div className="relative mt-6 mb-4">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
+            {/* Divider */}
+            <div className="relative py-6">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-zinc-800" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase tracking-widest font-semibold">
+                <span className="bg-zinc-950 px-3 text-zinc-600">Or</span>
+              </div>
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
-            </div>
-          </div>
 
-          {/* Google Authentication */}
-          <div className="flex justify-center flex-col items-center gap-2">
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => {
-                toast.error('Google authentication failed');
-              }}
-              useOneTap={false}
-              shape="rect"
-              theme="filled_black"
-              text="continue_with"
-              size="large"
-            />
-          </div>
-
-          {/* Footer */}
-          <p className="text-center text-muted-foreground text-sm mt-6">
-            {mode === 'login' ? (
-              <>
-                Don't have an account?{' '}
+            {/* Google Authentication */}
+            <div className="flex justify-center flex-col items-center gap-2 pb-8">
+              {Capacitor.isNativePlatform() ? (
                 <button
                   type="button"
-                  onClick={() => setMode('register')}
-                  className="text-gold hover:underline"
+                  onClick={async () => {
+                    setLoading(true);
+                    try {
+                      const response = await GoogleAuth.signIn();
+                      const idToken = response.authentication.idToken;
+                      handleGoogleSuccess({ credential: idToken });
+                    } catch (error) {
+                      console.error('Native Google Auth Error:', error);
+                      toast.error('Google authentication failed or cancelled');
+                      setLoading(false);
+                    }
+                  }}
+                  className="w-full flex items-center justify-center gap-3 bg-zinc-900 border border-zinc-800 text-zinc-100 py-3.5 rounded-xl hover:bg-zinc-800 transition-colors font-semibold shadow-sm h-[52px]"
                 >
-                  Sign up
+                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                  </svg>
+                  Continue with Google
                 </button>
-              </>
-            ) : (
-              <>
-                Already have an account?{' '}
-                <button
-                  type="button"
-                  onClick={() => setMode('login')}
-                  className="text-gold hover:underline"
-                >
-                  Sign in
-                </button>
-              </>
-            )}
-          </p>
-        </GlassCard>
-      </div>
+              ) : (
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() => {
+                    toast.error('Google authentication failed');
+                  }}
+                  useOneTap={false}
+                  shape="rect"
+                  theme="filled_black"
+                  text="continue_with"
+                  size="large"
+                />
+              )}
+            </div>
+          </motion.form>
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 };

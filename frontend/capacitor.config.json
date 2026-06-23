@@ -1,0 +1,19 @@
+{
+  "appId": "com.mulurides.app",
+  "appName": "MuluRides",
+  "webDir": "build",
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    },
+    "GoogleAuth": {
+      "scopes": ["profile", "email"],
+      "serverClientId": "613545438163-5eo9e0tpustjgotq6u7m7elsas8gkjst.apps.googleusercontent.com",
+      "forceCodeForRefreshToken": true
+    }
+  },
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  }
+}

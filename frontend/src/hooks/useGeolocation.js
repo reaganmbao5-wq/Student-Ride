@@ -1,49 +1,76 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { Geolocation } from '@capacitor/geolocation';
+import { PermissionsService } from '../services/PermissionsService';
 
 export const useGeolocation = (options = {}) => {
   const [location, setLocation] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const defaultOptions = {
-    enableHighAccuracy: true,
-    timeout: 10000,
-    maximumAge: 0,
-    ...options
-  };
+  // use stringified options to prevent infinite render loops if options object reference changes
+  const optionsString = JSON.stringify(options);
 
-  const getCurrentPosition = useCallback(() => {
+  const getCurrentPosition = useCallback(async () => {
+    console.log('GEOLOCATION_STARTED');
     setLoading(true);
+    
+    const parsedOptions = JSON.parse(optionsString);
+    const defaultOptions = {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0,
+      ...parsedOptions
+    };
 
-    if (!navigator.geolocation) {
-      setError('Geolocation is not supported by your browser');
-      setLoading(false);
-      return;
-    }
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const hasPermission = await PermissionsService.requestLocationPermission();
+        if (!hasPermission) {
+          setError('Location permission denied');
+          setLoading(false);
+          return;
+        }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
+        const position = await Geolocation.getCurrentPosition(defaultOptions);
         setLocation({
           lat: position.coords.latitude,
           lng: position.coords.longitude,
           accuracy: position.coords.accuracy
         });
         setError(null);
-        setLoading(false);
-      },
-      (error) => {
-        // Fallback to Kabwe when geolocation fails (HTTP on phone requires HTTPS for geolocation)
-        setLocation({
-          lat: -14.42,
-          lng: 28.45,
-          accuracy: null
-        });
+      } catch (e) {
+        // Fallback to Kabwe when geolocation fails
+        setLocation({ lat: -14.42, lng: 28.45, accuracy: null });
         setError(`Location unavailable. Using default location (Kabwe).`);
+      }
+      setLoading(false);
+    } else {
+      if (!navigator.geolocation) {
+        setError('Geolocation is not supported by your browser');
         setLoading(false);
-      },
-      defaultOptions
-    );
-  }, []);
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            accuracy: position.coords.accuracy
+          });
+          setError(null);
+          setLoading(false);
+        },
+        (error) => {
+          setLocation({ lat: -14.42, lng: 28.45, accuracy: null });
+          setError(`Location unavailable. Using default location (Kabwe).`);
+          setLoading(false);
+        },
+        defaultOptions
+      );
+    }
+  }, [optionsString]);
 
   useEffect(() => {
     getCurrentPosition();
@@ -56,40 +83,72 @@ export const useWatchPosition = (onUpdate, options = {}) => {
   const [watchId, setWatchId] = useState(null);
   const [error, setError] = useState(null);
 
-  const defaultOptions = {
-    enableHighAccuracy: true,
-    timeout: 10000,
-    maximumAge: 0,
-    ...options
-  };
+  const optionsString = JSON.stringify(options);
 
-  const startWatching = useCallback(() => {
-    if (!navigator.geolocation) {
-      setError('Geolocation is not supported');
-      return;
+  const startWatching = useCallback(async () => {
+    const parsedOptions = JSON.parse(optionsString);
+    const defaultOptions = {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0,
+      ...parsedOptions
+    };
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const hasPermission = await PermissionsService.requestLocationPermission();
+        if (!hasPermission) {
+          setError('Location permission denied');
+          return;
+        }
+        
+        const id = await Geolocation.watchPosition(defaultOptions, (position, err) => {
+          if (err) {
+            setError(err.message || 'Error watching position');
+            return;
+          }
+          if (position) {
+            onUpdate({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+              accuracy: position.coords.accuracy
+            });
+          }
+        });
+        setWatchId(id);
+      } catch (e) {
+        setError(e.message || 'Error starting watch');
+      }
+    } else {
+      if (!navigator.geolocation) {
+        setError('Geolocation is not supported');
+        return;
+      }
+
+      const id = navigator.geolocation.watchPosition(
+        (position) => {
+          onUpdate({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            accuracy: position.coords.accuracy
+          });
+        },
+        (error) => {
+          setError(error.message);
+        },
+        defaultOptions
+      );
+      setWatchId(id);
     }
+  }, [onUpdate, optionsString]);
 
-    const id = navigator.geolocation.watchPosition(
-      (position) => {
-        const loc = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          accuracy: position.coords.accuracy
-        };
-        onUpdate(loc);
-      },
-      (error) => {
-        setError(error.message);
-      },
-      defaultOptions
-    );
-
-    setWatchId(id);
-  }, [onUpdate]);
-
-  const stopWatching = useCallback(() => {
+  const stopWatching = useCallback(async () => {
     if (watchId !== null) {
-      navigator.geolocation.clearWatch(watchId);
+      if (Capacitor.isNativePlatform()) {
+        await Geolocation.clearWatch({ id: watchId });
+      } else {
+        navigator.geolocation.clearWatch(watchId);
+      }
       setWatchId(null);
     }
   }, [watchId]);
@@ -97,7 +156,11 @@ export const useWatchPosition = (onUpdate, options = {}) => {
   useEffect(() => {
     return () => {
       if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
+        if (Capacitor.isNativePlatform()) {
+          Geolocation.clearWatch({ id: watchId }).catch(console.error);
+        } else {
+          navigator.geolocation.clearWatch(watchId);
+        }
       }
     };
   }, [watchId]);

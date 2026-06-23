@@ -5,9 +5,9 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { WebSocketProvider } from "./context/WebSocketContext";
 import { Toaster } from "./components/ui/sonner";
 import { ThemeProvider } from "./context/ThemeContext";
-import PWAInstallPrompt from "./components/common/PWAInstallPrompt";
 import PushNotificationManager from "./components/common/PushNotificationManager";
 import SWUpdateManager from "./components/common/SWUpdateManager";
+import NetworkMonitor from "./components/common/NetworkMonitor";
 
 // Pages
 import LandingPage from "./pages/LandingPage";
@@ -277,7 +277,7 @@ const KeepAlive = () => {
   useEffect(() => {
     // Ping every 10 minutes (600,000 ms)
     const interval = setInterval(() => {
-      fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api/health`)
+      fetch(`${process.env.REACT_APP_API_URL || 'https://student-ride-backend.onrender.com'}/api/health`)
         .catch(() => { }); // ignore errors, just a keep-awake ping
     }, 600000);
     return () => clearInterval(interval);
@@ -285,15 +285,19 @@ const KeepAlive = () => {
   return null;
 };
 
+import { ErrorBoundary } from "./ErrorBoundary";
+
 function App() {
   return (
-    <div className="App">
-      <BrowserRouter>
-        <ThemeProvider>
-          <AuthProvider>
+    <ErrorBoundary>
+      <div className="App">
+        <BrowserRouter>
+          <ThemeProvider>
+            <AuthProvider>
             <AppRoutes />
-            <PWAInstallPrompt />
+            {/* Global Components */}
             <PushNotificationManager />
+            <NetworkMonitor />
             <SWUpdateManager />
             <KeepAlive />
             <Toaster position="top-center" />
@@ -301,6 +305,7 @@ function App() {
         </ThemeProvider>
       </BrowserRouter>
     </div>
+    </ErrorBoundary>
   );
 }
 

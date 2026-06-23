@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Car, MapPin, Shield, Star, Smartphone, Clock, ChevronRight, Users, Wallet, Sun, Moon } from 'lucide-react';
 import { GlassCard, GoldButton } from '../components/common/GlassComponents';
-import { MultiPlatformInstallSection } from '../components/common/MultiPlatformInstallSection';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -129,19 +128,9 @@ const LandingPage = () => {
               </GlassCard>
             ))}
           </div>
-
-          {/* Permanent PWA Install Section */}
-          <div className="max-w-3xl mx-auto mt-12 text-left">
-            <MultiPlatformInstallSection />
-          </div>
         </div>
 
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-          <div className="w-6 h-10 border-2 border-border rounded-full flex items-start justify-center p-2">
-            <div className="w-1.5 h-1.5 bg-gold rounded-full animate-pulse" />
-          </div>
-        </div>
+
       </section>
 
       {/* Features Section */}
@@ -232,7 +221,7 @@ const LandingPage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-4 border-t border-border">
+      <footer className="py-8 border-t border-white/5 bg-[#0B0B0B] text-center text-muted-foreground relative z-10">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-3">

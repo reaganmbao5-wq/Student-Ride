@@ -44,6 +44,7 @@ export const AuthProvider = ({ children }) => {
 
     try {
       const response = await api.get('/auth/me');
+      console.log('PROFILE_LOADED', response.data);
       setUser(response.data);
 
       // Fetch driver profile if user is a driver
@@ -107,6 +108,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('token', access_token);
     setToken(access_token);
     setUser(userData);
+    console.log('LOGIN_SUCCESS', userData);
 
     if (userData.role === 'driver') {
       try {

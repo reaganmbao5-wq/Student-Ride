@@ -56,7 +56,7 @@ export const MultiPlatformInstallSection = () => {
         };
     }, []);
 
-    if (isStandalone) {
+    if (isStandalone || window.Capacitor?.isNativePlatform?.()) {
         return null; // Ensure the section completely hides if already installed
     }
 

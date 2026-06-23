@@ -29,6 +29,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('DASHBOARD_MOUNTED (Admin)');
     fetchData();
     const interval = setInterval(fetchData, 30000); // Refresh every 30s
     return () => clearInterval(interval);
@@ -45,6 +46,7 @@ const AdminDashboard = () => {
       setStats(statsRes.data);
       setAnalytics(analyticsRes.data);
       setActiveRides(ridesRes.data);
+      console.log('DASHBOARD_RENDER_COMPLETE (Admin)');
     } catch (error) {
       console.error('Error fetching admin data:', error);
     } finally {

@@ -22,6 +22,7 @@ const StudentDashboard = () => {
   const [driverPos, setDriverPos] = useState(null);
 
   useEffect(() => {
+    console.log('DASHBOARD_MOUNTED (Student)');
     fetchData();
   }, []);
 
@@ -70,6 +71,7 @@ const StudentDashboard = () => {
 
       setActiveRide(activeRes.data);
       setRecentRides(historyRes.data);
+      console.log('DASHBOARD_RENDER_COMPLETE (Student)');
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -126,7 +128,7 @@ const StudentDashboard = () => {
         {/* Header */}
         <div className="mb-8 font-heading">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
-            Hello, {user?.name?.split(' ')[0]} 👋
+            Hello, {(user?.name || '').split(' ')[0] || 'Passenger'} 👋
           </h1>
           <p className="text-muted-foreground">Where would you like to go today?</p>
         </div>

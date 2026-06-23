@@ -22,7 +22,7 @@ export const WebSocketProvider = ({ children }) => {
     const ws = new WebSocket(`${wsUrl}/ws?token=${token}`);
 
     ws.onopen = () => {
-      console.log('WebSocket connected');
+      console.log('WEBSOCKET_CONNECTED');
       setIsConnected(true);
       reconnectAttemptRef.current = 0;
     };
