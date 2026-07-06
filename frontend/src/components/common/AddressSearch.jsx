@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, Search, Loader2 } from 'lucide-react';
-import { searchAddress } from '../../utils/nominatim';
+import { searchAddress } from '../../map/services/nominatim';
 
 export const AddressSearch = ({ onLocationSelect, placeholder = "Search for a location..." }) => {
     const [query, setQuery] = useState('');

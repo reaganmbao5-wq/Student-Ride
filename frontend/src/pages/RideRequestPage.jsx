@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Navigation, ArrowLeft, Loader2, Maximize2, Minimize2, ChevronDown, AlertCircle, TrendingUp } from 'lucide-react';
-import { GlassCard, GlassInput, GoldButton, LoadingSpinner } from '../components/common/GlassComponents';
-import { RideMap, LocationPickerMap } from '../components/map/RideMap';
+import { ArrowLeft, Loader2, Navigation, TrendingUp, Search, MapPin, Flag } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { useGeolocation } from '../hooks/useGeolocation';
+import { useGeolocation } from '../map/hooks/useGeolocation';
 import { toast } from 'sonner';
+import { reverseGeocode } from '../map/services/nominatim';
+import { PlatformMap } from '../map/components/PlatformMap';
+import { AddressSearch } from '../components/common/AddressSearch';
 import {
   Select,
   SelectContent,
@@ -13,8 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select';
-import { AddressSearch } from '../components/common/AddressSearch';
-import { reverseGeocode } from '../utils/nominatim';
 
 const RideRequestPage = () => {
   const navigate = useNavigate();
@@ -22,21 +22,35 @@ const RideRequestPage = () => {
   const { location: userLocation, loading: geoLoading, error: geoError, refresh: refreshLocation } = useGeolocation();
 
   const [step, setStep] = useState('pickup'); // pickup, dropoff, confirm
+  
+  // Confirmed locations
   const [pickup, setPickup] = useState(null);
   const [dropoff, setDropoff] = useState(null);
-  const [pickupAddress, setPickupAddress] = useState('');
-  const [dropoffAddress, setDropoffAddress] = useState('');
-  const [fareEstimate, setFareEstimate] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [requesting, setRequesting] = useState(false);
-  const [isMapFullscreen, setIsMapFullscreen] = useState(false);
+  
+  // Real-time map center tracking
+  const [mapCenter, setMapCenter] = useState({ lat: -14.4087, lng: 28.2849 }); // Default Lusaka/Zambia approx
+  const [isDragging, setIsDragging] = useState(false);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [currentAddress, setCurrentAddress] = useState('');
+  
   const [destinations, setDestinations] = useState([]);
   const [selectedDestination, setSelectedDestination] = useState(null);
-  const [nearbyDrivers, setNearbyDrivers] = useState([]); // Phase 5: Nearby Drivers
+  const [fareEstimate, setFareEstimate] = useState(null);
   const [routeGeometry, setRouteGeometry] = useState(null);
+  
+  const [loading, setLoading] = useState(false);
+  const [requesting, setRequesting] = useState(false);
 
+  // Debounce ref for reverse geocoding
+  const geocodeTimeoutRef = useRef(null);
 
-  // Fetch admin-defined destinations
+  // Initialize center with user location once available
+  useEffect(() => {
+    if (userLocation && !pickup && step === 'pickup') {
+      setMapCenter({ lat: userLocation.lat, lng: userLocation.lng });
+    }
+  }, [userLocation, pickup, step]);
+
   useEffect(() => {
     fetchDestinations();
   }, []);
@@ -50,102 +64,64 @@ const RideRequestPage = () => {
     }
   };
 
-  // Use current location as default pickup
+  // Reverse Geocode whenever map stops moving (debounced)
   useEffect(() => {
-    if (userLocation && !pickup) {
-      setPickup({
-        lat: userLocation.lat,
-        lng: userLocation.lng,
-        address: 'Current Location'
-      });
-      setPickupAddress('Current Location');
+    if (isDragging) return;
+    
+    // Only geocode in pickup or dropoff steps
+    if (step !== 'pickup' && step !== 'dropoff') return;
+
+    if (geocodeTimeoutRef.current) {
+      clearTimeout(geocodeTimeoutRef.current);
     }
-  }, [userLocation, pickup]);
 
-  // Handle map click for location selection
-  const handleLocationSelect = async (location) => {
-    // Reverse geocode to get a readable address
-    let address = `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`;
-
-    try {
-      const data = await reverseGeocode(location.lat, location.lng);
-      if (data && data.display_name) {
-        address = data.display_name;
+    geocodeTimeoutRef.current = setTimeout(async () => {
+      setIsGeocoding(true);
+      try {
+        const data = await reverseGeocode(mapCenter.lat, mapCenter.lng);
+        if (data && data.display_name) {
+          setCurrentAddress(data.display_name);
+        } else {
+          setCurrentAddress('Unknown location');
+        }
+      } catch (error) {
+        setCurrentAddress('Unable to fetch address');
+      } finally {
+        setIsGeocoding(false);
       }
-    } catch (error) {
-      console.error('Reverse geocoding error:', error);
-    }
+    }, 600); // 600ms debounce
 
-    const newLocation = {
-      lat: location.lat,
-      lng: location.lng,
-      address
-    };
+    return () => clearTimeout(geocodeTimeoutRef.current);
+  }, [mapCenter, isDragging, step]);
 
-    if (step === 'pickup') {
-      setPickup(newLocation);
-      setPickupAddress(address);
-    } else if (step === 'dropoff') {
-      setDropoff(newLocation);
-      setDropoffAddress(address);
-      setSelectedDestination(null);
-    }
-  };
 
-  // Calculate distance between two points (Haversine formula)
-  const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // Earth's radius in km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
-
-  // Calculate fare estimate and route when both locations are set
-  const calculateFare = useCallback(async () => {
-    if (!pickup || !dropoff) return;
+  const calculateFare = useCallback(async (pickupLoc, dropoffLoc) => {
+    const p = pickupLoc || pickup;
+    const d = dropoffLoc || dropoff;
+    if (!p || !d) return;
 
     setLoading(true);
     try {
-      // Server-Side Pricing & Routing Authority
-      // We send coordinates, server returns verified fare + geometry
-      let estimatedFare = 0;
-      let dist = 0;
-      let dur = 0;
-      let geom = null;
-
-      // Always fetch from server to get geometry and verified distance/duration
       const response = await api.post('/rides/estimate-fare', {
-        pickup,
-        dropoff
+        pickup: p,
+        dropoff: d
       });
 
       const data = response.data;
-      estimatedFare = data.estimated_fare;
-      dist = data.verified_distance;
-      dur = data.verified_duration;
-      geom = data.geometry;
-
-      // If using admin-defined destination, override fare but keep geometry/distance
+      let estimatedFare = data.estimated_fare;
+      
       if (selectedDestination?.estimated_fare) {
         estimatedFare = selectedDestination.estimated_fare;
       }
 
-      // Update route on map
-      // Backend returns geometry as array of [lng, lat]
-      if (geom && Array.isArray(geom)) {
-        setRouteGeometry(geom);
+      if (data.geometry && Array.isArray(data.geometry) && data.geometry.length > 0) {
+        setRouteGeometry(data.geometry);
       } else {
         setRouteGeometry(null);
       }
 
-
       setFareEstimate({
-        estimated_fare: data.estimated_fare,
+        estimated_fare: estimatedFare,
         distance: data.verified_distance,
         duration: data.verified_duration,
         is_predefined: !!selectedDestination?.estimated_fare,
@@ -153,49 +129,38 @@ const RideRequestPage = () => {
         surge_reason: data.surge_reason
       });
     } catch (error) {
-      console.error('Error calculating fare:', error);
+      console.error('Fare calc error:', error);
       toast.error('Failed to calculate fare');
     } finally {
       setLoading(false);
     }
   }, [pickup, dropoff, api, selectedDestination]);
 
-  useEffect(() => {
-    if (pickup && dropoff) {
-      calculateFare();
-    }
-  }, [pickup, dropoff, calculateFare]);
 
-  const handleDestinationSelect = (destId) => {
+  const handleConfirmLocation = () => {
+    const loc = {
+      lat: mapCenter.lat,
+      lng: mapCenter.lng,
+      address: currentAddress
+    };
+
+    if (step === 'pickup') {
+      setPickup(loc);
+      setStep('dropoff');
+    } else if (step === 'dropoff') {
+      setDropoff(loc);
+      setStep('confirm');
+      // Pass loc directly to avoid stale closure — dropoff state won't be set yet
+      calculateFare(pickup, loc);
+    }
+  };
+
+  const handleDestinationDropdownSelect = (destId) => {
     const dest = destinations.find(d => d.id === destId);
     if (dest) {
       setSelectedDestination(dest);
-      setDropoff({
-        lat: dest.latitude,
-        lng: dest.longitude,
-        address: dest.address
-      });
-      setDropoffAddress(dest.name);
-    }
-  };
-
-
-
-  const handleNext = () => {
-    if (step === 'pickup' && pickup) {
-      setStep('dropoff');
-    } else if (step === 'dropoff' && dropoff) {
-      setStep('confirm');
-    }
-  };
-
-  const handleBack = () => {
-    if (step === 'dropoff') {
-      setStep('pickup');
-    } else if (step === 'confirm') {
-      setStep('dropoff');
-    } else {
-      navigate('/dashboard');
+      setMapCenter({ lat: dest.latitude, lng: dest.longitude });
+      setCurrentAddress(dest.name);
     }
   };
 
@@ -204,17 +169,9 @@ const RideRequestPage = () => {
 
     setRequesting(true);
     try {
-      const response = await api.post('/rides/request', {
-        pickup_location: {
-          lat: pickup.lat,
-          lng: pickup.lng,
-          address: pickup.address || pickupAddress
-        },
-        dropoff_location: {
-          lat: dropoff.lat,
-          lng: dropoff.lng,
-          address: dropoff.address || dropoffAddress
-        },
+      await api.post('/rides/request', {
+        pickup_location: pickup,
+        dropoff_location: dropoff,
         estimated_fare: fareEstimate.estimated_fare,
         estimated_distance: fareEstimate.distance,
         estimated_duration: fareEstimate.duration
@@ -223,307 +180,272 @@ const RideRequestPage = () => {
       toast.success('Ride requested! Finding a driver...');
       navigate('/dashboard');
     } catch (error) {
-      console.error('Error requesting ride:', error);
       toast.error(error.response?.data?.detail || 'Failed to request ride');
     } finally {
       setRequesting(false);
     }
   };
 
-
-
-  // Fullscreen map modal
-  if (isMapFullscreen) {
-    return (
-      <div className="fixed inset-0 z-50 bg-background" data-testid="fullscreen-map">
-        <div className="absolute top-4 left-4 z-50">
-          <button
-            onClick={() => setIsMapFullscreen(false)}
-            className="p-3 rounded-xl bg-card/80 backdrop-blur-md border border-border hover:bg-card transition-colors"
-            data-testid="exit-fullscreen-btn"
-          >
-            <Minimize2 className="w-5 h-5 text-foreground" />
-          </button>
-        </div>
-        <div className="absolute top-4 right-4 z-50 max-w-xs">
-          <GlassCard className="p-3" hover={false}>
-            <p className="text-foreground text-sm">Tap on map to select {step === 'pickup' ? 'pickup' : 'dropoff'} location</p>
-          </GlassCard>
-        </div>
-        <LocationPickerMap
-          center={pickup ? [pickup.lat, pickup.lng] : userLocation ? [userLocation.lat, userLocation.lng] : [-14.4087, 28.2849]}
-          selectedLocation={step === 'pickup' ? pickup : dropoff}
-          onLocationSelect={(loc) => {
-            handleLocationSelect(loc);
-            setIsMapFullscreen(false);
-          }}
-          className="h-full w-full"
-        />
-      </div>
-    );
-  }
-
-  const renderStepContent = () => {
-    switch (step) {
-      case 'pickup':
-        return (
-          <>
-            <div className="mb-4">
-              <h2 className="font-heading text-xl font-semibold text-foreground mb-2">Set Pickup Location</h2>
-              <p className="text-muted-foreground text-sm">Tap on the map or use your current location</p>
-            </div>
-
-            <div className="mb-4">
-              <AddressSearch
-                placeholder="Search for pickup location..."
-                onLocationSelect={(loc) => {
-                  setPickup(loc);
-                  setPickupAddress(loc.address);
-                }}
-              />
-            </div>
-
-            <GoldButton
-              variant="secondary"
-              size="sm"
-              className="w-full mb-4"
-              onClick={() => {
-                refreshLocation();
-                if (userLocation) {
-                  setPickup({
-                    lat: userLocation.lat,
-                    lng: userLocation.lng,
-                    address: 'Current Location'
-                  });
-                  setPickupAddress('Current Location');
-                }
-              }}
-              disabled={geoLoading}
-              data-testid="use-location-btn"
-            >
-              <Navigation className="w-4 h-4 mr-2" />
-              {geoLoading ? 'Getting location...' : 'Use Current Location'}
-            </GoldButton>
-
-            {/* Map Picker - Phase 6: Responsive Height */}
-            <div className="relative h-[50vh] min-h-[300px] rounded-2xl overflow-hidden mb-4">
-              <LocationPickerMap
-                selectedLocation={pickup}
-                onLocationSelect={handleLocationSelect}
-                center={userLocation ? { lat: userLocation.lat, lng: userLocation.lng } : undefined}
-                nearbyDrivers={nearbyDrivers}
-              />
-            </div>
-          </>
-        );
-
-      case 'dropoff':
-        return (
-          <>
-            <div className="mb-4">
-              <h2 className="font-heading text-xl font-semibold text-foreground mb-2">Set Destination</h2>
-              <p className="text-muted-foreground text-sm">Choose a destination or enter address</p>
-            </div>
-
-            {/* Predefined Destinations Dropdown */}
-            {destinations.length > 0 && (
-              <div className="mb-4">
-                <label className="block text-sm text-muted-foreground mb-2">Quick Select Destination</label>
-                <Select onValueChange={handleDestinationSelect}>
-                  <SelectTrigger className="w-full bg-muted border-border text-foreground h-12 rounded-xl">
-                    <SelectValue placeholder="Choose a popular destination" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-border">
-                    {destinations.map((dest) => (
-                      <SelectItem
-                        key={dest.id}
-                        value={dest.id}
-                        className="text-foreground hover:bg-muted focus:bg-muted"
-                      >
-                        <div className="flex items-center justify-between w-full">
-                          <span>{dest.name}</span>
-                          {/* Price is dynamic, so we don't show it here */}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            <div className="mb-4">
-              <AddressSearch
-                placeholder="Search for destination..."
-                onLocationSelect={(loc) => {
-                  setDropoff(loc);
-                  setDropoffAddress(loc.address);
-                  setSelectedDestination(null);
-                }}
-              />
-            </div>
-
-            <div className="relative h-[50vh] min-h-[300px] rounded-2xl overflow-hidden mb-4">
-              <LocationPickerMap
-                selectedLocation={dropoff}
-                onLocationSelect={handleLocationSelect}
-                center={pickup ? { lat: pickup.lat, lng: pickup.lng } : undefined}
-              />
-            </div>
-          </>
-        );
-
-      case 'confirm':
-        return (
-          <>
-            <div className="mb-4">
-              <h2 className="font-heading text-xl font-semibold text-foreground mb-2">Confirm Your Ride</h2>
-              <p className="text-muted-foreground text-sm">Review your trip details</p>
-            </div>
-
-            {/* Map Preview */}
-            <div className="relative h-48 rounded-2xl overflow-hidden mb-4">
-              <RideMap
-                pickup={pickup}
-                dropoff={dropoff}
-                routeGeometry={routeGeometry}
-                interactive={false}
-                className="h-full w-full"
-              />
-            </div>
-
-            {/* Trip Details */}
-            <GlassCard className="p-4 mb-4" hover={false}>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-3 h-3 rounded-full bg-gold mt-1.5" />
-                  <div className="flex-1">
-                    <p className="text-xs text-muted-foreground">Pickup</p>
-                    <p className="text-foreground">{pickup?.address || pickupAddress || 'Selected location'}</p>
-                  </div>
-                </div>
-                <div className="border-l-2 border-dashed border-border ml-1.5 h-4" />
-                <div className="flex items-start gap-3">
-                  <div className="w-3 h-3 rounded-full bg-emerald-500 mt-1.5" />
-                  <div className="flex-1">
-                    <p className="text-xs text-muted-foreground">Dropoff</p>
-                    <p className="text-foreground">{dropoff?.address || dropoffAddress || 'Selected location'}</p>
-                  </div>
-                </div>
-              </div>
-            </GlassCard>
-
-            {/* Fare Breakdown */}
-            {fareEstimate && (
-              <GlassCard className={`p-4 mb-4 relative overflow-hidden ${fareEstimate.is_surge ? 'border-gold/50 bg-gold/5' : ''}`} hover={false}>
-                {fareEstimate.is_surge && (
-                  <div className="absolute top-0 right-0 px-3 py-1 bg-gold text-black text-[10px] font-bold uppercase tracking-wider rounded-bl-xl animate-pulse">
-                    {fareEstimate.surge_reason || 'Peak Surge'}
-                  </div>
-                )}
-                <h3 className="font-heading font-semibold text-foreground mb-3 flex items-center gap-2">
-                  Fare Estimate
-                  {fareEstimate.is_surge && <TrendingUp className="w-4 h-4 text-gold" />}
-                </h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Distance</span>
-                    <span>{fareEstimate.distance?.toFixed(1)} km</span>
-                  </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Est. Duration</span>
-                    <span>{fareEstimate.duration} min</span>
-                  </div>
-                  {fareEstimate.is_surge && (
-                    <div className="flex justify-between text-gold/80 italic">
-                      <span>Demand Multiplier</span>
-                      <span>Applied</span>
-                    </div>
-                  )}
-                  {fareEstimate.is_predefined && (
-                    <div className="flex justify-between text-muted-foreground">
-                      <span>Preset Route Fare</span>
-                      <span className="text-gold">✓</span>
-                    </div>
-                  )}
-                  <div className="border-t border-border pt-2 mt-2 flex justify-between">
-                    <span className="font-semibold text-foreground">Total</span>
-                    <div className="text-right">
-                      <span className={`font-heading font-bold ${fareEstimate.is_surge ? 'text-gold-gradient shadow-gold' : 'text-gold'} text-lg`}>
-                        K{fareEstimate.estimated_fare?.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </GlassCard>
-            )}
-
-
-
-            <p className="text-center text-muted-foreground text-xs mb-4">
-              Payment: Cash to driver after trip
-            </p>
-          </>
-        );
-
-      default:
-        return null;
+  const handleBack = () => {
+    if (step === 'dropoff') {
+      setStep('pickup');
+      setDropoff(null);
+      if (pickup) setMapCenter({ lat: pickup.lat, lng: pickup.lng });
+    } else if (step === 'confirm') {
+      setStep('dropoff');
+      setFareEstimate(null);
+      setRouteGeometry(null);
+      if (dropoff) setMapCenter({ lat: dropoff.lat, lng: dropoff.lng });
+    } else {
+      navigate('/dashboard');
     }
   };
 
+  // Build the markers array based on step
+  const markers = [];
+  if (step === 'dropoff' && pickup) {
+    markers.push({ lat: pickup.lat, lng: pickup.lng, iconType: 'pickup', key: 'fixed-pickup' });
+  }
+  if (step === 'confirm') {
+    if (pickup) markers.push({ lat: pickup.lat, lng: pickup.lng, iconType: 'pickup', key: 'final-pickup' });
+    if (dropoff) markers.push({ lat: dropoff.lat, lng: dropoff.lng, iconType: 'dropoff', key: 'final-dropoff' });
+  }
+
+  // Bounds logic for confirm step
+  let bounds = null;
+  if (step === 'confirm' && pickup && dropoff) {
+    bounds = [
+      [pickup.lat, pickup.lng],
+      [dropoff.lat, dropoff.lng]
+    ];
+  }
+
+
   return (
-    <div className="min-h-screen bg-background p-4 pb-12 transition-colors duration-300 overflow-y-auto" data-testid="ride-request-page">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
+    <div className="fixed inset-0 bg-background overflow-hidden flex flex-col" data-testid="ride-request-page">
+      
+      {/* Top Header overlay */}
+      <div className="absolute top-10 md:top-6 left-0 right-0 z-10 p-4 flex items-center justify-between pointer-events-none">
         <button
           onClick={handleBack}
-          className="p-2 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
-          data-testid="back-btn"
+          className="w-12 h-12 bg-white dark:bg-zinc-900 rounded-full flex items-center justify-center shadow-lg pointer-events-auto active:scale-95 transition-transform"
         >
-          <ArrowLeft className="w-5 h-5 text-foreground" />
+          <ArrowLeft className="w-6 h-6 text-foreground" />
         </button>
-        <div className="flex-1">
-          <div className="flex gap-2">
-            {['pickup', 'dropoff', 'confirm'].map((s, i) => (
-              <div
-                key={s}
-                className={`h-1 flex-1 rounded-full transition-colors ${['pickup', 'dropoff', 'confirm'].indexOf(step) >= i
-                  ? 'bg-gold'
-                  : 'bg-muted'
-                  }`}
-              />
-            ))}
-          </div>
-        </div>
       </div>
 
-      {/* Content */}
-      {renderStepContent()}
+      {/* Map Layer */}
+      <div className="flex-1 relative z-0">
+        <PlatformMap 
+          center={mapCenter}
+          bounds={bounds}
+          onCenterChanged={(c) => {
+             if (step !== 'confirm') setMapCenter(c);
+          }}
+          onDragStart={() => {
+            setIsDragging(true);
+            setSelectedDestination(null);
+          }}
+          onDragEnd={() => setIsDragging(false)}
+          markers={markers}
+          routeGeometry={routeGeometry}
+          showRouteLine={step === 'confirm'}
+          interactive={step !== 'confirm'} // Disable panning during confirm
+          className="w-full h-full"
+        />
 
-      {/* Action Button */}
-      <GoldButton
-        className="w-full"
-        onClick={step === 'confirm' ? handleRequestRide : handleNext}
-        disabled={
-          (step === 'pickup' && !pickup) ||
-          (step === 'dropoff' && !dropoff) ||
-          (step === 'confirm' && (!fareEstimate || requesting))
-        }
-        data-testid={step === 'confirm' ? 'request-ride-btn' : 'next-btn'}
-      >
-        {loading || requesting ? (
-          <Loader2 className="w-5 h-5 animate-spin" />
-        ) : step === 'confirm' ? (
-          'Request Ride'
-        ) : (
-          'Continue'
+        {/* Fixed Center Marker Overlay (Only visible during selection steps) */}
+        {step !== 'confirm' && (
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full z-20 pointer-events-none flex flex-col items-center">
+             {/* Info Tooltip */}
+             <motion.div 
+               initial={{ opacity: 0, y: 10 }}
+               animate={{ opacity: isDragging ? 0 : 1, y: isDragging ? 10 : 0 }}
+               className="bg-black text-white text-xs font-bold px-3 py-1.5 rounded-full mb-2 shadow-lg whitespace-nowrap"
+             >
+               {isGeocoding ? (
+                 <span className="flex items-center gap-2"><Loader2 className="w-3 h-3 animate-spin"/> Loading...</span>
+               ) : (
+                 step === 'pickup' ? 'Set Pickup Here' : 'Set Destination Here'
+               )}
+             </motion.div>
+
+             {/* The actual pin */}
+             <div className="relative">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white shadow-xl ${step === 'pickup' ? 'bg-black' : 'bg-red-600'}`}>
+                  {step === 'pickup' ? <MapPin className="w-6 h-6" /> : <Flag className="w-6 h-6" />}
+                </div>
+                {/* Pin stem */}
+                <div className={`w-1 h-4 mx-auto ${step === 'pickup' ? 'bg-black' : 'bg-red-600'}`} />
+                {/* Shadow dot */}
+                <div className="w-3 h-1.5 bg-black/30 rounded-full mx-auto mt-[-2px] blur-[1px]" />
+             </div>
+          </div>
         )}
-      </GoldButton>
+      </div>
 
-      {geoError && (
-        <p className="text-red-400 text-xs text-center mt-4">
-          Location error: {geoError}. Please enable location services.
-        </p>
-      )}
+      {/* Bottom Sheet */}
+      <motion.div 
+        className="relative z-20 bg-white dark:bg-zinc-950 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col"
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        transition={{ type: "spring", damping: 25, stiffness: 200 }}
+      >
+        {/* Drag handle pill */}
+        <div className="w-full flex justify-center pt-3 pb-1">
+          <div className="w-12 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full" />
+        </div>
+
+        <div className="p-5 flex flex-col gap-4">
+          
+          {step === 'pickup' && (
+            <>
+              <h2 className="text-xl font-bold font-heading">Pickup Location</h2>
+              
+              <div className="flex items-center gap-3 bg-zinc-100 dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center shrink-0">
+                  <MapPin className="w-4 h-4 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                   <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Current Address</p>
+                   <p className="text-sm font-medium truncate">{currentAddress || 'Fetching address...'}</p>
+                </div>
+              </div>
+              
+              <button 
+                onClick={() => {
+                  if (userLocation) {
+                    setMapCenter({ lat: userLocation.lat, lng: userLocation.lng });
+                    toast.success("Locating you...");
+                  } else {
+                    toast.error("Location not available yet.");
+                  }
+                }}
+                className="flex items-center gap-2 text-sm font-bold text-blue-600 dark:text-blue-400 py-1"
+              >
+                <Navigation className="w-4 h-4" /> Use Current Location
+              </button>
+
+              <div className="w-full">
+                <AddressSearch
+                  placeholder="Or search for an address..."
+                  onLocationSelect={(loc) => {
+                    setMapCenter({ lat: loc.lat, lng: loc.lng });
+                    setCurrentAddress(loc.address);
+                  }}
+                />
+              </div>
+
+              <button 
+                className="w-full py-4 bg-black text-white rounded-xl font-bold text-lg active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center"
+                onClick={handleConfirmLocation}
+                disabled={isGeocoding || !currentAddress || currentAddress === 'Unable to fetch address'}
+              >
+                Confirm Pickup
+              </button>
+            </>
+          )}
+
+          {step === 'dropoff' && (
+            <>
+              <h2 className="text-xl font-bold font-heading">Destination</h2>
+              
+              <div className="flex items-center gap-3 bg-zinc-100 dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center shrink-0">
+                  <Flag className="w-4 h-4 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                   <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Current Address</p>
+                   <p className="text-sm font-medium truncate">{currentAddress || 'Fetching address...'}</p>
+                </div>
+              </div>
+
+              {destinations.length > 0 && (
+                <Select onValueChange={handleDestinationDropdownSelect}>
+                  <SelectTrigger className="w-full h-12 bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl">
+                    <SelectValue placeholder="Quick select popular destination" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {destinations.map((dest) => (
+                      <SelectItem key={dest.id} value={dest.id}>{dest.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              <button 
+                className="w-full py-4 bg-black text-white rounded-xl font-bold text-lg active:scale-95 transition-transform disabled:opacity-50"
+                onClick={handleConfirmLocation}
+                disabled={isGeocoding || !currentAddress || currentAddress === 'Unable to fetch address'}
+              >
+                Confirm Destination
+              </button>
+            </>
+          )}
+
+          {step === 'confirm' && (
+             <>
+               <h2 className="text-xl font-bold font-heading">Confirm Ride</h2>
+               
+               {/* Locations summary */}
+               <div className="bg-zinc-100 dark:bg-zinc-900 p-4 rounded-2xl flex flex-col gap-4 border border-zinc-200 dark:border-zinc-800">
+                  <div className="flex items-start gap-3 relative">
+                     <div className="absolute left-[11px] top-6 bottom-[-20px] w-0.5 bg-zinc-300 dark:bg-zinc-700 border-dashed" />
+                     <div className="w-6 h-6 rounded-full bg-black flex items-center justify-center shrink-0 z-10 mt-1">
+                       <div className="w-2 h-2 rounded-full bg-white" />
+                     </div>
+                     <div className="flex-1">
+                       <p className="text-xs text-muted-foreground">Pickup</p>
+                       <p className="font-medium text-sm line-clamp-1">{pickup?.address}</p>
+                     </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3">
+                     <div className="w-6 h-6 rounded-full bg-red-600 flex items-center justify-center shrink-0 z-10 mt-1">
+                       <div className="w-2 h-2 rounded-full bg-white" />
+                     </div>
+                     <div className="flex-1">
+                       <p className="text-xs text-muted-foreground">Dropoff</p>
+                       <p className="font-medium text-sm line-clamp-1">{dropoff?.address}</p>
+                     </div>
+                  </div>
+               </div>
+
+               {/* Fare loading or display */}
+               {loading ? (
+                 <div className="py-6 flex justify-center">
+                   <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                 </div>
+               ) : fareEstimate ? (
+                 <div className="flex items-center justify-between p-4 bg-black text-white rounded-2xl">
+                    <div>
+                      <p className="text-sm text-zinc-400">Total Fare</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-2xl font-bold font-heading">K{fareEstimate.estimated_fare?.toFixed(2)}</p>
+                        {fareEstimate.is_surge && (
+                           <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] uppercase font-bold text-yellow-400 tracking-wider">Surge</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                       <p className="text-sm font-medium">{fareEstimate.duration} min</p>
+                       <p className="text-xs text-zinc-400">{fareEstimate.distance?.toFixed(1)} km</p>
+                    </div>
+                 </div>
+               ) : null}
+
+               <button 
+                className="w-full py-4 bg-black text-white rounded-xl font-bold text-lg active:scale-95 transition-transform disabled:opacity-50 flex justify-center"
+                onClick={handleRequestRide}
+                disabled={loading || requesting || !fareEstimate}
+              >
+                {requesting ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Request Ride'}
+              </button>
+             </>
+          )}
+
+        </div>
+      </motion.div>
     </div>
   );
 };

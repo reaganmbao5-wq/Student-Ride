@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Clock, Car, Star, ChevronRight, Navigation, AlertCircle } from 'lucide-react';
+import { MapPin, Clock, Car, Star, ChevronRight, Navigation, AlertCircle, MessageCircle, Phone, PhoneCall } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard, GoldButton, StatusBadge, LoadingSpinner, EmptyState } from '../components/common/GlassComponents';
 import { RatingModal } from '../components/common/RatingModal';
-import { RideMap } from '../components/map/RideMap';
+import { PlatformMap } from '../map/components/PlatformMap';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
 import { useWebSocket } from '../context/WebSocketContext';
-import { useGeolocation } from '../hooks/useGeolocation';
+import { useGeolocation } from '../map/hooks/useGeolocation';
 import { toast } from 'sonner';
 
 const StudentDashboard = () => {
@@ -20,6 +21,9 @@ const StudentDashboard = () => {
   const [recentRides, setRecentRides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [driverPos, setDriverPos] = useState(null);
+  
+  // Bottom Sheet State
+  const [isSheetExpanded, setIsSheetExpanded] = useState(false);
 
   useEffect(() => {
     console.log('DASHBOARD_MOUNTED (Student)');
@@ -122,6 +126,236 @@ const StudentDashboard = () => {
     );
   }
 
+  // ==========================================
+  // ACTIVE RIDE FULL-SCREEN VIEW
+  // ==========================================
+  if (activeRide) {
+    const isArrivedOrStarted = ['driver_arrived', 'ongoing'].includes(activeRide.status);
+    
+    // Markers Logic
+    const mapMarkers = [];
+    
+    // 1. Always show driver car if we have driver location
+    if (driverPos) {
+       mapMarkers.push({
+         lat: driverPos.lat,
+         lng: driverPos.lng,
+         iconType: 'user', // We actually need a car icon for this. Wait, PlatformMap takes drivers[] prop.
+       });
+    }
+
+    const driversArray = driverPos ? [{ id: 'driver-1', latitude: driverPos.lat, longitude: driverPos.lng, heading: 0 }] : [];
+
+    // 2. Passenger pickup marker (Hide if driver has arrived or ride started)
+    if (!isArrivedOrStarted && activeRide.pickup_location) {
+      mapMarkers.push({
+        lat: activeRide.pickup_location.lat,
+        lng: activeRide.pickup_location.lng,
+        iconType: 'pickup',
+        key: 'pickup'
+      });
+    }
+
+    // 3. Dropoff marker (Always show)
+    if (activeRide.dropoff_location) {
+      mapMarkers.push({
+        lat: activeRide.dropoff_location.lat,
+        lng: activeRide.dropoff_location.lng,
+        iconType: 'dropoff',
+        key: 'dropoff'
+      });
+    }
+
+    const bounds = [];
+    if (driverPos) bounds.push([driverPos.lat, driverPos.lng]);
+    if (!isArrivedOrStarted && activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
+    if (isArrivedOrStarted && activeRide.dropoff_location) bounds.push([activeRide.dropoff_location.lat, activeRide.dropoff_location.lng]);
+
+    let getStatusText = () => {
+      switch(activeRide.status) {
+        case 'requested': return 'Finding a driver...';
+        case 'accepted': return 'Driver is on the way';
+        case 'driver_arrived': return 'Driver has arrived!';
+        case 'ongoing': return 'Heading to destination';
+        default: return 'Active Ride';
+      }
+    };
+
+    return (
+      <div className="fixed inset-0 bg-background overflow-hidden flex flex-col" data-testid="student-active-ride">
+        {/* Map Layer */}
+        <div className="flex-1 relative z-0">
+          <PlatformMap
+            center={driverPos || userLocation || { lat: -14.4087, lng: 28.2849 }}
+            bounds={bounds.length > 1 ? bounds : null}
+            zoom={15}
+            markers={mapMarkers}
+            drivers={driversArray}
+            routeGeometry={activeRide.verified_geometry}
+            showRouteLine={true}
+            interactive={true}
+            className="w-full h-full"
+          />
+        </div>
+
+        {/* Bottom Sheet Overlay */}
+        <motion.div
+          className="absolute bottom-0 left-0 right-0 bg-white dark:bg-zinc-950 rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-20 flex flex-col"
+          animate={{ y: isSheetExpanded ? 0 : "calc(100% - 150px)" }}
+          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+          drag="y"
+          dragConstraints={{ top: 0, bottom: 0 }}
+          dragElastic={0.2}
+          onDragEnd={(e, info) => {
+            if (info.offset.y > 50) setIsSheetExpanded(false);
+            if (info.offset.y < -50) setIsSheetExpanded(true);
+          }}
+        >
+          {/* Drag Handle Zone */}
+          <div 
+            className="w-full pt-4 pb-2 flex justify-center cursor-grab active:cursor-grabbing"
+            onClick={() => setIsSheetExpanded(!isSheetExpanded)}
+          >
+            <div className="w-12 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full" />
+          </div>
+
+          <div className="px-6 pb-6 pt-2 flex flex-col gap-6">
+            
+            {/* Minimized Header Row */}
+            <div className="flex items-center justify-between" onClick={() => setIsSheetExpanded(!isSheetExpanded)}>
+              <div>
+                <h2 className="font-heading text-xl font-bold text-foreground">{getStatusText()}</h2>
+                {activeRide.driver && (
+                  <p className="text-sm text-muted-foreground font-medium">
+                    {activeRide.driver.vehicle_color} {activeRide.driver.vehicle_model} • <span className="text-foreground uppercase bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">{activeRide.driver.plate_number}</span>
+                  </p>
+                )}
+              </div>
+              
+              {/* Status Badge right side */}
+              <div className="text-right">
+                <div className="text-2xl font-bold font-heading text-gold">
+                  {/* Mock ETA for now until we have real ones */}
+                  {activeRide.status === 'ongoing' ? '...' : '2 min'}
+                </div>
+              </div>
+            </div>
+
+            {/* EXPANDED CONTENT */}
+            <AnimatePresence>
+              {isSheetExpanded && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="flex flex-col gap-6 overflow-hidden"
+                >
+                   {/* Driver Profile */}
+                   {activeRide.driver && (
+                     <div className="flex items-center gap-4 bg-zinc-50 dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800">
+                        <div className="w-14 h-14 rounded-full bg-gold/20 flex items-center justify-center shrink-0">
+                          <Car className="w-7 h-7 text-gold" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-bold text-lg text-foreground">{activeRide.driver.user?.name}</p>
+                          <div className="flex items-center gap-1 text-muted-foreground">
+                            <Star className="w-4 h-4 text-gold fill-gold" />
+                            <span className="font-medium text-sm">{activeRide.driver.rating?.toFixed(1)}</span>
+                          </div>
+                        </div>
+                        
+                        {/* Quick Contact Icons */}
+                        <div className="flex gap-2">
+                           <button 
+                             className="w-10 h-10 rounded-full bg-black flex items-center justify-center active:scale-95 transition-transform"
+                             onClick={() => navigate(`/ride/chat/${activeRide.id}`)}
+                           >
+                             <MessageCircle className="w-5 h-5 text-white" />
+                           </button>
+                           <button 
+                             className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center active:scale-95 transition-transform"
+                             onClick={() => window.location.href = `tel:${activeRide.driver.user?.phone}`}
+                           >
+                             <PhoneCall className="w-5 h-5 text-foreground" />
+                           </button>
+                        </div>
+                     </div>
+                   )}
+
+                   {/* Ride Details (Locations + Fare) */}
+                   <div className="bg-zinc-50 dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 flex flex-col gap-4">
+                      <div className="flex items-start gap-3 relative">
+                         <div className="absolute left-[11px] top-6 bottom-[-20px] w-0.5 bg-zinc-300 dark:bg-zinc-700 border-dashed" />
+                         <div className="w-6 h-6 rounded-full bg-black flex items-center justify-center shrink-0 z-10 mt-1">
+                           <div className="w-2 h-2 rounded-full bg-white" />
+                         </div>
+                         <div className="flex-1 min-w-0">
+                           <p className="font-medium text-sm line-clamp-1">{activeRide.pickup_location?.address}</p>
+                         </div>
+                      </div>
+                      
+                      <div className="flex items-start gap-3">
+                         <div className="w-6 h-6 rounded-full bg-red-600 flex items-center justify-center shrink-0 z-10 mt-1">
+                           <div className="w-2 h-2 rounded-full bg-white" />
+                         </div>
+                         <div className="flex-1 min-w-0">
+                           <p className="font-medium text-sm line-clamp-1">{activeRide.dropoff_location?.address}</p>
+                         </div>
+                         <div className="text-right shrink-0">
+                           <p className="text-xs text-muted-foreground">Fare</p>
+                           <p className="font-bold text-gold text-lg">K{activeRide.fare?.toFixed(2)}</p>
+                         </div>
+                      </div>
+                   </div>
+
+                   {/* Actions Group */}
+                   <div className="flex flex-col gap-3 pt-2">
+                     {['requested', 'accepted', 'driver_arrived'].includes(activeRide.status) && (
+                        <button 
+                          onClick={handleCancelRide} 
+                          className="w-full py-4 bg-zinc-100 dark:bg-zinc-900 text-red-500 rounded-xl font-bold text-base active:scale-95 transition-transform"
+                        >
+                          Cancel Ride
+                        </button>
+                     )}
+                     
+                     {['accepted', 'driver_arrived', 'ongoing'].includes(activeRide.status) && (
+                        <button
+                          onClick={handleSOS}
+                          className="w-full py-4 bg-red-600 text-white rounded-xl font-bold text-base active:scale-95 transition-transform flex items-center justify-center gap-2 shadow-lg shadow-red-600/20"
+                        >
+                          <AlertCircle className="w-5 h-5" />
+                          Emergency SOS
+                        </button>
+                     )}
+                   </div>
+
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+          </div>
+        </motion.div>
+        
+        {/* Rating Modal explicitly mapped to active ride completion */}
+        <RatingModal
+          isOpen={showRatingModal}
+          onClose={() => setShowRatingModal(false)}
+          driverName={driverName}
+          rideId={ratingRideId}
+          onSubmit={async (data) => {
+            await api.post(`/rides/${ratingRideId}/rate`, data);
+            toast.success('Rating submitted successfully');
+            fetchData();
+          }}
+        />
+      </div>
+    );
+  }
+
+  // ==========================================
+  // STANDARD DASHBOARD VIEW (NO ACTIVE RIDE)
+  // ==========================================
   return (
     <Layout>
       <div className="p-4 md:p-8 space-y-6" data-testid="student-dashboard">
@@ -133,148 +367,22 @@ const StudentDashboard = () => {
           <p className="text-muted-foreground">Where would you like to go today?</p>
         </div>
 
-        {/* Active Ride or Request CTA */}
-        {activeRide ? (
-          <GlassCard className="overflow-hidden" data-testid="active-ride-card">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-heading font-semibold text-foreground text-lg">Active Ride</h2>
-              <StatusBadge status={activeRide.status} />
+        <GlassCard
+          className="p-6 cursor-pointer group"
+          onClick={() => navigate('/ride')}
+          data-testid="request-ride-card"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-gold/10 flex items-center justify-center group-hover:bg-gold/20 transition-colors">
+              <Navigation className="w-7 h-7 text-gold" />
             </div>
-
-            {/* Map */}
-            <div className="h-48 -mx-6 mb-4">
-              <RideMap
-                pickup={activeRide.pickup_location}
-                dropoff={activeRide.dropoff_location}
-                driverLocation={driverPos}
-                userLocation={userLocation}
-                routeGeometry={activeRide.verified_geometry}
-                showRoute
-                interactive={false}
-                className="h-full"
-              />
+            <div className="flex-1">
+              <h3 className="font-heading font-semibold text-foreground text-lg mb-1">Request a Ride</h3>
+              <p className="text-muted-foreground text-sm">Tap to set your pickup and destination</p>
             </div>
-
-            {/* Locations */}
-            <div className="space-y-3 mb-4">
-              <div className="flex items-start gap-3">
-                <div className="w-3 h-3 rounded-full bg-gold mt-1.5" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-muted-foreground">Pickup</p>
-                  <p className="text-foreground truncate">{activeRide.pickup_location?.address || 'Selected location'}</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-3 h-3 rounded-full bg-emerald-500 mt-1.5" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-muted-foreground">Dropoff</p>
-                  <p className="text-foreground truncate">{activeRide.dropoff_location?.address || 'Selected location'}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Driver Info */}
-            {activeRide.driver && (
-              <div className="p-4 bg-white/5 rounded-xl mb-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gold/20 flex items-center justify-center">
-                    <Car className="w-6 h-6 text-gold" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-foreground">{activeRide.driver.user?.name}</p>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span className="capitalize">{activeRide.driver.vehicle_color} {activeRide.driver.vehicle_model}</span>
-                      <span>•</span>
-                      <span>{activeRide.driver.plate_number}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Star className="w-4 h-4 text-gold fill-gold" />
-                    <span className="text-foreground font-medium">{activeRide.driver.rating?.toFixed(1)}</span>
-                  </div>
-                </div>
-
-                {/* Contact Options */}
-                <div className="flex gap-2 mt-4">
-                  <GoldButton
-                    variant="secondary"
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => navigate(`/ride/chat/${activeRide.id}`)}
-                    data-testid="chat-driver-btn"
-                  >
-                    Chat
-                  </GoldButton>
-                  <GoldButton
-                    variant="secondary"
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => window.location.href = `tel:${activeRide.driver.user?.phone}`}
-                    data-testid="call-driver-btn"
-                  >
-                    Call
-                  </GoldButton>
-                </div>
-              </div>
-            )}
-
-            {/* Fare & Actions */}
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Estimated Fare</p>
-                <p className="text-xl font-heading font-bold text-gold">K{activeRide.fare?.toFixed(2)}</p>
-              </div>
-              {['requested', 'accepted', 'driver_arrived'].includes(activeRide.status) && (
-                <GoldButton variant="ghost" size="sm" onClick={handleCancelRide} data-testid="cancel-ride-btn" className="text-red-500 hover:text-red-600 hover:bg-red-500/10 transition-colors">
-                  Cancel Ride
-                </GoldButton>
-              )}
-            </div>
-
-            {/* Emergency SOS Button */}
-            {['accepted', 'driver_arrived', 'ongoing'].includes(activeRide.status) && (
-              <div className="mt-4">
-                <button
-                  onClick={handleSOS}
-                  className="w-full group relative overflow-hidden rounded-2xl bg-red-600/10 border border-red-500/20 p-4 transition-all hover:bg-red-600/20 active:scale-95"
-                >
-                  <div className="absolute inset-0 bg-red-600/5 animate-pulse" />
-                  <div className="relative z-10 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center shadow-lg shadow-red-600/40">
-                        <AlertCircle className="w-6 h-6 text-foreground animate-bounce" />
-                      </div>
-                      <div className="text-left">
-                        <p className="text-red-500 font-bold text-sm uppercase tracking-wider">Emergency SOS</p>
-                        <p className="text-muted-foreground text-[10px]">Alerts admins & calls 911 equivalent</p>
-                      </div>
-                    </div>
-                    <div className="px-3 py-1 rounded-full bg-red-600/20 text-red-500 text-[10px] font-bold border border-red-500/30 group-hover:bg-red-500 group-hover:text-white transition-colors">
-                      TRIGGER NOW
-                    </div>
-                  </div>
-                </button>
-              </div>
-            )}
-          </GlassCard>
-        ) : (
-          <GlassCard
-            className="p-6 cursor-pointer group"
-            onClick={() => navigate('/ride')}
-            data-testid="request-ride-card"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-gold/10 flex items-center justify-center group-hover:bg-gold/20 transition-colors">
-                <Navigation className="w-7 h-7 text-gold" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-heading font-semibold text-foreground text-lg mb-1">Request a Ride</h3>
-                <p className="text-muted-foreground text-sm">Tap to set your pickup and destination</p>
-              </div>
-              <ChevronRight className="w-6 h-6 text-muted-foreground group-hover:text-gold transition-colors" />
-            </div>
-          </GlassCard>
-        )}
+            <ChevronRight className="w-6 h-6 text-muted-foreground group-hover:text-gold transition-colors" />
+          </div>
+        </GlassCard>
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 gap-4">
@@ -375,7 +483,7 @@ const StudentDashboard = () => {
         onSubmit={async (data) => {
           await api.post(`/rides/${ratingRideId}/rate`, data);
           toast.success('Rating submitted successfully');
-          fetchData(); // Refresh history with new rating
+          fetchData(); 
         }}
       />
     </Layout >

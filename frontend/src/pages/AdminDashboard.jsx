@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Car, MapPin, DollarSign, TrendingUp, Clock, Shield, AlertCircle } from 'lucide-react';
 import { GlassCard, LoadingSpinner, StatusBadge } from '../components/common/GlassComponents';
-import { RideMap } from '../components/map/RideMap';
+import { RideMap } from '../map/components/RideMap';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
 import { AdminPushNotifications } from '../components/admin/AdminPushNotifications';

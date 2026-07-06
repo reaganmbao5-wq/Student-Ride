@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const AuthContext = createContext(null);
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || window.location.origin;
+const BACKEND_URL = "http://127.0.0.1:5000";
 const API_URL = `${BACKEND_URL}/api`;
 
 const urlBase64ToUint8Array = (base64String) => {
@@ -37,6 +37,17 @@ export const AuthProvider = ({ children }) => {
   }, [token, api]);
 
   const fetchUser = useCallback(async () => {
+    // --- AUTH BYPASS FOR TESTING ---
+    const realToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3MGUxNTUyYy1mNDhlLTQ4MzQtOWM1Mi02YzE5MGJiNTc3OTIiLCJyb2xlIjoic3R1ZGVudCIsImV4cCI6MTc4NDM5NDgxMH0.S69ZOWNhstSeH8Cofm3pcI5iWyzsvGV40Z0_-02Jxic";
+    localStorage.setItem('token', realToken);
+    setToken(realToken);
+    api.defaults.headers.Authorization = `Bearer ${realToken}`;
+    
+    setUser({ id: '70e1552c-f48e-4834-9c52-6c190bb57792', role: 'student', name: 'Test Student', email: 'test@blessed.com' });
+    setLoading(false);
+    return;
+    // -------------------------------
+    
     if (!token) {
       setLoading(false);
       return;

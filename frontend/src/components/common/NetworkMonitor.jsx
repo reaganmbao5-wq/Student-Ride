@@ -15,18 +15,12 @@ const NetworkMonitor = () => {
 
             listener = await Network.addListener('networkStatusChange', (status) => {
                 setIsOffline(!status.connected);
-                if (status.connected) {
-                    toast.success('Back online!', { duration: 2000 });
-                } else {
-                    toast.error('You are offline. Please check your connection.', { duration: 4000 });
-                }
             });
         };
 
         const handleOffline = () => setIsOffline(true);
         const handleOnline = () => {
             setIsOffline(false);
-            toast.success('Back online!', { duration: 2000 });
         };
 
         window.addEventListener('offline', handleOffline);

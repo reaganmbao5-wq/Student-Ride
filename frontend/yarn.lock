@@ -1190,6 +1190,11 @@
   dependencies:
     "@capacitor/synapse" "^1.0.4"
 
+"@capacitor/local-notifications@^8.2.0":
+  version "8.2.0"
+  resolved "https://registry.yarnpkg.com/@capacitor/local-notifications/-/local-notifications-8.2.0.tgz#c7e13d6748f4954353d26d4663d181e8af2d2dd2"
+  integrity sha512-fvLY0w2w4MiX+DD4+Wv4DOwOLdzKZsMDwAcRv/Juudd+QbKbn69s6cM3xVqPwAiDqfnqsY4/S8xtQD6M73wY2A==
+
 "@capacitor/network@^8.0.1":
   version "8.0.1"
   resolved "https://registry.yarnpkg.com/@capacitor/network/-/network-8.0.1.tgz#463b2639db2a5a0837f3ae0c0e2ed3f46ce1bb0e"

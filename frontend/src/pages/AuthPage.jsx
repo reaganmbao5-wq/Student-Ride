@@ -37,11 +37,15 @@ const AuthPage = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    GoogleAuth.initialize({
-      clientId: '613545438163-5eo9e0tpustjgotq6u7m7elsas8gkjst.apps.googleusercontent.com',
-      scopes: ['profile', 'email'],
-      grantOfflineAccess: true,
-    });
+    try {
+      GoogleAuth.initialize({
+        clientId: '613545438163-5eo9e0tpustjgotq6u7m7elsas8gkjst.apps.googleusercontent.com',
+        scopes: ['profile', 'email'],
+        grantOfflineAccess: true,
+      });
+    } catch (e) {
+      console.warn("GoogleAuth initialization skipped/failed:", e);
+    }
   }, []);
   
   const [docs, setDocs] = useState({
@@ -561,6 +565,12 @@ const AuthPage = () => {
                   type="button"
                   onClick={async () => {
                     setLoading(true);
+                    try {
+                      // Force account picker by clearing any existing session first
+                      await GoogleAuth.signOut();
+                    } catch (e) {
+                      // ignore error if not signed in
+                    }
                     try {
                       const response = await GoogleAuth.signIn();
                       const idToken = response.authentication.idToken;

@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Bell, X } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
+import { LocalNotifications } from '@capacitor/local-notifications';
 import { PermissionsService } from '../../services/PermissionsService';
 
 // Utility to convert Base64 VAPID key to Uint8Array
@@ -97,6 +98,42 @@ const PushNotificationManager = () => {
                 PushNotifications.addListener('registrationError', (error) => {
                     console.error('Push registration error:', JSON.stringify(error));
                 });
+
+                // Request permission for local notifications (Live Tracking)
+                await LocalNotifications.requestPermissions();
+
+                // Intercept foreground pushes or data payloads and convert them into Local Notifications
+                // that have the exact same ID (which overwrites the previous one, creating a "live progress" feel).
+                PushNotifications.addListener('pushNotificationReceived', async (notification) => {
+                    console.log('Push received:', notification);
+                    
+                    // The backend payload might send it in `data.payload`
+                    let data = notification.data || {};
+                    let title = notification.title || "Mulu Rides Update";
+                    let body = notification.body || "You have a new update.";
+
+                    // If it's a data-only payload containing Live Tracking info:
+                    if (data && data.type === 'LIVE_TRACKING_UPDATE') {
+                        try {
+                            const parsedPayload = JSON.parse(data.payload);
+                            title = "Driver is moving...";
+                            body = `Arriving in ${parsedPayload.eta || 'a few'} mins`;
+                        } catch(e) {}
+                    }
+
+                    await LocalNotifications.schedule({
+                        notifications: [
+                            {
+                                title: title,
+                                body: body,
+                                id: 12345, // Constant ID forces it to update the same notification instead of stacking!
+                                schedule: { at: new Date(Date.now() + 100) },
+                                sound: null, // Silent for live tracking
+                            }
+                        ]
+                    });
+                });
+
 
                 if (isExplicit) {
                     localStorage.setItem('mulu_rides_push_asked', 'true');

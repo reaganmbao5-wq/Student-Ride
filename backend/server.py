@@ -144,6 +144,10 @@ class RideStatus(str, Enum):
     COMPLETED = "completed"
     CANCELLED = "cancelled"
 
+class RideMode(str, Enum):
+    SHARED = "shared"
+    PRIVATE = "private"
+
 class VehicleType(str, Enum):
     CAR = "car"
     MOTORCYCLE = "motorcycle"
@@ -214,6 +218,7 @@ class DriverProfile(BaseModel):
     plate_number: str
     vehicle_model: str
     vehicle_color: str
+    vehicle_capacity: int = 4
     verification_docs: Optional[Dict[str, str]] = None
 
 class DriverResponse(BaseModel):
@@ -229,6 +234,8 @@ class DriverResponse(BaseModel):
     total_earnings: float = 0.0
     is_online: bool = False
     is_approved: bool = False
+    accepts_shared_rides: bool = True
+    vehicle_capacity: int = 4
     current_location: Optional[Dict[str, float]] = None
     wallet_balance: float = 0.0
     wallet_status: WalletStatus = WalletStatus.ACTIVE
@@ -266,6 +273,8 @@ class WalletTopUp(BaseModel):
 class RideRequest(BaseModel):
     pickup_location: Dict[str, Any]  # {lat, lng, address}
     dropoff_location: Dict[str, Any]  # {lat, lng, address}
+    ride_mode: RideMode = RideMode.PRIVATE
+    passenger_count: int = 1
     # REMOVED: estimated_fare, estimated_distance, estimated_duration
     # Server is sole authority on pricing.
 
@@ -278,6 +287,8 @@ class RideResponse(BaseModel):
     pickup_location: Dict[str, Any]
     dropoff_location: Dict[str, Any]
     status: RideStatus
+    ride_mode: RideMode = RideMode.PRIVATE
+    passenger_count: int = 1
     fare: float
     commission: float
     driver_earning: float
@@ -309,6 +320,13 @@ class PricingSettings(BaseModel):
     per_minute_rate: float = Field(..., gt=0)
     surge_multiplier: float = Field(1.0, ge=1.0, le=5.0)
     minimum_fare: float = Field(..., gt=0)
+    
+    shared_base_fare: float = Field(10.0, gt=0)
+    shared_per_km_rate: float = Field(3.5, gt=0)
+    shared_per_minute_rate: float = Field(1.5, gt=0)
+    shared_surge_multiplier: float = Field(1.0, ge=1.0, le=5.0)
+    shared_minimum_fare: float = Field(15.0, gt=0)
+    
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class FixedRouteBase(BaseModel):
@@ -559,7 +577,7 @@ async def get_platform_settings() -> dict:
     settings["commission_rate"] = commission
     return settings
 
-async def calculate_ride_fare(pickup_loc: Dict[str, Any], dropoff_loc: Dict[str, Any], distance_km: float, duration_min: float) -> Dict[str, Any]:
+async def calculate_ride_fare(pickup_loc: Dict[str, Any], dropoff_loc: Dict[str, Any], distance_km: float, duration_min: float, ride_mode: RideMode = RideMode.PRIVATE) -> Dict[str, Any]:
     """
     Centralized Pricing Engine.
     Hierarchy:
@@ -613,11 +631,18 @@ async def calculate_ride_fare(pickup_loc: Dict[str, Any], dropoff_loc: Dict[str,
     # 2. Dynamic Pricing
     settings = await get_platform_settings()
     
-    base_fare = settings.get("base_fare", 15.0)
-    per_km = settings.get("per_km_rate", 5.0)
-    per_min = settings.get("per_minute_rate", 2.0)
-    surge = settings.get("surge_multiplier", 1.0)
-    min_fare = settings.get("minimum_fare", 20.0)
+    if ride_mode == RideMode.SHARED:
+        base_fare = settings.get("shared_base_fare", settings.get("base_fare", 15.0) * 0.7)
+        per_km = settings.get("shared_per_km_rate", settings.get("per_km_rate", 5.0) * 0.7)
+        per_min = settings.get("shared_per_minute_rate", settings.get("per_minute_rate", 2.0) * 0.7)
+        surge = settings.get("shared_surge_multiplier", settings.get("surge_multiplier", 1.0))
+        min_fare = settings.get("shared_minimum_fare", settings.get("minimum_fare", 20.0) * 0.7)
+    else:
+        base_fare = settings.get("base_fare", 15.0)
+        per_km = settings.get("per_km_rate", 5.0)
+        per_min = settings.get("per_minute_rate", 2.0)
+        surge = settings.get("surge_multiplier", 1.0)
+        min_fare = settings.get("minimum_fare", 20.0)
     
     # Time-based Surge Logic
     current_hour = datetime.now(timezone.utc).hour + 2 # Adjusting to local Lusaka time (UTC+2)
@@ -1141,11 +1166,13 @@ async def register_driver(profile: DriverProfile, user: dict = Depends(get_curre
         "plate_number": profile.plate_number.upper(),
         "vehicle_model": profile.vehicle_model,
         "vehicle_color": profile.vehicle_color,
+        "vehicle_capacity": profile.vehicle_capacity,
         "rating": 5.0,
         "total_rides": 0,
         "total_earnings": 0.0,
         "is_online": False,
         "is_approved": False,
+        "accepts_shared_rides": True,
         "current_ride_id": None, # For locking
         "current_location": None,
         "location": None, # GeoJSON for indexing
@@ -1188,6 +1215,38 @@ async def get_my_driver_profile(user: dict = Depends(require_driver)):
         is_active=user.get("is_active", True)
     )
     
+    return DriverResponse(**driver)
+
+class DriverSettingsUpdate(BaseModel):
+    accepts_shared_rides: Optional[bool] = None
+    vehicle_capacity: Optional[int] = None
+
+@api_router.patch("/drivers/me/settings", response_model=DriverResponse)
+async def update_driver_settings(settings: DriverSettingsUpdate, user: dict = Depends(require_driver)):
+    driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver profile not found")
+        
+    update_data = {}
+    if settings.accepts_shared_rides is not None:
+        update_data["accepts_shared_rides"] = settings.accepts_shared_rides
+    if settings.vehicle_capacity is not None:
+        update_data["vehicle_capacity"] = settings.vehicle_capacity
+        
+    if update_data:
+        await db.drivers.update_one({"id": driver["id"]}, {"$set": update_data})
+        # Fetch updated driver
+        driver = await db.drivers.find_one({"id": driver["id"]}, {"_id": 0})
+        
+    driver["user"] = UserResponse(
+        id=user["id"],
+        email=user["email"],
+        name=user["name"],
+        phone=user["phone"],
+        role=UserRole(user["role"]),
+        created_at=user["created_at"],
+        is_active=user.get("is_active", True)
+    )
     return DriverResponse(**driver)
 
 @api_router.post("/drivers/toggle-online")
@@ -1588,7 +1647,8 @@ async def request_ride(ride_data: RideRequest, user: dict = Depends(get_current_
             ride_data.pickup_location,
             ride_data.dropoff_location,
             dist,
-            duration
+            duration,
+            ride_data.ride_mode
         )
         
         calculated_fare = pricing_result["fare"]
@@ -1608,6 +1668,8 @@ async def request_ride(ride_data: RideRequest, user: dict = Depends(get_current_
             "pickup_location": ride_data.pickup_location,
             "dropoff_location": ride_data.dropoff_location,
             "status": RideStatus.REQUESTED.value,
+            "ride_mode": ride_data.ride_mode.value,
+            "passenger_count": ride_data.passenger_count,
             "fare": calculated_fare,
             "commission": commission,
             "driver_earning": driver_earning,
@@ -1647,15 +1709,56 @@ async def request_ride(ride_data: RideRequest, user: dict = Depends(get_current_
         logger.error(f"Error in request_ride: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
+async def get_driver_active_state(driver_id: str):
+    active_rides = await db.rides.find({
+        "driver_id": driver_id,
+        "status": {"$in": [RideStatus.ACCEPTED.value, RideStatus.DRIVER_ARRIVED.value, RideStatus.ONGOING.value]}
+    }).to_list(100)
+    
+    active_passengers = sum(ride.get("passenger_count", 1) for ride in active_rides)
+    has_private = any(ride.get("ride_mode") == RideMode.PRIVATE.value for ride in active_rides)
+    has_shared = any(ride.get("ride_mode") == RideMode.SHARED.value for ride in active_rides)
+    
+    return {
+        "active_passengers": active_passengers,
+        "has_private": has_private,
+        "has_shared": has_shared,
+        "active_rides_count": len(active_rides)
+    }
+
 @api_router.post("/rides/{ride_id}/accept", response_model=RideResponse)
 async def accept_ride(ride_id: str, user: dict = Depends(require_driver)):
     driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
     if not driver:
         raise HTTPException(status_code=404, detail="Driver profile not found")
     
-    # Check if driver is already on a ride
-    if driver.get("current_ride_id"):
-        raise HTTPException(status_code=400, detail="You are already on a ride")
+    # Check if ride exists and get its mode
+    target_ride = await db.rides.find_one({"id": ride_id, "status": RideStatus.REQUESTED.value})
+    if not target_ride:
+        # Give detailed reason if it's not found or taken
+        existing = await db.rides.find_one({"id": ride_id})
+        if not existing:
+            raise HTTPException(status_code=404, detail="Ride not found")
+        raise HTTPException(status_code=400, detail="Ride already taken or cancelled")
+        
+    ride_mode = target_ride.get("ride_mode", RideMode.PRIVATE.value)
+    passenger_count = target_ride.get("passenger_count", 1)
+    
+    # DISPATCH MATCHING RULES
+    active_state = await get_driver_active_state(driver["id"])
+    
+    if active_state["has_private"]:
+        raise HTTPException(status_code=400, detail="Cannot accept another ride while on a private ride.")
+        
+    if ride_mode == RideMode.PRIVATE.value:
+        if active_state["active_passengers"] > 0:
+             raise HTTPException(status_code=400, detail="Cannot accept a private ride while carrying passengers.")
+    elif ride_mode == RideMode.SHARED.value:
+        if not driver.get("accepts_shared_rides", True):
+             raise HTTPException(status_code=400, detail="You are not accepting shared rides.")
+        available_seats = driver.get("vehicle_capacity", 4) - active_state["active_passengers"]
+        if passenger_count > available_seats:
+             raise HTTPException(status_code=400, detail=f"Not enough capacity. Ride requires {passenger_count} seats, you have {available_seats} available.")
 
     # TRICK 3: Rate Limit Driver Requests
     ten_seconds_ago = (datetime.now(timezone.utc) - timedelta(seconds=10)).isoformat()
@@ -1686,11 +1789,12 @@ async def accept_ride(ride_id: str, user: dict = Depends(require_driver)):
             raise HTTPException(status_code=404, detail="Ride not found")
         raise HTTPException(status_code=400, detail="Ride already taken or cancelled")
 
-    # Lock driver
-    await db.drivers.update_one(
-        {"id": driver["id"]},
-        {"$set": {"current_ride_id": ride_id}}
-    )
+    # Lock driver (ONLY IF PRIVATE, though we can still set it for legacy compatibility)
+    if ride_mode == RideMode.PRIVATE.value or active_state["active_rides_count"] == 0:
+        await db.drivers.update_one(
+            {"id": driver["id"]},
+            {"$set": {"current_ride_id": ride_id}}
+        )
     
     # Notify student
     await manager.send_personal_message({
@@ -2192,12 +2296,38 @@ async def get_ride_history(
 
 @api_router.get("/rides/pending", response_model=List[RideResponse])
 async def get_pending_rides(user: dict = Depends(require_driver)):
-    rides = await db.rides.find({
-        "status": RideStatus.REQUESTED.value
-    }, {"_id": 0}).sort("created_at", -1).to_list(50)
+    driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
+    if not driver:
+        return []
+        
+    active_state = await get_driver_active_state(driver["id"])
+    
+    # If carrying a private ride, cannot see any new rides
+    if active_state["has_private"]:
+        return []
+        
+    # Build query based on driver capability
+    query = {"status": RideStatus.REQUESTED.value}
+    
+    if active_state["active_passengers"] > 0:
+        # Carrying shared passengers: can only see shared rides
+        query["ride_mode"] = RideMode.SHARED.value
+    elif not driver.get("accepts_shared_rides", True):
+        # Empty but not accepting shared: can only see private rides
+        query["ride_mode"] = RideMode.PRIVATE.value
+    
+    rides = await db.rides.find(query, {"_id": 0}).sort("created_at", -1).to_list(50)
     
     result = []
     for ride in rides:
+        # Final capacity check for shared rides
+        if ride.get("ride_mode") == RideMode.SHARED.value:
+            if not driver.get("accepts_shared_rides", True):
+                continue
+            available_seats = driver.get("vehicle_capacity", 4) - active_state["active_passengers"]
+            if ride.get("passenger_count", 1) > available_seats:
+                continue
+                
         student = await db.users.find_one({"id": ride["student_id"]}, {"_id": 0})
         if student:
             ride["student"] = UserResponse(
@@ -2544,7 +2674,9 @@ async def get_pricing_settings(user: dict = Depends(require_admin)):
         # Should be initialized on startup, but fail-safe
         return PricingSettings(
             base_fare=15.0, per_km_rate=5.0, per_minute_rate=2.0,
-            surge_multiplier=1.0, minimum_fare=20.0
+            surge_multiplier=1.0, minimum_fare=20.0,
+            shared_base_fare=10.0, shared_per_km_rate=3.5, shared_per_minute_rate=1.5,
+            shared_surge_multiplier=1.0, shared_minimum_fare=15.0
         )
     return PricingSettings(**settings)
 
@@ -2778,14 +2910,18 @@ async def estimate_fare(data: dict, user: dict = Depends(get_current_user)):
 
     settings = await get_platform_settings()
     
-    fare = settings["base_fare"] + (distance_km * settings["per_km_rate"]) + (duration_min * settings["per_minute_rate"])
+    base_fare = float(settings.get("base_fare", 15.0))
+    per_km = float(settings.get("per_km_rate", 5.0))
+    per_min = float(settings.get("per_minute_rate", 2.0))
+
+    fare = base_fare + (distance_km * per_km) + (duration_min * per_min)
     fare = round(fare, 2)
     
     return {
         "estimated_fare": fare,
-        "base_fare": settings["base_fare"],
-        "distance_charge": round(distance_km * settings["per_km_rate"], 2),
-        "time_charge": round(duration_min * settings["per_minute_rate"], 2),
+        "base_fare": base_fare,
+        "distance_charge": round(distance_km * per_km, 2),
+        "time_charge": round(duration_min * per_min, 2),
         "verified_distance": round(distance_km, 2),
         "verified_duration": round(duration_min, 1),
         "geometry": verified_geometry

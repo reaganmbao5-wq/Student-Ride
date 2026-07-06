@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
-import { PermissionsService } from '../services/PermissionsService';
+import { PermissionsService } from '../../services/PermissionsService';
 
 export const useGeolocation = (options = {}) => {
   const [location, setLocation] = useState(null);

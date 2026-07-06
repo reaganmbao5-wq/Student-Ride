@@ -3,6 +3,23 @@ import json
 from pywebpush import webpush, WebPushException
 import logging
 from datetime import datetime, timezone
+import firebase_admin
+from firebase_admin import credentials, messaging
+
+logger = logging.getLogger(__name__)
+
+# Initialize Firebase Admin SDK
+try:
+    if not firebase_admin._apps:
+        cred_path = os.path.join(os.path.dirname(__file__), '..', 'firebase-adminsdk.json')
+        if os.path.exists(cred_path):
+            cred = credentials.Certificate(cred_path)
+            firebase_admin.initialize_app(cred)
+            logger.info("Firebase Admin SDK initialized successfully.")
+        else:
+            logger.warning(f"Firebase Service Account file not found at {cred_path}")
+except Exception as e:
+    logger.error(f"Failed to initialize Firebase Admin SDK: {e}")
 
 logger = logging.getLogger(__name__)
 
@@ -53,15 +70,43 @@ class NotificationService:
         for sub in subscriptions:
             try:
                 sub_info = sub["subscription"]
-                webpush(
-                    subscription_info=sub_info,
-                    data=json.dumps(message),
-                    vapid_private_key=self.vapid_private_key,
-                    vapid_claims={
-                        "sub": self.vapid_subject
-                    }
-                )
-                success_count += 1
+                endpoint = sub_info.get("endpoint", "")
+                
+                if endpoint.startswith("FCM_TOKEN:"):
+                    # Handle Native FCM Push Notification
+                    fcm_token = endpoint.replace("FCM_TOKEN:", "")
+                    
+                    # For advanced "Live Tracking" we use data payloads.
+                    # This allows the frontend Capacitor app to intercept it silently and
+                    # update an ongoing persistent notification (Live Activity).
+                    message_obj = messaging.Message(
+                        data={
+                            "type": type,
+                            "payload": json.dumps(payload),
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        },
+                        token=fcm_token,
+                    )
+                    
+                    response = messaging.send(message_obj)
+                    logger.info(f"FCM Notification sent successfully to {user_id}: {response}")
+                    success_count += 1
+                else:
+                    # Handle standard Web Push (VAPID)
+                    if not self.vapid_private_key:
+                        logger.warning("VAPID_PRIVATE_KEY not set for Web Push.")
+                        continue
+                        
+                    webpush(
+                        subscription_info=sub_info,
+                        data=json.dumps(message),
+                        vapid_private_key=self.vapid_private_key,
+                        vapid_claims={
+                            "sub": self.vapid_subject
+                        }
+                    )
+                    success_count += 1
+                    
             except WebPushException as ex:
                 logger.error(f"WebPush error sending to {user_id}: {repr(ex)}")
                 # If subscription is expired/invalid (410, 404), remove it

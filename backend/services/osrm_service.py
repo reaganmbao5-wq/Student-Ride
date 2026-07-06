@@ -34,7 +34,9 @@ async def get_route(pickup_lat: float, pickup_lng: float, drop_lat: float, drop_
                     route = data["routes"][0]
                     distance_meters = route["distance"]
                     duration_seconds = route["duration"]
-                    geometry = route["geometry"]["coordinates"]
+                    # OSRM returns [lng, lat], we need [lat, lng] for frontend mapping (Leaflet/Google)
+                    raw_geometry = route["geometry"]["coordinates"]
+                    geometry = [[coord[1], coord[0]] for coord in raw_geometry]
                     
                     return {
                         "distance_km": distance_meters / 1000.0,
