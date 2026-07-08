@@ -696,32 +696,45 @@ def calculate_haversine_distance(lat1, lon1, lat2, lon2):
 # ==================== WEBSOCKET CONNECTION MANAGER ====================
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: Dict[str, WebSocket] = {}
+        self.active_connections: Dict[str, List[WebSocket]] = {}
         self.driver_locations: Dict[str, Dict] = {}
         self.driver_last_active: Dict[str, float] = {}
         self.ride_connections: Dict[str, List[str]] = {}  # ride_id -> [user_ids]
 
     async def connect(self, websocket: WebSocket, user_id: str):
         await websocket.accept()
-        self.active_connections[user_id] = websocket
-        logger.info(f"User {user_id} connected via WebSocket")
+        if user_id not in self.active_connections:
+            self.active_connections[user_id] = []
+        self.active_connections[user_id].append(websocket)
+        logger.info(f"User {user_id} connected via WebSocket. Total connections: {len(self.active_connections[user_id])}")
 
-    def disconnect(self, user_id: str):
+    def disconnect(self, websocket: WebSocket, user_id: str):
         if user_id in self.active_connections:
-            del self.active_connections[user_id]
-        if user_id in self.driver_locations:
-            del self.driver_locations[user_id]
-        if user_id in self.driver_last_active:
-            del self.driver_last_active[user_id]
-        logger.info(f"User {user_id} disconnected")
+            if websocket in self.active_connections[user_id]:
+                self.active_connections[user_id].remove(websocket)
+            if len(self.active_connections[user_id]) == 0:
+                del self.active_connections[user_id]
+                # Only clean up driver data if all connections for this user are gone
+                if user_id in self.driver_locations:
+                    del self.driver_locations[user_id]
+                if user_id in self.driver_last_active:
+                    del self.driver_last_active[user_id]
+        logger.info(f"User {user_id} disconnected a WebSocket")
 
     async def send_personal_message(self, message: dict, user_id: str):
         if user_id in self.active_connections:
-            try:
-                sanitized = sanitize_for_json(message)
-                await self.active_connections[user_id].send_json(sanitized)
-            except Exception as e:
-                logger.error(f"Error sending message to {user_id}: {e}")
+            sanitized = sanitize_for_json(message)
+            dead_sockets = []
+            for ws in self.active_connections[user_id]:
+                try:
+                    await ws.send_json(sanitized)
+                except Exception as e:
+                    logger.error(f"Error sending message to {user_id}: {e}")
+                    dead_sockets.append(ws)
+            
+            # Clean up dead sockets
+            for ws in dead_sockets:
+                self.disconnect(ws, user_id)
 
     async def broadcast_to_ride(self, message: dict, ride_id: str):
         if ride_id in self.ride_connections:
@@ -765,13 +778,29 @@ class ConnectionManager:
         )
         
         # Also update drivers collection
-        await db.drivers.update_one(
+        driver = await db.drivers.find_one_and_update(
             {"user_id": driver_id},
             {"$set": {
                 "current_location": location,
                 "location": geo_location
             }}
         )
+        
+        # Broadcast to student if driver is in an active ride
+        if driver:
+            active_ride = await db.rides.find_one({
+                "driver_id": driver["id"],
+                "status": {"$in": ["accepted", "driver_arrived", "ongoing"]}
+            }, {"_id": 0}, sort=[("created_at", -1)])
+            
+            if active_ride:
+                await self.send_personal_message({
+                    "type": "driver_location",
+                    "lat": location["lat"],
+                    "lng": location["lng"],
+                    "heading": location.get("heading", 0),
+                    "ride_id": active_ride["id"]
+                }, active_ride["student_id"])
 
     async def broadcast_to_nearby_drivers(self, message: dict, location: dict, radius_km: float = 3.0):
         """Broadcast ride request to nearby online drivers using geospatial query"""
@@ -1093,8 +1122,9 @@ async def get_nearby_drivers(
         last_active = manager.driver_last_active.get(driver_id, 0)
         if now - last_active > 30:
             manager.driver_locations.pop(driver_id, None)
-            manager.driver_last_active.pop(driver_id, None)
-            asyncio.create_task(db.drivers.update_one({"user_id": driver_id}, {"$set": {"is_online": False}}))
+            async def set_offline(uid):
+                await db.drivers.update_one({"user_id": uid}, {"$set": {"is_online": False}})
+            asyncio.create_task(set_offline(driver_id))
             continue
             
         if loc and "lat" in loc and "lng" in loc:
@@ -1361,6 +1391,80 @@ async def update_location(location: LocationUpdate, user: dict = Depends(require
     await manager.update_driver_location(user["id"], loc_data)
     return {"status": "updated"}
 
+class InjectDriversRequest(BaseModel):
+    drivers: dict
+
+@api_router.post("/test/inject_drivers")
+async def inject_drivers(req: InjectDriversRequest):
+    # Inject fake drivers for simulation without auth
+    import time
+    for driver_id, loc in req.drivers.items():
+        manager.driver_locations[driver_id] = loc
+        manager.driver_last_active[driver_id] = time.time()
+        # Also broadcast to passengers if they are in a ride
+        await manager.update_driver_location(driver_id, loc)
+        
+    return {"status": "injected", "count": len(req.drivers)}
+
+@api_router.post("/test/accept_trip")
+async def accept_trip():
+    ride = await db.rides.find_one({"status": "requested"}, sort=[("created_at", -1)])
+    if not ride:
+        ride = await db.rides.find_one({"status": "accepted"}, sort=[("created_at", -1)])
+    if not ride: return {"status": "no rides"}
+    
+    driver_id = "ghost-driver-0"
+    driver = await db.drivers.find_one({"user_id": driver_id})
+    
+    await db.rides.update_one({"_id": ride["_id"]}, {"$set": {"status": "accepted", "driver_id": driver["id"], "accepted_at": datetime.utcnow().isoformat()}})
+    await db.drivers.update_one({"user_id": driver_id}, {"$set": {"current_ride_id": ride["id"]}})
+    
+    # Remove ObjectIds for JSON serialization
+    if "_id" in ride: del ride["_id"]
+    if "_id" in driver: del driver["_id"]
+    
+    # Broadcast to user
+    ride["status"] = "accepted"
+    ride["driver_id"] = driver["id"]
+    await manager.send_personal_message({
+        "type": "ride_accepted",
+        "ride": ride,
+        "driver": driver
+    }, ride["student_id"])
+    return {"status": "accepted", "ride": ride, "driver": driver}
+
+@api_router.get("/test/get_active_ride_for_simulation")
+async def get_active_ride_for_simulation():
+    ride = await db.rides.find_one({"status": {"$in": ["requested", "accepted", "driver_arrived", "ongoing"]}}, sort=[("created_at", -1)], projection={"_id": 0})
+    return ride
+
+class UpdateTripStatusReq(BaseModel):
+    ride_id: str
+    status: str
+
+@api_router.post("/test/update_trip_status")
+async def update_trip_status(req: UpdateTripStatusReq):
+    ride = await db.rides.find_one({"id": req.ride_id})
+    if not ride: return {"status": "not found"}
+    
+    await db.rides.update_one({"id": req.ride_id}, {"$set": {"status": req.status}})
+    
+    event_type_map = {
+        "driver_arrived": "driver_arrived",
+        "ongoing": "ride_started",
+        "completed": "ride_completed",
+        "cancelled": "ride_cancelled"
+    }
+    
+    # Broadcast to user
+    await manager.send_personal_message({
+        "type": event_type_map.get(req.status, "status_update"),
+        "ride_id": req.ride_id,
+        "status": req.status
+    }, ride["student_id"])
+    
+    return {"status": "updated", "new_status": req.status}
+
 @api_router.get("/drivers/earnings")
 async def get_driver_earnings(user: dict = Depends(require_driver)):
     driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
@@ -1599,13 +1703,13 @@ async def delete_destination(dest_id: str, user: dict = Depends(require_admin)):
 async def request_ride(ride_data: RideRequest, user: dict = Depends(get_current_user)):
     try:
         # User Penalty Check
-        user_doc = await db.users.find_one({"id": user["id"]}, {"_id": 0})
-        if user_doc and user_doc.get("pending_penalty", 0.0) > 0:
-            penalty = user_doc["pending_penalty"]
-            raise HTTPException(
-                status_code=403, 
-                detail=f"You have an outstanding penalty of K{penalty:0.2f}. Please clear it before requesting a new ride."
-            )
+        # user_doc = await db.users.find_one({"id": user["id"]}, {"_id": 0})
+        # if user_doc and user_doc.get("pending_penalty", 0.0) > 0:
+        #     penalty = user_doc["pending_penalty"]
+        #     raise HTTPException(
+        #         status_code=403, 
+        #         detail=f"You have an outstanding penalty of K{penalty:0.2f}. Please clear it before requesting a new ride."
+        #     )
 
         # Ride Spam / Concurrency Check
         active_ride = await db.rides.find_one({
@@ -2047,11 +2151,11 @@ async def cancel_ride(ride_id: str, user: dict = Depends(get_current_user)):
             })
             
     # Apply rider penalty (placeholder for future billing)
-    if is_rider and penalty_amount > 0:
-        await db.users.update_one(
-            {"id": user["id"]},
-            {"$inc": {"pending_penalty": penalty_amount}}
-        )
+    # if is_rider and penalty_amount > 0:
+    #     await db.users.update_one(
+    #         {"id": user["id"]},
+    #         {"$inc": {"pending_penalty": penalty_amount}}
+    #     )
     
     await db.rides.update_one(
         {"id": ride_id},
@@ -2222,7 +2326,9 @@ async def get_active_ride(user: dict = Depends(get_current_user)):
     else:
         query["student_id"] = user["id"]
     
-    ride = await db.rides.find_one(query, {"_id": 0})
+    ride = await db.rides.find_one(query, {"_id": 0}, sort=[("created_at", -1)])
+    
+    print(f"ACTIVE RIDE QUERY FOR {user['id']}: found {ride['id'] if ride else 'None'}")
     
     if ride:
         # Populate student
@@ -2232,9 +2338,9 @@ async def get_active_ride(user: dict = Depends(get_current_user)):
                 id=student["id"],
                 email=student["email"],
                 name=student["name"],
-                phone=student["phone"],
+                phone=student.get("phone", ""),
                 role=UserRole(student["role"]),
-                created_at=student["created_at"],
+                created_at=student.get("created_at", ""),
                 is_active=student.get("is_active", True)
             )
         
@@ -2248,9 +2354,9 @@ async def get_active_ride(user: dict = Depends(get_current_user)):
                         id=driver_user["id"],
                         email=driver_user["email"],
                         name=driver_user["name"],
-                        phone=driver_user["phone"],
+                        phone=driver_user.get("phone", ""),
                         role=UserRole(driver_user["role"]),
-                        created_at=driver_user["created_at"],
+                        created_at=driver_user.get("created_at", datetime.now().isoformat()),
                         is_active=driver_user.get("is_active", True)
                     )
                 ride["driver"] = DriverResponse(**driver)
@@ -3051,7 +3157,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(None)):
                     await websocket.send_json({"type": "pong"})
     
         except WebSocketDisconnect:
-            manager.disconnect(user_id)
+            manager.disconnect(websocket, user_id)
             # Set driver offline if disconnected
             await db.drivers.update_one(
                 {"user_id": user_id},

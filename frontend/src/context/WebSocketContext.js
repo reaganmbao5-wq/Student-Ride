@@ -70,9 +70,17 @@ export const WebSocketProvider = ({ children }) => {
           case 'ride_cancelled':
             setRideUpdate({ type: 'cancelled', ride_id: data.ride_id });
             break;
-          case 'driver_location':
-            setDriverLocation({ location: data.location, ride_id: data.ride_id });
+          case 'driver_location': {
+            const locLat = data.lat !== undefined ? data.lat : (data.location?.lat || data.location?.latitude);
+            const locLng = data.lng !== undefined ? data.lng : (data.location?.lng || data.location?.longitude);
+            const locHeading = data.heading !== undefined ? data.heading : (data.location?.heading || 0);
+            
+            setDriverLocation({ 
+              location: { lat: locLat, lng: locLng, heading: locHeading }, 
+              ride_id: data.ride_id 
+            });
             break;
+          }
           case 'new_message':
             setNewMessage(data.message);
             break;
@@ -145,9 +153,9 @@ export const WebSocketProvider = ({ children }) => {
 
   const value = {
     isConnected,
-    driverLocation,
     newRideRequest,
     rideUpdate,
+    driverLocation,
     newMessage,
     sendLocationUpdate,
     clearRideRequest,

@@ -6,7 +6,9 @@ import { useAuth } from '../context/AuthContext';
 import { useGeolocation } from '../map/hooks/useGeolocation';
 import { toast } from 'sonner';
 import { reverseGeocode } from '../map/services/nominatim';
-import { PlatformMap } from '../map/components/PlatformMap';
+import PlatformMap from '../map/components/PlatformMap';
+import { CAMERA_MODES } from '../map/camera/CameraConfig';
+import { useNearbyDrivers } from '../hooks/useNearbyDrivers';
 import { AddressSearch } from '../components/common/AddressSearch';
 import {
   Select,
@@ -20,6 +22,7 @@ const RideRequestPage = () => {
   const navigate = useNavigate();
   const { api } = useAuth();
   const { location: userLocation, loading: geoLoading, error: geoError, refresh: refreshLocation } = useGeolocation();
+  const { drivers: nearbyDrivers } = useNearbyDrivers(api, userLocation);
 
   const [step, setStep] = useState('pickup'); // pickup, dropoff, confirm
   
@@ -138,11 +141,19 @@ const RideRequestPage = () => {
 
 
   const handleConfirmLocation = () => {
-    const loc = {
+    let loc = {
       lat: mapCenter.lat,
       lng: mapCenter.lng,
       address: currentAddress
     };
+
+    if (step === 'dropoff' && selectedDestination) {
+      loc = {
+        lat: selectedDestination.latitude,
+        lng: selectedDestination.longitude,
+        address: selectedDestination.name
+      };
+    }
 
     if (step === 'pickup') {
       setPickup(loc);
@@ -239,6 +250,11 @@ const RideRequestPage = () => {
         <PlatformMap 
           center={mapCenter}
           bounds={bounds}
+          cameraMode={
+            step === 'pickup' ? CAMERA_MODES.PICKUP_SELECTION :
+            step === 'dropoff' ? CAMERA_MODES.DESTINATION_SELECTION :
+            CAMERA_MODES.FOLLOW_ROUTE
+          }
           onCenterChanged={(c) => {
              if (step !== 'confirm') setMapCenter(c);
           }}
@@ -248,6 +264,7 @@ const RideRequestPage = () => {
           }}
           onDragEnd={() => setIsDragging(false)}
           markers={markers}
+          drivers={nearbyDrivers}
           routeGeometry={routeGeometry}
           showRouteLine={step === 'confirm'}
           interactive={step !== 'confirm'} // Disable panning during confirm
@@ -326,14 +343,24 @@ const RideRequestPage = () => {
                 <Navigation className="w-4 h-4" /> Use Current Location
               </button>
 
-              <div className="w-full">
-                <AddressSearch
-                  placeholder="Or search for an address..."
-                  onLocationSelect={(loc) => {
-                    setMapCenter({ lat: loc.lat, lng: loc.lng });
-                    setCurrentAddress(loc.address);
-                  }}
-                />
+              <div className="w-full flex items-center gap-2">
+                <div className="flex-1">
+                  <AddressSearch
+                    placeholder="Or search for an address..."
+                    onLocationSelect={(loc) => {
+                      setMapCenter({ lat: loc.lat, lng: loc.lng });
+                      setCurrentAddress(loc.address);
+                      setSelectedDestination(null);
+                    }}
+                  />
+                </div>
+                <button
+                  onClick={() => refreshLocation()}
+                  disabled={geoLoading}
+                  className="w-12 h-12 flex-shrink-0 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl flex items-center justify-center active:scale-95 transition-transform"
+                >
+                  <Navigation className={`w-5 h-5 text-black dark:text-white ${geoLoading ? 'animate-pulse' : ''}`} />
+                </button>
               </div>
 
               <button 

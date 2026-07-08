@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, useMap, useMapEvents } from 'react-leaflet';
-import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import 'leaflet-rotatedmarker';
 import { useTheme } from '../../context/ThemeContext';
 import { toast } from 'sonner';
+import VehicleEngine from '../vehicle/VehicleEngine';
+import CameraEngine from '../camera/CameraEngine';
+import { CAMERA_MODES } from '../camera/CameraConfig';
 
 // Standardize default icons
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -37,26 +39,35 @@ export const userIcon = L.divIcon({
   iconAnchor: [8, 8],
 });
 
-export const pickupIcon = createCustomIcon(
-  '#D4AF37',
-  '<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>'
-);
-
-export const dropoffIcon = createCustomIcon(
-  '#10B981',
-  '<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>'
-);
-
-export const driverIcon = L.divIcon({
-  className: 'custom-car-marker',
-  html: `<div style="filter:drop-shadow(0 4px 6px rgba(0,0,0,.4))">
-    <svg width="40" height="40" viewBox="0 0 24 24" fill="#3B82F6" stroke="white" stroke-width="1" transform="rotate(-90)">
-      <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
-    </svg>
-  </div>`,
-  iconSize: [40, 40],
-  iconAnchor: [20, 20],
+export const pickupIcon = L.divIcon({
+  className: 'custom-marker',
+  html: `<div style="position:relative; display:flex; flex-direction:column; align-items:center;">
+           <div style="width:40px; height:40px; border-radius:50%; background-color:black; display:flex; align-items:center; justify-content:center; color:white; box-shadow:0 10px 15px -3px rgba(0,0,0,0.2);">
+             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+           </div>
+           <div style="width:4px; height:16px; background-color:black;"></div>
+           <div style="width:12px; height:6px; background-color:rgba(0,0,0,0.3); border-radius:50%; margin-top:-2px; filter:blur(1px);"></div>
+         </div>`,
+  iconSize: [40, 60],
+  iconAnchor: [20, 58],
+  popupAnchor: [0, -60]
 });
+
+export const dropoffIcon = L.divIcon({
+  className: 'custom-marker',
+  html: `<div style="position:relative; display:flex; flex-direction:column; align-items:center;">
+           <div style="width:40px; height:40px; border-radius:50%; background-color:#dc2626; display:flex; align-items:center; justify-content:center; color:white; box-shadow:0 10px 15px -3px rgba(0,0,0,0.2);">
+             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>
+           </div>
+           <div style="width:4px; height:16px; background-color:#dc2626;"></div>
+           <div style="width:12px; height:6px; background-color:rgba(0,0,0,0.3); border-radius:50%; margin-top:-2px; filter:blur(1px);"></div>
+         </div>`,
+  iconSize: [40, 60],
+  iconAnchor: [20, 58],
+  popupAnchor: [0, -60]
+});
+
+
 
 // ─── Tile layer definitions ─────────────────────────────────────────
 const TILES = {
@@ -78,48 +89,6 @@ const TILES = {
     subdomains: ['0', '1', '2', '3'],
     attribution: '© Google Maps',
   },
-};
-
-// ─── Map controller ─────────────────────────────────────────────────
-const MapController = ({ center, zoom, bounds, onCenterChanged, onDragStart, onDragEnd }) => {
-  const map = useMap();
-  const dragging = useRef(false);
-
-  useEffect(() => {
-    if (dragging.current) return;
-    if (bounds) {
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: zoom || 16 });
-    } else if (center) {
-      map.flyTo(center, zoom || 13);
-    }
-  }, [center, zoom, bounds, map]);
-
-  useMapEvents({
-    dragstart: () => {
-      dragging.current = true;
-      onDragStart?.();
-    },
-    dragend: () => {
-      dragging.current = false;
-      onDragEnd?.();
-    },
-    move: (e) => {
-      if (onCenterChanged && dragging.current) {
-        const c = e.target.getCenter();
-        onCenterChanged({ lat: c.lat, lng: c.lng });
-      }
-    },
-    moveend: (e) => {
-      dragging.current = false;
-      if (onCenterChanged) {
-        const c = e.target.getCenter();
-        onCenterChanged({ lat: c.lat, lng: c.lng });
-      }
-      onDragEnd?.();
-    },
-  });
-
-  return null;
 };
 
 // ─── Map mode button ─────────────────────────────────────────────────
@@ -171,6 +140,11 @@ export const PlatformMap = ({
   showRouteLine = false,
   interactive = true,
   className = '',
+  // Phase 3.2.2 Camera Engine Props
+  cameraMode = CAMERA_MODES.FREE,
+  driverLocation = null,
+  routeBounds = null,
+  selectionLocation = null,
 }) => {
   const { theme } = useTheme();
 
@@ -186,6 +160,24 @@ export const PlatformMap = ({
       case 'user':    return userIcon;
       default:        return pickupIcon;
     }
+  };
+
+  const MapEvents = () => {
+    useMapEvents({
+      moveend: (e) => {
+        const c = e.target.getCenter();
+        if (onCenterChanged) {
+          onCenterChanged({ lat: c.lat, lng: c.lng });
+        }
+      },
+      dragstart: () => {
+        if (onDragStart) onDragStart();
+      },
+      dragend: () => {
+        if (onDragEnd) onDragEnd();
+      }
+    });
+    return null;
   };
 
   return (
@@ -216,33 +208,24 @@ export const PlatformMap = ({
           maxZoom={20}
         />
 
-        <MapController
-          center={center}
-          zoom={zoom}
-          bounds={bounds}
-          onCenterChanged={onCenterChanged}
-          onDragStart={onDragStart}
-          onDragEnd={onDragEnd}
+        {/* Phase 3.2.2 Camera Engine */}
+        <CameraEngine 
+          mode={cameraMode}
+          driverLocation={driverLocation}
+          routeBounds={routeBounds || bounds}
+          selectionLocation={selectionLocation || center}
         />
+
+        <MapEvents />
 
         {/* Static pickup/dropoff markers */}
         {markers.map((m, idx) => (
           <Marker key={m.key || idx} position={[m.lat, m.lng]} icon={getIcon(m.iconType)} />
         ))}
 
-        {/* Nearby driver markers (clustered) */}
+        {/* Nearby driver markers handled by the new Vehicle Engine */}
         {drivers.length > 0 && (
-          <MarkerClusterGroup chunkedLoading maxClusterRadius={40}>
-            {drivers.map((d) => (
-              <Marker
-                key={d.id}
-                position={[d.latitude, d.longitude]}
-                icon={driverIcon}
-                rotationAngle={d.heading || 0}
-                rotationOrigin="center center"
-              />
-            ))}
-          </MarkerClusterGroup>
+          <VehicleEngine drivers={drivers} />
         )}
 
         {/* OSRM road-following route — blue */}
@@ -253,13 +236,6 @@ export const PlatformMap = ({
           />
         )}
 
-        {/* Fallback straight dashed line (only when no OSRM geometry came back) */}
-        {showRouteLine && (!routeGeometry || routeGeometry.length === 0) && markers.length >= 2 && (
-          <Polyline
-            positions={[[markers[0].lat, markers[0].lng], [markers[1].lat, markers[1].lng]]}
-            pathOptions={{ color: '#D4AF37', weight: 4, opacity: 0.8, dashArray: '10 10' }}
-          />
-        )}
       </MapContainer>
     </div>
   );

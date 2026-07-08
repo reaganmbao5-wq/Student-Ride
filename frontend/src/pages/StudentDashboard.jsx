@@ -5,17 +5,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard, GoldButton, StatusBadge, LoadingSpinner, EmptyState } from '../components/common/GlassComponents';
 import { RatingModal } from '../components/common/RatingModal';
 import { PlatformMap } from '../map/components/PlatformMap';
+import { CAMERA_MODES } from '../map/camera/CameraConfig';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
 import { useWebSocket } from '../context/WebSocketContext';
 import { useGeolocation } from '../map/hooks/useGeolocation';
+import { useNearbyDrivers } from '../hooks/useNearbyDrivers';
 import { toast } from 'sonner';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
   const { user, api } = useAuth();
-  const { rideUpdate, driverLocation, clearRideUpdate } = useWebSocket();
+  const { isConnected, rideUpdate, driverLocation, clearRideUpdate } = useWebSocket();
   const { location: userLocation } = useGeolocation();
+  const { drivers: nearbyDrivers } = useNearbyDrivers(api, userLocation);
 
   const [activeRide, setActiveRide] = useState(null);
   const [recentRides, setRecentRides] = useState([]);
@@ -61,8 +64,21 @@ const StudentDashboard = () => {
   }, [rideUpdate, activeRide]);
 
   useEffect(() => {
+    if (isConnected) {
+      console.log('WebSocket connected. Fetching latest state...');
+      fetchData();
+    }
+  }, [isConnected]);
+
+  useEffect(() => {
     if (driverLocation && activeRide) {
       setDriverPos(driverLocation.location);
+      
+      // Safety check: if we missed the "accepted" event, resync from DB
+      if (activeRide.status === 'requested') {
+        console.log('Received driver location but ride is still requested. Fetching state...');
+        fetchData();
+      }
     }
   }, [driverLocation, activeRide]);
 
@@ -74,6 +90,11 @@ const StudentDashboard = () => {
       ]);
 
       setActiveRide(activeRes.data);
+      if (activeRes.data?.driver?.current_location) {
+        setDriverPos(activeRes.data.driver.current_location);
+      } else {
+        setDriverPos(null);
+      }
       setRecentRides(historyRes.data);
       console.log('DASHBOARD_RENDER_COMPLETE (Student)');
     } catch (error) {
@@ -90,6 +111,7 @@ const StudentDashboard = () => {
       await api.post(`/rides/${activeRide.id}/cancel`);
       toast.success('Ride cancelled');
       setActiveRide(null);
+      setDriverPos(null);
     } catch (error) {
       toast.error('Failed to cancel ride');
     }
@@ -132,19 +154,37 @@ const StudentDashboard = () => {
   if (activeRide) {
     const isArrivedOrStarted = ['driver_arrived', 'ongoing'].includes(activeRide.status);
     
+    // Debug overlay to verify websocket data
+    const debugOverlay = (
+      <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 9999, background: 'rgba(255,0,0,0.8)', color: 'white', padding: '10px', borderRadius: '8px', pointerEvents: 'none' }}>
+        Live WS Lat: {driverPos?.lat}<br/>
+        Live WS Lng: {driverPos?.lng}
+      </div>
+    );
+
     // Markers Logic
     const mapMarkers = [];
     
-    // 1. Always show driver car if we have driver location
-    if (driverPos) {
-       mapMarkers.push({
-         lat: driverPos.lat,
-         lng: driverPos.lng,
-         iconType: 'user', // We actually need a car icon for this. Wait, PlatformMap takes drivers[] prop.
-       });
+    if (userLocation) {
+      mapMarkers.push({
+        lat: userLocation.lat,
+        lng: userLocation.lng,
+        iconType: 'user',
+        key: 'user-loc'
+      });
     }
 
-    const driversArray = driverPos ? [{ id: 'driver-1', latitude: driverPos.lat, longitude: driverPos.lng, heading: 0 }] : [];
+    // 1. Determine which drivers to show
+    // If we have an active ride with an actual driver assigned, ONLY show that assigned driver.
+    // Otherwise, show all roaming nearby drivers.
+    const assignedDriverMarker = (driverPos && activeRide?.driver) ? { 
+      id: activeRide.driver.user_id || 'driver-1', 
+      latitude: driverPos.lat, 
+      longitude: driverPos.lng, 
+      heading: driverPos.heading || 0 
+    } : null;
+
+    const driversArray = assignedDriverMarker ? [assignedDriverMarker] : nearbyDrivers;
 
     // 2. Passenger pickup marker (Hide if driver has arrived or ride started)
     if (!isArrivedOrStarted && activeRide.pickup_location) {
@@ -168,8 +208,20 @@ const StudentDashboard = () => {
 
     const bounds = [];
     if (driverPos) bounds.push([driverPos.lat, driverPos.lng]);
-    if (!isArrivedOrStarted && activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
-    if (isArrivedOrStarted && activeRide.dropoff_location) bounds.push([activeRide.dropoff_location.lat, activeRide.dropoff_location.lng]);
+    
+    // When driver is on the way, frame Driver + Pickup
+    if (!isArrivedOrStarted && activeRide.pickup_location) {
+      bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
+    }
+    
+    // When searching for a driver, frame Pickup + Nearby Drivers
+    if (activeRide.status === 'requested') {
+      nearbyDrivers.slice(0, 5).forEach(d => {
+        if (d.latitude && d.longitude) {
+          bounds.push([d.latitude, d.longitude]);
+        }
+      });
+    }
 
     let getStatusText = () => {
       switch(activeRide.status) {
@@ -181,6 +233,13 @@ const StudentDashboard = () => {
       }
     };
 
+    let cameraMode = CAMERA_MODES.FREE;
+    if (activeRide.status === 'requested') {
+      cameraMode = CAMERA_MODES.OVERVIEW;
+    } else if (['accepted', 'driver_arrived', 'ongoing'].includes(activeRide.status)) {
+      cameraMode = CAMERA_MODES.FOLLOW_DRIVER;
+    }
+
     return (
       <div className="fixed inset-0 bg-background overflow-hidden flex flex-col" data-testid="student-active-ride">
         {/* Map Layer */}
@@ -188,6 +247,8 @@ const StudentDashboard = () => {
           <PlatformMap
             center={driverPos || userLocation || { lat: -14.4087, lng: 28.2849 }}
             bounds={bounds.length > 1 ? bounds : null}
+            cameraMode={cameraMode}
+            driverLocation={driverPos}
             zoom={15}
             markers={mapMarkers}
             drivers={driversArray}
@@ -201,7 +262,7 @@ const StudentDashboard = () => {
         {/* Bottom Sheet Overlay */}
         <motion.div
           className="absolute bottom-0 left-0 right-0 bg-white dark:bg-zinc-950 rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-20 flex flex-col"
-          animate={{ y: isSheetExpanded ? 0 : "calc(100% - 150px)" }}
+          animate={{ y: isSheetExpanded ? 0 : "calc(max(0px, 100% - 150px))" }}
           transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
           drag="y"
           dragConstraints={{ top: 0, bottom: 0 }}
