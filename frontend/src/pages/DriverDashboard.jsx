@@ -8,6 +8,7 @@ import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
 import { useWebSocket } from '../context/WebSocketContext';
 import { useWatchPosition } from '../map/hooks/useGeolocation';
+import { routeCache } from '../map/route/RouteCache';
 import { toast } from 'sonner';
 
 const DriverDashboard = () => {
@@ -119,12 +120,19 @@ const DriverDashboard = () => {
 
   useEffect(() => {
     if (activeRide?.pickup_location && activeRide?.dropoff_location) {
+      const cachedGeometry = routeCache.getRoute(activeRide.pickup_location, activeRide.dropoff_location);
+      if (cachedGeometry) {
+        setRouteGeometry(cachedGeometry);
+        return;
+      }
+
       api.post('/rides/estimate-fare', {
         pickup: activeRide.pickup_location,
         dropoff: activeRide.dropoff_location
       }).then(res => {
         if (res.data?.geometry) {
           setRouteGeometry(res.data.geometry);
+          routeCache.setRoute(activeRide.pickup_location, activeRide.dropoff_location, res.data.geometry);
         }
       }).catch(err => console.error("Could not fetch route geometry:", err));
     } else {
@@ -396,6 +404,7 @@ const DriverDashboard = () => {
             markers={mapMarkers}
             drivers={driversArray}
             routeGeometry={routeGeometry}
+            rideStatus={activeRide.status}
             showRouteLine={true}
             interactive={true}
             className="w-full h-full"

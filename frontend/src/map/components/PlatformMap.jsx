@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Polyline, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import 'leaflet-rotatedmarker';
@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import VehicleEngine from '../vehicle/VehicleEngine';
 import CameraEngine from '../camera/CameraEngine';
 import { CAMERA_MODES } from '../camera/CameraConfig';
+import { RouteEngine } from '../route/RouteEngine';
 
 // Standardize default icons
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -145,6 +146,8 @@ export const PlatformMap = ({
   driverLocation = null,
   routeBounds = null,
   selectionLocation = null,
+  rideStatus = null,
+  onRouteAnimationChange = null,
 }) => {
   const { theme } = useTheme();
 
@@ -228,11 +231,13 @@ export const PlatformMap = ({
           <VehicleEngine drivers={drivers} />
         )}
 
-        {/* OSRM road-following route — blue */}
+        {/* Route Engine Phase 3.2.3 */}
         {routeGeometry && routeGeometry.length > 0 && (
-          <Polyline
-            positions={routeGeometry}
-            pathOptions={{ color: '#3B82F6', weight: 5, opacity: 0.9, lineCap: 'round', lineJoin: 'round' }}
+          <RouteEngine 
+            geometry={routeGeometry}
+            driverLocation={driverLocation}
+            status={rideStatus}
+            onAnimationChange={onRouteAnimationChange}
           />
         )}
 

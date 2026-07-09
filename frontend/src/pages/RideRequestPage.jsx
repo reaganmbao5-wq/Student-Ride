@@ -9,6 +9,7 @@ import { reverseGeocode } from '../map/services/nominatim';
 import PlatformMap from '../map/components/PlatformMap';
 import { CAMERA_MODES } from '../map/camera/CameraConfig';
 import { useNearbyDrivers } from '../hooks/useNearbyDrivers';
+import { routeCache } from '../map/route/RouteCache';
 import { AddressSearch } from '../components/common/AddressSearch';
 import {
   Select,
@@ -105,6 +106,8 @@ const RideRequestPage = () => {
 
     setLoading(true);
     try {
+      let cachedRoute = routeCache.getRoute(p, d);
+      
       const response = await api.post('/rides/estimate-fare', {
         pickup: p,
         dropoff: d
@@ -119,6 +122,10 @@ const RideRequestPage = () => {
 
       if (data.geometry && Array.isArray(data.geometry) && data.geometry.length > 0) {
         setRouteGeometry(data.geometry);
+        routeCache.setRoute(p, d, data.geometry);
+      } else if (cachedRoute) {
+        // Fallback to cache if backend returned none for some reason but we had one
+        setRouteGeometry(cachedRoute);
       } else {
         setRouteGeometry(null);
       }

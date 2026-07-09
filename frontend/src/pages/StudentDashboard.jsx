@@ -24,6 +24,7 @@ const StudentDashboard = () => {
   const [recentRides, setRecentRides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [driverPos, setDriverPos] = useState(null);
+  const [isRouteAnimating, setIsRouteAnimating] = useState(false);
   
   // Bottom Sheet State
   const [isSheetExpanded, setIsSheetExpanded] = useState(false);
@@ -206,21 +207,37 @@ const StudentDashboard = () => {
       });
     }
 
-    const bounds = [];
+    let bounds = [];
     if (driverPos) bounds.push([driverPos.lat, driverPos.lng]);
     
-    // When driver is on the way, frame Driver + Pickup
-    if (!isArrivedOrStarted && activeRide.pickup_location) {
-      bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
-    }
-    
-    // When searching for a driver, frame Pickup + Nearby Drivers
-    if (activeRide.status === 'requested') {
+    if (activeRide.status === 'accepted') {
+      // Driver is on the way to pickup: frame Driver + Pickup ALWAYS
+      if (activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
+    } else if (activeRide.status === 'driver_arrived') {
+      // Driver arrived at pickup: frame Pickup + Destination to show the full route about to be driven
+      if (activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
+      if (activeRide.dropoff_location) bounds.push([activeRide.dropoff_location.lat, activeRide.dropoff_location.lng]);
+    } else if (activeRide.status === 'ongoing') {
+      // Ride ongoing: frame Driver + Destination IF animating (edge case), else zoom in
+      if (activeRide.dropoff_location && isRouteAnimating) {
+        bounds.push([activeRide.dropoff_location.lat, activeRide.dropoff_location.lng]);
+      }
+    } else if (activeRide.status === 'requested') {
+      // Searching for driver: frame Pickup + Nearby Drivers
       nearbyDrivers.slice(0, 5).forEach(d => {
         if (d.latitude && d.longitude) {
           bounds.push([d.latitude, d.longitude]);
         }
       });
+    }
+
+    // Final Bounds Logic
+    if (activeRide.status === 'accepted') {
+      bounds = bounds.length > 1 ? bounds : null; // Keep bounds forever
+    } else if (['driver_arrived', 'ongoing'].includes(activeRide.status)) {
+      bounds = (!isRouteAnimating) ? null : (bounds.length > 1 ? bounds : null);
+    } else {
+      bounds = bounds.length > 1 ? bounds : null;
     }
 
     let getStatusText = () => {
@@ -246,13 +263,15 @@ const StudentDashboard = () => {
         <div className="flex-1 relative z-0">
           <PlatformMap
             center={driverPos || userLocation || { lat: -14.4087, lng: 28.2849 }}
-            bounds={bounds.length > 1 ? bounds : null}
+            bounds={bounds}
             cameraMode={cameraMode}
             driverLocation={driverPos}
             zoom={15}
             markers={mapMarkers}
             drivers={driversArray}
             routeGeometry={activeRide.verified_geometry}
+            rideStatus={activeRide.status}
+            onRouteAnimationChange={setIsRouteAnimating}
             showRouteLine={true}
             interactive={true}
             className="w-full h-full"
