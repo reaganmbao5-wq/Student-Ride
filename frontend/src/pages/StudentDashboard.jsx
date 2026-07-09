@@ -18,9 +18,13 @@ const StudentDashboard = () => {
   const { user, api } = useAuth();
   const { isConnected, rideUpdate, driverLocation, clearRideUpdate } = useWebSocket();
   const { location: userLocation } = useGeolocation();
-  const { drivers: nearbyDrivers } = useNearbyDrivers(api, userLocation);
-
+  
   const [activeRide, setActiveRide] = useState(null);
+  
+  // Fetch drivers near the pickup location if in an active ride, otherwise use physical user location
+  const searchLocation = activeRide?.pickup_location || userLocation;
+  const { drivers: nearbyDrivers } = useNearbyDrivers(api, searchLocation);
+
   const [recentRides, setRecentRides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [driverPos, setDriverPos] = useState(null);
@@ -73,11 +77,16 @@ const StudentDashboard = () => {
 
   useEffect(() => {
     if (driverLocation && activeRide) {
-      setDriverPos(driverLocation.location);
+      const isForThisRide = driverLocation.ride_id === activeRide.id;
       
-      // Safety check: if we missed the "accepted" event, resync from DB
-      if (activeRide.status === 'requested') {
-        console.log('Received driver location but ride is still requested. Fetching state...');
+      if (['accepted', 'driver_arrived', 'ongoing'].includes(activeRide.status)) {
+        if (!driverLocation.ride_id || isForThisRide) {
+          setDriverPos(driverLocation.location);
+        }
+      } else if (activeRide.status === 'requested' && isForThisRide) {
+        // Safety check: if we missed the "accepted" event, resync from DB
+        console.log('Received driver location for THIS ride but status is still requested. Fetching state...');
+        setDriverPos(driverLocation.location);
         fetchData();
       }
     }
@@ -165,15 +174,6 @@ const StudentDashboard = () => {
 
     // Markers Logic
     const mapMarkers = [];
-    
-    if (userLocation) {
-      mapMarkers.push({
-        lat: userLocation.lat,
-        lng: userLocation.lng,
-        iconType: 'user',
-        key: 'user-loc'
-      });
-    }
 
     // 1. Determine which drivers to show
     // If we have an active ride with an actual driver assigned, ONLY show that assigned driver.
@@ -223,12 +223,11 @@ const StudentDashboard = () => {
         bounds.push([activeRide.dropoff_location.lat, activeRide.dropoff_location.lng]);
       }
     } else if (activeRide.status === 'requested') {
-      // Searching for driver: frame Pickup + Nearby Drivers
-      nearbyDrivers.slice(0, 5).forEach(d => {
-        if (d.latitude && d.longitude) {
-          bounds.push([d.latitude, d.longitude]);
-        }
-      });
+      // Searching for driver: frame Pickup + Destination
+      // We don't frame nearby drivers here because their continuous movement causes the camera to constantly bounce/alternate zoom levels.
+      // Framing pickup and destination is cleaner and more stable.
+      if (activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
+      if (activeRide.dropoff_location) bounds.push([activeRide.dropoff_location.lat, activeRide.dropoff_location.lng]);
     }
 
     // Final Bounds Logic
@@ -262,7 +261,11 @@ const StudentDashboard = () => {
         {/* Map Layer */}
         <div className="flex-1 relative z-0">
           <PlatformMap
-            center={driverPos || userLocation || { lat: -14.4087, lng: 28.2849 }}
+            center={
+              (activeRide && activeRide.status === 'requested' && activeRide.pickup_location)
+                ? activeRide.pickup_location
+                : (driverPos || userLocation || { lat: -14.4087, lng: 28.2849 })
+            }
             bounds={bounds}
             cameraMode={cameraMode}
             driverLocation={driverPos}

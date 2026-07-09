@@ -51,18 +51,25 @@ class CameraAnimator {
       const currentBoundsStr = JSON.stringify(cameraState.targetBounds);
       if (this.lastTargetBounds !== currentBoundsStr) {
         try {
-          this.map.fitBounds(cameraState.targetBounds, {
-            padding: CAMERA_CONFIG.BOUNDS.PADDING,
-            animate: true,
-            duration: CAMERA_CONFIG.ANIMATION.DURATION_MS / 1000,
-          });
-          this.lastTargetBounds = currentBoundsStr;
-          
-          // Clear center/zoom caching since bounds took over
-          this.lastTargetCenter = null;
-          this.lastTargetZoom = null;
+          const size = this.map.getSize();
+          // Ensure map has actual dimensions before fitting bounds
+          if (size.x > 0 && size.y > 0) {
+            this.map.fitBounds(cameraState.targetBounds, {
+              padding: CAMERA_CONFIG.BOUNDS.PADDING,
+              animate: true,
+              duration: CAMERA_CONFIG.ANIMATION.DURATION_MS / 1000,
+            });
+            this.lastTargetBounds = currentBoundsStr;
+            
+            // Clear center/zoom caching since bounds took over
+            this.lastTargetCenter = null;
+            this.lastTargetZoom = null;
+          } else {
+            // Map is not ready (0x0). Do not cache lastTargetBounds so we try again next tick.
+          }
         } catch (e) {
           console.warn("CameraAnimator: Invalid bounds", e);
+          // DO NOT cache lastTargetBounds on error, so it can retry if it was a temporary map initialization issue
         }
       }
       return; // Bounds override center/zoom
