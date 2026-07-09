@@ -24,6 +24,13 @@ export const CAMERA_CONFIG = {
     IDLE_TIMEOUT_MS: 5000, // Wait 5s after user drag before resuming auto-follow
   },
   BOUNDS: {
-    PADDING: [50, 50], // Padding when fitting bounds
+    getPaddingOptions: () => {
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+      const sheetHeight = typeof window !== 'undefined' ? window.innerHeight * (isMobile ? 0.45 : 0.25) : 300;
+      return {
+        paddingTopLeft: [50, 50],
+        paddingBottomRight: [50, sheetHeight] // Dynamic bottom padding to account for bottom sheets
+      };
+    }
   }
 };

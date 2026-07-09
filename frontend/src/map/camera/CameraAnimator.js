@@ -55,7 +55,7 @@ class CameraAnimator {
           // Ensure map has actual dimensions before fitting bounds
           if (size.x > 0 && size.y > 0) {
             this.map.fitBounds(cameraState.targetBounds, {
-              padding: CAMERA_CONFIG.BOUNDS.PADDING,
+              ...CAMERA_CONFIG.BOUNDS.getPaddingOptions(),
               animate: true,
               duration: CAMERA_CONFIG.ANIMATION.DURATION_MS / 1000,
             });

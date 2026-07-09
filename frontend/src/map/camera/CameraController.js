@@ -41,10 +41,11 @@ class CameraController {
         } else {
           const driverCenter = followController.getTargetCenter(driverLocation);
           if (driverCenter) {
-            // Offset the center slightly South so the car appears higher on the screen
-            // Reduced to 0.0004 (approx 45 meters) to be safe at zoom level 18
+            const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+            const offset = isMobile ? 0.0008 : 0.0004; // Larger offset for mobile due to taller bottom sheet
+            
             cameraState.targetCenter = {
-              lat: driverCenter.lat - 0.0004,
+              lat: driverCenter.lat - offset,
               lng: driverCenter.lng
             };
             cameraState.targetBounds = null; // Clear bounds
