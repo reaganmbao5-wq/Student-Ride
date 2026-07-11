@@ -19,6 +19,7 @@ from datetime import datetime, timezone, timedelta
 from enum import Enum
 from services.osrm_service import get_route
 from services.notification_service import NotificationService
+from services.ride_state_machine import get_active_ride_states, validate_ride_transition
 import jwt
 import bcrypt
 import asyncio
@@ -137,12 +138,32 @@ class UserRole(str, Enum):
     SUPER_ADMIN = "super_admin"
 
 class RideStatus(str, Enum):
-    REQUESTED = "requested"
+    # LEGACY STATES (Preserved for safe migration/compatibility)
     ACCEPTED = "accepted"
-    DRIVER_ARRIVED = "driver_arrived"
     ONGOING = "ongoing"
     COMPLETED = "completed"
+    
+    # PHASE 3.2.5 RIDE STATE MACHINE
+    REQUESTED = "requested"
+    DRIVER_ACCEPTED = "driver_accepted"
+    DRIVER_EN_ROUTE_TO_PICKUP = "driver_en_route_to_pickup"
+    DRIVER_ARRIVED = "driver_arrived"
+    PASSENGER_BOARDING = "passenger_boarding"
+    RIDE_STARTED = "ride_started"
+    RIDE_IN_PROGRESS = "ride_in_progress"
+    ARRIVING_DESTINATION = "arriving_destination"
+    RIDE_COMPLETED = "ride_completed"
+    SETTLEMENT = "settlement"
+    RIDE_ARCHIVED = "ride_archived"
     CANCELLED = "cancelled"
+
+class DriverStatus(str, Enum):
+    AVAILABLE = "available"
+    EN_ROUTE_TO_PICKUP = "en_route_to_pickup"
+    WAITING_FOR_PASSENGER = "waiting_for_passenger"
+    ON_TRIP = "on_trip"
+    OFFLINE = "offline"
+    OFF_SHIFT = "off_shift"
 
 class RideMode(str, Enum):
     SHARED = "shared"
@@ -790,7 +811,18 @@ class ConnectionManager:
         if driver:
             active_ride = await db.rides.find_one({
                 "driver_id": driver["id"],
-                "status": {"$in": ["accepted", "driver_arrived", "ongoing"]}
+                "status": {"$in": [
+                    RideStatus.DRIVER_ACCEPTED.value,
+                    RideStatus.DRIVER_EN_ROUTE_TO_PICKUP.value,
+                    RideStatus.DRIVER_ARRIVED.value,
+                    RideStatus.PASSENGER_BOARDING.value,
+                    RideStatus.RIDE_STARTED.value,
+                    RideStatus.RIDE_IN_PROGRESS.value,
+                    RideStatus.ARRIVING_DESTINATION.value,
+                    # Legacy fallback
+                    RideStatus.ACCEPTED.value,
+                    RideStatus.ONGOING.value
+                ]}
             }, {"_id": 0}, sort=[("created_at", -1)])
             
             if active_ride:
@@ -1714,7 +1746,7 @@ async def request_ride(ride_data: RideRequest, user: dict = Depends(get_current_
         # Ride Spam / Concurrency Check
         active_ride = await db.rides.find_one({
             "student_id": user["id"],
-            "status": {"$in": [RideStatus.REQUESTED.value, RideStatus.ACCEPTED.value, RideStatus.DRIVER_ARRIVED.value, RideStatus.ONGOING.value]}
+            "status": {"$in": get_active_ride_states()}
         })
         if active_ride:
             raise HTTPException(status_code=429, detail="You already have an active ride request.")
@@ -1816,7 +1848,7 @@ async def request_ride(ride_data: RideRequest, user: dict = Depends(get_current_
 async def get_driver_active_state(driver_id: str):
     active_rides = await db.rides.find({
         "driver_id": driver_id,
-        "status": {"$in": [RideStatus.ACCEPTED.value, RideStatus.DRIVER_ARRIVED.value, RideStatus.ONGOING.value]}
+        "status": {"$in": get_active_ride_states()}
     }).to_list(100)
     
     active_passengers = sum(ride.get("passenger_count", 1) for ride in active_rides)
@@ -1837,13 +1869,11 @@ async def accept_ride(ride_id: str, user: dict = Depends(require_driver)):
         raise HTTPException(status_code=404, detail="Driver profile not found")
     
     # Check if ride exists and get its mode
-    target_ride = await db.rides.find_one({"id": ride_id, "status": RideStatus.REQUESTED.value})
+    target_ride = await db.rides.find_one({"id": ride_id})
     if not target_ride:
-        # Give detailed reason if it's not found or taken
-        existing = await db.rides.find_one({"id": ride_id})
-        if not existing:
-            raise HTTPException(status_code=404, detail="Ride not found")
-        raise HTTPException(status_code=400, detail="Ride already taken or cancelled")
+        raise HTTPException(status_code=404, detail="Ride not found")
+        
+    validate_ride_transition(target_ride.get("status"), RideStatus.DRIVER_ACCEPTED.value)
         
     ride_mode = target_ride.get("ride_mode", RideMode.PRIVATE.value)
     passenger_count = target_ride.get("passenger_count", 1)
@@ -1873,13 +1903,13 @@ async def accept_ride(ride_id: str, user: dict = Depends(require_driver)):
     if recent_accepts >= 3:
         raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in a few seconds.")
 
-    # ATOMIC UPDATE: Only update if status is REQUESTED
+    # ATOMIC UPDATE: State verified above
     now = datetime.now(timezone.utc).isoformat()
     ride = await db.rides.find_one_and_update(
-        {"id": ride_id, "status": RideStatus.REQUESTED.value},
+        {"id": ride_id, "status": target_ride["status"]},
         {"$set": {
             "driver_id": driver["id"],
-            "status": RideStatus.ACCEPTED.value,
+            "status": RideStatus.DRIVER_ACCEPTED.value,
             "accepted_at": now
         }},
         return_document=True
@@ -1933,20 +1963,21 @@ async def driver_arrived(ride_id: str, user: dict = Depends(require_driver)):
     if not driver:
          raise HTTPException(status_code=404, detail="Driver profile not found")
 
-    # ATOMIC UPDATE: Only update if status is ACCEPTED and assigned to this driver
+    target_ride = await db.rides.find_one({"id": ride_id, "driver_id": driver["id"]})
+    if not target_ride:
+        raise HTTPException(status_code=404, detail="Ride not found or not assigned to you")
+    validate_ride_transition(target_ride.get("status"), RideStatus.DRIVER_ARRIVED.value)
+
+    # ATOMIC UPDATE
     ride = await db.rides.find_one_and_update(
-        {
-            "id": ride_id, 
-            "driver_id": driver["id"], 
-            "status": RideStatus.ACCEPTED.value
-        },
+        {"id": ride_id, "driver_id": driver["id"], "status": target_ride["status"]},
         {"$set": {"status": RideStatus.DRIVER_ARRIVED.value}},
         return_document=True
     )
     if ride: ride.pop("_id", None)
     
     if not ride:
-        raise HTTPException(status_code=400, detail="Invalid transition. Ride must be ACCEPTED and assigned to you.")
+        raise HTTPException(status_code=400, detail="Invalid transition or double update.")
     
     await manager.send_personal_message({
         "type": "driver_arrived",
@@ -1974,15 +2005,16 @@ async def start_ride(ride_id: str, user: dict = Depends(require_driver)):
     if not driver:
          raise HTTPException(status_code=404, detail="Driver profile not found")
 
-    # ATOMIC UPDATE: Only update if status is DRIVER_ARRIVED and assigned to this driver
+    target_ride = await db.rides.find_one({"id": ride_id, "driver_id": driver["id"]})
+    if not target_ride:
+        raise HTTPException(status_code=404, detail="Ride not found or not assigned to you")
+    validate_ride_transition(target_ride.get("status"), RideStatus.RIDE_STARTED.value)
+
+    # ATOMIC UPDATE
     ride = await db.rides.find_one_and_update(
-        {
-            "id": ride_id, 
-            "driver_id": driver["id"], 
-            "status": RideStatus.DRIVER_ARRIVED.value
-        },
+        {"id": ride_id, "driver_id": driver["id"], "status": target_ride["status"]},
         {"$set": {
-            "status": RideStatus.ONGOING.value,
+            "status": RideStatus.RIDE_STARTED.value,
             "started_at": datetime.now(timezone.utc).isoformat()
         }},
         return_document=True
@@ -1990,7 +2022,7 @@ async def start_ride(ride_id: str, user: dict = Depends(require_driver)):
     if ride: ride.pop("_id", None)
     
     if not ride:
-         raise HTTPException(status_code=400, detail="Invalid transition. Ride must be in DRIVER_ARRIVED state.")
+         raise HTTPException(status_code=400, detail="Invalid transition or double update.")
     
     await manager.send_personal_message({
         "type": "ride_started",
@@ -2016,31 +2048,37 @@ async def complete_ride(ride_id: str, user: dict = Depends(require_driver)):
             if delta < 60:
                 raise HTTPException(status_code=400, detail="Fraud Protection: Cannot complete ride instantly.")
 
-    # ATOMIC UPDATE: Only update if status is ONGOING and assigned to this driver
+    target_ride = await db.rides.find_one({"id": ride_id, "driver_id": driver["id"]})
+    if not target_ride:
+        raise HTTPException(status_code=404, detail="Ride not found or not assigned to you")
+        
+    validate_ride_transition(target_ride["status"], RideStatus.RIDE_COMPLETED.value)
+    
+    # ATOMIC UPDATE: Only update if status matches target
     # This prevents double completion and double deduction
     ride = await db.rides.find_one_and_update(
         {
             "id": ride_id, 
             "driver_id": driver["id"], 
-            "status": RideStatus.ONGOING.value
+            "status": target_ride["status"]
         },
-        {"$set": {"status": RideStatus.COMPLETED.value, "completed_at": datetime.now(timezone.utc).isoformat()}},
+        {"$set": {"status": RideStatus.RIDE_COMPLETED.value, "completed_at": datetime.now(timezone.utc).isoformat()}},
         return_document=True
     )
     if ride: ride.pop("_id", None)
     
     if not ride:
-        raise HTTPException(status_code=400, detail="Invalid transition. Ride must be ONGOING.")
+        raise HTTPException(status_code=400, detail="Invalid transition. Race condition prevented.")
     
     now = datetime.now(timezone.utc).isoformat()
-    commission_amount = ride["commission"]
+    commission_amount = ride.get("commission", 0.0)
     
     # Deduct from wallet
     new_balance = driver.get("wallet_balance", 0.0) - commission_amount
     total_due = driver.get("total_commission_due", 0.0) + commission_amount
     
     wallet_status = WalletStatus.ACTIVE.value
-    is_still_online = driver["is_online"]
+    is_still_online = driver.get("is_online", True)
     
     if new_balance < driver.get("minimum_required_balance", 50.0):
         wallet_status = WalletStatus.RESTRICTED.value
@@ -2051,7 +2089,7 @@ async def complete_ride(ride_id: str, user: dict = Depends(require_driver)):
         {
             "$inc": {
                 "total_rides": 1,
-                "total_earnings": ride["driver_earning"]
+                "total_earnings": ride.get("driver_earning", 0.0)
             },
             "$set": { # Unset current_ride_id separately or here? 
                       # Wait, $set is already above. Merge them.
@@ -2063,6 +2101,14 @@ async def complete_ride(ride_id: str, user: dict = Depends(require_driver)):
             }
         }
     )
+    
+    # 3. ARCHIVED STATE
+    # After settlement, the ride is fully complete and archived
+    await db.rides.update_one({"id": ride_id}, {"$set": {"status": RideStatus.RIDE_ARCHIVED.value}})
+    
+    # We no longer send a WebSocket update here because the frontend transitions itself
+    # and the driver is now waiting for their next ride.
+    ride["status"] = RideStatus.RIDE_ARCHIVED.value
     
     # Log transaction
     transaction = {
@@ -2086,6 +2132,107 @@ async def complete_ride(ride_id: str, user: dict = Depends(require_driver)):
     manager.remove_from_ride(ride_id, user["id"])
     
     return {"status": "completed", "fare": ride["fare"]}
+
+
+@api_router.post("/rides/{ride_id}/en_route")
+async def driver_en_route(ride_id: str, user: dict = Depends(require_driver)):
+    driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
+    if not driver:
+         raise HTTPException(status_code=404, detail="Driver profile not found")
+
+    target_ride = await db.rides.find_one({"id": ride_id, "driver_id": driver["id"]})
+    if not target_ride:
+        raise HTTPException(status_code=404, detail="Ride not found or not assigned to you")
+    validate_ride_transition(target_ride.get("status"), RideStatus.DRIVER_EN_ROUTE_TO_PICKUP.value)
+
+    ride = await db.rides.find_one_and_update(
+        {"id": ride_id, "driver_id": driver["id"], "status": target_ride["status"]},
+        {"$set": {"status": RideStatus.DRIVER_EN_ROUTE_TO_PICKUP.value}},
+        return_document=True
+    )
+    if ride: ride.pop("_id", None)
+    
+    await manager.send_personal_message({
+        "type": "ride_state_changed",
+        "state": RideStatus.DRIVER_EN_ROUTE_TO_PICKUP.value,
+        "ride_id": ride_id
+    }, ride["student_id"])
+    return {"status": "en_route_to_pickup"}
+
+@api_router.post("/rides/{ride_id}/boarding")
+async def passenger_boarding(ride_id: str, user: dict = Depends(require_driver)):
+    driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
+    if not driver:
+         raise HTTPException(status_code=404, detail="Driver profile not found")
+
+    target_ride = await db.rides.find_one({"id": ride_id, "driver_id": driver["id"]})
+    if not target_ride:
+        raise HTTPException(status_code=404, detail="Ride not found or not assigned to you")
+    validate_ride_transition(target_ride.get("status"), RideStatus.PASSENGER_BOARDING.value)
+
+    ride = await db.rides.find_one_and_update(
+        {"id": ride_id, "driver_id": driver["id"], "status": target_ride["status"]},
+        {"$set": {"status": RideStatus.PASSENGER_BOARDING.value}},
+        return_document=True
+    )
+    if ride: ride.pop("_id", None)
+    
+    await manager.send_personal_message({
+        "type": "ride_state_changed",
+        "state": RideStatus.PASSENGER_BOARDING.value,
+        "ride_id": ride_id
+    }, ride["student_id"])
+    return {"status": "passenger_boarding"}
+
+@api_router.post("/rides/{ride_id}/in_progress")
+async def ride_in_progress(ride_id: str, user: dict = Depends(require_driver)):
+    driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
+    if not driver:
+         raise HTTPException(status_code=404, detail="Driver profile not found")
+
+    target_ride = await db.rides.find_one({"id": ride_id, "driver_id": driver["id"]})
+    if not target_ride:
+        raise HTTPException(status_code=404, detail="Ride not found or not assigned to you")
+    validate_ride_transition(target_ride.get("status"), RideStatus.RIDE_IN_PROGRESS.value)
+
+    ride = await db.rides.find_one_and_update(
+        {"id": ride_id, "driver_id": driver["id"], "status": target_ride["status"]},
+        {"$set": {"status": RideStatus.RIDE_IN_PROGRESS.value}},
+        return_document=True
+    )
+    if ride: ride.pop("_id", None)
+    
+    await manager.send_personal_message({
+        "type": "ride_state_changed",
+        "state": RideStatus.RIDE_IN_PROGRESS.value,
+        "ride_id": ride_id
+    }, ride["student_id"])
+    return {"status": "ride_in_progress"}
+
+@api_router.post("/rides/{ride_id}/arriving")
+async def arriving_destination(ride_id: str, user: dict = Depends(require_driver)):
+    driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
+    if not driver:
+         raise HTTPException(status_code=404, detail="Driver profile not found")
+
+    target_ride = await db.rides.find_one({"id": ride_id, "driver_id": driver["id"]})
+    if not target_ride:
+        raise HTTPException(status_code=404, detail="Ride not found or not assigned to you")
+    validate_ride_transition(target_ride.get("status"), RideStatus.ARRIVING_DESTINATION.value)
+
+    ride = await db.rides.find_one_and_update(
+        {"id": ride_id, "driver_id": driver["id"], "status": target_ride["status"]},
+        {"$set": {"status": RideStatus.ARRIVING_DESTINATION.value}},
+        return_document=True
+    )
+    if ride: ride.pop("_id", None)
+    
+    await manager.send_personal_message({
+        "type": "ride_state_changed",
+        "state": RideStatus.ARRIVING_DESTINATION.value,
+        "ride_id": ride_id
+    }, ride["student_id"])
+    return {"status": "arriving_destination"}
 
 @api_router.post("/rides/{ride_id}/cancel")
 async def cancel_ride(ride_id: str, user: dict = Depends(get_current_user)):
@@ -2270,7 +2417,7 @@ async def rate_ride(ride_id: str, rating_data: RatingCreate, user: dict = Depend
     if not ride or ride["student_id"] != user["id"]:
         raise HTTPException(status_code=404, detail="Ride not found")
     
-    if ride["status"] != RideStatus.COMPLETED.value:
+    if ride["status"] not in [RideStatus.COMPLETED.value, RideStatus.RIDE_ARCHIVED.value]:
         raise HTTPException(status_code=400, detail="Can only rate completed rides")
     
     if rating_data.rating < 1 or rating_data.rating > 5:
@@ -2310,12 +2457,7 @@ async def rate_ride(ride_id: str, rating_data: RatingCreate, user: dict = Depend
 
 @api_router.get("/rides/active", response_model=Optional[RideResponse])
 async def get_active_ride(user: dict = Depends(get_current_user)):
-    query = {"status": {"$in": [
-        RideStatus.REQUESTED.value,
-        RideStatus.ACCEPTED.value,
-        RideStatus.DRIVER_ARRIVED.value,
-        RideStatus.ONGOING.value
-    ]}}
+    query = {"status": {"$in": get_active_ride_states()}}
     
     if user["role"] == UserRole.DRIVER.value:
         driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
@@ -2512,12 +2654,7 @@ async def get_admin_stats(user: dict = Depends(require_admin)):
     pending_drivers = await db.drivers.count_documents({"is_approved": False})
     total_rides = await db.rides.count_documents({})
     completed_rides = await db.rides.count_documents({"status": RideStatus.COMPLETED.value})
-    active_rides = await db.rides.count_documents({"status": {"$in": [
-        RideStatus.REQUESTED.value,
-        RideStatus.ACCEPTED.value,
-        RideStatus.DRIVER_ARRIVED.value,
-        RideStatus.ONGOING.value
-    ]}})
+    active_rides = await db.rides.count_documents({"status": {"$in": get_active_ride_states()}})
     
     # Calculate earnings
     rides = await db.rides.find({"status": RideStatus.COMPLETED.value}, {"_id": 0}).to_list(10000)
@@ -3146,7 +3283,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(None)):
                     if driver:
                         active_ride = await db.rides.find_one({
                             "driver_id": driver["id"],
-                            "status": {"$in": [RideStatus.ACCEPTED.value, RideStatus.DRIVER_ARRIVED.value, RideStatus.ONGOING.value]}
+                            "status": {"$in": get_active_ride_states()}
                         }, {"_id": 0})
                         
                         if active_ride:

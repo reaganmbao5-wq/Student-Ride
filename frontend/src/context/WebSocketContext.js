@@ -61,6 +61,9 @@ export const WebSocketProvider = ({ children }) => {
           case 'driver_arrived':
             setRideUpdate({ type: 'driver_arrived', ride_id: data.ride_id });
             break;
+          case 'ride_state_changed':
+            setRideUpdate({ type: 'state_changed', state: data.state, ride_id: data.ride_id });
+            break;
           case 'ride_started':
             setRideUpdate({ type: 'started', ride_id: data.ride_id });
             break;

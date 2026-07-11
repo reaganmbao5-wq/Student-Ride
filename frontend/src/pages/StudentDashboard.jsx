@@ -50,6 +50,8 @@ const StudentDashboard = () => {
       } else if (rideUpdate.type === 'driver_arrived') {
         setActiveRide(prev => prev ? { ...prev, status: 'driver_arrived' } : null);
         toast.success('Driver has arrived at pickup!');
+      } else if (rideUpdate.type === 'state_changed') {
+        setActiveRide(prev => prev ? { ...prev, status: rideUpdate.state } : null);
       } else if (rideUpdate.type === 'started') {
         setActiveRide(prev => prev ? { ...prev, status: 'ongoing' } : null);
         toast.info('Your ride has started');
@@ -79,7 +81,7 @@ const StudentDashboard = () => {
     if (driverLocation && activeRide) {
       const isForThisRide = driverLocation.ride_id === activeRide.id;
       
-      if (['accepted', 'driver_arrived', 'ongoing'].includes(activeRide.status)) {
+      if (['driver_accepted', 'driver_en_route_to_pickup', 'driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination'].includes(activeRide.status)) {
         if (!driverLocation.ride_id || isForThisRide) {
           setDriverPos(driverLocation.location);
         }
@@ -162,7 +164,7 @@ const StudentDashboard = () => {
   // ACTIVE RIDE FULL-SCREEN VIEW
   // ==========================================
   if (activeRide) {
-    const isArrivedOrStarted = ['driver_arrived', 'ongoing'].includes(activeRide.status);
+    const isArrivedOrStarted = ['driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination', 'ongoing'].includes(activeRide.status);
     
     // Debug overlay to verify websocket data
     const debugOverlay = (
@@ -210,14 +212,14 @@ const StudentDashboard = () => {
     let bounds = [];
     if (driverPos) bounds.push([driverPos.lat, driverPos.lng]);
     
-    if (activeRide.status === 'accepted') {
+    if (activeRide.status in ['accepted', 'driver_accepted', 'driver_en_route_to_pickup']) {
       // Driver is on the way to pickup: frame Driver + Pickup ALWAYS
       if (activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
     } else if (activeRide.status === 'driver_arrived') {
       // Driver arrived at pickup: frame Pickup + Destination to show the full route about to be driven
       if (activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
       if (activeRide.dropoff_location) bounds.push([activeRide.dropoff_location.lat, activeRide.dropoff_location.lng]);
-    } else if (activeRide.status === 'ongoing') {
+    } else if (activeRide.status in ['ongoing', 'ride_started', 'ride_in_progress', 'arriving_destination']) {
       // Ride ongoing: frame Driver + Destination IF animating (edge case), else zoom in
       if (activeRide.dropoff_location && isRouteAnimating) {
         bounds.push([activeRide.dropoff_location.lat, activeRide.dropoff_location.lng]);
@@ -231,9 +233,9 @@ const StudentDashboard = () => {
     }
 
     // Final Bounds Logic
-    if (activeRide.status === 'accepted') {
+    if (activeRide.status in ['accepted', 'driver_accepted', 'driver_en_route_to_pickup']) {
       bounds = bounds.length > 1 ? bounds : null; // Keep bounds forever
-    } else if (['driver_arrived', 'ongoing'].includes(activeRide.status)) {
+    } else if (['driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination', 'ongoing'].includes(activeRide.status)) {
       bounds = (!isRouteAnimating) ? null : (bounds.length > 1 ? bounds : null);
     } else {
       bounds = bounds.length > 1 ? bounds : null;
@@ -252,7 +254,7 @@ const StudentDashboard = () => {
     let cameraMode = CAMERA_MODES.FREE;
     if (activeRide.status === 'requested') {
       cameraMode = CAMERA_MODES.OVERVIEW;
-    } else if (['accepted', 'driver_arrived', 'ongoing'].includes(activeRide.status)) {
+    } else if (['driver_accepted', 'driver_en_route_to_pickup', 'driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination'].includes(activeRide.status)) {
       cameraMode = CAMERA_MODES.FOLLOW_DRIVER;
     }
 
@@ -319,7 +321,7 @@ const StudentDashboard = () => {
               <div className="text-right">
                 <div className="text-2xl font-bold font-heading text-gold">
                   {/* Mock ETA for now until we have real ones */}
-                  {activeRide.status === 'ongoing' ? '...' : '2 min'}
+                  {activeRide.status in ['ongoing', 'ride_started', 'ride_in_progress', 'arriving_destination'] ? '...' : '2 min'}
                 </div>
               </div>
             </div>
@@ -393,7 +395,7 @@ const StudentDashboard = () => {
 
                    {/* Actions Group */}
                    <div className="flex flex-col gap-3 pt-2">
-                     {['requested', 'accepted', 'driver_arrived'].includes(activeRide.status) && (
+                     {['requested', 'accepted', 'driver_accepted', 'driver_en_route_to_pickup', 'driver_arrived', 'passenger_boarding'].includes(activeRide.status) && (
                         <button 
                           onClick={handleCancelRide} 
                           className="w-full py-4 bg-zinc-100 dark:bg-zinc-900 text-red-500 rounded-xl font-bold text-base active:scale-95 transition-transform"
@@ -402,7 +404,7 @@ const StudentDashboard = () => {
                         </button>
                      )}
                      
-                     {['accepted', 'driver_arrived', 'ongoing'].includes(activeRide.status) && (
+                     {['accepted', 'driver_accepted', 'driver_en_route_to_pickup', 'driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination', 'ongoing'].includes(activeRide.status) && (
                         <button
                           onClick={handleSOS}
                           className="w-full py-4 bg-red-600 text-white rounded-xl font-bold text-base active:scale-95 transition-transform flex items-center justify-center gap-2 shadow-lg shadow-red-600/20"

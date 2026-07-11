@@ -58,6 +58,7 @@ class CameraAnimator {
               ...CAMERA_CONFIG.BOUNDS.getPaddingOptions(),
               animate: true,
               duration: CAMERA_CONFIG.ANIMATION.DURATION_MS / 1000,
+              maxZoom: 15.5
             });
             this.lastTargetBounds = currentBoundsStr;
             
