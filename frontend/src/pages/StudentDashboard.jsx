@@ -10,7 +10,7 @@ import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
 import { useWebSocket } from '../context/WebSocketContext';
 import { useGeolocation } from '../map/hooks/useGeolocation';
-import { useNearbyDrivers } from '../hooks/useNearbyDrivers';
+import { useDriverDiscovery } from '../map/discovery/DriverDiscoveryEngine';
 import { toast } from 'sonner';
 
 const StudentDashboard = () => {
@@ -23,7 +23,7 @@ const StudentDashboard = () => {
   
   // Fetch drivers near the pickup location if in an active ride, otherwise use physical user location
   const searchLocation = activeRide?.pickup_location || userLocation;
-  const { drivers: nearbyDrivers } = useNearbyDrivers(api, searchLocation);
+  const { drivers: nearbyDrivers } = useDriverDiscovery(api, searchLocation);
 
   const [recentRides, setRecentRides] = useState([]);
   const [loading, setLoading] = useState(true);

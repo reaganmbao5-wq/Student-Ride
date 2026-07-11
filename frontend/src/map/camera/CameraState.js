@@ -10,7 +10,7 @@ class CameraState {
     
     // User interaction state
     this.isUserInteracting = false;
-    this.lastInteractionTime = 0;
+    this.lastInteractionTime = 0; // Set to 0 so it's idle by default
     
     // Target state
     this.targetCenter = null;

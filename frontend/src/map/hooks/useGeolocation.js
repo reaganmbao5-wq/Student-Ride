@@ -40,9 +40,9 @@ export const useGeolocation = (options = {}) => {
         });
         setError(null);
       } catch (e) {
-        // Fallback to Kabwe when geolocation fails
-        setLocation({ lat: -14.42, lng: 28.45, accuracy: null });
-        setError(`Location unavailable. Using default location (Kabwe).`);
+        // Fallback to MU when geolocation fails
+        setLocation({ lat: -14.294896006738625, lng: 28.55979849713035, accuracy: null });
+        setError(`Location unavailable. Using default location (MU).`);
       }
       setLoading(false);
     } else {
@@ -63,8 +63,8 @@ export const useGeolocation = (options = {}) => {
           setLoading(false);
         },
         (error) => {
-          setLocation({ lat: -14.42, lng: 28.45, accuracy: null });
-          setError(`Location unavailable. Using default location (Kabwe).`);
+          setLocation({ lat: -14.294896006738625, lng: 28.55979849713035, accuracy: null });
+          setError(`Location unavailable. Using default location (MU).`);
           setLoading(false);
         },
         defaultOptions

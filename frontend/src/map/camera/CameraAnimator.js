@@ -83,16 +83,34 @@ class CameraAnimator {
     const hasNewZoom = cameraState.targetZoom && (this.lastTargetZoom !== cameraState.targetZoom);
 
     if (hasNewCenter || hasNewZoom) {
+      const size = this.map.getSize();
+      if (size.x === 0 || size.y === 0) {
+        // Map container hasn't rendered yet. Force an update and retry next frame.
+        this.map.invalidateSize();
+        return; 
+      }
+
       const targetZoom = cameraState.targetZoom || this.map.getZoom();
       
       if (hasNewCenter) {
-        // If center changed, use setView/flyTo or panTo
-        // panTo is smoother for continuous tracking (e.g. driver moving)
-        this.map.setView(cameraState.targetCenter, targetZoom, {
-          animate: true,
-          duration: 1.0, // 1 second duration matches our 1Hz driver updates perfectly
-          easeLinearity: 0.25
-        });
+        // If center changed, use setView or flyTo
+        const currentCenter = this.map.getCenter();
+        const dist = currentCenter.distanceTo(cameraState.targetCenter);
+        
+        if (dist > 5000) {
+          // Large jump (e.g. initial geolocation), use flyTo
+          this.map.flyTo(cameraState.targetCenter, targetZoom, {
+            animate: true,
+            duration: 1.5
+          });
+        } else {
+          // Continuous tracking (e.g. driver moving), use panTo/setView
+          this.map.setView(cameraState.targetCenter, targetZoom, {
+            animate: true,
+            duration: 1.0,
+            easeLinearity: 0.25
+          });
+        }
         this.lastTargetCenter = cameraState.targetCenter;
       } else if (hasNewZoom) {
         // Only zoom changed

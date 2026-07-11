@@ -42,12 +42,6 @@ const CameraEngine = ({
     dragend: () => {
       cameraState.clearUserInteraction();
     },
-    zoomstart: () => {
-      cameraState.markUserInteraction();
-    },
-    zoomend: () => {
-      cameraState.clearUserInteraction();
-    },
     touchstart: () => {
       cameraState.markUserInteraction();
     },

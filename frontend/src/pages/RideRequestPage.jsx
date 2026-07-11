@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { reverseGeocode } from '../map/services/nominatim';
 import PlatformMap from '../map/components/PlatformMap';
 import { CAMERA_MODES } from '../map/camera/CameraConfig';
-import { useNearbyDrivers } from '../hooks/useNearbyDrivers';
+import { useDriverDiscovery } from '../map/discovery/DriverDiscoveryEngine';
 import { routeCache } from '../map/route/RouteCache';
 import { AddressSearch } from '../components/common/AddressSearch';
 import {
@@ -23,7 +23,7 @@ const RideRequestPage = () => {
   const navigate = useNavigate();
   const { api } = useAuth();
   const { location: userLocation, loading: geoLoading, error: geoError, refresh: refreshLocation } = useGeolocation();
-  const { drivers: nearbyDrivers } = useNearbyDrivers(api, userLocation);
+  const { drivers: nearbyDrivers } = useDriverDiscovery(api, userLocation);
 
   const [step, setStep] = useState('pickup'); // pickup, dropoff, confirm
   
@@ -32,7 +32,7 @@ const RideRequestPage = () => {
   const [dropoff, setDropoff] = useState(null);
   
   // Real-time map center tracking
-  const [mapCenter, setMapCenter] = useState({ lat: -14.4087, lng: 28.2849 }); // Default Lusaka/Zambia approx
+  const [mapCenter, setMapCenter] = useState({ lat: -14.294896006738625, lng: 28.55979849713035 }); // Default Mulungushi University
   const [isDragging, setIsDragging] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [currentAddress, setCurrentAddress] = useState('');

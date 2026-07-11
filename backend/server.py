@@ -2381,7 +2381,10 @@ async def get_ride_history(
     else:
         query["student_id"] = user["id"]
     
-    rides = await db.rides.find(query, {"_id": 0}).sort("created_at", -1).to_list(limit)
+    rides = await db.rides.find(
+        query, 
+        {"_id": 0, "verified_geometry": 0, "route_geometry": 0}
+    ).sort("created_at", -1).to_list(limit)
     
     result = []
     for ride in rides:

@@ -74,19 +74,19 @@ export const dropoffIcon = L.divIcon({
 const TILES = {
   // Google Maps Standard — full Google Maps look for light mode
   light: {
-    url: 'https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+    url: 'https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&scale=2',
     subdomains: ['0', '1', '2', '3'],
     attribution: '© Google Maps',
   },
   // CartoDB Dark Matter — excellent dark map style for dark mode
   dark: {
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
     subdomains: 'abcd',
     attribution: '© CartoDB',
   },
   // Google Maps Hybrid — full-colour satellite + labels globally
   satellite: {
-    url: 'https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+    url: 'https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&scale=2',
     subdomains: ['0', '1', '2', '3'],
     attribution: '© Google Maps',
   },
@@ -167,17 +167,15 @@ export const PlatformMap = ({
 
   const MapEvents = () => {
     useMapEvents({
-      moveend: (e) => {
+      dragstart: () => {
+        if (onDragStart) onDragStart();
+      },
+      dragend: (e) => {
+        if (onDragEnd) onDragEnd();
         const c = e.target.getCenter();
         if (onCenterChanged) {
           onCenterChanged({ lat: c.lat, lng: c.lng });
         }
-      },
-      dragstart: () => {
-        if (onDragStart) onDragStart();
-      },
-      dragend: () => {
-        if (onDragEnd) onDragEnd();
       }
     });
     return null;

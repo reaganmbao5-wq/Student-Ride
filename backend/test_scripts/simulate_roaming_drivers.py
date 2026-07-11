@@ -58,7 +58,8 @@ async def setup_dummy_drivers(db):
             "id": uid,
             "lat": lat,
             "lng": lng,
-            "heading": random.uniform(0, 360)
+            "heading": random.uniform(0, 360),
+            "status": "online"
         })
     return drivers
 
@@ -70,7 +71,7 @@ async def main():
     drivers = await setup_dummy_drivers(db)
     print("Ghost drivers created. Starting random walk...")
     
-    async with httpx.AsyncClient() as http_client:
+    async with httpx.AsyncClient(timeout=30.0) as http_client:
         while True:
             payload = {}
             for d in drivers:
@@ -82,7 +83,8 @@ async def main():
                 payload[d["id"]] = {
                     "lat": d["lat"],
                     "lng": d["lng"],
-                    "heading": d["heading"]
+                    "heading": d["heading"],
+                    "status": "online"
                 }
                 
                 # Update DB every so often to keep is_online=True alive
@@ -94,9 +96,26 @@ async def main():
                 if resp.status_code != 200:
                     print("Failed to inject:", resp.text)
             except Exception as e:
-                print("Error injecting:", e)
+                print("Error injecting:", repr(e))
                 
             await asyncio.sleep(2)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\nSimulation stopped.")
+    finally:
+        print("Cleaning up... marking drivers offline in DB.")
+        async def cleanup():
+            client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_URL)
+            db = client[os.environ.get('DB_NAME', 'mulungushi_rides')]
+            await db.drivers.update_many(
+                {"user_id": {"$regex": "^ghost-driver-"}},
+                {"$set": {"is_online": False}}
+            )
+        try:
+            asyncio.run(cleanup())
+        except Exception:
+            pass
+        print("Cleanup complete. Drivers removed.")

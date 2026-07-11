@@ -23,18 +23,21 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [driverProfile, setDriverProfile] = useState(null);
 
-  const api = React.useMemo(() => axios.create({
-    baseURL: API_URL
-  }), []);
+  const api = React.useMemo(() => {
+    const instance = axios.create({
+      baseURL: API_URL
+    });
 
-  // Update axios headers when token changes
-  useEffect(() => {
-    if (token) {
-      api.defaults.headers.Authorization = `Bearer ${token}`;
-    } else {
-      delete api.defaults.headers.Authorization;
-    }
-  }, [token, api]);
+    instance.interceptors.request.use((config) => {
+      const currentToken = localStorage.getItem('token');
+      if (currentToken) {
+        config.headers.Authorization = `Bearer ${currentToken}`;
+      }
+      return config;
+    });
+
+    return instance;
+  }, []);
 
   const fetchUser = useCallback(async () => {
     // --- AUTH BYPASS FOR TESTING ---
