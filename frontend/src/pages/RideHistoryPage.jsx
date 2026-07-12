@@ -157,6 +157,9 @@ const RideHistoryPage = () => {
                       <p className="text-gold font-heading font-bold">
                         K{isDriver ? ride.driver_earning?.toFixed(2) : ride.fare?.toFixed(2)}
                       </p>
+                      <p className={`text-[10px] uppercase font-bold tracking-wider ${ride.ride_mode === 'shared' ? 'text-blue-500' : 'text-muted-foreground/50'}`}>
+                        {ride.ride_mode === 'shared' ? 'Shared Ride' : 'Private Ride'}
+                      </p>
                       <p className="text-xs text-muted-foreground/40">{ride.distance?.toFixed(1)} km</p>
                     </div>
                   </div>

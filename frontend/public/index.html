@@ -35,7 +35,15 @@
             corePlugins: { preflight: false },
         };
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com" crossorigin="anonymous"></script>
+    <script>
+      window.addEventListener('error', function(e) {
+        console.error('GLOBAL_ERROR:', e.message, e.filename, e.lineno, e.colno, e.error);
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        console.error('UNHANDLED_REJECTION:', e.reason);
+      });
+    </script>
 </head>
 
 <body>

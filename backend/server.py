@@ -61,11 +61,10 @@ DEFAULT_COMMISSION_RATE = 15.0
 app = FastAPI(title="Mulungushi Rides API")
 
 # Configure CORS
-# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allow Render and Netlify cross-origin
-    allow_credentials=True,
+    allow_origins=["http://localhost:3000", "http://localhost:3005", "http://127.0.0.1:3000", "http://127.0.0.1:3005", "*"], 
+    allow_credentials=False, # Must be False if using "*" in older fastapi, but explicitly specifying origins works
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -844,7 +843,6 @@ class ConnectionManager:
             "is_online": True,
             "is_approved": True,
             "wallet_status": {"$ne": WalletStatus.RESTRICTED.value},
-            "current_ride_id": None, # Filter out busy drivers
             "location": {
                 "$near": {
                     "$geometry": {
@@ -855,9 +853,21 @@ class ConnectionManager:
                 }
             }
         }, {"_id": 0}).to_list(20)
-        logger.info(f"Found {len(online_drivers)} nearby drivers for location {location}")
         
+        ride = message.get("ride", {})
+        ride_mode = ride.get("ride_mode", "private")
+        passenger_count = ride.get("passenger_count", 1)
+        
+        eligible_drivers = []
         for driver in online_drivers:
+            active_state = await get_driver_active_state(driver["id"])
+            eligibility = is_driver_eligible(driver, active_state, ride_mode, passenger_count)
+            if eligibility["eligible"]:
+                eligible_drivers.append(driver)
+                
+        logger.info(f"Found {len(eligible_drivers)} eligible nearby drivers for location {location}")
+        
+        for driver in eligible_drivers:
             driver_id = driver["user_id"]
             if driver_id in self.active_connections:
                 try:
@@ -1172,8 +1182,7 @@ async def get_nearby_drivers(
             "user_id": {"$in": nearby_driver_ids},
             "is_online": True,
             "is_approved": True,
-            "wallet_status": {"$ne": WalletStatus.RESTRICTED.value},
-            "current_ride_id": None
+            "wallet_status": {"$ne": WalletStatus.RESTRICTED.value}
         }).to_list(100)
     else:
         # Fallback to DB geospatial query if cache empty
@@ -1182,7 +1191,6 @@ async def get_nearby_drivers(
             "is_online": True,
             "is_approved": True,
             "wallet_status": {"$ne": WalletStatus.RESTRICTED.value},
-            "current_ride_id": None,
             "location": {
                 "$near": {
                     "$geometry": {
@@ -1195,8 +1203,16 @@ async def get_nearby_drivers(
         }).to_list(20)
         
     for d in online_drivers:
-        # Prefer cache location as it's more realtime
         driver_id = d["user_id"]
+        
+        # DISPATCH MATCHING RULES via centralized source of truth
+        active_state = await get_driver_active_state(d["id"])
+        eligibility = is_driver_eligible(d, active_state)
+        
+        if not eligibility["visibility"]:
+            continue
+            
+        # Prefer cache location as it's more realtime
         loc = manager.driver_locations.get(driver_id) or d.get("current_location", {})
         lat = loc.get("lat")
         lng = loc.get("lng")
@@ -1459,6 +1475,7 @@ async def accept_trip():
     ride["status"] = "accepted"
     ride["driver_id"] = driver["id"]
     await manager.send_personal_message({
+        "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
         "type": "ride_accepted",
         "ride": ride,
         "driver": driver
@@ -1490,6 +1507,7 @@ async def update_trip_status(req: UpdateTripStatusReq):
     
     # Broadcast to user
     await manager.send_personal_message({
+        "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
         "type": event_type_map.get(req.status, "status_update"),
         "ride_id": req.ride_id,
         "status": req.status
@@ -1678,10 +1696,17 @@ async def get_admin_analytics(user: dict = Depends(require_admin)):
     revenue_chart = sorted(daily_stats.values(), key=lambda x: x["date"])
     destination_chart = sorted(dest_stats.values(), key=lambda x: x["value"], reverse=True)[:10]
     
-    # Online Drivers vs Busy Drivers
-    online_drivers = await db.drivers.count_documents({"is_online": True})
-    busy_drivers = await db.drivers.count_documents({"is_online": True, "current_ride_id": {"$ne": None}})
+    # Online Drivers vs Busy Drivers (Centralized Logic)
+    online_drivers_list = await db.drivers.find({"is_online": True}).to_list(1000)
+    online_drivers = len(online_drivers_list)
+    busy_drivers = 0
     
+    for d in online_drivers_list:
+        active_state = await get_driver_active_state(d["id"])
+        eligibility = is_driver_eligible(d, active_state)
+        if not eligibility["visibility"]:
+            busy_drivers += 1
+            
     return {
         "revenue_trends": revenue_chart,
         "popular_destinations": destination_chart,
@@ -1862,6 +1887,68 @@ async def get_driver_active_state(driver_id: str):
         "active_rides_count": len(active_rides)
     }
 
+def is_driver_eligible(driver: dict, active_state: dict, requested_mode: str = None, requested_passenger_count: int = 0) -> dict:
+    """
+    Single source of truth for driver eligibility.
+    Returns structured result: { 'eligible': bool, 'reason': str, 'remaining_seats': int, 'visibility': bool, 'accepts_private': bool, 'accepts_shared': bool }
+    """
+    capacity = driver.get("vehicle_capacity", 4)
+    active_passengers = active_state["active_passengers"]
+    remaining_seats = capacity - active_passengers
+    
+    visibility = not active_state["has_private"] and remaining_seats > 0
+    accepts_shared = driver.get("accepts_shared_rides", True)
+    
+    result = {
+        "eligible": False,
+        "reason": "",
+        "remaining_seats": remaining_seats,
+        "visibility": visibility,
+        "accepts_private": (active_passengers == 0),
+        "accepts_shared": accepts_shared
+    }
+    
+    if not driver.get("is_online", False):
+        result["reason"] = "driver_offline"
+        result["visibility"] = False
+        return result
+        
+    if active_state["has_private"]:
+        result["reason"] = "private_ride_active"
+        return result
+
+    if requested_mode:
+        if requested_mode == RideMode.PRIVATE.value:
+            if active_passengers > 0:
+                result["reason"] = "capacity_exceeded" # Cannot accept private while carrying passengers
+                return result
+        elif requested_mode == RideMode.SHARED.value:
+            if not accepts_shared:
+                result["reason"] = "shared_disabled"
+                return result
+            if requested_passenger_count > remaining_seats:
+                result["reason"] = "capacity_exceeded"
+                return result
+        
+        # If no explicit requested_mode blockers match, and they fit:
+        if requested_passenger_count > remaining_seats:
+            result["reason"] = "vehicle_full"
+            return result
+            
+        result["eligible"] = True
+        result["reason"] = "shared_capacity_available" if active_state["has_shared"] else "eligible"
+        return result
+    else:
+        # Just checking general eligibility/visibility
+        if remaining_seats <= 0:
+            result["reason"] = "vehicle_full"
+            return result
+            
+        result["eligible"] = True
+        result["reason"] = "eligible"
+        return result
+
+
 @api_router.post("/rides/{ride_id}/accept", response_model=RideResponse)
 async def accept_ride(ride_id: str, user: dict = Depends(require_driver)):
     driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
@@ -1878,21 +1965,25 @@ async def accept_ride(ride_id: str, user: dict = Depends(require_driver)):
     ride_mode = target_ride.get("ride_mode", RideMode.PRIVATE.value)
     passenger_count = target_ride.get("passenger_count", 1)
     
-    # DISPATCH MATCHING RULES
+    # DISPATCH MATCHING RULES via centralized source of truth
     active_state = await get_driver_active_state(driver["id"])
+    eligibility = is_driver_eligible(driver, active_state, ride_mode, passenger_count)
     
-    if active_state["has_private"]:
-        raise HTTPException(status_code=400, detail="Cannot accept another ride while on a private ride.")
-        
-    if ride_mode == RideMode.PRIVATE.value:
-        if active_state["active_passengers"] > 0:
-             raise HTTPException(status_code=400, detail="Cannot accept a private ride while carrying passengers.")
-    elif ride_mode == RideMode.SHARED.value:
-        if not driver.get("accepts_shared_rides", True):
-             raise HTTPException(status_code=400, detail="You are not accepting shared rides.")
-        available_seats = driver.get("vehicle_capacity", 4) - active_state["active_passengers"]
-        if passenger_count > available_seats:
-             raise HTTPException(status_code=400, detail=f"Not enough capacity. Ride requires {passenger_count} seats, you have {available_seats} available.")
+    if not eligibility["eligible"]:
+        reason = eligibility["reason"]
+        if reason == "private_ride_active":
+            raise HTTPException(status_code=400, detail="Cannot accept another ride while on a private ride.")
+        elif reason == "capacity_exceeded":
+            if ride_mode == RideMode.PRIVATE.value:
+                raise HTTPException(status_code=400, detail="Cannot accept a private ride while carrying passengers.")
+            else:
+                raise HTTPException(status_code=400, detail=f"Not enough capacity. You have {eligibility['remaining_seats']} seats available.")
+        elif reason == "shared_disabled":
+            raise HTTPException(status_code=400, detail="You are not accepting shared rides.")
+        elif reason == "vehicle_full":
+            raise HTTPException(status_code=400, detail="Vehicle is full.")
+        else:
+            raise HTTPException(status_code=400, detail=f"Ineligible: {reason}")
 
     # TRICK 3: Rate Limit Driver Requests
     ten_seconds_ago = (datetime.now(timezone.utc) - timedelta(seconds=10)).isoformat()
@@ -1932,6 +2023,7 @@ async def accept_ride(ride_id: str, user: dict = Depends(require_driver)):
     
     # Notify student
     await manager.send_personal_message({
+        "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
         "type": "ride_accepted",
         "ride": ride,
         "driver": driver
@@ -1980,6 +2072,7 @@ async def driver_arrived(ride_id: str, user: dict = Depends(require_driver)):
         raise HTTPException(status_code=400, detail="Invalid transition or double update.")
     
     await manager.send_personal_message({
+        "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
         "type": "driver_arrived",
         "ride_id": ride_id
     }, ride["student_id"])
@@ -2025,6 +2118,7 @@ async def start_ride(ride_id: str, user: dict = Depends(require_driver)):
          raise HTTPException(status_code=400, detail="Invalid transition or double update.")
     
     await manager.send_personal_message({
+        "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
         "type": "ride_started",
         "ride_id": ride_id
     }, ride["student_id"])
@@ -2123,6 +2217,7 @@ async def complete_ride(ride_id: str, user: dict = Depends(require_driver)):
     await db.driver_wallet_transactions.insert_one(transaction)
     
     await manager.send_personal_message({
+        "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
         "type": "ride_completed",
         "ride_id": ride_id,
         "fare": ride["fare"]
@@ -2153,6 +2248,7 @@ async def driver_en_route(ride_id: str, user: dict = Depends(require_driver)):
     if ride: ride.pop("_id", None)
     
     await manager.send_personal_message({
+        "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
         "type": "ride_state_changed",
         "state": RideStatus.DRIVER_EN_ROUTE_TO_PICKUP.value,
         "ride_id": ride_id
@@ -2178,6 +2274,7 @@ async def passenger_boarding(ride_id: str, user: dict = Depends(require_driver))
     if ride: ride.pop("_id", None)
     
     await manager.send_personal_message({
+        "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
         "type": "ride_state_changed",
         "state": RideStatus.PASSENGER_BOARDING.value,
         "ride_id": ride_id
@@ -2203,6 +2300,7 @@ async def ride_in_progress(ride_id: str, user: dict = Depends(require_driver)):
     if ride: ride.pop("_id", None)
     
     await manager.send_personal_message({
+        "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
         "type": "ride_state_changed",
         "state": RideStatus.RIDE_IN_PROGRESS.value,
         "ride_id": ride_id
@@ -2228,6 +2326,7 @@ async def arriving_destination(ride_id: str, user: dict = Depends(require_driver
     if ride: ride.pop("_id", None)
     
     await manager.send_personal_message({
+        "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
         "type": "ride_state_changed",
         "state": RideStatus.ARRIVING_DESTINATION.value,
         "ride_id": ride_id
@@ -2321,6 +2420,7 @@ async def cancel_ride(ride_id: str, user: dict = Depends(get_current_user)):
         driver = await db.drivers.find_one({"id": ride["driver_id"]}, {"_id": 0})
         if driver:
             await manager.send_personal_message({
+        "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
                 "type": "ride_cancelled",
                 "ride_id": ride_id
             }, driver["user_id"])
@@ -2339,6 +2439,7 @@ async def cancel_ride(ride_id: str, user: dict = Depends(get_current_user)):
                 )
     
     await manager.send_personal_message({
+        "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
         "type": "ride_cancelled",
         "ride_id": ride_id
     }, ride["student_id"])
@@ -2447,6 +2548,7 @@ async def rate_ride(ride_id: str, rating_data: RatingCreate, user: dict = Depend
             driver = await db.drivers.find_one({"id": ride["driver_id"]}, {"_id": 0})
             if driver and "user_id" in driver:
                 await manager.send_personal_message({
+        "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
                     "type": "rating_received",
                     "rating": rating_data.rating,
                     "new_average": new_rating,
@@ -2631,6 +2733,7 @@ async def send_message(message: MessageCreate, user: dict = Depends(get_current_
     
     if recipient_id:
         await manager.send_personal_message({
+        "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
             "type": "new_message",
             "message": msg
         }, recipient_id)
@@ -3154,20 +3257,26 @@ async def estimate_fare(data: dict, user: dict = Depends(get_current_user)):
     else:
         verified_geometry = None
 
-    settings = await get_platform_settings()
-    
-    base_fare = float(settings.get("base_fare", 15.0))
-    per_km = float(settings.get("per_km_rate", 5.0))
-    per_min = float(settings.get("per_minute_rate", 2.0))
+    private_pricing = await calculate_ride_fare(pickup, dropoff, distance_km, duration_min, RideMode.PRIVATE)
+    shared_pricing = await calculate_ride_fare(pickup, dropoff, distance_km, duration_min, RideMode.SHARED)
 
-    fare = base_fare + (distance_km * per_km) + (duration_min * per_min)
-    fare = round(fare, 2)
-    
     return {
-        "estimated_fare": fare,
-        "base_fare": base_fare,
-        "distance_charge": round(distance_km * per_km, 2),
-        "time_charge": round(duration_min * per_min, 2),
+        "private": {
+            "estimated_fare": private_pricing["fare"],
+            "base_fare": private_pricing["breakdown"]["base"],
+            "distance_charge": private_pricing["breakdown"]["distance"],
+            "time_charge": private_pricing["breakdown"]["time"],
+            "is_fixed": private_pricing.get("is_fixed", False),
+            "surge_reason": private_pricing.get("surge_reason")
+        },
+        "shared": {
+            "estimated_fare": shared_pricing["fare"],
+            "base_fare": shared_pricing["breakdown"]["base"],
+            "distance_charge": shared_pricing["breakdown"]["distance"],
+            "time_charge": shared_pricing["breakdown"]["time"],
+            "is_fixed": shared_pricing.get("is_fixed", False),
+            "surge_reason": shared_pricing.get("surge_reason")
+        },
         "verified_distance": round(distance_km, 2),
         "verified_duration": round(duration_min, 1),
         "geometry": verified_geometry
@@ -3288,6 +3397,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(None)):
                         
                         if active_ride:
                             await manager.send_personal_message({
+        "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
                                 "type": "driver_location",
                                 "location": data.get("location"),
                                 "ride_id": active_ride["id"]

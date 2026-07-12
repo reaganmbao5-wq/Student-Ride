@@ -9,9 +9,12 @@ const AdminSettingsPage = () => {
   const { api, isSuperAdmin } = useAuth();
   const [settings, setSettings] = useState({
     commission_rate: 15,
-    base_fare: 10,
+    base_fare: 15,
     per_km_rate: 5,
-    per_minute_rate: 1
+    per_minute_rate: 2,
+    shared_base_fare: 8,
+    shared_per_km_rate: 3,
+    shared_per_minute_rate: 1
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -115,15 +118,15 @@ const AdminSettingsPage = () => {
           </p>
         </GlassCard>
 
-        {/* Fare Settings */}
+        {/* Private Fare Settings */}
         <GlassCard className="p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center">
               <DollarSign className="w-6 h-6 text-emerald-400" />
             </div>
             <div>
-              <h2 className="font-heading font-semibold text-foreground text-lg">Fare Calculation</h2>
-              <p className="text-muted-foreground text-sm">Configure base fare and rates</p>
+              <h2 className="font-heading font-semibold text-foreground text-lg">Private Fare Calculation</h2>
+              <p className="text-muted-foreground text-sm">Configure base fare and rates for private rides</p>
             </div>
           </div>
 
@@ -132,7 +135,7 @@ const AdminSettingsPage = () => {
               <label className="block text-sm text-muted-foreground mb-2">Base Fare (K)</label>
               <GlassInput
                 type="number"
-                value={settings.base_fare}
+                value={settings.base_fare || 0}
                 onChange={(e) => handleChange('base_fare', e.target.value)}
                 disabled={!isSuperAdmin}
                 min="0"
@@ -144,7 +147,7 @@ const AdminSettingsPage = () => {
               <label className="block text-sm text-muted-foreground mb-2">Per KM (K)</label>
               <GlassInput
                 type="number"
-                value={settings.per_km_rate}
+                value={settings.per_km_rate || 0}
                 onChange={(e) => handleChange('per_km_rate', e.target.value)}
                 disabled={!isSuperAdmin}
                 min="0"
@@ -156,7 +159,7 @@ const AdminSettingsPage = () => {
               <label className="block text-sm text-muted-foreground mb-2">Per Minute (K)</label>
               <GlassInput
                 type="number"
-                value={settings.per_minute_rate}
+                value={settings.per_minute_rate || 0}
                 onChange={(e) => handleChange('per_minute_rate', e.target.value)}
                 disabled={!isSuperAdmin}
                 min="0"
@@ -169,10 +172,69 @@ const AdminSettingsPage = () => {
           <div className="mt-6 p-4 bg-muted rounded-xl">
             <h3 className="text-foreground font-medium mb-2">Fare Formula</h3>
             <p className="text-muted-foreground text-sm font-mono">
-              Total = K{settings.base_fare} + (distance × K{settings.per_km_rate}) + (time × K{settings.per_minute_rate})
+              Total = K{settings.base_fare || 0} + (distance × K{settings.per_km_rate || 0}) + (time × K{settings.per_minute_rate || 0})
             </p>
             <p className="text-muted-foreground text-sm mt-2">
-              Example: 5km, 15 min ride = K{(settings.base_fare + 5 * settings.per_km_rate + 15 * settings.per_minute_rate).toFixed(2)}
+              Example: 5km, 15 min ride = K{((settings.base_fare || 0) + 5 * (settings.per_km_rate || 0) + 15 * (settings.per_minute_rate || 0)).toFixed(2)}
+            </p>
+          </div>
+        </GlassCard>
+
+        {/* Shared Fare Settings */}
+        <GlassCard className="p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
+              <DollarSign className="w-6 h-6 text-blue-500" />
+            </div>
+            <div>
+              <h2 className="font-heading font-semibold text-foreground text-lg">Shared Fare Calculation</h2>
+              <p className="text-muted-foreground text-sm">Configure base fare and rates for shared rides</p>
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm text-muted-foreground mb-2">Base Fare (K)</label>
+              <GlassInput
+                type="number"
+                value={settings.shared_base_fare || 0}
+                onChange={(e) => handleChange('shared_base_fare', e.target.value)}
+                disabled={!isSuperAdmin}
+                min="0"
+                step="0.5"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-muted-foreground mb-2">Per KM (K)</label>
+              <GlassInput
+                type="number"
+                value={settings.shared_per_km_rate || 0}
+                onChange={(e) => handleChange('shared_per_km_rate', e.target.value)}
+                disabled={!isSuperAdmin}
+                min="0"
+                step="0.5"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-muted-foreground mb-2">Per Minute (K)</label>
+              <GlassInput
+                type="number"
+                value={settings.shared_per_minute_rate || 0}
+                onChange={(e) => handleChange('shared_per_minute_rate', e.target.value)}
+                disabled={!isSuperAdmin}
+                min="0"
+                step="0.5"
+              />
+            </div>
+          </div>
+
+          <div className="mt-6 p-4 bg-muted rounded-xl border border-blue-500/20">
+            <h3 className="text-foreground font-medium mb-2">Fare Formula</h3>
+            <p className="text-muted-foreground text-sm font-mono">
+              Total = K{settings.shared_base_fare || 0} + (distance × K{settings.shared_per_km_rate || 0}) + (time × K{settings.shared_per_minute_rate || 0})
+            </p>
+            <p className="text-muted-foreground text-sm mt-2">
+              Example: 5km, 15 min ride = K{((settings.shared_base_fare || 0) + 5 * (settings.shared_per_km_rate || 0) + 15 * (settings.shared_per_minute_rate || 0)).toFixed(2)}
             </p>
           </div>
         </GlassCard>

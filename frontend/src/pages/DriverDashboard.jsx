@@ -349,7 +349,7 @@ const DriverDashboard = () => {
   // ACTIVE RIDE FULL-SCREEN VIEW (DRIVER)
   // ==========================================
   if (activeRide) {
-    const isArrivedOrStarted = ['driver_arrived', 'ongoing'].includes(activeRide.status);
+    const isArrivedOrStarted = ['driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination', 'ongoing'].includes(activeRide.status);
     
     // Markers Logic
     const mapMarkers = [];
@@ -451,6 +451,17 @@ const DriverDashboard = () => {
                <div className="flex items-center justify-between">
                   <h2 className="font-heading text-2xl font-bold text-foreground">{getStatusText()}</h2>
                   <span className="text-sm font-bold text-gold uppercase tracking-wider">K{activeRide.driver_earning?.toFixed(2)}</span>
+               </div>
+               
+               <div className="flex items-center justify-between">
+                  <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded ${activeRide.ride_mode === 'shared' ? 'bg-blue-500/10 text-blue-500' : 'bg-zinc-100 dark:bg-zinc-800 text-muted-foreground'}`}>
+                    {activeRide.ride_mode === 'shared' ? 'Shared Ride' : 'Private Ride'}
+                  </span>
+                  {activeRide.ride_mode === 'shared' && (
+                    <span className="text-xs text-muted-foreground font-medium">
+                      {activeRide.passenger_count || 1}/{driverProfile?.vehicle_capacity || 4} Passengers ({(driverProfile?.vehicle_capacity || 4) - (activeRide.passenger_count || 1)} left)
+                    </span>
+                  )}
                </div>
                
                <div className="flex items-center gap-3">
@@ -566,7 +577,12 @@ const DriverDashboard = () => {
                 </div>
                 <div>
                   <h3 className="font-heading font-semibold text-foreground">New Ride Request!</h3>
-                  <p className="text-muted-foreground text-sm">K{incomingRide.fare?.toFixed(2)} • {incomingRide.distance?.toFixed(1)} km</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-muted-foreground text-sm">K{incomingRide.fare?.toFixed(2)} • {incomingRide.distance?.toFixed(1)} km</p>
+                    <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded ${incomingRide.ride_mode === 'shared' ? 'bg-blue-500/20 text-blue-500' : 'bg-zinc-100 dark:bg-zinc-800 text-muted-foreground'}`}>
+                      {incomingRide.ride_mode === 'shared' ? 'Shared' : 'Private'}
+                    </span>
+                  </div>
                 </div>
               </div>
 

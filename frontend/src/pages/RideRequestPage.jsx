@@ -44,6 +44,7 @@ const RideRequestPage = () => {
   
   const [loading, setLoading] = useState(false);
   const [requesting, setRequesting] = useState(false);
+  const [rideMode, setRideMode] = useState('private');
 
   // Debounce ref for reverse geocoding
   const geocodeTimeoutRef = useRef(null);
@@ -56,6 +57,7 @@ const RideRequestPage = () => {
   }, [userLocation, pickup, step]);
 
   useEffect(() => {
+    console.log('RIDE_REQUEST_PAGE_MOUNTED');
     fetchDestinations();
   }, []);
 
@@ -114,10 +116,12 @@ const RideRequestPage = () => {
       });
 
       const data = response.data;
-      let estimatedFare = data.estimated_fare;
+      let privateFare = data.private.estimated_fare;
+      let sharedFare = data.shared.estimated_fare;
       
       if (selectedDestination?.estimated_fare) {
-        estimatedFare = selectedDestination.estimated_fare;
+        privateFare = selectedDestination.estimated_fare;
+        sharedFare = selectedDestination.estimated_fare;
       }
 
       if (data.geometry && Array.isArray(data.geometry) && data.geometry.length > 0) {
@@ -131,12 +135,13 @@ const RideRequestPage = () => {
       }
 
       setFareEstimate({
-        estimated_fare: estimatedFare,
+        private_fare: privateFare,
+        shared_fare: sharedFare,
         distance: data.verified_distance,
         duration: data.verified_duration,
-        is_predefined: !!selectedDestination?.estimated_fare,
-        is_surge: !!data.surge_reason,
-        surge_reason: data.surge_reason
+        is_predefined: data.private.is_fixed || !!selectedDestination?.estimated_fare,
+        private_surge: data.private.surge_reason,
+        shared_surge: data.shared.surge_reason
       });
     } catch (error) {
       console.error('Fare calc error:', error);
@@ -187,10 +192,12 @@ const RideRequestPage = () => {
 
     setRequesting(true);
     try {
+      const activeFare = rideMode === 'shared' ? fareEstimate.shared_fare : fareEstimate.private_fare;
       await api.post('/rides/request', {
         pickup_location: pickup,
         dropoff_location: dropoff,
-        estimated_fare: fareEstimate.estimated_fare,
+        ride_mode: rideMode,
+        estimated_fare: activeFare,
         estimated_distance: fareEstimate.distance,
         estimated_duration: fareEstimate.duration
       });
@@ -451,21 +458,55 @@ const RideRequestPage = () => {
                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                  </div>
                ) : fareEstimate ? (
-                 <div className="flex items-center justify-between p-4 bg-black text-white rounded-2xl">
-                    <div>
-                      <p className="text-sm text-zinc-400">Total Fare</p>
-                      <div className="flex items-center gap-2">
-                        <p className="text-2xl font-bold font-heading">K{fareEstimate.estimated_fare?.toFixed(2)}</p>
-                        {fareEstimate.is_surge && (
-                           <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] uppercase font-bold text-yellow-400 tracking-wider">Surge</span>
-                        )}
+                 <>
+                   {/* Ride Mode Selector */}
+                   <div className="grid grid-cols-2 gap-3 mb-2">
+                     <button
+                       onClick={() => setRideMode('private')}
+                       className={`p-3 rounded-xl border-2 text-left transition-all relative ${rideMode === 'private' ? 'border-black dark:border-white bg-black/5 dark:bg-white/10' : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300'}`}
+                     >
+                       <div className="flex justify-between items-center mb-1">
+                         <span className="font-bold text-sm">Private</span>
+                         <span className="font-bold">K{fareEstimate.private_fare?.toFixed(2)}</span>
+                       </div>
+                       <p className="text-[10px] text-muted-foreground leading-tight">Entire vehicle reserved. No additional platform passengers.</p>
+                     </button>
+                     
+                     <button
+                       onClick={() => setRideMode('shared')}
+                       className={`p-3 rounded-xl border-2 text-left transition-all relative overflow-hidden ${rideMode === 'shared' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300'}`}
+                     >
+                       {fareEstimate.shared_fare < fareEstimate.private_fare && (
+                         <div className="absolute top-0 right-0 bg-blue-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl-lg">
+                           Save {Math.round((1 - fareEstimate.shared_fare / fareEstimate.private_fare) * 100)}%
+                         </div>
+                       )}
+                       <div className="flex justify-between items-center mb-1">
+                         <span className="font-bold text-sm">Shared</span>
+                         <span className="font-bold">K{fareEstimate.shared_fare?.toFixed(2)}</span>
+                       </div>
+                       <p className="text-[10px] text-muted-foreground leading-tight">Lower fare. Ride may include other passengers.</p>
+                     </button>
+                   </div>
+
+                   <div className="flex items-center justify-between p-4 bg-black text-white rounded-2xl">
+                      <div>
+                        <p className="text-sm text-zinc-400">Total Fare</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-2xl font-bold font-heading">
+                             K{rideMode === 'shared' ? fareEstimate.shared_fare?.toFixed(2) : fareEstimate.private_fare?.toFixed(2)}
+                          </p>
+                          {(rideMode === 'shared' ? fareEstimate.shared_surge : fareEstimate.private_surge) && (
+                             <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] uppercase font-bold text-yellow-400 tracking-wider">Surge</span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                       <p className="text-sm font-medium">{fareEstimate.duration} min</p>
-                       <p className="text-xs text-zinc-400">{fareEstimate.distance?.toFixed(1)} km</p>
-                    </div>
-                 </div>
+                      <div className="text-right">
+                         <p className="text-sm font-medium">{fareEstimate.duration} min</p>
+                         <p className="text-xs text-zinc-400">{fareEstimate.distance?.toFixed(1)} km</p>
+                      </div>
+                   </div>
+                 </>
                ) : null}
 
                <button 

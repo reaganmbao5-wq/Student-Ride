@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Bell, X } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
-import { LocalNotifications } from '@capacitor/local-notifications';
+// import { LocalNotifications } from '@capacitor/local-notifications';
 import { PermissionsService } from '../../services/PermissionsService';
 
 // Utility to convert Base64 VAPID key to Uint8Array
@@ -100,7 +100,7 @@ const PushNotificationManager = () => {
                 });
 
                 // Request permission for local notifications (Live Tracking)
-                await LocalNotifications.requestPermissions();
+                // await LocalNotifications.requestPermissions();
 
                 // Intercept foreground pushes or data payloads and convert them into Local Notifications
                 // that have the exact same ID (which overwrites the previous one, creating a "live progress" feel).
@@ -121,17 +121,17 @@ const PushNotificationManager = () => {
                         } catch(e) {}
                     }
 
-                    await LocalNotifications.schedule({
-                        notifications: [
-                            {
-                                title: title,
-                                body: body,
-                                id: 12345, // Constant ID forces it to update the same notification instead of stacking!
-                                schedule: { at: new Date(Date.now() + 100) },
-                                sound: null, // Silent for live tracking
-                            }
-                        ]
-                    });
+                    // await LocalNotifications.schedule({
+                    //     notifications: [
+                    //         {
+                    //             title: title,
+                    //             body: body,
+                    //             id: 12345, // Constant ID forces it to update the same notification instead of stacking!
+                    //             schedule: { at: new Date(Date.now() + 100) },
+                    //             sound: null, // Silent for live tracking
+                    //         }
+                    //     ]
+                    // });
                 });
 
 
