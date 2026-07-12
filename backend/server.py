@@ -17,9 +17,14 @@ from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone, timedelta
 from enum import Enum
-from services.osrm_service import get_route
-from services.notification_service import NotificationService
-from services.ride_state_machine import get_active_ride_states, validate_ride_transition
+try:
+    from services.osrm_service import get_route
+    from services.notification_service import NotificationService
+    from services.ride_state_machine import get_active_ride_states, validate_ride_transition
+except ModuleNotFoundError:
+    from backend.services.osrm_service import get_route
+    from backend.services.notification_service import NotificationService
+    from backend.services.ride_state_machine import get_active_ride_states, validate_ride_transition
 import jwt
 import bcrypt
 import asyncio
