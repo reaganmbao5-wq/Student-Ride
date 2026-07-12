@@ -31,7 +31,18 @@ const path = require('path');
 
 // ─── Configuration ──────────────────────────────────────────────────────────
 
-const BACKEND_URL = 'http://localhost:8000';
+// Use --online flag to target the live Render backend instead of localhost
+// Or set BACKEND_URL env var:  BACKEND_URL=https://... node qa_env/move_driver.js ...
+const ONLINE_URL = 'https://student-ride-backend-manual.onrender.com';
+const LOCAL_URL  = process.env.BACKEND_URL || 'http://localhost:8000';
+const useOnline  = process.argv.includes('--online');
+const BACKEND_URL = useOnline ? ONLINE_URL : LOCAL_URL;
+
+if (useOnline) {
+  console.log(`🌐 [ONLINE MODE] Targeting: ${ONLINE_URL}`);
+} else {
+  console.log(`🖥️  [LOCAL MODE]  Targeting: ${LOCAL_URL}`);
+}
 
 // QA account passwords
 const QA_PASSWORD = 'password123';

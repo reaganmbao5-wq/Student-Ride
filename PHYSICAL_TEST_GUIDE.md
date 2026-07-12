@@ -38,6 +38,12 @@ cd frontend && npm start
 python seed_qa_data.py
 ```
 
+> **📱 Using the ONLINE APK on your phone?**  
+> Add `--online` to all simulator commands so scripts hit the Render backend instead of localhost:
+> ```bash
+> node qa_env/move_driver.js --driver driver_a@qa.com --mode to_student --online
+> ```
+
 ---
 
 ## ═══════════════════════════════════════

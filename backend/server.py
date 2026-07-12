@@ -70,11 +70,11 @@ DEFAULT_COMMISSION_RATE = 15.0
 # Create the main app
 app = FastAPI(title="Mulungushi Rides API")
 
-# Configure CORS
+# Configure CORS — allow all origins for APK/mobile/script support
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3005", "http://127.0.0.1:3000", "http://127.0.0.1:3005", "*"], 
-    allow_credentials=False, # Must be False if using "*" in older fastapi, but explicitly specifying origins works
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
