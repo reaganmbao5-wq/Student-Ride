@@ -20,7 +20,7 @@ services:
 
   # Frontend Service (React/Static)
   - type: static
-    name: student-ride-frontend
+    name: student-ride-frontend-manual
     plan: free
     env: static
     buildCommand: |
@@ -30,7 +30,6 @@ services:
     staticPublishPath: frontend/build
     envVars:
       - key: REACT_APP_BACKEND_URL
-        fromService:
-            type: web
-            name: student-ride-backend
-            property: host
+        value: https://student-ride-backend-manual.onrender.com
+      - key: REACT_APP_API_URL
+        value: https://student-ride-backend-manual.onrender.com/api

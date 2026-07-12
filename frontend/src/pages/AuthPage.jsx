@@ -185,7 +185,8 @@ const AuthPage = () => {
   const handleGoogleSuccess = async (credentialResponse) => {
     setLoading(true);
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://student-ride-backend.onrender.com';
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://student-ride-backend-manual.onrender.com';
+
       const response = await fetch(`${backendUrl}/api/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

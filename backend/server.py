@@ -27,6 +27,9 @@ if _backend_dir not in _sys.path:
 # ─────────────────────────────────────────────────────────────────────────────
 from services.osrm_service import get_route
 from services.notification_service import NotificationService
+from services.event_bus import internal_bus
+from services.trip_manager import DriverTripManager
+from services.background_tasks import BackgroundOrchestrator
 import jwt
 import bcrypt
 import asyncio
@@ -125,6 +128,12 @@ async def startup_db_client():
             logger.info("Initialized default pricing settings")
         
         logger.info("Created 2dsphere index and ride indexes")
+        
+        # Start Phase 3.2.6.X Background Orchestrator
+        global orchestrator
+        orchestrator = BackgroundOrchestrator(db, internal_bus)
+        await orchestrator.start()
+        
     except Exception as e:
         logger.error(f"Error initializing database: {e}")
         # We don't raise here to allow app to start even if DB is flaky
@@ -229,6 +238,33 @@ class TransactionType(str, Enum):
     ADJUSTMENT = "adjustment"
     COMMISSION_SETTLEMENT = "commission_settlement"
 
+# PHASE 3.2.6.X.1 ENUMS (Driver Trip Manager)
+class DriverTripState(str, Enum):
+    AVAILABLE = "available"
+    DRIVING_TO_PICKUP = "driving_to_pickup"
+    WAITING_FOR_PASSENGER = "waiting_for_passenger"
+    DRIVING_SHARED = "driving_shared"
+    DRIVING_PRIVATE = "driving_private"
+    DROPPING_PASSENGER = "dropping_passenger"
+
+class StopType(str, Enum):
+    PICKUP = "pickup"
+    DROPOFF = "dropoff"
+
+class StopStatus(str, Enum):
+    PENDING = "pending"
+    ARRIVED = "arrived"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
+
+class PassengerState(str, Enum):
+    RESERVED = "reserved"
+    WAITING_FOR_PICKUP = "waiting_for_pickup"
+    PICKED_UP = "picked_up"
+    ONBOARD = "onboard"
+    DROPPED_OFF = "dropped_off"
+    COMPLETED = "completed"
+
 # ==================== MODELS ====================
 # ==================== HELPERS ====================
 def sanitize_for_json(obj):
@@ -250,6 +286,47 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
     role: UserRole = UserRole.STUDENT
+
+# PHASE 3.2.6.X.1 MODELS (Driver Trip Manager)
+class StopCoordinates(BaseModel):
+    lat: float
+    lng: float
+    address: Optional[str] = None
+
+class Stop(BaseModel):
+    stop_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    ride_id: str
+    student_id: str
+    stop_type: StopType
+    sequence: int
+    status: StopStatus = StopStatus.PENDING
+    eta_seconds: Optional[int] = None
+    arrival_time: Optional[str] = None
+    departure_time: Optional[str] = None
+    coordinates: StopCoordinates
+
+class SeatReservation(BaseModel):
+    ride_id: str
+    student_id: str
+    seats_reserved: int
+    reservation_time: str
+    expiry_time: str
+
+class DriverTripCapacity(BaseModel):
+    total: int
+    occupied: int = 0
+    reserved: int = 0
+
+class DriverTrip(BaseModel):
+    driver_id: str
+    trip_version: int = 1
+    state: DriverTripState = DriverTripState.AVAILABLE
+    active_ride_ids: List[str] = []
+    route_queue: List[Stop] = []
+    seat_reservations: List[SeatReservation] = []
+    capacity: DriverTripCapacity
+    last_updated: str
+
 
 class PushSubscriptionRequest(BaseModel):
     endpoint: str
@@ -2066,6 +2143,10 @@ async def accept_ride(ride_id: str, user: dict = Depends(require_driver)):
             {"id": driver["id"]},
             {"$set": {"current_ride_id": ride_id}}
         )
+        
+    # Phase 3.2.6.X: DTM & Event Bus Wiring
+    await DriverTripManager.handle_ride_accepted(driver["id"], ride_id, db)
+    await internal_bus.publish("ride_accepted", {"driver_id": driver["id"], "ride_id": ride_id})
     
     # Notify student
     await manager.send_personal_message({

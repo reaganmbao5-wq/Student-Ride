@@ -11,6 +11,8 @@ import { useWatchPosition } from '../map/hooks/useGeolocation';
 import { routeCache } from '../map/route/RouteCache';
 import { toast } from 'sonner';
 
+import { ActiveTripQueue } from '../components/driver/ActiveTripQueue';
+
 const DriverDashboard = () => {
   const navigate = useNavigate();
   const { user, api, driverProfile, refreshDriverProfile, logout } = useAuth();
@@ -502,27 +504,20 @@ const DriverDashboard = () => {
                       </button>
                    </div>
 
-                   {/* Ride Details (Locations) */}
-                   <div className="bg-zinc-50 dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 flex flex-col gap-4">
-                      <div className="flex items-start gap-3 relative">
-                         <div className="absolute left-[11px] top-6 bottom-[-20px] w-0.5 bg-zinc-300 dark:bg-zinc-700 border-dashed" />
-                         <div className="w-6 h-6 rounded-full bg-black flex items-center justify-center shrink-0 z-10 mt-1">
-                           <div className="w-2 h-2 rounded-full bg-white" />
-                         </div>
-                         <div className="flex-1 min-w-0">
-                           <p className="font-medium text-sm line-clamp-1">{activeRide.pickup_location?.address}</p>
-                         </div>
-                      </div>
-                      
-                      <div className="flex items-start gap-3">
-                         <div className="w-6 h-6 rounded-full bg-red-600 flex items-center justify-center shrink-0 z-10 mt-1">
-                           <div className="w-2 h-2 rounded-full bg-white" />
-                         </div>
-                         <div className="flex-1 min-w-0">
-                           <p className="font-medium text-sm line-clamp-1">{activeRide.dropoff_location?.address}</p>
-                         </div>
-                      </div>
-                   </div>
+                   {/* Stop Queue / Active Trip Queue Integration */}
+                   <ActiveTripQueue 
+                     trip={{
+                       capacity: { total: driverProfile?.vehicle_capacity || 4, occupied: activeRide?.passenger_count || 1, reserved: 0 },
+                       route_queue: [
+                         { stop_id: '1', stop_type: 'pickup', status: activeRide?.status === 'accepted' ? 'pending' : 'completed', coordinates: { address: activeRide?.pickup_location?.address }, student_id: activeRide?.student?.id || '123' },
+                         { stop_id: '2', stop_type: 'dropoff', status: 'pending', coordinates: { address: activeRide?.dropoff_location?.address }, student_id: activeRide?.student?.id || '123' }
+                       ]
+                     }}
+                     onCompleteStop={(stop_id) => {
+                       if (stop_id === '1') handleDriverArrived();
+                       else if (stop_id === '2') handleCompleteRide();
+                     }}
+                   />
 
                    {/* Actions Group */}
                    <div className="flex flex-col gap-3 pt-2">

@@ -23,8 +23,8 @@ const AdminDriversPage = () => {
   const getAbsoluteDocUrl = (url) => {
     if (!url) return null;
     
-    // Use the live backend URL directly to avoid proxy issues with images
-    const BASE = 'https://student-ride-backend-manual.onrender.com';
+    // Use the configured backend URL (env var overrides allow switching between online/local builds)
+    const BASE = process.env.REACT_APP_BACKEND_URL || 'https://student-ride-backend-manual.onrender.com';
     let absoluteUrl = url;
     
     if (url.startsWith('/')) {
