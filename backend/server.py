@@ -651,21 +651,6 @@ async def update_my_profile(updates: UpdateProfileRequest, user: dict = Depends(
         is_active=updated.get("is_active", True)
     )
 
-@api_router.get("/admin/users", response_model=List[UserResponse])
-async def get_all_users(user: dict = Depends(require_admin)):
-    users = await db.users.find({}, {"password_hash": 0, "_id": 0}).to_list(1000)
-    return users
-
-@api_router.get("/admin/drivers", response_model=List[DriverResponse])
-async def get_all_drivers(user: dict = Depends(require_admin)):
-    drivers = await db.drivers.find({}, {"_id": 0}).to_list(1000)
-    result = []
-    for driver in drivers:
-        driver_user = await db.users.find_one({"id": driver["user_id"]}, {"_id": 0, "password_hash": 0})
-        if driver_user:
-            driver["user"] = UserResponse(**driver_user)
-        result.append(driver)
-    return result
 
 async def require_super_admin(user: dict = Depends(get_current_user)) -> dict:
     if user["role"] != UserRole.SUPER_ADMIN.value:
@@ -1842,41 +1827,6 @@ async def get_admin_analytics(user: dict = Depends(require_admin)):
 
 # ==================== DESTINATION ROUTES ====================
 
-@api_router.get("/destinations", response_model=List[DestinationResponse])
-async def get_destinations(active_only: bool = Query(False)):
-    query = {}
-    if active_only:
-        query["is_active"] = True
-    active_destinations = await db.destinations.find(query, {"_id": 0}).to_list(100)
-    return active_destinations
-
-@api_router.post("/admin/destinations", response_model=DestinationResponse)
-async def create_destination(destination: DestinationCreate, user: dict = Depends(require_admin)):
-    dest_id = str(uuid.uuid4())
-    new_dest = {
-        "id": dest_id,
-        "name": destination.name,
-        "address": destination.address,
-        "latitude": destination.latitude,
-        "longitude": destination.longitude,
-        "estimated_fare": destination.estimated_fare,
-        "is_active": destination.is_active,
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
-    await db.destinations.insert_one(new_dest)
-    
-    await log_admin_action(user["id"], user["name"], "create_destination", dest_id, f"Created {destination.name}")
-    
-    return DestinationResponse(**new_dest)
-
-@api_router.delete("/admin/destinations/{dest_id}")
-async def delete_destination(dest_id: str, user: dict = Depends(require_admin)):
-    result = await db.destinations.delete_one({"id": dest_id})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Destination not found")
-        
-    await log_admin_action(user["id"], user["name"], "delete_destination", dest_id)
-    return {"status": "deleted"}
 
 # ==================== RIDE ROUTES ====================
 @api_router.post("/rides/request", response_model=RideResponse)
