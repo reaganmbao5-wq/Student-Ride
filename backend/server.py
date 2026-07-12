@@ -3645,11 +3645,11 @@ app.include_router(api_router, prefix="/api")
 # Add Rate Limit (First in stack essentially)
 app.add_middleware(RateLimitMiddleware)
 
-# CORS
+# CORS — allow all origins for APK/mobile/script support
 app.add_middleware(
     CORSMiddleware,
-    allow_credentials=True,
     allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

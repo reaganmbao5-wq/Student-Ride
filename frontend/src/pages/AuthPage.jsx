@@ -288,7 +288,14 @@ const AuthPage = () => {
           </h2>
           <p className="text-zinc-400 text-sm">
             {mode === 'login'
-              ? 'Sign in to continue your journey'
+              ? (
+                  <>
+                    Sign in to continue your journey
+                    <div className="text-[10px] text-zinc-500 font-mono mt-1">
+                      Backend: {process.env.REACT_APP_BACKEND_URL || 'https://student-ride-backend-manual.onrender.com'}
+                    </div>
+                  </>
+                )
               : isDriver
                 ? 'Start earning with MuluRides'
                 : 'Join the MuluRides community'}
