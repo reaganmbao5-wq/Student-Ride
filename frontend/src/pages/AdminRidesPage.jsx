@@ -104,7 +104,12 @@ const AdminRidesPage = () => {
                           {new Date(ride.created_at).toLocaleString()}
                         </span>
                       </div>
-                      <StatusBadge status={ride.status} />
+                      <div className="flex gap-2 items-center">
+                        <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded ${ride.ride_mode === 'shared' ? 'bg-blue-500/20 text-blue-500' : 'bg-zinc-100 dark:bg-zinc-800 text-muted-foreground'}`}>
+                          {ride.ride_mode === 'shared' ? 'Shared' : 'Private'}
+                        </span>
+                        <StatusBadge status={ride.status} />
+                      </div>
                     </div>
 
                     {/* Locations */}

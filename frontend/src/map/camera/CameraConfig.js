@@ -28,8 +28,8 @@ export const CAMERA_CONFIG = {
       const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
       const sheetHeight = typeof window !== 'undefined' ? window.innerHeight * (isMobile ? 0.45 : 0.25) : 300;
       return {
-        paddingTopLeft: [50, 50],
-        paddingBottomRight: [50, sheetHeight] // Dynamic bottom padding to account for bottom sheets
+        paddingTopLeft: [50, 120], // 50px left, 120px top (avoids back button and top edge)
+        paddingBottomRight: [50, sheetHeight + 20] // 50px right, dynamic bottom padding + extra buffer
       };
     }
   }

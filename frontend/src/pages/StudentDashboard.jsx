@@ -389,6 +389,7 @@ const StudentDashboard = () => {
                          <div className="text-right shrink-0">
                            <p className="text-xs text-muted-foreground">Fare</p>
                            <p className="font-bold text-gold text-lg">K{activeRide.fare?.toFixed(2)}</p>
+                           <p className={`text-[10px] uppercase font-bold tracking-wider mt-1 ${activeRide.ride_mode === 'shared' ? 'text-blue-500' : 'text-muted-foreground'}`}>{activeRide.ride_mode === 'shared' ? 'Shared Ride' : 'Private Ride'}</p>
                          </div>
                       </div>
                    </div>
