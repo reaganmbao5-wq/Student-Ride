@@ -4,7 +4,7 @@ import { GlassCard, GlassInput, GoldButton, LoadingSpinner } from '../components
 import { Car, Phone, Lock, User, Mail, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://student-ride-backend.onrender.com';
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://student-ride-backend-manual.onrender.com';
 
 export default function CompleteProfilePage() {
     const navigate = useNavigate();
