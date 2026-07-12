@@ -17,14 +17,16 @@ from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone, timedelta
 from enum import Enum
-try:
-    from services.osrm_service import get_route
-    from services.notification_service import NotificationService
-    from services.ride_state_machine import get_active_ride_states, validate_ride_transition
-except ModuleNotFoundError:
-    from backend.services.osrm_service import get_route
-    from backend.services.notification_service import NotificationService
-    from backend.services.ride_state_machine import get_active_ride_states, validate_ride_transition
+# ── Path fix: ensure backend/services/ is always importable ──────────────────
+# Render runs from project root with PYTHONPATH=backend, but locally we may
+# run from inside backend/. This guarantees 'services.X' always resolves.
+import sys as _sys, os as _os
+_backend_dir = _os.path.dirname(_os.path.abspath(__file__))
+if _backend_dir not in _sys.path:
+    _sys.path.insert(0, _backend_dir)
+# ─────────────────────────────────────────────────────────────────────────────
+from services.osrm_service import get_route
+from services.notification_service import NotificationService
 import jwt
 import bcrypt
 import asyncio
@@ -133,6 +135,45 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# ── Inlined from services/ride_state_machine.py ───────────────────────────────
+VALID_TRANSITIONS = {
+    "requested": ["driver_accepted", "cancelled"],
+    "accepted": ["driver_arrived", "cancelled", "driver_en_route_to_pickup"],
+    "driver_accepted": ["driver_en_route_to_pickup", "cancelled"],
+    "driver_en_route_to_pickup": ["driver_arrived", "cancelled"],
+    "driver_arrived": ["passenger_boarding", "cancelled"],
+    "passenger_boarding": ["ride_started", "cancelled"],
+    "ride_started": ["ride_in_progress"],
+    "ongoing": ["completed", "arriving_destination"],
+    "ride_in_progress": ["arriving_destination"],
+    "arriving_destination": ["ride_completed"],
+    "ride_completed": ["settlement"],
+    "settlement": ["ride_archived"],
+    "ride_archived": [],
+    "completed": [],
+    "cancelled": []
+}
+
+def validate_ride_transition(current_state: str, next_state: str) -> bool:
+    valid_next_states = VALID_TRANSITIONS.get(current_state, [])
+    if next_state not in valid_next_states:
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid ride state transition from '{current_state}' to '{next_state}'."
+        )
+    return True
+
+ACTIVE_RIDE_STATES = [
+    "requested", "accepted", "driver_accepted", "driver_en_route_to_pickup",
+    "driver_arrived", "passenger_boarding", "ride_started", "ongoing",
+    "ride_in_progress", "arriving_destination", "ride_completed", "settlement"
+]
+
+def get_active_ride_states():
+    return ACTIVE_RIDE_STATES
+# ─────────────────────────────────────────────────────────────────────────────
 
 # ==================== ENUMS ====================
 class UserRole(str, Enum):
