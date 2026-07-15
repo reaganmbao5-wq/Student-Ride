@@ -150,30 +150,6 @@ In production, the backend should enforce the strict, full lifecycle of the ride
 
 ---
 
-## 8. The Wallet Balance Offline Bypass
-In production, if a driver completes a ride and the deducted commission causes their `wallet_balance` to drop below their `minimum_required_balance` (usually 50.0 Kwacha), the backend forces their account status to `RESTRICTED` and immediately kicks them offline (`is_online = False`). To prevent testers from randomly dropping offline after test rides without needing to constantly manually top-up their test wallet, we commented out this offline-kicking logic.
-
-**Recommendation: Revert for Production.**
-In production, drivers who fail to maintain the minimum wallet balance should indeed be kicked offline and blocked from accepting new rides until they top-up.
-
-**Location**: `backend/server.py` (Inside the `complete_ride` function, around line 2266)
-
-**What it looks like now**:
-```python
-    if new_balance < driver.get("minimum_required_balance", 50.0):
-        wallet_status = WalletStatus.RESTRICTED.value
-        # TEMPORARY: Do not force offline based on wallet balance for testing
-        # is_still_online = False
-```
-
-**If you want to revert to the old strict behavior**, restore it to:
-```python
-    if new_balance < driver.get("minimum_required_balance", 50.0):
-        wallet_status = WalletStatus.RESTRICTED.value
-        is_still_online = False
-```
-
----
 
 ## 9. The Location Activity Timeout Bypass
 In production, to prevent "ghost cars" from lingering on the map when a driver closes the app or loses service, the backend aggressively kicks drivers offline if they haven't sent a GPS ping in the last 30 seconds. Because our `simulate_physical.py` test script stops sending pings and exits the moment it reaches the destination, testers were being kicked offline if they didn't manually click "Complete Ride" within 30 seconds. We increased this timeout from 30 seconds to 600 seconds (10 minutes).
@@ -206,7 +182,6 @@ In production, the app will constantly send GPS pings in the background. If a dr
 - [ ] Implement distance checks (geofencing) for the "Complete Ride" button
 - [ ] Revert `VALID_TRANSITIONS` in `server.py` to require physical flow for pickup
 - [ ] Revert `VALID_TRANSITIONS` in `server.py` to require physical flow for dropoff
-- [ ] Restore wallet balance offline constraint in `server.py`
 - [ ] Restore 30s location activity timeout in `server.py`
 - [ ] Delete `/test/inject_drivers` route in `server.py`
 - [ ] Delete `/test/accept_trip` route in `server.py`

@@ -1642,7 +1642,7 @@ async def get_driver_earnings(user: dict = Depends(require_driver)):
     # Get rides
     rides = await db.rides.find({
         "driver_id": driver["id"],
-        "status": RideStatus.COMPLETED.value
+        "status": {"$in": [RideStatus.COMPLETED.value, RideStatus.RIDE_COMPLETED.value]}
     }, {"_id": 0}).to_list(1000)
     
     today = datetime.now(timezone.utc).date()
@@ -2263,8 +2263,7 @@ async def complete_ride(ride_id: str, user: dict = Depends(require_driver)):
     
     if new_balance < driver.get("minimum_required_balance", 50.0):
         wallet_status = WalletStatus.RESTRICTED.value
-        # TEMPORARY: Do not force offline based on wallet balance for testing
-        # is_still_online = False
+        is_still_online = False
         
     await db.drivers.update_one(
         {"id": driver["id"]},
