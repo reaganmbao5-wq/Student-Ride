@@ -3485,11 +3485,9 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(None)):
     
         except WebSocketDisconnect:
             manager.disconnect(websocket, user_id)
-            # Set driver offline if disconnected
-            await db.drivers.update_one(
-                {"user_id": user_id},
-                {"$set": {"is_online": False}}
-            )
+            # DO NOT set driver offline immediately. Mobile devices frequently suspend
+            # WebSockets to save battery, and we shouldn't force them offline for a temporary blip.
+            # A background task handles true timeouts.
     except Exception as e:
         logger.error(f"WebSocket Error: {e}")
         await websocket.close(code=4000)

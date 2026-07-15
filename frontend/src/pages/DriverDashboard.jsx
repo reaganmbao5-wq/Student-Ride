@@ -522,7 +522,7 @@ const DriverDashboard = () => {
                    ) : (
                      /* Private Ride: Classic Actions Group */
                      <div className="flex flex-col gap-3 pt-2">
-                       {activeRide.status === 'accepted' && (
+                       {activeRide.status === 'driver_accepted' && (
                           <div className="flex gap-2">
                              <button onClick={handleCancelRide} className="w-1/3 py-4 bg-zinc-100 dark:bg-zinc-900 text-red-500 rounded-xl font-bold active:scale-95 transition-transform">
                                Cancel
