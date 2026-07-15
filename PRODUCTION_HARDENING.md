@@ -175,6 +175,30 @@ In production, drivers who fail to maintain the minimum wallet balance should in
 
 ---
 
+## 9. The Location Activity Timeout Bypass
+In production, to prevent "ghost cars" from lingering on the map when a driver closes the app or loses service, the backend aggressively kicks drivers offline if they haven't sent a GPS ping in the last 30 seconds. Because our `simulate_physical.py` test script stops sending pings and exits the moment it reaches the destination, testers were being kicked offline if they didn't manually click "Complete Ride" within 30 seconds. We increased this timeout from 30 seconds to 600 seconds (10 minutes).
+
+**Recommendation: Revert for Production.**
+In production, the app will constantly send GPS pings in the background. If a driver misses pings for more than 30-60 seconds, they should be kicked offline so students aren't shown inactive cars. Revert the `600` second timeout back to `30`.
+
+**Location**: `backend/server.py` (Inside `get_nearby_drivers` around line 1283)
+
+**What it looks like now**:
+```python
+        # TRICK 4: Driver Activity Check
+        last_active = manager.driver_last_active.get(driver_id, 0)
+        if now - last_active > 600:
+```
+
+**If you want to revert to the old strict behavior**, restore it to:
+```python
+        # TRICK 4: Driver Activity Check
+        last_active = manager.driver_last_active.get(driver_id, 0)
+        if now - last_active > 30:
+```
+
+---
+
 ### Summary Checklist for Launch Day:
 - [ ] Remove `isSimulating` state and button from `DriverDashboard.jsx`
 - [ ] Revert `startWatching` logic in `DriverDashboard.jsx`
@@ -183,6 +207,7 @@ In production, drivers who fail to maintain the minimum wallet balance should in
 - [ ] Revert `VALID_TRANSITIONS` in `server.py` to require physical flow for pickup
 - [ ] Revert `VALID_TRANSITIONS` in `server.py` to require physical flow for dropoff
 - [ ] Restore wallet balance offline constraint in `server.py`
+- [ ] Restore 30s location activity timeout in `server.py`
 - [ ] Delete `/test/inject_drivers` route in `server.py`
 - [ ] Delete `/test/accept_trip` route in `server.py`
 - [ ] Delete `/test/get_active_ride_for_simulation` route in `server.py`

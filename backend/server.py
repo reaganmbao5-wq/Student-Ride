@@ -1280,7 +1280,7 @@ async def get_nearby_drivers(
     for driver_id, loc in list(manager.driver_locations.items()):
         # TRICK 4: Driver Activity Check
         last_active = manager.driver_last_active.get(driver_id, 0)
-        if now - last_active > 30:
+        if now - last_active > 600:
             manager.driver_locations.pop(driver_id, None)
             async def set_offline(uid):
                 await db.drivers.update_one({"user_id": uid}, {"$set": {"is_online": False}})
