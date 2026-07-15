@@ -16,7 +16,7 @@ import { ActiveTripQueue } from '../components/driver/ActiveTripQueue';
 const DriverDashboard = () => {
   const navigate = useNavigate();
   const { user, api, driverProfile, refreshDriverProfile, logout } = useAuth();
-  const { newRideRequest, clearRideRequest, sendLocationUpdate, rideUpdate } = useWebSocket();
+  const { newRideRequest, clearRideRequest, sendLocationUpdate, rideUpdate, driverLocation } = useWebSocket();
 
   const [isOnline, setIsOnline] = useState(false);
   const [activeRide, setActiveRide] = useState(null);
@@ -81,6 +81,13 @@ const DriverDashboard = () => {
       toast.info("Simulation Mode ON: Python script can now control location safely.");
     }
   }, [isSimulating, isOnline]);
+
+  // When simulating, update our map if the backend broadcasts our simulated location
+  useEffect(() => {
+    if (isSimulating && driverLocation?.location) {
+      setCurrentLocation(driverLocation.location);
+    }
+  }, [isSimulating, driverLocation]);
 
   useEffect(() => {
     if (driverProfile) {
@@ -357,7 +364,14 @@ const DriverDashboard = () => {
     const mapMarkers = [];
     
     // 1. Always show driver car
-    const driversArray = currentLocation ? [{ id: 'driver-self', latitude: currentLocation.lat, longitude: currentLocation.lng, heading: 0 }] : [];
+    const driversArray = currentLocation ? [{ 
+      id: 'driver-self', 
+      latitude: currentLocation.lat, 
+      longitude: currentLocation.lng, 
+      heading: currentLocation.heading || 0,
+      is_online: true,
+      current_ride_id: activeRide?.id
+    }] : [];
 
     // 2. Passenger pickup marker (Hide if driver has arrived or ride started)
     if (!isArrivedOrStarted && activeRide.pickup_location) {

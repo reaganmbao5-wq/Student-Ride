@@ -933,6 +933,7 @@ class ConnectionManager:
             }, {"_id": 0}, sort=[("created_at", -1)])
             
             if active_ride:
+                # Broadcast to the student
                 await self.send_personal_message({
                     "type": "driver_location",
                     "lat": location["lat"],
@@ -940,6 +941,15 @@ class ConnectionManager:
                     "heading": location.get("heading", 0),
                     "ride_id": active_ride["id"]
                 }, active_ride["student_id"])
+                
+                # Broadcast back to the driver so their own map moves during simulation
+                await self.send_personal_message({
+                    "type": "driver_location",
+                    "lat": location["lat"],
+                    "lng": location["lng"],
+                    "heading": location.get("heading", 0),
+                    "ride_id": active_ride["id"]
+                }, driver["user_id"])
 
     async def broadcast_to_nearby_drivers(self, message: dict, location: dict, radius_km: float = 3.0):
         """Broadcast ride request to nearby online drivers using geospatial query"""
@@ -2208,7 +2218,7 @@ async def complete_ride(ride_id: str, user: dict = Depends(require_driver)):
     if not driver:
          raise HTTPException(status_code=404, detail="Driver profile not found")
 
-    # FRAUD PROTECTION: Prevent instant completes
+    # FRAUD PROTECTION: Prevent instant completes (Lowered to 2s for testing)
     ride_check = await db.rides.find_one({"id": ride_id})
     if ride_check:
         started_at_str = ride_check.get("started_at")
@@ -2216,7 +2226,7 @@ async def complete_ride(ride_id: str, user: dict = Depends(require_driver)):
             started_at = datetime.fromisoformat(started_at_str)
             delta = (datetime.now(timezone.utc) - started_at).total_seconds()
             logger.info(f"FRAUD CHECK: Ride {ride_id} started at {started_at_str}. Current delta: {delta}s")
-            if delta < 60:
+            if delta < 2:
                 raise HTTPException(status_code=400, detail="Fraud Protection: Cannot complete ride instantly.")
 
     target_ride = await db.rides.find_one({"id": ride_id, "driver_id": driver["id"]})

@@ -4,6 +4,7 @@ import { MapPin, Clock, Car, Star, ChevronRight, Navigation, AlertCircle, Messag
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard, GoldButton, StatusBadge, LoadingSpinner, EmptyState } from '../components/common/GlassComponents';
 import { RatingModal } from '../components/common/RatingModal';
+import FindingDriverOverlay from '../components/common/FindingDriverOverlay';
 import { PlatformMap } from '../map/components/PlatformMap';
 import { CAMERA_MODES } from '../map/camera/CameraConfig';
 import { Layout } from '../components/layout/Layout';
@@ -286,9 +287,17 @@ const StudentDashboard = () => {
           />
         </div>
 
+        {activeRide.status === 'requested' && (
+          <FindingDriverOverlay 
+            pickup={activeRide.pickup_location}
+            dropoff={activeRide.dropoff_location}
+            onCancel={handleCancelRide}
+          />
+        )}
+
         {/* Bottom Sheet Overlay */}
         <motion.div
-          className="absolute bottom-0 left-0 right-0 bg-white dark:bg-zinc-950 rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-20 flex flex-col"
+          className={`absolute bottom-0 left-0 right-0 bg-white dark:bg-zinc-950 rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-20 flex flex-col ${activeRide.status === 'requested' ? 'hidden' : ''}`}
           animate={{ y: isSheetExpanded ? 0 : "calc(max(0px, 100% - 150px))" }}
           transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
           drag="y"

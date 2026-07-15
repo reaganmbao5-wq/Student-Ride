@@ -18,6 +18,38 @@ def calculate_bearing(lat1, lon1, lat2, lon2):
     bearing = math.atan2(y, x)
     return (math.degrees(bearing) + 360) % 360
 
+def haversine_distance(lat1, lon1, lat2, lon2):
+    R = 6371000 # Radius of earth in meters
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    delta_phi = math.radians(lat2 - lat1)
+    delta_lambda = math.radians(lon2 - lon1)
+    a = math.sin(delta_phi/2) * math.sin(delta_phi/2) + \
+        math.cos(phi1) * math.cos(phi2) * \
+        math.sin(delta_lambda/2) * math.sin(delta_lambda/2)
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    return R * c
+
+def interpolate_points(route_coords, step_meters=5):
+    interpolated = []
+    for i in range(len(route_coords) - 1):
+        curr_lng, curr_lat = route_coords[i]
+        next_lng, next_lat = route_coords[i+1]
+        
+        dist = haversine_distance(curr_lat, curr_lng, next_lat, next_lng)
+        interpolated.append([curr_lng, curr_lat])
+        
+        if dist > step_meters:
+            num_steps = int(dist // step_meters)
+            for j in range(1, num_steps):
+                fraction = j / num_steps
+                inter_lng = curr_lng + (next_lng - curr_lng) * fraction
+                inter_lat = curr_lat + (next_lat - curr_lat) * fraction
+                interpolated.append([inter_lng, inter_lat])
+                
+    interpolated.append(route_coords[-1])
+    return interpolated
+
 async def register_or_login(client, role, email, password, name):
     resp = await client.post(f"{BASE_URL}/auth/login", json={"email": email, "password": password})
     if resp.status_code == 200:
@@ -36,9 +68,10 @@ async def register_or_login(client, role, email, password, name):
     return None
 
 async def drive_route(client, route_coords, driver_id="ghost-driver-0"):
-    for i in range(len(route_coords) - 1):
-        curr_lng, curr_lat = route_coords[i]
-        next_lng, next_lat = route_coords[i+1]
+    dense_coords = interpolate_points(route_coords, step_meters=5)
+    for i in range(len(dense_coords) - 1):
+        curr_lng, curr_lat = dense_coords[i]
+        next_lng, next_lat = dense_coords[i+1]
         
         heading = calculate_bearing(curr_lat, curr_lng, next_lat, next_lng)
         
@@ -54,8 +87,8 @@ async def drive_route(client, route_coords, driver_id="ghost-driver-0"):
         await client.post("http://localhost:8000/api/test/inject_drivers", json={"drivers": payload})
         print(f"Driving... {curr_lat:.5f}, {curr_lng:.5f} (Heading: {heading:.1f})")
         
-        # Wait 1.5 seconds between points to simulate normal driving speed
-        await asyncio.sleep(1.5)
+        # Wait 1.0 seconds between points to simulate normal driving speed
+        await asyncio.sleep(1.0)
 
 async def main():
     load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
@@ -108,12 +141,12 @@ async def main():
         print("Simulated Driver online and authenticated.")
 
         # 1. Roam idly around pickup for a few seconds
-        print("Simulating idle driver...")
-        idle_lat, idle_lng = pickup_lat + 0.005, pickup_lng + 0.005
+        print("Simulating idle driver 50m away...")
+        idle_lat, idle_lng = pickup_lat + 0.00045, pickup_lng + 0.00045
         
         for _ in range(3):
-            idle_lat += random.uniform(-0.0002, 0.0002)
-            idle_lng += random.uniform(-0.0002, 0.0002)
+            idle_lat += random.uniform(-0.00005, 0.00005)
+            idle_lng += random.uniform(-0.00005, 0.00005)
             payload = {
                 driver_user_id: {"lat": idle_lat, "lng": idle_lng, "heading": random.uniform(0, 360)}
             }
