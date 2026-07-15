@@ -56,39 +56,31 @@ const DriverDashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (rideUpdate && rideUpdate.type === 'rating_received') {
+    if (!rideUpdate) return;
+    
+    if (rideUpdate.type === 'rating_received') {
       toast.success(`You received a ${rideUpdate.rating}-star rating!`);
       setEarnings(prev => ({ ...prev, rating: rideUpdate.new_average }));
       refreshDriverProfile();
+    } else if (rideUpdate.type === 'cancelled') {
+      // Remove from pending rides immediately
+      setPendingRides(prev => prev.filter(r => r.id !== rideUpdate.ride_id));
+      if (incomingRide?.id === rideUpdate.ride_id) {
+        setShowRideRequest(false);
+        setIncomingRide(null);
+      }
+    } else if (rideUpdate.type === 'accepted') {
+      // Remove from pending rides once someone accepts it
+      setPendingRides(prev => prev.filter(r => r.id !== rideUpdate.ride?.id));
     }
-  }, [rideUpdate, refreshDriverProfile]);
+  }, [rideUpdate, refreshDriverProfile, incomingRide]);
 
-  // Simulation Logic
+  // Simulation Mode Logic: Just prevents watchPosition from overriding the python script
   useEffect(() => {
-    let interval;
     if (isSimulating && isOnline) {
-      interval = setInterval(() => {
-        setCurrentLocation(prev => {
-          // Default to Kabwe center if no location
-          const baseLat = prev?.lat || -14.42;
-          const baseLng = prev?.lng || 28.45;
-
-          // Simulate small movement (approx 10m northeast)
-          const newLat = baseLat + 0.0001;
-          const newLng = baseLng + 0.0001;
-
-          const newLoc = { lat: newLat, lng: newLng };
-
-          // Send update via WS
-          sendLocationUpdate(newLat, newLng);
-
-          // Also update backend occasionally if needed, but WS is primary for live tracking
-          return newLoc;
-        });
-      }, 2000); // Update every 2 seconds
+      toast.info("Simulation Mode ON: Python script can now control location safely.");
     }
-    return () => clearInterval(interval);
-  }, [isSimulating, isOnline, sendLocationUpdate]);
+  }, [isSimulating, isOnline]);
 
   useEffect(() => {
     if (driverProfile) {
@@ -108,6 +100,14 @@ const DriverDashboard = () => {
     if (newRideRequest && isOnline && !activeRide) {
       setIncomingRide(newRideRequest);
       setShowRideRequest(true);
+
+      // Fix for real-time list appearance (Appends instantly)
+      setPendingRides(prev => {
+        if (!prev.find(r => r.id === newRideRequest.id)) {
+          return [newRideRequest, ...prev];
+        }
+        return prev;
+      });
 
       // Auto-dismiss after 30 seconds
       const timeout = setTimeout(() => {
@@ -504,46 +504,48 @@ const DriverDashboard = () => {
                       </button>
                    </div>
 
-                   {/* Stop Queue / Active Trip Queue Integration */}
-                   <ActiveTripQueue 
-                     trip={{
-                       capacity: { total: driverProfile?.vehicle_capacity || 4, occupied: activeRide?.passenger_count || 1, reserved: 0 },
-                       route_queue: [
-                         { stop_id: '1', stop_type: 'pickup', status: activeRide?.status === 'accepted' ? 'pending' : 'completed', coordinates: { address: activeRide?.pickup_location?.address }, student_id: activeRide?.student?.id || '123' },
-                         { stop_id: '2', stop_type: 'dropoff', status: 'pending', coordinates: { address: activeRide?.dropoff_location?.address }, student_id: activeRide?.student?.id || '123' }
-                       ]
-                     }}
-                     onCompleteStop={(stop_id) => {
-                       if (stop_id === '1') handleDriverArrived();
-                       else if (stop_id === '2') handleCompleteRide();
-                     }}
-                   />
+                   {/* Shared Ride: Active Trip Queue Integration */}
+                   {activeRide.ride_mode === 'shared' ? (
+                     <ActiveTripQueue 
+                       trip={{
+                         capacity: { total: driverProfile?.vehicle_capacity || 4, occupied: activeRide?.passenger_count || 1, reserved: 0 },
+                         route_queue: [
+                           { stop_id: '1', stop_type: 'pickup', status: activeRide?.status === 'accepted' ? 'pending' : 'completed', coordinates: { address: activeRide?.pickup_location?.address }, student_id: activeRide?.student?.id || '123' },
+                           { stop_id: '2', stop_type: 'dropoff', status: 'pending', coordinates: { address: activeRide?.dropoff_location?.address }, student_id: activeRide?.student?.id || '123' }
+                         ]
+                       }}
+                       onCompleteStop={(stop_id) => {
+                         if (stop_id === '1') handleDriverArrived();
+                         else if (stop_id === '2') handleCompleteRide();
+                       }}
+                     />
+                   ) : (
+                     /* Private Ride: Classic Actions Group */
+                     <div className="flex flex-col gap-3 pt-2">
+                       {activeRide.status === 'accepted' && (
+                          <div className="flex gap-2">
+                             <button onClick={handleCancelRide} className="w-1/3 py-4 bg-zinc-100 dark:bg-zinc-900 text-red-500 rounded-xl font-bold active:scale-95 transition-transform">
+                               Cancel
+                             </button>
+                             <button onClick={handleDriverArrived} className="w-2/3 py-4 bg-black text-white rounded-xl font-bold active:scale-95 transition-transform">
+                               I've Arrived
+                             </button>
+                          </div>
+                       )}
+                       
+                       {activeRide.status === 'driver_arrived' && (
+                          <button onClick={handleStartRide} className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold active:scale-95 shadow-lg shadow-blue-600/20 transition-transform">
+                            Start Ride
+                          </button>
+                       )}
 
-                   {/* Actions Group */}
-                   <div className="flex flex-col gap-3 pt-2">
-                     {activeRide.status === 'accepted' && (
-                        <div className="flex gap-2">
-                           <button onClick={handleCancelRide} className="w-1/3 py-4 bg-zinc-100 dark:bg-zinc-900 text-red-500 rounded-xl font-bold active:scale-95">
-                             Cancel
-                           </button>
-                           <button onClick={handleDriverArrived} className="w-2/3 py-4 bg-black text-white rounded-xl font-bold active:scale-95">
-                             I've Arrived
-                           </button>
-                        </div>
-                     )}
-                     
-                     {activeRide.status === 'driver_arrived' && (
-                        <button onClick={handleStartRide} className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold active:scale-95 shadow-lg shadow-blue-600/20">
-                          Start Ride
-                        </button>
-                     )}
-
-                     {activeRide.status === 'ongoing' && (
-                        <button onClick={handleCompleteRide} className="w-full py-4 bg-emerald-500 text-white rounded-xl font-bold active:scale-95 shadow-lg shadow-emerald-500/20">
-                          Complete Ride
-                        </button>
-                     )}
-                   </div>
+                       {activeRide.status === 'ongoing' && (
+                          <button onClick={handleCompleteRide} className="w-full py-4 bg-emerald-500 text-white rounded-xl font-bold active:scale-95 shadow-lg shadow-emerald-500/20 transition-transform">
+                            Complete Ride
+                          </button>
+                       )}
+                     </div>
+                   )}
 
                 </motion.div>
               )}
@@ -648,12 +650,13 @@ const DriverDashboard = () => {
             {isOnline && (
               <button
                 onClick={() => setIsSimulating(!isSimulating)}
-                className={`text-xs px-2 py-1 rounded-lg border transition-colors ${isSimulating
-                  ? 'bg-gold/20 border-gold text-gold'
-                  : 'border-border text-muted-foreground hover:bg-muted'
+                className={`text-xs px-3 py-1.5 rounded-lg border transition-all shadow-sm ${isSimulating
+                  ? 'bg-amber-500/10 border-amber-500 text-amber-600 font-bold'
+                  : 'bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50'
                   }`}
+                title="When ON, your phone's real GPS is ignored so Python scripts can simulate movement smoothly."
               >
-                {isSimulating ? 'Simulating...' : 'Update Location'}
+                {isSimulating ? 'Simulation Mode: ON' : 'Simulation Mode: OFF'}
               </button>
             )}
           </div>
