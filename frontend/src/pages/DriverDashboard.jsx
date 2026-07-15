@@ -11,7 +11,8 @@ import { useWatchPosition } from '../map/hooks/useGeolocation';
 import { routeCache } from '../map/route/RouteCache';
 import { toast } from 'sonner';
 
-import { ActiveTripQueue } from '../components/driver/ActiveTripQueue';
+import { RotaryActiveRides } from '../components/driver/RotaryActiveRides';
+import { IncomingRequestPanel } from '../components/driver/IncomingRequestPanel';
 
 const DriverDashboard = () => {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ const DriverDashboard = () => {
   const { newRideRequest, clearRideRequest, sendLocationUpdate, rideUpdate, driverLocation } = useWebSocket();
 
   const [isOnline, setIsOnline] = useState(false);
-  const [activeRide, setActiveRide] = useState(null);
+  const [activeRides, setActiveRides] = useState([]);
   const [pendingRides, setPendingRides] = useState([]);
   const [routeGeometry, setRouteGeometry] = useState(null);
   const [earnings, setEarnings] = useState(null);
@@ -63,17 +64,23 @@ const DriverDashboard = () => {
       setEarnings(prev => ({ ...prev, rating: rideUpdate.new_average }));
       refreshDriverProfile();
     } else if (rideUpdate.type === 'cancelled') {
-      // Remove from pending rides immediately
       setPendingRides(prev => prev.filter(r => r.id !== rideUpdate.ride_id));
+      setActiveRides(prev => prev.filter(r => r.id !== rideUpdate.ride_id));
       if (incomingRide?.id === rideUpdate.ride_id) {
         setShowRideRequest(false);
         setIncomingRide(null);
       }
     } else if (rideUpdate.type === 'accepted') {
-      // Remove from pending rides once someone accepts it
       setPendingRides(prev => prev.filter(r => r.id !== rideUpdate.ride?.id));
+    } else if (rideUpdate.type === 'wallet_updated') {
+      refreshDriverProfile();
+    } else if (rideUpdate.type === 'capacity_changed') {
+      refreshDriverProfile();
+    } else if (rideUpdate.type === 'completed') {
+      setActiveRides(prev => prev.filter(r => r.id !== rideUpdate.ride_id));
+      fetchData();
     }
-  }, [rideUpdate, refreshDriverProfile, incomingRide]);
+  }, [rideUpdate, refreshDriverProfile, incomingRide, fetchData]);
 
   // Simulation Mode Logic: Just prevents watchPosition from overriding the python script
   useEffect(() => {
@@ -104,7 +111,12 @@ const DriverDashboard = () => {
   }, [isOnline, isWatching, isSimulating, startWatching, stopWatching]);
 
   useEffect(() => {
-    if (newRideRequest && isOnline && !activeRide) {
+    if (newRideRequest && isOnline) {
+      // Don't show if vehicle is full
+      const capacity = driverProfile?.vehicle_capacity || 4;
+      const occupied = activeRides.reduce((acc, r) => acc + (r.passenger_count || 1), 0);
+      if (occupied >= capacity) return;
+
       setIncomingRide(newRideRequest);
       setShowRideRequest(true);
 
@@ -125,29 +137,33 @@ const DriverDashboard = () => {
 
       return () => clearTimeout(timeout);
     }
-  }, [newRideRequest, isOnline, activeRide, clearRideRequest]);
+  }, [newRideRequest, isOnline, activeRides, clearRideRequest, driverProfile]);
 
   useEffect(() => {
-    if (activeRide?.pickup_location && activeRide?.dropoff_location) {
-      const cachedGeometry = routeCache.getRoute(activeRide.pickup_location, activeRide.dropoff_location);
-      if (cachedGeometry) {
-        setRouteGeometry(cachedGeometry);
-        return;
-      }
-
-      api.post('/rides/estimate-fare', {
-        pickup: activeRide.pickup_location,
-        dropoff: activeRide.dropoff_location
-      }).then(res => {
-        if (res.data?.geometry) {
-          setRouteGeometry(res.data.geometry);
-          routeCache.setRoute(activeRide.pickup_location, activeRide.dropoff_location, res.data.geometry);
+    if (activeRides.length > 0) {
+      // Just fetch for the first active ride for now to show the primary route
+      const primaryRide = activeRides[0];
+      if (primaryRide?.pickup_location && primaryRide?.dropoff_location) {
+        const cachedGeometry = routeCache.getRoute(primaryRide.pickup_location, primaryRide.dropoff_location);
+        if (cachedGeometry) {
+          setRouteGeometry(cachedGeometry);
+          return;
         }
-      }).catch(err => console.error("Could not fetch route geometry:", err));
-    } else {
-      setRouteGeometry(null);
+
+        api.post('/rides/estimate-fare', {
+          pickup: primaryRide.pickup_location,
+          dropoff: primaryRide.dropoff_location
+        }).then(res => {
+          if (res.data?.geometry) {
+            setRouteGeometry(res.data.geometry);
+            routeCache.setRoute(primaryRide.pickup_location, primaryRide.dropoff_location, res.data.geometry);
+          }
+        }).catch(err => console.error("Could not fetch route geometry:", err));
+      } else {
+        setRouteGeometry(null);
+      }
     }
-  }, [activeRide?.id, activeRide?.pickup_location, activeRide?.dropoff_location, api]);
+  }, [activeRides, api]);
 
   const formatAddress = (location) => {
     if (!location?.address) return "Location not provided";
@@ -160,12 +176,12 @@ const DriverDashboard = () => {
   const fetchData = async () => {
     try {
       const [activeRes, earningsRes, pendingRes] = await Promise.all([
-        api.get('/rides/active'),
+        api.get('/rides/driver/active'),
         api.get('/drivers/earnings'),
         api.get('/rides/pending')
       ]);
 
-      setActiveRide(activeRes.data);
+      setActiveRides(activeRes.data || []);
       setEarnings(earningsRes.data);
       setPendingRides(pendingRes.data || []);
       
@@ -202,7 +218,7 @@ const DriverDashboard = () => {
   const handleAcceptRide = async (rideId) => {
     try {
       const response = await api.post(`/rides/${rideId}/accept`);
-      setActiveRide(response.data);
+      setActiveRides(prev => [...prev, response.data]);
       setShowRideRequest(false);
       setIncomingRide(null);
       clearRideRequest();
@@ -218,11 +234,31 @@ const DriverDashboard = () => {
     clearRideRequest();
   };
 
-  const handleDriverArrived = async () => {
-    if (!activeRide) return;
+  const handleUpdateStatus = async (rideId, nextStatus) => {
     try {
-      await api.post(`/rides/${activeRide.id}/arrived`);
-      setActiveRide(prev => ({ ...prev, status: 'driver_arrived' }));
+      const endpointMap = {
+        'driver_arrived': 'arrived',
+        'ride_started': 'start',
+        'ride_completed': 'complete'
+      };
+      const endpoint = endpointMap[nextStatus];
+      if (!endpoint) return;
+
+      const response = await api.post(`/rides/${rideId}/${endpoint}`);
+      if (nextStatus === 'ride_completed') {
+        toast.success(`Ride completed! Fare: K${response.data.fare}`);
+        setActiveRides(prev => prev.filter(r => r.id !== rideId));
+        fetchData(); // Refresh earnings
+      } else {
+        setActiveRides(prev => prev.map(r => r.id === rideId ? { ...r, status: nextStatus } : r));
+        toast.success(`Status updated to ${nextStatus.replace(/_/g, ' ')}`);
+      }
+    } catch (error) {
+      toast.error('Failed to update status');
+    }
+  };
+
+  const handleDeclineRide = () => {
       toast.success('Passenger notified of your arrival');
     } catch (error) {
       toast.error('Failed to update status');
@@ -252,12 +288,11 @@ const DriverDashboard = () => {
     }
   };
 
-  const handleCancelRide = async () => {
-    if (!activeRide) return;
+  const handleCancelRide = async (rideId) => {
     try {
-      await api.post(`/rides/${activeRide.id}/cancel`);
+      await api.post(`/rides/${rideId}/cancel`);
       toast.info('Ride cancelled');
-      setActiveRide(null);
+      setActiveRides(prev => prev.filter(r => r.id !== rideId));
     } catch (error) {
       toast.error('Failed to cancel ride');
     }
@@ -357,11 +392,10 @@ const DriverDashboard = () => {
   // ==========================================
   // ACTIVE RIDE FULL-SCREEN VIEW (DRIVER)
   // ==========================================
-  if (activeRide) {
-    const isArrivedOrStarted = ['driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination', 'ongoing'].includes(activeRide.status);
-    
+  if (activeRides.length > 0) {
     // Markers Logic
     const mapMarkers = [];
+    const bounds = [];
     
     // 1. Always show driver car
     const driversArray = currentLocation ? [{ 
@@ -369,45 +403,37 @@ const DriverDashboard = () => {
       latitude: currentLocation.lat, 
       longitude: currentLocation.lng, 
       heading: currentLocation.heading || 0,
-      is_online: true,
-      current_ride_id: activeRide?.id
+      is_online: true
     }] : [];
 
-    // 2. Passenger pickup marker (Hide if driver has arrived or ride started)
-    if (!isArrivedOrStarted && activeRide.pickup_location) {
-      mapMarkers.push({
-        lat: activeRide.pickup_location.lat,
-        lng: activeRide.pickup_location.lng,
-        iconType: 'user', // We use the user icon for the passenger location
-        key: 'pickup'
-      });
-    }
-
-    // 3. Dropoff marker (Show when driving to destination)
-    if (activeRide.dropoff_location) {
-      mapMarkers.push({
-        lat: activeRide.dropoff_location.lat,
-        lng: activeRide.dropoff_location.lng,
-        iconType: 'dropoff',
-        key: 'dropoff'
-      });
-    }
-
-    const bounds = [];
     if (currentLocation) bounds.push([currentLocation.lat, currentLocation.lng]);
-    if (!isArrivedOrStarted && activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
-    if (isArrivedOrStarted && activeRide.dropoff_location) bounds.push([activeRide.dropoff_location.lat, activeRide.dropoff_location.lng]);
 
-    let getStatusText = () => {
-      switch(activeRide.status) {
-        case 'accepted': return 'Pick up passenger';
-        case 'driver_arrived': return 'Wait for passenger';
-        case 'ongoing': return 'Drop off passenger';
-        default: return 'Active Ride';
+    // Add markers for all active rides
+    activeRides.forEach((ride) => {
+      const isArrivedOrStarted = ['driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination', 'ongoing'].includes(ride.status);
+      
+      if (!isArrivedOrStarted && ride.pickup_location) {
+        mapMarkers.push({
+          lat: ride.pickup_location.lat,
+          lng: ride.pickup_location.lng,
+          iconType: 'user', 
+          key: `pickup-${ride.id}`
+        });
+        bounds.push([ride.pickup_location.lat, ride.pickup_location.lng]);
       }
-    };
 
-    let targetLocation = !isArrivedOrStarted ? activeRide.pickup_location : activeRide.dropoff_location;
+      if (ride.dropoff_location) {
+        mapMarkers.push({
+          lat: ride.dropoff_location.lat,
+          lng: ride.dropoff_location.lng,
+          iconType: 'dropoff',
+          key: `dropoff-${ride.id}`
+        });
+        if (isArrivedOrStarted) {
+          bounds.push([ride.dropoff_location.lat, ride.dropoff_location.lng]);
+        }
+      }
+    });
 
     return (
       <div className="fixed inset-0 bg-background overflow-hidden flex flex-col" data-testid="driver-active-ride">
@@ -420,153 +446,31 @@ const DriverDashboard = () => {
             markers={mapMarkers}
             drivers={driversArray}
             routeGeometry={routeGeometry}
-            rideStatus={activeRide.status}
             showRouteLine={true}
             interactive={true}
             className="w-full h-full"
           />
-          
-          {/* Navigation Overlay Button */}
-          {targetLocation && (
-            <div className="absolute top-4 right-4 z-10 pointer-events-auto">
-              <button
-                onClick={() => openNavigation(targetLocation)}
-                className="w-14 h-14 bg-black text-white rounded-full flex items-center justify-center shadow-2xl active:scale-95 transition-transform border-4 border-black/10"
-              >
-                <Navigation className="w-6 h-6" />
-              </button>
-            </div>
-          )}
         </div>
 
-        {/* Bottom Sheet Overlay */}
-        <motion.div
-          className="absolute bottom-0 left-0 right-0 bg-white dark:bg-zinc-950 rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-20 flex flex-col"
-          animate={{ y: isSheetExpanded ? 0 : "calc(100% - 160px)" }}
-          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-          drag="y"
-          dragConstraints={{ top: 0, bottom: 0 }}
-          dragElastic={0.2}
-          onDragEnd={(e, info) => {
-            if (info.offset.y > 50) setIsSheetExpanded(false);
-            if (info.offset.y < -50) setIsSheetExpanded(true);
-          }}
-        >
-          {/* Drag Handle Zone */}
-          <div 
-            className="w-full pt-4 pb-2 flex justify-center cursor-grab active:cursor-grabbing"
-            onClick={() => setIsSheetExpanded(!isSheetExpanded)}
-          >
-            <div className="w-12 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full" />
-          </div>
+        {/* Incoming Request Overlay */}
+        {showRideRequest && incomingRide && (
+          <IncomingRequestPanel 
+            request={incomingRide} 
+            onAccept={handleAcceptRide} 
+            onReject={handleDeclineRide} 
+            seatsLeft={(driverProfile?.vehicle_capacity || 4) - activeRides.reduce((acc, r) => acc + (r.passenger_count || 1), 0)}
+          />
+        )}
 
-          <div className="px-6 pb-6 pt-2 flex flex-col gap-6">
-            
-            {/* Minimized Header Row */}
-            <div className="flex flex-col gap-4" onClick={() => setIsSheetExpanded(!isSheetExpanded)}>
-               <div className="flex items-center justify-between">
-                  <h2 className="font-heading text-2xl font-bold text-foreground">{getStatusText()}</h2>
-                  <span className="text-sm font-bold text-gold uppercase tracking-wider">K{activeRide.driver_earning?.toFixed(2)}</span>
-               </div>
-               
-               <div className="flex items-center justify-between">
-                  <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded ${activeRide.ride_mode === 'shared' ? 'bg-blue-500/10 text-blue-500' : 'bg-zinc-100 dark:bg-zinc-800 text-muted-foreground'}`}>
-                    {activeRide.ride_mode === 'shared' ? 'Shared Ride' : 'Private Ride'}
-                  </span>
-                  {activeRide.ride_mode === 'shared' && (
-                    <span className="text-xs text-muted-foreground font-medium">
-                      {activeRide.passenger_count || 1}/{driverProfile?.vehicle_capacity || 4} Passengers ({(driverProfile?.vehicle_capacity || 4) - (activeRide.passenger_count || 1)} left)
-                    </span>
-                  )}
-               </div>
-               
-               <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center shrink-0">
-                    <span className="text-white font-bold">{activeRide.student?.name?.charAt(0) || '?'}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-foreground truncate">{activeRide.student?.name || 'Passenger'}</p>
-                    <p className="text-sm text-muted-foreground truncate">{targetLocation?.address}</p>
-                  </div>
-               </div>
-            </div>
-
-            {/* EXPANDED CONTENT */}
-            <AnimatePresence>
-              {isSheetExpanded && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="flex flex-col gap-6 overflow-hidden"
-                >
-                   {/* Quick Contact Icons */}
-                   <div className="flex gap-2">
-                      <button 
-                        className="flex-1 py-3 rounded-xl bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center gap-2 active:scale-95 transition-transform"
-                        onClick={() => navigate(`/ride/chat/${activeRide.id}`)}
-                      >
-                        <MessageCircle className="w-5 h-5" />
-                        <span className="font-bold">Chat</span>
-                      </button>
-                      <button 
-                        className="flex-1 py-3 rounded-xl bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center gap-2 active:scale-95 transition-transform"
-                        onClick={() => window.location.href = `tel:${activeRide.student?.phone}`}
-                      >
-                        <PhoneCall className="w-5 h-5" />
-                        <span className="font-bold">Call</span>
-                      </button>
-                   </div>
-
-                   {/* Shared Ride: Active Trip Queue Integration */}
-                   {activeRide.ride_mode === 'shared' ? (
-                     <ActiveTripQueue 
-                       trip={{
-                         capacity: { total: driverProfile?.vehicle_capacity || 4, occupied: activeRide?.passenger_count || 1, reserved: 0 },
-                         route_queue: [
-                           { stop_id: '1', stop_type: 'pickup', status: activeRide?.status === 'accepted' ? 'pending' : 'completed', coordinates: { address: activeRide?.pickup_location?.address }, student_id: activeRide?.student?.id || '123' },
-                           { stop_id: '2', stop_type: 'dropoff', status: 'pending', coordinates: { address: activeRide?.dropoff_location?.address }, student_id: activeRide?.student?.id || '123' }
-                         ]
-                       }}
-                       onCompleteStop={(stop_id) => {
-                         if (stop_id === '1') handleDriverArrived();
-                         else if (stop_id === '2') handleCompleteRide();
-                       }}
-                     />
-                   ) : (
-                     /* Private Ride: Classic Actions Group */
-                     <div className="flex flex-col gap-3 pt-2">
-                       {activeRide.status === 'driver_accepted' && (
-                          <div className="flex gap-2">
-                             <button onClick={handleCancelRide} className="w-1/3 py-4 bg-zinc-100 dark:bg-zinc-900 text-red-500 rounded-xl font-bold active:scale-95 transition-transform">
-                               Cancel
-                             </button>
-                             <button onClick={handleDriverArrived} className="w-2/3 py-4 bg-black text-white rounded-xl font-bold active:scale-95 transition-transform">
-                               I've Arrived
-                             </button>
-                          </div>
-                       )}
-                       
-                       {activeRide.status === 'driver_arrived' && (
-                          <button onClick={handleStartRide} className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold active:scale-95 shadow-lg shadow-blue-600/20 transition-transform">
-                            Start Ride
-                          </button>
-                       )}
-
-                       {['ongoing', 'ride_started', 'ride_in_progress', 'arriving_destination'].includes(activeRide.status) && (
-                          <button onClick={handleCompleteRide} className="w-full py-4 bg-emerald-500 text-white rounded-xl font-bold active:scale-95 shadow-lg shadow-emerald-500/20 transition-transform">
-                            Complete Ride
-                          </button>
-                       )}
-                     </div>
-                   )}
-
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-          </div>
-        </motion.div>
+        {/* Rotary UI Overlay */}
+        <div className="absolute bottom-0 left-0 right-0 z-20">
+          <RotaryActiveRides 
+            activeRides={activeRides}
+            onUpdateStatus={handleUpdateStatus}
+            onCall={(phone) => window.location.href = `tel:${phone}`}
+            onChat={(studentId) => navigate(`/ride/chat/${activeRides.find(r => r.student?.id === studentId)?.id}`)}
+          />
+        </div>
       </div>
     );
   }
@@ -578,63 +482,14 @@ const DriverDashboard = () => {
   return (
     <Layout>
       <div className="p-4 md:p-8 space-y-6" data-testid="driver-dashboard">
-        {/* Incoming Ride Request Modal Overlay */}
+        {/* Incoming Ride Request Panel handled globally, but here is fallback for idle state */}
         {showRideRequest && incomingRide && (
-          <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <GlassCard className="w-full max-w-md p-6 animate-in slide-in-from-bottom" data-testid="ride-request-modal">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center animate-pulse-gold">
-                  <Bell className="w-6 h-6 text-gold" />
-                </div>
-                <div>
-                  <h3 className="font-heading font-semibold text-foreground">New Ride Request!</h3>
-                  <div className="flex items-center gap-2">
-                    <p className="text-muted-foreground text-sm">K{incomingRide.fare?.toFixed(2)} • {incomingRide.distance?.toFixed(1)} km</p>
-                    <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded ${incomingRide.ride_mode === 'shared' ? 'bg-blue-500/20 text-blue-500' : 'bg-zinc-100 dark:bg-zinc-800 text-muted-foreground'}`}>
-                      {incomingRide.ride_mode === 'shared' ? 'Shared' : 'Private'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3 mb-6">
-                <div className="flex items-start gap-3">
-                  <div className="w-3 h-3 rounded-full bg-gold mt-1.5" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Pickup</p>
-                    <p className="text-foreground text-sm">{incomingRide.pickup_location?.address}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-3 h-3 rounded-full bg-emerald-500 mt-1.5" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Dropoff</p>
-                    <p className="text-foreground text-sm">{incomingRide.dropoff_location?.address}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <GoldButton
-                  variant="secondary"
-                  className="flex-1"
-                  onClick={handleDeclineRide}
-                  data-testid="decline-ride-btn"
-                >
-                  <X className="w-5 h-5 mr-2" />
-                  Decline
-                </GoldButton>
-                <GoldButton
-                  className="flex-1"
-                  onClick={() => handleAcceptRide(incomingRide.id)}
-                  data-testid="accept-ride-btn"
-                >
-                  <Check className="w-5 h-5 mr-2" />
-                  Accept
-                </GoldButton>
-              </div>
-            </GlassCard>
-          </div>
+          <IncomingRequestPanel 
+            request={incomingRide} 
+            onAccept={handleAcceptRide} 
+            onReject={handleDeclineRide} 
+            seatsLeft={driverProfile?.vehicle_capacity || 4}
+          />
         )}
 
         {/* Header with Online Toggle */}
@@ -781,7 +636,7 @@ const DriverDashboard = () => {
         )}
 
         {/* Empty State */}
-        {isOnline && pendingRides.length === 0 && !activeRide && (
+        {isOnline && pendingRides.length === 0 && activeRides.length === 0 && (
           <EmptyState
             icon={MapPin}
             title="No rides available"

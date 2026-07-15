@@ -1605,6 +1605,49 @@ async def get_active_ride_for_simulation():
     ride = await db.rides.find_one({"status": {"$in": ["requested", "accepted", "driver_arrived", "ongoing"]}}, sort=[("created_at", -1)], projection={"_id": 0})
     return ride
 
+@api_router.get("/rides/driver/active", response_model=List[RideResponse])
+async def get_active_rides_for_driver(user: dict = Depends(require_driver)):
+    query = {"status": {"$in": get_active_ride_states()}}
+    
+    driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver profile not found")
+        
+    query["driver_id"] = driver["id"]
+    
+    rides = await db.rides.find(query, {"_id": 0}, sort=[("created_at", 1)]).to_list(100)
+    
+    for ride in rides:
+        # Populate student
+        student = await db.users.find_one({"id": ride["student_id"]}, {"_id": 0})
+        if student:
+            ride["student"] = UserResponse(
+                id=student["id"],
+                email=student["email"],
+                name=student["name"],
+                phone=student.get("phone", ""),
+                role=UserRole(student["role"]),
+                created_at=student.get("created_at", ""),
+                is_active=student.get("is_active", True)
+            )
+            
+        # Populate driver (always this driver)
+        driver_user = await db.users.find_one({"id": driver["user_id"]}, {"_id": 0})
+        if driver_user:
+            d_copy = driver.copy()
+            d_copy["user"] = UserResponse(
+                id=driver_user["id"],
+                email=driver_user["email"],
+                name=driver_user["name"],
+                phone=driver_user.get("phone", ""),
+                role=UserRole(driver_user["role"]),
+                created_at=driver_user.get("created_at", ""),
+                is_active=driver_user.get("is_active", True)
+            )
+            ride["driver"] = d_copy
+            
+    return rides
+
 class UpdateTripStatusReq(BaseModel):
     ride_id: str
     status: str
@@ -2304,11 +2347,23 @@ async def complete_ride(ride_id: str, user: dict = Depends(require_driver)):
     await db.driver_wallet_transactions.insert_one(transaction)
     
     await manager.send_personal_message({
-        "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
         "type": "ride_completed",
         "ride_id": ride_id,
         "fare": ride["fare"]
     }, ride["student_id"])
+    
+    # Notify Driver of Wallet Update and Ride Completion
+    await manager.send_personal_message({
+        "type": "wallet_updated",
+        "wallet_balance": new_balance,
+        "wallet_status": wallet_status
+    }, user["id"])
+    
+    await manager.send_personal_message({
+        "type": "ride_completed",
+        "ride_id": ride_id,
+        "fare": ride["fare"]
+    }, user["id"])
     
     manager.remove_from_ride(ride_id, ride["student_id"])
     manager.remove_from_ride(ride_id, user["id"])

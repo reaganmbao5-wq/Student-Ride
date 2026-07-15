@@ -98,6 +98,20 @@ export const WebSocketProvider = ({ children }) => {
               ride_id: data.ride_id
             });
             break;
+          case 'wallet_updated':
+            setRideUpdate({
+              type: 'wallet_updated',
+              wallet_balance: data.wallet_balance,
+              wallet_status: data.wallet_status
+            });
+            break;
+          case 'capacity_changed':
+            setRideUpdate({
+              type: 'capacity_changed',
+              available_seats: data.available_seats,
+              active_passengers: data.active_passengers
+            });
+            break;
           case 'pong':
             // Keep-alive response
             break;
