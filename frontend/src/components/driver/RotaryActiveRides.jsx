@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Phone, MessageSquare, MapPin, Navigation, User, ChevronUp, ChevronDown } from 'lucide-react';
-import { GlassCard } from '../ui/GlassCard';
+import { GlassCard } from '../common/GlassComponents';
 
 export const RotaryActiveRides = ({ activeRides, onUpdateStatus, onCall, onChat }) => {
   const [currentIndex, setCurrentIndex] = useState(0);

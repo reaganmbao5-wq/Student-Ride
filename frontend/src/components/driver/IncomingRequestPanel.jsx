@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Navigation, Clock, User, Check, X, ShieldAlert } from 'lucide-react';
-import { GlassCard } from '../ui/GlassCard';
+import { GlassCard } from '../common/GlassComponents';
 
 export const IncomingRequestPanel = ({ request, onAccept, onReject, seatsLeft }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);

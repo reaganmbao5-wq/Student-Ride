@@ -258,35 +258,7 @@ const DriverDashboard = () => {
     }
   };
 
-  const handleDeclineRide = () => {
-      toast.success('Passenger notified of your arrival');
-    } catch (error) {
-      toast.error('Failed to update status');
-    }
-  };
 
-  const handleStartRide = async () => {
-    if (!activeRide) return;
-    try {
-      await api.post(`/rides/${activeRide.id}/start`);
-      setActiveRide(prev => ({ ...prev, status: 'ongoing' }));
-      toast.success('Ride started');
-    } catch (error) {
-      toast.error('Failed to start ride');
-    }
-  };
-
-  const handleCompleteRide = async () => {
-    if (!activeRide) return;
-    try {
-      const response = await api.post(`/rides/${activeRide.id}/complete`);
-      toast.success(`Ride completed! Fare: K${response.data.fare}`);
-      setActiveRide(null);
-      fetchData(); // Refresh earnings
-    } catch (error) {
-      toast.error('Failed to complete ride');
-    }
-  };
 
   const handleCancelRide = async (rideId) => {
     try {
