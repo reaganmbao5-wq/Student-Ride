@@ -116,11 +116,47 @@ You can leave these folders as they serve as good references, or delete them if 
 
 ---
 
+## 6. The "Complete Ride" Proximity Bypass
+To ensure the "Complete Ride" button was always visible and clickable during manual testing (regardless of where the script or fake GPS was), we forcefully modified `DriverDashboard.jsx` to show the "Complete Ride" button based simply on the ride's active status (`ongoing`, `ride_started`, `ride_in_progress`, `arriving_destination`). 
+
+**Recommendation: Revert for Production.**
+When hardening for real users, you must implement geographic proximity logic in the frontend so that the "Complete Ride" button ONLY appears or becomes clickable when the driver is within 10-20 meters of the actual dropoff location. The frontend should not just blindly trust the state machine.
+
+**Location**: `frontend/src/pages/DriverDashboard.jsx` (Around line 556)
+
+---
+
+## 7. The Backend "Ride Completed" State Skip
+Because our test app UI did not have separate buttons for all the intermediate states (`ride_in_progress` and `arriving_destination`), we modified the `VALID_TRANSITIONS` object in the backend to allow a driver to jump straight from `ride_started` or `ride_in_progress` directly to `ride_completed`. 
+
+**Recommendation: Revert for Production.**
+In production, the backend should enforce the strict, full lifecycle of the ride. A driver should have to sequentially hit `ride_started` -> `ride_in_progress` -> `arriving_destination` -> `ride_completed`. 
+
+**Location**: `backend/server.py` (Around line 150)
+
+**What it looks like now**:
+```python
+    "ride_started": ["ride_in_progress", "ride_completed", "completed"],
+    "ongoing": ["completed", "arriving_destination"],
+    "ride_in_progress": ["arriving_destination", "ride_completed"],
+```
+
+**If you want to revert to the old strict behavior**, restore it to:
+```python
+    "ride_started": ["ride_in_progress"],
+    "ongoing": ["completed", "arriving_destination"],
+    "ride_in_progress": ["arriving_destination"],
+```
+
+---
+
 ### Summary Checklist for Launch Day:
 - [ ] Remove `isSimulating` state and button from `DriverDashboard.jsx`
 - [ ] Revert `startWatching` logic in `DriverDashboard.jsx`
 - [ ] Implement distance checks (geofencing) for the "I've Arrived" button
-- [ ] Revert `VALID_TRANSITIONS` in `server.py` to require physical flow
+- [ ] Implement distance checks (geofencing) for the "Complete Ride" button
+- [ ] Revert `VALID_TRANSITIONS` in `server.py` to require physical flow for pickup
+- [ ] Revert `VALID_TRANSITIONS` in `server.py` to require physical flow for dropoff
 - [ ] Delete `/test/inject_drivers` route in `server.py`
 - [ ] Delete `/test/accept_trip` route in `server.py`
 - [ ] Delete `/test/get_active_ride_for_simulation` route in `server.py`
