@@ -150,6 +150,31 @@ In production, the backend should enforce the strict, full lifecycle of the ride
 
 ---
 
+## 8. The Wallet Balance Offline Bypass
+In production, if a driver completes a ride and the deducted commission causes their `wallet_balance` to drop below their `minimum_required_balance` (usually 50.0 Kwacha), the backend forces their account status to `RESTRICTED` and immediately kicks them offline (`is_online = False`). To prevent testers from randomly dropping offline after test rides without needing to constantly manually top-up their test wallet, we commented out this offline-kicking logic.
+
+**Recommendation: Revert for Production.**
+In production, drivers who fail to maintain the minimum wallet balance should indeed be kicked offline and blocked from accepting new rides until they top-up.
+
+**Location**: `backend/server.py` (Inside the `complete_ride` function, around line 2266)
+
+**What it looks like now**:
+```python
+    if new_balance < driver.get("minimum_required_balance", 50.0):
+        wallet_status = WalletStatus.RESTRICTED.value
+        # TEMPORARY: Do not force offline based on wallet balance for testing
+        # is_still_online = False
+```
+
+**If you want to revert to the old strict behavior**, restore it to:
+```python
+    if new_balance < driver.get("minimum_required_balance", 50.0):
+        wallet_status = WalletStatus.RESTRICTED.value
+        is_still_online = False
+```
+
+---
+
 ### Summary Checklist for Launch Day:
 - [ ] Remove `isSimulating` state and button from `DriverDashboard.jsx`
 - [ ] Revert `startWatching` logic in `DriverDashboard.jsx`
@@ -157,6 +182,7 @@ In production, the backend should enforce the strict, full lifecycle of the ride
 - [ ] Implement distance checks (geofencing) for the "Complete Ride" button
 - [ ] Revert `VALID_TRANSITIONS` in `server.py` to require physical flow for pickup
 - [ ] Revert `VALID_TRANSITIONS` in `server.py` to require physical flow for dropoff
+- [ ] Restore wallet balance offline constraint in `server.py`
 - [ ] Delete `/test/inject_drivers` route in `server.py`
 - [ ] Delete `/test/accept_trip` route in `server.py`
 - [ ] Delete `/test/get_active_ride_for_simulation` route in `server.py`

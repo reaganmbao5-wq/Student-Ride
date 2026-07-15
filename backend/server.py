@@ -2263,7 +2263,8 @@ async def complete_ride(ride_id: str, user: dict = Depends(require_driver)):
     
     if new_balance < driver.get("minimum_required_balance", 50.0):
         wallet_status = WalletStatus.RESTRICTED.value
-        is_still_online = False
+        # TEMPORARY: Do not force offline based on wallet balance for testing
+        # is_still_online = False
         
     await db.drivers.update_one(
         {"id": driver["id"]},
