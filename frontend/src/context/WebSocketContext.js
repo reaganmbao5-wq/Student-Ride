@@ -73,6 +73,9 @@ export const WebSocketProvider = ({ children }) => {
           case 'ride_cancelled':
             setRideUpdate({ type: 'cancelled', ride_id: data.ride_id });
             break;
+          case 'driver_cancelled_reassigning':
+            setRideUpdate({ type: 'reassigning', ride_id: data.ride_id });
+            break;
           case 'driver_location': {
             const locLat = data.lat !== undefined ? data.lat : (data.location?.lat || data.location?.latitude);
             const locLng = data.lng !== undefined ? data.lng : (data.location?.lng || data.location?.longitude);

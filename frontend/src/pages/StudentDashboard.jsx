@@ -65,6 +65,9 @@ const StudentDashboard = () => {
       } else if (rideUpdate.type === 'cancelled') {
         toast.error('Ride was cancelled');
         setActiveRide(null);
+      } else if (rideUpdate.type === 'reassigning') {
+        toast.error('Driver cancelled. Finding a new driver...', { duration: 5000 });
+        setActiveRide(prev => prev ? { ...prev, status: 'requested', driver_id: null, driver: null } : null);
       }
       clearRideUpdate();
     }
