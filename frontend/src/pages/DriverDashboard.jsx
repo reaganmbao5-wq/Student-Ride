@@ -553,7 +553,7 @@ const DriverDashboard = () => {
                           </button>
                        )}
 
-                       {activeRide.status === 'ongoing' && (
+                       {['ongoing', 'ride_started', 'ride_in_progress', 'arriving_destination'].includes(activeRide.status) && (
                           <button onClick={handleCompleteRide} className="w-full py-4 bg-emerald-500 text-white rounded-xl font-bold active:scale-95 shadow-lg shadow-emerald-500/20 transition-transform">
                             Complete Ride
                           </button>
