@@ -71,9 +71,9 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
           }
         }}
       >
-        <div className="bg-zinc-950/95 backdrop-blur-2xl border-y border-r border-white/10 shadow-2xl rounded-r-2xl py-2.5 px-3.5 flex items-center gap-2 transition-colors hover:bg-black">
-          <span className="text-sm">👥</span>
-          <div className="text-white font-black text-sm tracking-wider flex overflow-hidden h-[20px] items-center relative w-[15px] justify-center">
+        <div className="bg-white/95 backdrop-blur-2xl border-y border-r border-black/10 shadow-2xl rounded-r-2xl py-2.5 px-3.5 flex items-center gap-2 transition-colors hover:bg-white">
+          <span className="text-sm">🔔</span>
+          <div className="text-black font-black text-sm tracking-wider flex overflow-hidden h-[20px] items-center relative w-[15px] justify-center">
             <AnimatePresence mode="popLayout">
               <motion.span 
                 key={requests.length}
@@ -129,12 +129,12 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="bg-zinc-950/95 backdrop-blur-2xl border border-white/10 rounded-full px-4 py-2 mb-4 flex items-center gap-2 cursor-pointer shadow-2xl transition-all hover:bg-black hover:border-white/20"
+            className="bg-white/95 backdrop-blur-2xl border border-black/10 rounded-full px-4 py-2 mb-4 flex items-center gap-2 cursor-pointer shadow-2xl transition-all hover:bg-white hover:border-black/20"
             onClick={() => setIsMinimized(true)}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse shadow-[0_0_8px_rgba(255,215,0,0.6)]" />
-            <span className="text-white text-xs font-bold tracking-wide flex items-center gap-1.5">
-              <span>👥</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
+            <span className="text-black text-xs font-bold tracking-wide flex items-center gap-1.5">
+              <span>🔔</span>
               <div className="flex overflow-hidden h-[16px] items-center relative w-[10px] justify-center">
                 <AnimatePresence mode="popLayout">
                   <motion.span 
@@ -149,7 +149,7 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
                   </motion.span>
                 </AnimatePresence>
               </div>
-              Shared Ride{requests.length > 1 ? 's' : ''} Available
+              Ride{requests.length > 1 ? 's' : ''} Available
             </span>
           </motion.div>
 
@@ -188,34 +188,34 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
                   onDragEnd={handleDragEnd}
                   style={{ transformStyle: "preserve-3d" }}
                 >
-                  <GlassCard className={`p-3.5 shadow-2xl border-white/10 bg-zinc-950/95 backdrop-blur-3xl ${diff !== 0 && 'pointer-events-none blur-[0.5px]'}`}>
+                  <GlassCard className={`p-3.5 shadow-2xl border-black/5 bg-white/95 backdrop-blur-3xl ${diff !== 0 && 'pointer-events-none blur-[0.5px]'}`}>
                     
                     {/* Top Row: User & Fare */}
                     <div className="flex justify-between items-start mb-4">
                       <div>
-                        <p className="text-lg font-heading font-extrabold text-white line-clamp-1 drop-shadow-md">
+                        <p className="text-lg font-heading font-extrabold text-black line-clamp-1 drop-shadow-sm">
                           {request.student_name || 'Student'}
                         </p>
-                        <p className="text-[14px] text-gold mt-0.5 font-extrabold">K{request.fare?.toFixed(2)}</p>
+                        <p className="text-[14px] text-zinc-900 mt-0.5 font-extrabold">K{request.fare?.toFixed(2)}</p>
                       </div>
-                      <div className="bg-gold/15 text-gold text-[10px] uppercase font-black tracking-widest px-2.5 py-1 rounded-full border border-gold/20 backdrop-blur-md">
-                        {request.passenger_count || 1} Seat{request.passenger_count > 1 ? 's' : ''}
+                      <div className="bg-blue-500/10 text-blue-600 text-[10px] uppercase font-black tracking-widest px-2.5 py-1 rounded-full border border-blue-500/20 backdrop-blur-md">
+                        {request.ride_mode === 'shared' ? 'Shared' : 'Private'}
                       </div>
                     </div>
 
                     {/* Formatted Addresses */}
                     <div className="space-y-3.5 mb-5 relative">
                       {/* Connecting Line */}
-                      <div className="absolute left-[4.5px] top-3 bottom-3 w-[1px] bg-gradient-to-b from-white/30 to-gold/30" />
+                      <div className="absolute left-[4.5px] top-3 bottom-3 w-[1px] bg-gradient-to-b from-black/20 to-blue-500/30" />
                       
                       <div className="flex items-start gap-3.5">
-                        <div className="w-2.5 h-2.5 rounded-full border-[2.5px] border-zinc-300 mt-1 shrink-0 bg-black z-10" />
-                        <p className="text-[13px] text-zinc-100 font-semibold leading-tight drop-shadow-sm">{formatAddress(request.pickup_location?.address)}</p>
+                        <div className="w-2.5 h-2.5 rounded-full border-[2.5px] border-zinc-700 mt-1 shrink-0 bg-white z-10" />
+                        <p className="text-[13px] text-zinc-800 font-bold leading-tight drop-shadow-sm">{formatAddress(request.pickup_location?.address)}</p>
                       </div>
                       
                       <div className="flex items-start gap-3.5">
-                        <div className="w-2.5 h-2.5 rounded-full bg-gold mt-1 shrink-0 shadow-[0_0_8px_rgba(255,215,0,0.8)] z-10" />
-                        <p className="text-[13px] text-zinc-100 font-semibold leading-tight drop-shadow-sm">{formatAddress(request.dropoff_location?.address)}</p>
+                        <div className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-1 shrink-0 shadow-[0_0_8px_rgba(59,130,246,0.5)] z-10" />
+                        <p className="text-[13px] text-zinc-800 font-bold leading-tight drop-shadow-sm">{formatAddress(request.dropoff_location?.address)}</p>
                       </div>
                     </div>
 
@@ -239,12 +239,12 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex items-center gap-1.5 mt-6 bg-zinc-950/80 backdrop-blur-xl px-3 py-1.5 rounded-full border border-white/5 shadow-lg"
+            className="flex items-center gap-1.5 mt-6 bg-white/90 backdrop-blur-xl px-3 py-1.5 rounded-full border border-black/5 shadow-lg"
           >
             {requests.map((_, i) => (
               <div 
                 key={i} 
-                className={`transition-all duration-500 rounded-full ${i === currentIndex ? 'w-4 h-1.5 bg-gold shadow-[0_0_8px_rgba(255,215,0,0.8)]' : 'w-1.5 h-1.5 bg-white/30'}`}
+                className={`transition-all duration-500 rounded-full ${i === currentIndex ? 'w-4 h-1.5 bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]' : 'w-1.5 h-1.5 bg-black/20'}`}
               />
             ))}
           </motion.div>

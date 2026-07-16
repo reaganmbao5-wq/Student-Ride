@@ -26,8 +26,6 @@ const DriverDashboard = () => {
   const [earnings, setEarnings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentLocation, setCurrentLocation] = useState(null);
-  const [showRideRequest, setShowRideRequest] = useState(false);
-  const [incomingRide, setIncomingRide] = useState(null);
   const [incomingSharedRequests, setIncomingSharedRequests] = useState([]);
   const [isSimulating, setIsSimulating] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -52,6 +50,15 @@ const DriverDashboard = () => {
     }, [isOnline, isSimulating, sendLocationUpdate, api]),
     { enableHighAccuracy: true }
   );
+
+  const refreshActiveRide = useCallback(async () => {
+    try {
+      const res = await api.get('/rides/active');
+      setActiveRide(res.data);
+    } catch (err) {
+      console.error("Error refreshing active ride:", err);
+    }
+  }, [api]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -98,21 +105,30 @@ const DriverDashboard = () => {
       toast.success(`You received a ${rideUpdate.rating}-star rating!`);
       setEarnings(prev => ({ ...prev, rating: rideUpdate.new_average }));
       refreshDriverProfile();
-    } else if (rideUpdate.type === 'cancelled') {
-      toast.error('Ride was cancelled by the passenger', { duration: 5000 });
-      // Remove from pending rides immediately
-      setPendingRides(prev => prev.filter(r => r.id !== rideUpdate.ride_id));
-      setIncomingSharedRequests(prev => prev.filter(r => r.id !== rideUpdate.ride_id));
-      if (incomingRide?.id === rideUpdate.ride_id) {
-        setShowRideRequest(false);
-        setIncomingRide(null);
-      }
-    } else if (rideUpdate.type === 'accepted') {
+    } else if (rideUpdate.type === 'cancelled' || rideUpdate.type === 'declined') {
+        // Find if this was an active shared ride being cancelled by a specific student
+        if (activeRide && activeRide.ride_mode === 'shared' && rideUpdate.ride_id === activeRide.id && rideUpdate.student_id) {
+          // It's a partial cancellation (one student cancelled their seat)
+          // We don't remove the whole activeRide, we just refresh it
+          refreshActiveRide();
+          toast.info("A passenger cancelled their shared ride request.");
+        } 
+        else if (activeRide?.id === rideUpdate.ride_id) {
+          // The entire ride was cancelled
+          setActiveRide(null);
+          setRouteGeometry(null);
+          toast.info('Ride was cancelled');
+        }
+        
+        // Always remove from pending lists
+        setPendingRides(prev => prev.filter(r => r.id !== rideUpdate.ride_id));
+        setIncomingSharedRequests(prev => prev.filter(r => r.id !== rideUpdate.ride_id));
+      } else if (rideUpdate.type === 'accepted') {
       // Remove from pending rides once someone accepts it
       setPendingRides(prev => prev.filter(r => r.id !== rideUpdate.ride?.id));
       setIncomingSharedRequests(prev => prev.filter(r => r.id !== rideUpdate.ride?.id));
     }
-  }, [rideUpdate, refreshDriverProfile, incomingRide]);
+  }, [rideUpdate, refreshDriverProfile, activeRide, refreshActiveRide]);
 
   // Simulation Mode Logic: Just prevents watchPosition from overriding the python script
   useEffect(() => {
@@ -137,46 +153,23 @@ const DriverDashboard = () => {
 
   useEffect(() => {
     if (newRideRequest && isOnline) {
-      if (newRideRequest.ride_mode === 'shared') {
-        // ALWAYS use the Shared Ride Request Panel for shared rides
-        setIncomingSharedRequests(prev => {
-          if (!prev.find(r => r.id === newRideRequest.id)) {
-            return [...prev, newRideRequest];
-          }
-          return prev;
-        });
+      // ALWAYS use the Panel for ALL rides (Private & Shared)
+      setIncomingSharedRequests(prev => {
+        if (!prev.find(r => r.id === newRideRequest.id)) {
+          return [...prev, newRideRequest];
+        }
+        return prev;
+      });
 
-        // Also add to pending rides list
-        setPendingRides(prev => {
-          if (!prev.find(r => r.id === newRideRequest.id)) {
-            return [newRideRequest, ...prev];
-          }
-          return prev;
-        });
-        
-        clearRideRequest();
-      } else if (!activeRide) {
-        // Private rides use the standard full-screen popup
-        setIncomingRide(newRideRequest);
-        setShowRideRequest(true);
-
-        // Fix for real-time list appearance (Appends instantly)
-        setPendingRides(prev => {
-          if (!prev.find(r => r.id === newRideRequest.id)) {
-            return [newRideRequest, ...prev];
-          }
-          return prev;
-        });
-
-        // Auto-dismiss after 30 seconds
-        const timeout = setTimeout(() => {
-          setShowRideRequest(false);
-          setIncomingRide(null);
-          clearRideRequest();
-        }, 30000);
-
-        return () => clearTimeout(timeout);
-      }
+      // Also add to pending rides list
+      setPendingRides(prev => {
+        if (!prev.find(r => r.id === newRideRequest.id)) {
+          return [newRideRequest, ...prev];
+        }
+        return prev;
+      });
+      
+      clearRideRequest();
     }
   }, [newRideRequest, isOnline, activeRide, clearRideRequest]);
 
@@ -202,14 +195,6 @@ const DriverDashboard = () => {
     }
   }, [activeRide?.id, activeRide?.pickup_location, activeRide?.dropoff_location, api]);
 
-  const formatAddress = (location) => {
-    if (!location?.address) return "Location not provided";
-    if (/^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(location.address)) {
-      return "Current Location";
-    }
-    return location.address;
-  };
-
   const handleToggleOnline = async () => {
     if (!driverProfile?.is_approved) {
       toast.error('Your account is pending approval');
@@ -230,15 +215,11 @@ const DriverDashboard = () => {
       setLoading(true);
       const response = await api.post(`/rides/${rideId}/accept`);
       setActiveRide(response.data);
-      setShowRideRequest(false);
-      setIncomingRide(null);
       clearRideRequest();
       toast.success('Ride accepted!');
     } catch (error) {
       console.error('Error accepting ride:', error);
       toast.error(error.response?.data?.detail || 'Failed to accept ride');
-      setShowRideRequest(false);
-      setIncomingRide(null);
     } finally {
       setLoading(false);
     }
@@ -267,8 +248,6 @@ const DriverDashboard = () => {
   };
 
   const handleDeclineRide = () => {
-    setShowRideRequest(false);
-    setIncomingRide(null);
     clearRideRequest();
   };
 
@@ -642,64 +621,6 @@ const DriverDashboard = () => {
         />
 
         <div className="p-4 md:p-8 space-y-6" data-testid="driver-dashboard">
-          {/* Incoming Ride Request Modal Overlay (Private Only Now) */}
-          {showRideRequest && incomingRide && incomingRide.ride_mode !== 'shared' && (
-            <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-4 pb-24 md:pb-4 bg-black/60 backdrop-blur-sm">
-            <GlassCard className="w-full max-w-md p-6 animate-in slide-in-from-bottom" data-testid="ride-request-modal">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center animate-pulse-gold">
-                  <Bell className="w-6 h-6 text-gold" />
-                </div>
-                <div>
-                  <h3 className="font-heading font-semibold text-foreground">New Ride Request!</h3>
-                  <div className="flex items-center gap-2">
-                    <p className="text-muted-foreground text-sm">K{incomingRide.fare?.toFixed(2)} ΓÇó {incomingRide.distance?.toFixed(1)} km</p>
-                    <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded ${incomingRide.ride_mode === 'shared' ? 'bg-blue-500/20 text-blue-500' : 'bg-zinc-100 dark:bg-zinc-800 text-muted-foreground'}`}>
-                      {incomingRide.ride_mode === 'shared' ? 'Shared' : 'Private'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3 mb-6">
-                <div className="flex items-start gap-3">
-                  <div className="w-3 h-3 rounded-full bg-gold mt-1.5" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Pickup</p>
-                    <p className="text-foreground text-sm">{incomingRide.pickup_location?.address}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-3 h-3 rounded-full bg-emerald-500 mt-1.5" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Dropoff</p>
-                    <p className="text-foreground text-sm">{incomingRide.dropoff_location?.address}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <GoldButton
-                  variant="secondary"
-                  className="flex-1"
-                  onClick={handleDeclineRide}
-                  data-testid="decline-ride-btn"
-                >
-                  <X className="w-5 h-5 mr-2" />
-                  Decline
-                </GoldButton>
-                <GoldButton
-                  className="flex-1"
-                  onClick={() => handleAcceptRide(incomingRide.id)}
-                  data-testid="accept-ride-btn"
-                >
-                  <Check className="w-5 h-5 mr-2" />
-                  Accept
-                </GoldButton>
-              </div>
-            </GlassCard>
-          </div>
-        )}
 
         {/* Header with Online Toggle */}
         <div className="flex items-center justify-between">
