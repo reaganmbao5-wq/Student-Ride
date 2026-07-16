@@ -574,7 +574,7 @@ const DriverDashboard = () => {
       <div className="p-4 md:p-8 space-y-6" data-testid="driver-dashboard">
         {/* Incoming Ride Request Modal Overlay */}
         {showRideRequest && incomingRide && (
-          <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-4 pb-24 md:pb-4 bg-black/60 backdrop-blur-sm">
             <GlassCard className="w-full max-w-md p-6 animate-in slide-in-from-bottom" data-testid="ride-request-modal">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center animate-pulse-gold">
