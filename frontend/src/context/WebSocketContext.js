@@ -8,6 +8,7 @@ export const WebSocketProvider = ({ children }) => {
   const [isConnected, setIsConnected] = useState(false);
   const [driverLocation, setDriverLocation] = useState(null);
   const [newRideRequest, setNewRideRequest] = useState(null);
+  const [removedSharedRideId, setRemovedSharedRideId] = useState(null);
   const [rideUpdate, setRideUpdate] = useState(null);
   const [newMessage, setNewMessage] = useState(null);
   const wsRef = useRef(null);
@@ -58,6 +59,10 @@ export const WebSocketProvider = ({ children }) => {
         switch (data.type) {
           case 'new_ride_request':
             setNewRideRequest(data.ride);
+            break;
+          case 'shared_ride_cancelled':
+          case 'shared_ride_accepted_by_other':
+            setRemovedSharedRideId(data.ride_id);
             break;
           case 'ride_accepted':
             setRideUpdate({ type: 'accepted', ride: data.ride, driver: data.driver });
@@ -199,6 +204,7 @@ export const WebSocketProvider = ({ children }) => {
   const value = {
     isConnected,
     newRideRequest,
+    removedSharedRideId,
     rideUpdate,
     driverLocation,
     newMessage,

@@ -2153,11 +2153,17 @@ async def accept_ride(ride_id: str, user: dict = Depends(require_driver)):
     
     # Notify student
     await manager.send_personal_message({
-        "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
+        "ride_mode": ride_mode,
         "type": "ride_accepted",
-        "ride": ride,
+        "ride": target_ride,
         "driver": driver
-    }, ride["student_id"])
+    }, target_ride["student_id"])
+    
+    # Broadcast to all other drivers that this ride is no longer in the shared pool
+    await manager.broadcast_to_nearby_drivers({
+        "type": "shared_ride_accepted_by_other",
+        "ride_id": ride_id
+    }, target_ride.get("pickup_location"))
     
     # Push notification
     await notification_service.send(
@@ -2556,17 +2562,20 @@ async def cancel_ride(ride_id: str, user: dict = Depends(get_current_user)):
         # Driver cancelled: put the ride back in the pool
         await db.rides.update_one(
             {"id": ride_id},
-            {"$set": {"status": RideStatus.REQUESTED.value, "driver_id": None, "accepted_at": None}}
+            {"$set": {
+                "status": RideStatus.REQUESTED.value,
+                "driver_id": None
+            }}
         )
         
-        # Notify student it's reassigning
+        # Notify the student
         await manager.send_personal_message({
-            "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value),
             "type": "driver_cancelled_reassigning",
-            "ride_id": ride_id
+            "ride_id": ride_id,
+            "message": "Your driver had to cancel. Finding a new driver..."
         }, ride["student_id"])
         
-        # Broadcast to other drivers
+        # Broadcast to pool that ride is back available
         ride["status"] = RideStatus.REQUESTED.value
         ride["driver_id"] = None
         await manager.broadcast_to_nearby_drivers({
@@ -2582,28 +2591,18 @@ async def cancel_ride(ride_id: str, user: dict = Depends(get_current_user)):
             {"$set": {"status": RideStatus.CANCELLED.value}}
         )
         
-        # Notify driver
         if ride.get("driver_id"):
-            driver = await db.drivers.find_one({"id": ride["driver_id"]}, {"_id": 0})
-            if driver:
-                await manager.send_personal_message({
-                    "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value),
-                    "type": "ride_cancelled",
-                    "ride_id": ride_id
-                }, driver["user_id"])
-                
-                await notification_service.send(
-                    user_id=driver["user_id"],
-                    type="ride_cancelled",
-                    payload={
-                        "title": "Ride Cancelled",
-                        "body": "The student has cancelled the ride.",
-                        "url": "/",
-                        "url": "/",
-                        "icon": "/logo192.png",
-                        "badge": "/favicon-32x32.png"
-                    }
-                )
+            # Notify assigned driver
+            await manager.send_personal_message({
+                "type": "ride_cancelled",
+                "ride_id": ride_id
+            }, ride["driver_id"])
+        else:
+            # If no driver was assigned, broadcast cancellation to the shared pool
+            await manager.broadcast_to_nearby_drivers({
+                "type": "shared_ride_cancelled",
+                "ride_id": ride_id
+            }, ride.get("pickup_location"))
         return {"status": "cancelled"}
 
 @api_router.post("/emergency/sos")
@@ -2820,12 +2819,11 @@ async def get_pending_rides(user: dict = Depends(require_driver)):
     
     result = []
     for ride in rides:
-        # Final capacity check for shared rides
+        # We no longer strictly filter shared rides by capacity here so the frontend can populate 
+        # the masterSharedRidePool. The frontend will dynamically filter based on real-time capacity.
         if ride.get("ride_mode") == RideMode.SHARED.value:
             if not driver.get("accepts_shared_rides", True):
                 continue
-            available_seats = driver.get("vehicle_capacity", 4) - active_state["active_passengers"]
-            if ride.get("passenger_count", 1) > available_seats:
                 continue
                 
         student = await db.users.find_one({"id": ride["student_id"]}, {"_id": 0})

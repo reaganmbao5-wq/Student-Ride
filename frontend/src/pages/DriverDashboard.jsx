@@ -18,16 +18,26 @@ import { SharedRideRequestPanel } from '../components/driver/SharedRideRequestPa
 const DriverDashboard = () => {
   const navigate = useNavigate();
   const { user, api, driverProfile, refreshDriverProfile, logout } = useAuth();
-  const { newRideRequest, clearRideRequest, sendLocationUpdate, rideUpdate, clearRideUpdate, driverLocation, isConnected } = useWebSocket();
+  const { newRideRequest, removedSharedRideId, clearRideRequest, sendLocationUpdate, rideUpdate, clearRideUpdate, driverLocation, isConnected } = useWebSocket();
 
   const [isOnline, setIsOnline] = useState(false);
   const [activeRide, setActiveRide] = useState(null);
   const [pendingRides, setPendingRides] = useState([]);
+  const [masterSharedRidePool, setMasterSharedRidePool] = useState([]);
   const [routeGeometry, setRouteGeometry] = useState(null);
   const [earnings, setEarnings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentLocation, setCurrentLocation] = useState(null);
-  const [incomingSharedRequests, setIncomingSharedRequests] = useState([]);
+  
+  const incomingSharedRequests = useMemo(() => {
+    if (!driverProfile?.accepts_shared_rides) return [];
+    
+    // We filter masterSharedRidePool based on capacity
+    const availableSeats = (driverProfile?.vehicle_capacity || 4) - (activeRide?.active_passengers || 0);
+    
+    return masterSharedRidePool.filter(ride => ride.passenger_count <= availableSeats);
+  }, [masterSharedRidePool, driverProfile?.accepts_shared_rides, driverProfile?.vehicle_capacity, activeRide?.active_passengers]);
+  
   const [isSimulating, setIsSimulating] = useState(false);
   const [uploading, setUploading] = useState(false);
   
@@ -71,7 +81,10 @@ const DriverDashboard = () => {
 
       setActiveRide(activeRes.data);
       setEarnings(earningsRes.data);
-      setPendingRides(pendingRes.data || []);
+      
+      const allPending = pendingRes.data || [];
+      setPendingRides(allPending.filter(r => r.ride_mode !== 'shared'));
+      setMasterSharedRidePool(allPending.filter(r => r.ride_mode === 'shared'));
       
       const profile = await refreshDriverProfile();
       if (!profile && !driverProfile) {
@@ -143,13 +156,20 @@ const DriverDashboard = () => {
         
         // Always remove from pending lists
         setPendingRides(prev => prev.filter(r => r.id !== rideUpdate.ride_id));
-        setIncomingSharedRequests(prev => prev.filter(r => r.id !== rideUpdate.ride_id));
+        setMasterSharedRidePool(prev => prev.filter(r => r.id !== rideUpdate.ride_id));
       } else if (rideUpdate.type === 'accepted') {
-      // Remove from pending rides once someone accepts it
-      setPendingRides(prev => prev.filter(r => r.id !== rideUpdate.ride?.id));
-      setIncomingSharedRequests(prev => prev.filter(r => r.id !== rideUpdate.ride?.id));
+        // Remove from pending rides once someone accepts it
+        setPendingRides(prev => prev.filter(r => r.id !== rideUpdate.ride?.id));
+        setMasterSharedRidePool(prev => prev.filter(r => r.id !== rideUpdate.ride?.id));
     }
   }, [rideUpdate, refreshDriverProfile, activeRide, refreshActiveRide]);
+
+  // Handle real-time synchronization for shared pool
+  useEffect(() => {
+    if (removedSharedRideId) {
+      setMasterSharedRidePool(prev => prev.filter(r => r.id !== removedSharedRideId));
+    }
+  }, [removedSharedRideId]);
 
   // Simulation Mode Logic: Just prevents watchPosition from overriding the python script
   useEffect(() => {
@@ -174,27 +194,25 @@ const DriverDashboard = () => {
 
   useEffect(() => {
     if (newRideRequest && isOnline) {
-      // If the driver is already on an active ride, push to the floating SharedRideRequestPanel
-      if (activeRide) {
-        setIncomingSharedRequests(prev => {
+      if (newRideRequest.ride_mode === 'shared') {
+        setMasterSharedRidePool(prev => {
           if (!prev.find(r => r.id === newRideRequest.id)) {
             return [...prev, newRideRequest];
           }
           return prev;
         });
+      } else {
+        setPendingRides(prev => {
+          if (!prev.find(r => r.id === newRideRequest.id)) {
+            return [newRideRequest, ...prev];
+          }
+          return prev;
+        });
       }
-
-      // Always add to pending rides list (this feeds the "Available Rides" list on the home page)
-      setPendingRides(prev => {
-        if (!prev.find(r => r.id === newRideRequest.id)) {
-          return [newRideRequest, ...prev];
-        }
-        return prev;
-      });
       
       clearRideRequest();
     }
-  }, [newRideRequest, isOnline, activeRide, clearRideRequest]);
+  }, [newRideRequest, isOnline, clearRideRequest]);
 
   useEffect(() => {
     if (activeRide?.pickup_location && activeRide?.dropoff_location) {
@@ -253,7 +271,7 @@ const DriverDashboard = () => {
       setLoading(true);
       const response = await api.post(`/rides/${rideId}/accept`);
       setActiveRide(response.data);
-      setIncomingSharedRequests(prev => prev.filter(r => r.id !== rideId));
+      setMasterSharedRidePool(prev => prev.filter(r => r.id !== rideId));
       setPendingRides(prev => prev.filter(r => r.id !== rideId));
       toast.success('Shared ride accepted!');
       fetchData(); // Refresh everything safely

@@ -92,8 +92,8 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
     );
   }
 
-  // Handle Carousel Drag
-  const handleDragEnd = (e, info) => {
+  // Handle Carousel Pan (Swipe detection without moving the card physically)
+  const handlePanEnd = (e, info) => {
     const threshold = 40; // Swipe threshold
     
     // Swipe LEFT -> Minimize
@@ -116,7 +116,7 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
       }
       resetTimer();
     } else {
-      // If barely dragged, reset timer anyway
+      // If barely swiped, reset timer anyway
       resetTimer();
     }
   };
@@ -163,21 +163,21 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
 
         {/* Solid Single Card View with Swipe Gestures */}
         <div className="relative w-full h-[230px] flex justify-center">
-          <AnimatePresence mode="popLayout">
-            {requests.length > 0 && requests[currentIndex] && (
-              <motion.div
-                key={requests[currentIndex].id}
-                className="absolute w-full top-0"
-                initial={{ opacity: 0, y: 40, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -40, scale: 0.95, transition: { duration: 0.2 } }}
-                transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-                drag
-                dragConstraints={{ top: 0, bottom: 0, left: 0, right: 0 }}
-                dragElastic={0.1}
-                onDragEnd={handleDragEnd}
-              >
-                <GlassCard className="p-3.5 shadow-2xl border border-black/5 bg-white/95 backdrop-blur-3xl">
+          {requests.length > 0 && requests[currentIndex] && (
+            <motion.div
+              className="absolute w-full top-0 touch-none"
+              onPanEnd={handlePanEnd}
+            >
+              <GlassCard className="p-3.5 shadow-2xl border border-black/5 bg-white/95 backdrop-blur-3xl overflow-hidden relative">
+                <AnimatePresence mode="popLayout">
+                  <motion.div
+                    key={requests[currentIndex].id}
+                    className="w-full"
+                    initial={{ opacity: 0, y: 40, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -40, scale: 0.95, transition: { duration: 0.2 } }}
+                    transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                  >
                   
                   {/* Top Row: User & Fare */}
                   <div className="flex justify-between items-start mb-4">
@@ -223,10 +223,11 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
                     Accept
                   </GoldButton>
 
-                </GlassCard>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  </motion.div>
+                </AnimatePresence>
+              </GlassCard>
+            </motion.div>
+          )}
         </div>
 
         {/* Pagination Indicators */}
