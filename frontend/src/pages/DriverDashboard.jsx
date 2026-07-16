@@ -12,6 +12,7 @@ import { routeCache } from '../map/route/RouteCache';
 import { toast } from 'sonner';
 
 import { ActiveTripQueue } from '../components/driver/ActiveTripQueue';
+import { SharedRideRequestPanel } from '../components/driver/SharedRideRequestPanel';
 
 const DriverDashboard = () => {
   const navigate = useNavigate();
@@ -27,6 +28,7 @@ const DriverDashboard = () => {
   const [currentLocation, setCurrentLocation] = useState(null);
   const [showRideRequest, setShowRideRequest] = useState(false);
   const [incomingRide, setIncomingRide] = useState(null);
+  const [incomingSharedRequests, setIncomingSharedRequests] = useState([]);
   const [isSimulating, setIsSimulating] = useState(false);
   const [uploading, setUploading] = useState(false);
   
@@ -100,6 +102,7 @@ const DriverDashboard = () => {
       toast.error('Ride was cancelled by the passenger', { duration: 5000 });
       // Remove from pending rides immediately
       setPendingRides(prev => prev.filter(r => r.id !== rideUpdate.ride_id));
+      setIncomingSharedRequests(prev => prev.filter(r => r.id !== rideUpdate.ride_id));
       if (incomingRide?.id === rideUpdate.ride_id) {
         setShowRideRequest(false);
         setIncomingRide(null);
@@ -107,6 +110,7 @@ const DriverDashboard = () => {
     } else if (rideUpdate.type === 'accepted') {
       // Remove from pending rides once someone accepts it
       setPendingRides(prev => prev.filter(r => r.id !== rideUpdate.ride?.id));
+      setIncomingSharedRequests(prev => prev.filter(r => r.id !== rideUpdate.ride?.id));
     }
   }, [rideUpdate, refreshDriverProfile, incomingRide]);
 
@@ -132,26 +136,48 @@ const DriverDashboard = () => {
   }, [isOnline, isWatching, isSimulating, startWatching, stopWatching]);
 
   useEffect(() => {
-    if (newRideRequest && isOnline && !activeRide) {
-      setIncomingRide(newRideRequest);
-      setShowRideRequest(true);
+    if (newRideRequest && isOnline) {
+      if (!activeRide) {
+        // Standard full-screen popup for the first ride
+        setIncomingRide(newRideRequest);
+        setShowRideRequest(true);
 
-      // Fix for real-time list appearance (Appends instantly)
-      setPendingRides(prev => {
-        if (!prev.find(r => r.id === newRideRequest.id)) {
-          return [newRideRequest, ...prev];
-        }
-        return prev;
-      });
+        // Fix for real-time list appearance (Appends instantly)
+        setPendingRides(prev => {
+          if (!prev.find(r => r.id === newRideRequest.id)) {
+            return [newRideRequest, ...prev];
+          }
+          return prev;
+        });
 
-      // Auto-dismiss after 30 seconds
-      const timeout = setTimeout(() => {
-        setShowRideRequest(false);
-        setIncomingRide(null);
+        // Auto-dismiss after 30 seconds
+        const timeout = setTimeout(() => {
+          setShowRideRequest(false);
+          setIncomingRide(null);
+          clearRideRequest();
+        }, 30000);
+
+        return () => clearTimeout(timeout);
+      } else if (newRideRequest.ride_mode === 'shared') {
+        // Driver already has an active ride, and a shared request comes in
+        // Intelligently stack it in the non-blocking SharedRideRequestPanel
+        setIncomingSharedRequests(prev => {
+          if (!prev.find(r => r.id === newRideRequest.id)) {
+            return [...prev, newRideRequest];
+          }
+          return prev;
+        });
+
+        // Also add to pending rides list
+        setPendingRides(prev => {
+          if (!prev.find(r => r.id === newRideRequest.id)) {
+            return [newRideRequest, ...prev];
+          }
+          return prev;
+        });
+        
         clearRideRequest();
-      }, 30000);
-
-      return () => clearTimeout(timeout);
+      }
     }
   }, [newRideRequest, isOnline, activeRide, clearRideRequest]);
 
@@ -202,6 +228,7 @@ const DriverDashboard = () => {
 
   const handleAcceptRide = async (rideId) => {
     try {
+      setLoading(true);
       const response = await api.post(`/rides/${rideId}/accept`);
       setActiveRide(response.data);
       setShowRideRequest(false);
@@ -209,8 +236,35 @@ const DriverDashboard = () => {
       clearRideRequest();
       toast.success('Ride accepted!');
     } catch (error) {
+      console.error('Error accepting ride:', error);
       toast.error(error.response?.data?.detail || 'Failed to accept ride');
+      setShowRideRequest(false);
+      setIncomingRide(null);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleAcceptSharedRide = async (rideId) => {
+    try {
+      setLoading(true);
+      const response = await api.post(`/rides/${rideId}/accept`);
+      setActiveRide(response.data);
+      setIncomingSharedRequests(prev => prev.filter(r => r.id !== rideId));
+      setPendingRides(prev => prev.filter(r => r.id !== rideId));
+      toast.success('Shared ride accepted!');
+      fetchData(); // Refresh everything safely
+    } catch (error) {
+      console.error('Error accepting shared ride:', error);
+      toast.error(error.response?.data?.detail || 'Failed to accept ride');
+      setIncomingSharedRequests(prev => prev.filter(r => r.id !== rideId));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeclineSharedRide = (rideId) => {
+    setIncomingSharedRequests(prev => prev.filter(r => r.id !== rideId));
   };
 
   const handleDeclineRide = () => {
@@ -322,7 +376,7 @@ const DriverDashboard = () => {
             </p>
             <div className="p-4 bg-muted rounded-xl text-left mb-6 font-body border border-border">
               <p className="text-sm text-muted-foreground mb-2">Vehicle Details:</p>
-              <p className="text-foreground">{driverProfile.vehicle_model} ΓÇó {driverProfile.vehicle_color}</p>
+              <p className="text-foreground">{driverProfile.vehicle_model} • {driverProfile.vehicle_color}</p>
               <p className="text-muted-foreground">{driverProfile.plate_number}</p>
             </div>
 
@@ -392,19 +446,20 @@ const DriverDashboard = () => {
     if (!isArrivedOrStarted && activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
     if (isArrivedOrStarted && activeRide.dropoff_location) bounds.push([activeRide.dropoff_location.lat, activeRide.dropoff_location.lng]);
 
-    let getStatusText = () => {
-      switch(activeRide.status) {
-        case 'accepted': return 'Pick up passenger';
-        case 'driver_arrived': return 'Wait for passenger';
-        case 'ongoing': return 'Drop off passenger';
-        default: return 'Active Ride';
-      }
-    };
-
-    let targetLocation = !isArrivedOrStarted ? activeRide.pickup_location : activeRide.dropoff_location;
+    // Make sure we have a valid target location for navigation
+    const targetLocation = activeRide.status === 'requested' || activeRide.status === 'accepted' 
+      ? activeRide.pickup_location 
+      : activeRide.dropoff_location;
 
     return (
       <div className="fixed inset-0 bg-background overflow-hidden flex flex-col" data-testid="driver-active-ride">
+        {/* Render intelligent shared ride requests here */}
+        <SharedRideRequestPanel 
+          requests={incomingSharedRequests}
+          onAccept={handleAcceptSharedRide}
+          onDecline={handleDeclineSharedRide}
+        />
+        
         {/* Map Layer */}
         <div className="flex-1 relative z-0">
           <PlatformMap
