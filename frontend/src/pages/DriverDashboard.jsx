@@ -137,8 +137,26 @@ const DriverDashboard = () => {
 
   useEffect(() => {
     if (newRideRequest && isOnline) {
-      if (!activeRide) {
-        // Standard full-screen popup for the first ride
+      if (newRideRequest.ride_mode === 'shared') {
+        // ALWAYS use the Shared Ride Request Panel for shared rides
+        setIncomingSharedRequests(prev => {
+          if (!prev.find(r => r.id === newRideRequest.id)) {
+            return [...prev, newRideRequest];
+          }
+          return prev;
+        });
+
+        // Also add to pending rides list
+        setPendingRides(prev => {
+          if (!prev.find(r => r.id === newRideRequest.id)) {
+            return [newRideRequest, ...prev];
+          }
+          return prev;
+        });
+        
+        clearRideRequest();
+      } else if (!activeRide) {
+        // Private rides use the standard full-screen popup
         setIncomingRide(newRideRequest);
         setShowRideRequest(true);
 
@@ -158,25 +176,6 @@ const DriverDashboard = () => {
         }, 30000);
 
         return () => clearTimeout(timeout);
-      } else if (newRideRequest.ride_mode === 'shared') {
-        // Driver already has an active ride, and a shared request comes in
-        // Intelligently stack it in the non-blocking SharedRideRequestPanel
-        setIncomingSharedRequests(prev => {
-          if (!prev.find(r => r.id === newRideRequest.id)) {
-            return [...prev, newRideRequest];
-          }
-          return prev;
-        });
-
-        // Also add to pending rides list
-        setPendingRides(prev => {
-          if (!prev.find(r => r.id === newRideRequest.id)) {
-            return [newRideRequest, ...prev];
-          }
-          return prev;
-        });
-        
-        clearRideRequest();
       }
     }
   }, [newRideRequest, isOnline, activeRide, clearRideRequest]);
@@ -630,15 +629,22 @@ const DriverDashboard = () => {
   }
 
 
-  // ==========================================
-  // STANDARD DASHBOARD VIEW (NO ACTIVE RIDE)
-  // ==========================================
-  return (
-    <Layout>
-      <div className="p-4 md:p-8 space-y-6" data-testid="driver-dashboard">
-        {/* Incoming Ride Request Modal Overlay */}
-        {showRideRequest && incomingRide && (
-          <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-4 pb-24 md:pb-4 bg-black/60 backdrop-blur-sm">
+    // ==========================================
+    // STANDARD DASHBOARD VIEW (NO ACTIVE RIDE)
+    // ==========================================
+    return (
+      <Layout>
+        {/* Always render SharedRideRequestPanel for shared rides */}
+        <SharedRideRequestPanel 
+          requests={incomingSharedRequests}
+          onAccept={handleAcceptSharedRide}
+          onDecline={handleDeclineSharedRide}
+        />
+
+        <div className="p-4 md:p-8 space-y-6" data-testid="driver-dashboard">
+          {/* Incoming Ride Request Modal Overlay (Private Only Now) */}
+          {showRideRequest && incomingRide && incomingRide.ride_mode !== 'shared' && (
+            <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-4 pb-24 md:pb-4 bg-black/60 backdrop-blur-sm">
             <GlassCard className="w-full max-w-md p-6 animate-in slide-in-from-bottom" data-testid="ride-request-modal">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center animate-pulse-gold">

@@ -16,12 +16,23 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
     return `${parts[0].trim()}, ${parts[1].trim()}`;
   };
 
+  const prevLengthRef = useRef(requests.length);
+
   useEffect(() => {
-    if (requests.length > 0) {
+    // If we receive our very first request (0 -> 1), expand the panel
+    if (prevLengthRef.current === 0 && requests.length > 0) {
       setIsMinimized(false);
       resetTimer();
+    } 
+    // If the panel is ALREADY expanded, reset the timer to give the driver time to read
+    else if (!isMinimized && requests.length > 0) {
+      resetTimer();
     }
-  }, [requests.length]);
+    // If it is minimized and a new request arrives, DO NOT auto-expand. 
+    // Just update the counter (React handles the re-render).
+    
+    prevLengthRef.current = requests.length;
+  }, [requests.length, isMinimized]);
 
   // Ensure currentIndex stays within bounds when items are removed
   useEffect(() => {
@@ -42,10 +53,11 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
   if (isMinimized) {
     return (
       <motion.div 
-        initial={{ x: -50, opacity: 0 }}
+        initial={{ x: -100, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
-        exit={{ x: -50, opacity: 0 }}
-        className="fixed top-28 left-0 z-50 pointer-events-auto cursor-pointer"
+        exit={{ x: -100, opacity: 0 }}
+        transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+        className="fixed top-32 left-0 z-50 pointer-events-auto cursor-pointer"
         onClick={() => {
           setIsMinimized(false);
           resetTimer();
@@ -53,17 +65,28 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
         drag="x"
         dragConstraints={{ left: 0, right: 0 }}
         onDragEnd={(e, info) => {
-          if (info.offset.x > 20) {
+          if (info.offset.x > 30) {
             setIsMinimized(false);
             resetTimer();
           }
         }}
       >
-        <div className="bg-black/90 backdrop-blur-2xl border-y border-r border-white/10 shadow-2xl rounded-r-2xl py-3 px-3 flex flex-col items-center gap-1.5 transition-colors hover:bg-black">
-          <Users className="w-5 h-5 text-gold drop-shadow-md" />
-          <span className="text-white font-black text-xs tracking-wider">
-            +{requests.length}
-          </span>
+        <div className="bg-zinc-950/95 backdrop-blur-2xl border-y border-r border-white/10 shadow-2xl rounded-r-2xl py-2.5 px-3.5 flex items-center gap-2 transition-colors hover:bg-black">
+          <span className="text-sm">👥</span>
+          <div className="text-white font-black text-sm tracking-wider flex overflow-hidden h-[20px] items-center relative w-[15px] justify-center">
+            <AnimatePresence mode="popLayout">
+              <motion.span 
+                key={requests.length}
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: -20, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                className="absolute"
+              >
+                {requests.length}
+              </motion.span>
+            </AnimatePresence>
+          </div>
         </div>
       </motion.div>
     );
@@ -91,27 +114,47 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
   };
 
   return (
-    <div 
-      className="fixed top-20 left-4 z-50 w-full max-w-[300px] pointer-events-auto"
-      onMouseEnter={resetTimer}
-      onTouchStart={resetTimer}
-    >
-      <div className="flex flex-col items-center">
-        {/* Header / Minimizer */}
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-black/90 backdrop-blur-2xl border border-white/10 rounded-full px-5 py-2.5 mb-6 flex items-center gap-2 cursor-pointer shadow-2xl transition-all hover:bg-black hover:border-white/20"
-          onClick={() => setIsMinimized(true)}
-        >
-          <span className="w-2 h-2 rounded-full bg-gold animate-pulse shadow-[0_0_8px_rgba(255,215,0,0.6)]" />
-          <span className="text-white text-sm font-bold tracking-wide">
-            {requests.length} Shared Ride{requests.length > 1 ? 's' : ''} Available
-          </span>
-        </motion.div>
+    <AnimatePresence>
+      <motion.div 
+        initial={{ x: -150, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        exit={{ x: -150, opacity: 0 }}
+        transition={{ type: 'spring', stiffness: 350, damping: 35 }}
+        className="fixed top-24 left-4 z-50 w-full max-w-[280px] pointer-events-auto"
+        onMouseEnter={resetTimer}
+        onTouchStart={resetTimer}
+      >
+        <div className="flex flex-col items-center">
+          {/* Header / Minimizer */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="bg-zinc-950/95 backdrop-blur-2xl border border-white/10 rounded-full px-4 py-2 mb-4 flex items-center gap-2 cursor-pointer shadow-2xl transition-all hover:bg-black hover:border-white/20"
+            onClick={() => setIsMinimized(true)}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse shadow-[0_0_8px_rgba(255,215,0,0.6)]" />
+            <span className="text-white text-xs font-bold tracking-wide flex items-center gap-1.5">
+              <span>👥</span>
+              <div className="flex overflow-hidden h-[16px] items-center relative w-[10px] justify-center">
+                <AnimatePresence mode="popLayout">
+                  <motion.span 
+                    key={requests.length}
+                    initial={{ y: 15, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: -15, opacity: 0 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    className="absolute"
+                  >
+                    {requests.length}
+                  </motion.span>
+                </AnimatePresence>
+              </div>
+              Shared Ride{requests.length > 1 ? 's' : ''} Available
+            </span>
+          </motion.div>
 
         {/* Apple-style Wheel Container */}
-        <div className="relative w-full h-[250px] flex justify-center perspective-[1200px]">
+        <div className="relative w-full h-[230px] flex justify-center perspective-[1200px]">
           <AnimatePresence>
             {requests.map((request, index) => {
               const diff = index - currentIndex;
@@ -119,18 +162,18 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
               // Only render the active, previous, and next card to mimic a wheel and save DOM nodes
               if (Math.abs(diff) > 1) return null;
 
-              // Calculate positions for Apple wheel 3D effect
-              const yOffset = diff * 130; // Spacing between cards
-              const scale = diff === 0 ? 1 : 0.85;
-              const opacity = diff === 0 ? 1 : 0.3;
+              // Calculate positions for smoother Apple wheel 3D effect
+              const yOffset = diff * 115; // Closer spacing
+              const scale = diff === 0 ? 1 : 0.88;
+              const opacity = diff === 0 ? 1 : 0.35;
               const zIndex = diff === 0 ? 10 : 5;
-              const rotateX = diff * -25; // 3D tilt
+              const rotateX = diff * -20; // Smoother 3D tilt
 
               return (
                 <motion.div
                   key={request.id}
                   className="absolute w-full top-0"
-                  initial={{ opacity: 0, y: diff > 0 ? 150 : -150, scale: 0.8, rotateX: diff > 0 ? -30 : 30 }}
+                  initial={{ opacity: 0, y: diff > 0 ? 120 : -120, scale: 0.85, rotateX: diff > 0 ? -25 : 25 }}
                   animate={{ 
                     y: yOffset, 
                     scale, 
@@ -138,47 +181,47 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
                     zIndex,
                     rotateX 
                   }}
-                  exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
-                  transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                  exit={{ opacity: 0, scale: 0.85, transition: { duration: 0.2 } }}
+                  transition={{ type: 'spring', stiffness: 350, damping: 35 }}
                   drag={diff === 0 ? "y" : false} // Only center card receives swipe gestures
                   dragConstraints={{ top: 0, bottom: 0 }}
                   onDragEnd={handleDragEnd}
                   style={{ transformStyle: "preserve-3d" }}
                 >
-                  <GlassCard className={`p-4 shadow-[0_8px_32px_rgba(0,0,0,0.6)] border-white/10 bg-black/85 backdrop-blur-3xl ${diff !== 0 && 'pointer-events-none blur-[1px]'}`}>
+                  <GlassCard className={`p-3.5 shadow-2xl border-white/10 bg-zinc-950/95 backdrop-blur-3xl ${diff !== 0 && 'pointer-events-none blur-[0.5px]'}`}>
                     
                     {/* Top Row: User & Fare */}
-                    <div className="flex justify-between items-start mb-5">
+                    <div className="flex justify-between items-start mb-4">
                       <div>
-                        <p className="text-xl font-heading font-bold text-white line-clamp-1 drop-shadow-md">
-                          Student
+                        <p className="text-lg font-heading font-extrabold text-white line-clamp-1 drop-shadow-md">
+                          {request.student_name || 'Student'}
                         </p>
-                        <p className="text-[15px] text-gold mt-1 font-bold">K{request.fare?.toFixed(2)}</p>
+                        <p className="text-[14px] text-gold mt-0.5 font-extrabold">K{request.fare?.toFixed(2)}</p>
                       </div>
-                      <div className="bg-gold/10 text-gold text-[10px] uppercase font-black tracking-widest px-3 py-1.5 rounded-full border border-gold/20 backdrop-blur-md">
+                      <div className="bg-gold/15 text-gold text-[10px] uppercase font-black tracking-widest px-2.5 py-1 rounded-full border border-gold/20 backdrop-blur-md">
                         {request.passenger_count || 1} Seat{request.passenger_count > 1 ? 's' : ''}
                       </div>
                     </div>
 
                     {/* Formatted Addresses */}
-                    <div className="space-y-4 mb-6 relative">
+                    <div className="space-y-3.5 mb-5 relative">
                       {/* Connecting Line */}
-                      <div className="absolute left-[5px] top-4 bottom-4 w-[1px] bg-gradient-to-b from-white/30 to-gold/30" />
+                      <div className="absolute left-[4.5px] top-3 bottom-3 w-[1px] bg-gradient-to-b from-white/30 to-gold/30" />
                       
-                      <div className="flex items-start gap-4">
-                        <div className="w-3 h-3 rounded-full border-[3px] border-white/60 mt-0.5 shrink-0 bg-black z-10" />
-                        <p className="text-[14px] text-white font-medium leading-tight drop-shadow-sm">{formatAddress(request.pickup_location?.address)}</p>
+                      <div className="flex items-start gap-3.5">
+                        <div className="w-2.5 h-2.5 rounded-full border-[2.5px] border-zinc-300 mt-1 shrink-0 bg-black z-10" />
+                        <p className="text-[13px] text-zinc-100 font-semibold leading-tight drop-shadow-sm">{formatAddress(request.pickup_location?.address)}</p>
                       </div>
                       
-                      <div className="flex items-start gap-4">
-                        <div className="w-3 h-3 rounded-full bg-gold mt-0.5 shrink-0 shadow-[0_0_10px_rgba(255,215,0,0.6)] z-10" />
-                        <p className="text-[14px] text-white font-medium leading-tight drop-shadow-sm">{formatAddress(request.dropoff_location?.address)}</p>
+                      <div className="flex items-start gap-3.5">
+                        <div className="w-2.5 h-2.5 rounded-full bg-gold mt-1 shrink-0 shadow-[0_0_8px_rgba(255,215,0,0.8)] z-10" />
+                        <p className="text-[13px] text-zinc-100 font-semibold leading-tight drop-shadow-sm">{formatAddress(request.dropoff_location?.address)}</p>
                       </div>
                     </div>
 
                     {/* Accept Button */}
                     <GoldButton
-                      className="w-full py-3 text-[14px] font-bold shadow-[0_4px_20px_rgba(255,215,0,0.3)] transition-transform active:scale-95"
+                      className="w-full py-2.5 text-[13px] font-extrabold shadow-[0_4px_15px_rgba(255,215,0,0.25)] transition-transform active:scale-95"
                       onClick={() => onAccept(request.id)}
                     >
                       Accept
@@ -196,18 +239,19 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex items-center gap-2 mt-8 bg-black/60 backdrop-blur-xl px-4 py-2 rounded-full border border-white/5 shadow-lg"
+            className="flex items-center gap-1.5 mt-6 bg-zinc-950/80 backdrop-blur-xl px-3 py-1.5 rounded-full border border-white/5 shadow-lg"
           >
             {requests.map((_, i) => (
               <div 
                 key={i} 
-                className={`transition-all duration-500 rounded-full ${i === currentIndex ? 'w-5 h-1.5 bg-gold shadow-[0_0_8px_rgba(255,215,0,0.8)]' : 'w-1.5 h-1.5 bg-white/20'}`}
+                className={`transition-all duration-500 rounded-full ${i === currentIndex ? 'w-4 h-1.5 bg-gold shadow-[0_0_8px_rgba(255,215,0,0.8)]' : 'w-1.5 h-1.5 bg-white/30'}`}
               />
             ))}
           </motion.div>
         )}
         
       </div>
-    </div>
+      </motion.div>
+    </AnimatePresence>
   );
 };
