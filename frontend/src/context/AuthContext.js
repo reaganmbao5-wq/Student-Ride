@@ -216,7 +216,10 @@ export const AuthProvider = ({ children }) => {
         return response.data;
       } catch (e) {
         console.error('Error refreshing driver profile:', e);
-        return null;
+        if (e.response?.status === 404) {
+          return null; // Profile truly doesn't exist
+        }
+        throw e; // Don't swallow network or 500 errors
       }
     }
     return null;

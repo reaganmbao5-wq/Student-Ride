@@ -64,7 +64,7 @@ const DriverDashboard = () => {
       setPendingRides(pendingRes.data || []);
       
       const profile = await refreshDriverProfile();
-      if (!profile) {
+      if (!profile && !driverProfile) {
         navigate('/driver/register');
         return;
       }
@@ -76,7 +76,7 @@ const DriverDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [api, navigate, refreshDriverProfile]);
+  }, [api, navigate, refreshDriverProfile, driverProfile]);
 
   useEffect(() => {
     fetchData();
