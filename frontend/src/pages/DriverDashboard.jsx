@@ -446,6 +446,15 @@ const DriverDashboard = () => {
     if (!isArrivedOrStarted && activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
     if (isArrivedOrStarted && activeRide.dropoff_location) bounds.push([activeRide.dropoff_location.lat, activeRide.dropoff_location.lng]);
 
+    const getStatusText = () => {
+      switch(activeRide.status) {
+        case 'accepted': return 'Pick up passenger';
+        case 'driver_arrived': return 'Wait for passenger';
+        case 'ongoing': return 'Drop off passenger';
+        default: return 'Active Ride';
+      }
+    };
+
     // Make sure we have a valid target location for navigation
     const targetLocation = activeRide.status === 'requested' || activeRide.status === 'accepted' 
       ? activeRide.pickup_location 
