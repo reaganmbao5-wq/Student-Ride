@@ -12,7 +12,6 @@ import { routeCache } from '../map/route/RouteCache';
 import { toast } from 'sonner';
 
 import { ActiveTripQueue } from '../components/driver/ActiveTripQueue';
-import { IncomingRequestPanel } from '../components/driver/IncomingRequestPanel';
 
 const DriverDashboard = () => {
   const navigate = useNavigate();
@@ -20,7 +19,7 @@ const DriverDashboard = () => {
   const { newRideRequest, clearRideRequest, sendLocationUpdate, rideUpdate, clearRideUpdate, driverLocation, isConnected } = useWebSocket();
 
   const [isOnline, setIsOnline] = useState(false);
-  const [activeRides, setActiveRides] = useState([]);
+  const [activeRide, setActiveRide] = useState(null);
   const [pendingRides, setPendingRides] = useState([]);
   const [routeGeometry, setRouteGeometry] = useState(null);
   const [earnings, setEarnings] = useState(null);
@@ -33,33 +32,6 @@ const DriverDashboard = () => {
   
   // Bottom Sheet State
   const [isSheetExpanded, setIsSheetExpanded] = useState(false);
-
-  const fetchData = useCallback(async () => {
-    try {
-      const [activeRes, earningsRes, pendingRes] = await Promise.all([
-        api.get('/rides/driver/active'),
-        api.get('/drivers/earnings'),
-        api.get('/rides/pending')
-      ]);
-
-      setActiveRides(activeRes.data || []);
-      setEarnings(earningsRes.data);
-      setPendingRides(pendingRes.data || []);
-      
-      const profile = await refreshDriverProfile();
-      if (!profile) {
-        navigate('/driver/register');
-        return;
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      if (error.response?.status === 404) {
-        navigate('/driver/register');
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [api, navigate, refreshDriverProfile]);
 
   // Watch position when online
   const { startWatching, stopWatching, isWatching } = useWatchPosition(
@@ -78,6 +50,33 @@ const DriverDashboard = () => {
     }, [isOnline, isSimulating, sendLocationUpdate, api]),
     { enableHighAccuracy: true }
   );
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [activeRes, earningsRes, pendingRes] = await Promise.all([
+        api.get('/rides/active'),
+        api.get('/drivers/earnings'),
+        api.get('/rides/pending')
+      ]);
+
+      setActiveRide(activeRes.data);
+      setEarnings(earningsRes.data);
+      setPendingRides(pendingRes.data || []);
+      
+      const profile = await refreshDriverProfile();
+      if (!profile) {
+        navigate('/driver/register');
+        return;
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      if (error.response?.status === 404) {
+        navigate('/driver/register');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [api, navigate, refreshDriverProfile]);
 
   useEffect(() => {
     fetchData();
@@ -99,28 +98,17 @@ const DriverDashboard = () => {
       refreshDriverProfile();
     } else if (rideUpdate.type === 'cancelled') {
       toast.error('Ride was cancelled by the passenger', { duration: 5000 });
+      // Remove from pending rides immediately
       setPendingRides(prev => prev.filter(r => r.id !== rideUpdate.ride_id));
-      setActiveRides(prev => prev.filter(r => r.id !== rideUpdate.ride_id));
       if (incomingRide?.id === rideUpdate.ride_id) {
         setShowRideRequest(false);
         setIncomingRide(null);
       }
     } else if (rideUpdate.type === 'accepted') {
+      // Remove from pending rides once someone accepts it
       setPendingRides(prev => prev.filter(r => r.id !== rideUpdate.ride?.id));
-    } else if (rideUpdate.type === 'wallet_updated') {
-      refreshDriverProfile();
-    } else if (rideUpdate.type === 'capacity_changed') {
-      refreshDriverProfile();
-    } else if (rideUpdate.type === 'completed') {
-      setActiveRides(prev => prev.filter(r => r.id !== rideUpdate.ride_id));
-      fetchData();
-    } else if (rideUpdate.type === 'ride_state_changed') {
-      setActiveRides(prev => prev.map(r => r.id === rideUpdate.ride_id ? { ...r, status: rideUpdate.state } : r));
     }
-    
-    // CRITICAL: Clear the update to prevent deadlocks and stale state
-    clearRideUpdate();
-  }, [rideUpdate, refreshDriverProfile, incomingRide, fetchData, clearRideUpdate]);
+  }, [rideUpdate, refreshDriverProfile, incomingRide]);
 
   // Simulation Mode Logic: Just prevents watchPosition from overriding the python script
   useEffect(() => {
@@ -128,13 +116,6 @@ const DriverDashboard = () => {
       toast.info("Simulation Mode ON: Python script can now control location safely.");
     }
   }, [isSimulating, isOnline]);
-
-  // When simulating, update our map if the backend broadcasts our simulated location
-  useEffect(() => {
-    if (isSimulating && driverLocation?.location) {
-      setCurrentLocation(driverLocation.location);
-    }
-  }, [isSimulating, driverLocation]);
 
   useEffect(() => {
     if (driverProfile) {
@@ -151,22 +132,7 @@ const DriverDashboard = () => {
   }, [isOnline, isWatching, isSimulating, startWatching, stopWatching]);
 
   useEffect(() => {
-    if (newRideRequest && isOnline) {
-      // Prevent mixing private and shared rides
-      const hasPrivateRide = activeRides.some(r => r.ride_mode === 'private');
-      if (hasPrivateRide || (newRideRequest.ride_mode === 'private' && activeRides.length > 0)) {
-        clearRideRequest();
-        return;
-      }
-
-      // Don't show if vehicle is full
-      const capacity = driverProfile?.vehicle_capacity || 4;
-      const occupied = activeRides.reduce((acc, r) => acc + (r.passenger_count || 1), 0);
-      if (occupied >= capacity) {
-        clearRideRequest();
-        return;
-      }
-
+    if (newRideRequest && isOnline && !activeRide) {
       setIncomingRide(newRideRequest);
       setShowRideRequest(true);
 
@@ -178,47 +144,38 @@ const DriverDashboard = () => {
         return prev;
       });
 
-      // CRITICAL: Clear immediately to prevent re-triggering from activeRides changing
-      clearRideRequest();
-    }
-  }, [newRideRequest, isOnline, activeRides, clearRideRequest, driverProfile]);
-
-  // Separate effect for the auto-dismiss timeout so it isn't cancelled immediately
-  useEffect(() => {
-    if (incomingRide) {
+      // Auto-dismiss after 30 seconds
       const timeout = setTimeout(() => {
         setShowRideRequest(false);
         setIncomingRide(null);
+        clearRideRequest();
       }, 30000);
+
       return () => clearTimeout(timeout);
     }
-  }, [incomingRide]);
+  }, [newRideRequest, isOnline, activeRide, clearRideRequest]);
 
   useEffect(() => {
-    if (activeRides.length > 0) {
-      // Just fetch for the first active ride for now to show the primary route
-      const primaryRide = activeRides[0];
-      if (primaryRide?.pickup_location && primaryRide?.dropoff_location) {
-        const cachedGeometry = routeCache.getRoute(primaryRide.pickup_location, primaryRide.dropoff_location);
-        if (cachedGeometry) {
-          setRouteGeometry(cachedGeometry);
-          return;
-        }
-
-        api.post('/rides/estimate-fare', {
-          pickup: primaryRide.pickup_location,
-          dropoff: primaryRide.dropoff_location
-        }).then(res => {
-          if (res.data?.geometry) {
-            setRouteGeometry(res.data.geometry);
-            routeCache.setRoute(primaryRide.pickup_location, primaryRide.dropoff_location, res.data.geometry);
-          }
-        }).catch(err => console.error("Could not fetch route geometry:", err));
-      } else {
-        setRouteGeometry(null);
+    if (activeRide?.pickup_location && activeRide?.dropoff_location) {
+      const cachedGeometry = routeCache.getRoute(activeRide.pickup_location, activeRide.dropoff_location);
+      if (cachedGeometry) {
+        setRouteGeometry(cachedGeometry);
+        return;
       }
+
+      api.post('/rides/estimate-fare', {
+        pickup: activeRide.pickup_location,
+        dropoff: activeRide.dropoff_location
+      }).then(res => {
+        if (res.data?.geometry) {
+          setRouteGeometry(res.data.geometry);
+          routeCache.setRoute(activeRide.pickup_location, activeRide.dropoff_location, res.data.geometry);
+        }
+      }).catch(err => console.error("Could not fetch route geometry:", err));
+    } else {
+      setRouteGeometry(null);
     }
-  }, [activeRides, api]);
+  }, [activeRide?.id, activeRide?.pickup_location, activeRide?.dropoff_location, api]);
 
   const formatAddress = (location) => {
     if (!location?.address) return "Location not provided";
@@ -246,7 +203,7 @@ const DriverDashboard = () => {
   const handleAcceptRide = async (rideId) => {
     try {
       const response = await api.post(`/rides/${rideId}/accept`);
-      setActiveRides(prev => [...prev, response.data]);
+      setActiveRide(response.data);
       setShowRideRequest(false);
       setIncomingRide(null);
       clearRideRequest();
@@ -262,37 +219,46 @@ const DriverDashboard = () => {
     clearRideRequest();
   };
 
-  const handleUpdateStatus = async (rideId, nextStatus) => {
+  const handleDriverArrived = async () => {
+    if (!activeRide) return;
     try {
-      const endpointMap = {
-        'driver_arrived': 'arrived',
-        'ride_started': 'start',
-        'ride_completed': 'complete'
-      };
-      const endpoint = endpointMap[nextStatus];
-      if (!endpoint) return;
-
-      const response = await api.post(`/rides/${rideId}/${endpoint}`);
-      if (nextStatus === 'ride_completed') {
-        toast.success(`Ride completed! Fare: K${response.data.fare}`);
-        setActiveRides(prev => prev.filter(r => r.id !== rideId));
-        fetchData(); // Refresh earnings
-      } else {
-        setActiveRides(prev => prev.map(r => r.id === rideId ? { ...r, status: nextStatus } : r));
-        toast.success(`Status updated to ${nextStatus.replace(/_/g, ' ')}`);
-      }
+      await api.post(`/rides/${activeRide.id}/arrived`);
+      setActiveRide(prev => ({ ...prev, status: 'driver_arrived' }));
+      toast.success('Passenger notified of your arrival');
     } catch (error) {
       toast.error('Failed to update status');
     }
   };
 
-
-
-  const handleCancelRide = async (rideId) => {
+  const handleStartRide = async () => {
+    if (!activeRide) return;
     try {
-      await api.post(`/rides/${rideId}/cancel`);
+      await api.post(`/rides/${activeRide.id}/start`);
+      setActiveRide(prev => ({ ...prev, status: 'ongoing' }));
+      toast.success('Ride started');
+    } catch (error) {
+      toast.error('Failed to start ride');
+    }
+  };
+
+  const handleCompleteRide = async () => {
+    if (!activeRide) return;
+    try {
+      const response = await api.post(`/rides/${activeRide.id}/complete`);
+      toast.success(`Ride completed! Fare: K${response.data.fare}`);
+      setActiveRide(null);
+      fetchData(); // Refresh earnings
+    } catch (error) {
+      toast.error('Failed to complete ride');
+    }
+  };
+
+  const handleCancelRide = async () => {
+    if (!activeRide) return;
+    try {
+      await api.post(`/rides/${activeRide.id}/cancel`);
       toast.info('Ride cancelled');
-      setActiveRides(prev => prev.filter(r => r.id !== rideId));
+      setActiveRide(null);
     } catch (error) {
       toast.error('Failed to cancel ride');
     }
@@ -356,7 +322,7 @@ const DriverDashboard = () => {
             </p>
             <div className="p-4 bg-muted rounded-xl text-left mb-6 font-body border border-border">
               <p className="text-sm text-muted-foreground mb-2">Vehicle Details:</p>
-              <p className="text-foreground">{driverProfile.vehicle_model} • {driverProfile.vehicle_color}</p>
+              <p className="text-foreground">{driverProfile.vehicle_model} ΓÇó {driverProfile.vehicle_color}</p>
               <p className="text-muted-foreground">{driverProfile.plate_number}</p>
             </div>
 
@@ -392,63 +358,49 @@ const DriverDashboard = () => {
   // ==========================================
   // ACTIVE RIDE FULL-SCREEN VIEW (DRIVER)
   // ==========================================
-  if (activeRides.length > 0) {
-    // Markers Logic
-    const mapMarkers = [];
-    const bounds = [];
-    
-    // 1. Always show driver car
-    const driversArray = currentLocation ? [{ 
-      id: 'driver-self', 
-      latitude: currentLocation.lat, 
-      longitude: currentLocation.lng, 
-      heading: currentLocation.heading || 0,
-      is_online: true
-    }] : [];
-
-    if (currentLocation) bounds.push([currentLocation.lat, currentLocation.lng]);
-
-    // Add markers for all active rides
-    activeRides.forEach((ride) => {
-      const isArrivedOrStarted = ['driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination', 'ongoing'].includes(ride.status);
-      
-      if (!isArrivedOrStarted && ride.pickup_location) {
-        mapMarkers.push({
-          lat: ride.pickup_location.lat,
-          lng: ride.pickup_location.lng,
-          iconType: 'user', 
-          key: `pickup-${ride.id}`
-        });
-        bounds.push([ride.pickup_location.lat, ride.pickup_location.lng]);
-      }
-
-      if (ride.dropoff_location) {
-        mapMarkers.push({
-          lat: ride.dropoff_location.lat,
-          lng: ride.dropoff_location.lng,
-          iconType: 'dropoff',
-          key: `dropoff-${ride.id}`
-        });
-        if (isArrivedOrStarted) {
-          bounds.push([ride.dropoff_location.lat, ride.dropoff_location.lng]);
-        }
-      }
-    });
-
-    const activeRide = activeRides[0];
+  if (activeRide) {
     const isArrivedOrStarted = ['driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination', 'ongoing'].includes(activeRide.status);
     
+    // Markers Logic
+    const mapMarkers = [];
+    
+    // 1. Always show driver car
+    const driversArray = currentLocation ? [{ id: 'driver-self', latitude: currentLocation.lat, longitude: currentLocation.lng, heading: 0 }] : [];
+
+    // 2. Passenger pickup marker (Hide if driver has arrived or ride started)
+    if (!isArrivedOrStarted && activeRide.pickup_location) {
+      mapMarkers.push({
+        lat: activeRide.pickup_location.lat,
+        lng: activeRide.pickup_location.lng,
+        iconType: 'user', // We use the user icon for the passenger location
+        key: 'pickup'
+      });
+    }
+
+    // 3. Dropoff marker (Show when driving to destination)
+    if (activeRide.dropoff_location) {
+      mapMarkers.push({
+        lat: activeRide.dropoff_location.lat,
+        lng: activeRide.dropoff_location.lng,
+        iconType: 'dropoff',
+        key: 'dropoff'
+      });
+    }
+
+    const bounds = [];
+    if (currentLocation) bounds.push([currentLocation.lat, currentLocation.lng]);
+    if (!isArrivedOrStarted && activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
+    if (isArrivedOrStarted && activeRide.dropoff_location) bounds.push([activeRide.dropoff_location.lat, activeRide.dropoff_location.lng]);
+
     let getStatusText = () => {
       switch(activeRide.status) {
         case 'accepted': return 'Pick up passenger';
         case 'driver_arrived': return 'Wait for passenger';
         case 'ongoing': return 'Drop off passenger';
-        case 'ride_started': return 'Drop off passenger';
-        case 'ride_in_progress': return 'Drop off passenger';
         default: return 'Active Ride';
       }
     };
-    
+
     let targetLocation = !isArrivedOrStarted ? activeRide.pickup_location : activeRide.dropoff_location;
 
     return (
@@ -462,6 +414,7 @@ const DriverDashboard = () => {
             markers={mapMarkers}
             drivers={driversArray}
             routeGeometry={routeGeometry}
+            rideStatus={activeRide.status}
             showRouteLine={true}
             interactive={true}
             className="w-full h-full"
@@ -493,18 +446,21 @@ const DriverDashboard = () => {
             if (info.offset.y < -50) setIsSheetExpanded(true);
           }}
         >
-          {/* Drag Handle */}
-          <div className="w-full flex justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing">
-            <div className="w-12 h-1.5 bg-zinc-300 dark:bg-zinc-800 rounded-full" />
+          {/* Drag Handle Zone */}
+          <div 
+            className="w-full pt-4 pb-2 flex justify-center cursor-grab active:cursor-grabbing"
+            onClick={() => setIsSheetExpanded(!isSheetExpanded)}
+          >
+            <div className="w-12 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full" />
           </div>
 
-          <div className="px-6 pb-8 pt-2 flex flex-col overflow-y-auto">
+          <div className="px-6 pb-6 pt-2 flex flex-col gap-6">
             
             {/* Minimized Header Row */}
             <div className="flex flex-col gap-4" onClick={() => setIsSheetExpanded(!isSheetExpanded)}>
                <div className="flex items-center justify-between">
                   <h2 className="font-heading text-2xl font-bold text-foreground">{getStatusText()}</h2>
-                  <span className="text-sm font-bold text-gold uppercase tracking-wider">K{activeRide.driver_earning?.toFixed(2) || '0.00'}</span>
+                  <span className="text-sm font-bold text-gold uppercase tracking-wider">K{activeRide.driver_earning?.toFixed(2)}</span>
                </div>
                
                <div className="flex items-center justify-between">
@@ -513,7 +469,7 @@ const DriverDashboard = () => {
                   </span>
                   {activeRide.ride_mode === 'shared' && (
                     <span className="text-xs text-muted-foreground font-medium">
-                      {activeRides.reduce((acc, r) => acc + (r.passenger_count || 1), 0)}/{driverProfile?.vehicle_capacity || 4} Passengers ({(driverProfile?.vehicle_capacity || 4) - activeRides.reduce((acc, r) => acc + (r.passenger_count || 1), 0)} left)
+                      {activeRide.passenger_count || 1}/{driverProfile?.vehicle_capacity || 4} Passengers ({(driverProfile?.vehicle_capacity || 4) - (activeRide.passenger_count || 1)} left)
                     </span>
                   )}
                </div>
@@ -524,7 +480,7 @@ const DriverDashboard = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-foreground truncate">{activeRide.student?.name || 'Passenger'}</p>
-                    <p className="text-sm text-muted-foreground truncate">{targetLocation?.address || 'Location Unknown'}</p>
+                    <p className="text-sm text-muted-foreground truncate">{targetLocation?.address}</p>
                   </div>
                </div>
             </div>
@@ -536,7 +492,7 @@ const DriverDashboard = () => {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="flex flex-col gap-6 overflow-hidden mt-6"
+                  className="flex flex-col gap-6 overflow-hidden"
                 >
                    {/* Quick Contact Icons */}
                    <div className="flex gap-2">
@@ -560,41 +516,39 @@ const DriverDashboard = () => {
                    {activeRide.ride_mode === 'shared' ? (
                      <ActiveTripQueue 
                        trip={{
-                         capacity: { total: driverProfile?.vehicle_capacity || 4, occupied: activeRides.reduce((acc, r) => acc + (r.passenger_count || 1), 0), reserved: 0 },
-                         route_queue: activeRides.flatMap((r, i) => [
-                           { stop_id: `p_${r.id}`, stop_type: 'pickup', status: ['accepted', 'requested'].includes(r.status) ? 'pending' : 'completed', coordinates: r.pickup_location, student_id: r.student?.id || r.id, student_name: r.student?.name },
-                           { stop_id: `d_${r.id}`, stop_type: 'dropoff', status: ['driver_arrived', 'passenger_boarding', 'ride_started', 'ongoing'].includes(r.status) ? 'pending' : (['completed', 'arriving_destination'].includes(r.status) ? 'completed' : 'pending'), coordinates: r.dropoff_location, student_id: r.student?.id || r.id, student_name: r.student?.name }
-                         ]).filter(stop => stop.status === 'pending')
+                         capacity: { total: driverProfile?.vehicle_capacity || 4, occupied: activeRide?.passenger_count || 1, reserved: 0 },
+                         route_queue: [
+                           { stop_id: '1', stop_type: 'pickup', status: activeRide?.status === 'accepted' ? 'pending' : 'completed', coordinates: { address: activeRide?.pickup_location?.address }, student_id: activeRide?.student?.id || '123' },
+                           { stop_id: '2', stop_type: 'dropoff', status: 'pending', coordinates: { address: activeRide?.dropoff_location?.address }, student_id: activeRide?.student?.id || '123' }
+                         ]
                        }}
                        onCompleteStop={(stop_id) => {
-                         const rideId = stop_id.split('_')[1];
-                         const type = stop_id.split('_')[0];
-                         if (type === 'p') handleUpdateStatus(rideId, 'driver_arrived');
-                         else if (type === 'd') handleUpdateStatus(rideId, 'ride_completed');
+                         if (stop_id === '1') handleDriverArrived();
+                         else if (stop_id === '2') handleCompleteRide();
                        }}
                      />
                    ) : (
                      /* Private Ride: Classic Actions Group */
                      <div className="flex flex-col gap-3 pt-2">
-                       {activeRide.status === 'accepted' && (
+                       {activeRide.status === 'driver_accepted' && (
                           <div className="flex gap-2">
-                             <button onClick={() => handleCancelRide(activeRide.id)} className="w-1/3 py-4 bg-zinc-100 dark:bg-zinc-900 text-red-500 rounded-xl font-bold active:scale-95 transition-transform">
+                             <button onClick={handleCancelRide} className="w-1/3 py-4 bg-zinc-100 dark:bg-zinc-900 text-red-500 rounded-xl font-bold active:scale-95 transition-transform">
                                Cancel
                              </button>
-                             <button onClick={() => handleUpdateStatus(activeRide.id, 'driver_arrived')} className="w-2/3 py-4 bg-black text-white rounded-xl font-bold active:scale-95 transition-transform">
+                             <button onClick={handleDriverArrived} className="w-2/3 py-4 bg-black text-white rounded-xl font-bold active:scale-95 transition-transform">
                                I've Arrived
                              </button>
                           </div>
                        )}
                        
-                       {['driver_arrived', 'passenger_boarding'].includes(activeRide.status) && (
-                          <button onClick={() => handleUpdateStatus(activeRide.id, 'ride_started')} className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold active:scale-95 shadow-lg shadow-blue-600/20 transition-transform">
+                       {activeRide.status === 'driver_arrived' && (
+                          <button onClick={handleStartRide} className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold active:scale-95 shadow-lg shadow-blue-600/20 transition-transform">
                             Start Ride
                           </button>
                        )}
 
-                       {['ongoing', 'ride_started', 'ride_in_progress', 'arriving_destination'].includes(activeRide.status) && (
-                          <button onClick={() => handleUpdateStatus(activeRide.id, 'ride_completed')} className="w-full py-4 bg-emerald-500 text-white rounded-xl font-bold active:scale-95 shadow-lg shadow-emerald-500/20 transition-transform">
+                       {activeRide.status === 'ongoing' && (
+                          <button onClick={handleCompleteRide} className="w-full py-4 bg-emerald-500 text-white rounded-xl font-bold active:scale-95 shadow-lg shadow-emerald-500/20 transition-transform">
                             Complete Ride
                           </button>
                        )}
@@ -610,18 +564,71 @@ const DriverDashboard = () => {
       </div>
     );
   }
+
+
+  // ==========================================
+  // STANDARD DASHBOARD VIEW (NO ACTIVE RIDE)
   // ==========================================
   return (
     <Layout>
       <div className="p-4 md:p-8 space-y-6" data-testid="driver-dashboard">
-        {/* Incoming Ride Request Panel handled globally, but here is fallback for idle state */}
+        {/* Incoming Ride Request Modal Overlay */}
         {showRideRequest && incomingRide && (
-          <IncomingRequestPanel 
-            request={incomingRide} 
-            onAccept={handleAcceptRide} 
-            onReject={handleDeclineRide} 
-            seatsLeft={driverProfile?.vehicle_capacity || 4}
-          />
+          <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <GlassCard className="w-full max-w-md p-6 animate-in slide-in-from-bottom" data-testid="ride-request-modal">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center animate-pulse-gold">
+                  <Bell className="w-6 h-6 text-gold" />
+                </div>
+                <div>
+                  <h3 className="font-heading font-semibold text-foreground">New Ride Request!</h3>
+                  <div className="flex items-center gap-2">
+                    <p className="text-muted-foreground text-sm">K{incomingRide.fare?.toFixed(2)} ΓÇó {incomingRide.distance?.toFixed(1)} km</p>
+                    <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded ${incomingRide.ride_mode === 'shared' ? 'bg-blue-500/20 text-blue-500' : 'bg-zinc-100 dark:bg-zinc-800 text-muted-foreground'}`}>
+                      {incomingRide.ride_mode === 'shared' ? 'Shared' : 'Private'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3 mb-6">
+                <div className="flex items-start gap-3">
+                  <div className="w-3 h-3 rounded-full bg-gold mt-1.5" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Pickup</p>
+                    <p className="text-foreground text-sm">{incomingRide.pickup_location?.address}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-3 h-3 rounded-full bg-emerald-500 mt-1.5" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Dropoff</p>
+                    <p className="text-foreground text-sm">{incomingRide.dropoff_location?.address}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <GoldButton
+                  variant="secondary"
+                  className="flex-1"
+                  onClick={handleDeclineRide}
+                  data-testid="decline-ride-btn"
+                >
+                  <X className="w-5 h-5 mr-2" />
+                  Decline
+                </GoldButton>
+                <GoldButton
+                  className="flex-1"
+                  onClick={() => handleAcceptRide(incomingRide.id)}
+                  data-testid="accept-ride-btn"
+                >
+                  <Check className="w-5 h-5 mr-2" />
+                  Accept
+                </GoldButton>
+              </div>
+            </GlassCard>
+          </div>
         )}
 
         {/* Header with Online Toggle */}
@@ -768,7 +775,7 @@ const DriverDashboard = () => {
         )}
 
         {/* Empty State */}
-        {isOnline && pendingRides.length === 0 && activeRides.length === 0 && (
+        {isOnline && pendingRides.length === 0 && !activeRide && (
           <EmptyState
             icon={MapPin}
             title="No rides available"
