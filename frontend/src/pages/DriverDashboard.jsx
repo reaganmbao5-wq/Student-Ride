@@ -34,6 +34,33 @@ const DriverDashboard = () => {
   // Bottom Sheet State
   const [isSheetExpanded, setIsSheetExpanded] = useState(false);
 
+  const fetchData = useCallback(async () => {
+    try {
+      const [activeRes, earningsRes, pendingRes] = await Promise.all([
+        api.get('/rides/driver/active'),
+        api.get('/drivers/earnings'),
+        api.get('/rides/pending')
+      ]);
+
+      setActiveRides(activeRes.data || []);
+      setEarnings(earningsRes.data);
+      setPendingRides(pendingRes.data || []);
+      
+      const profile = await refreshDriverProfile();
+      if (!profile) {
+        navigate('/driver/register');
+        return;
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      if (error.response?.status === 404) {
+        navigate('/driver/register');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [api, navigate, refreshDriverProfile]);
+
   // Watch position when online
   const { startWatching, stopWatching, isWatching } = useWatchPosition(
     useCallback((location) => {
@@ -191,33 +218,6 @@ const DriverDashboard = () => {
       return "Current Location";
     }
     return location.address;
-  };
-
-  const fetchData = async () => {
-    try {
-      const [activeRes, earningsRes, pendingRes] = await Promise.all([
-        api.get('/rides/driver/active'),
-        api.get('/drivers/earnings'),
-        api.get('/rides/pending')
-      ]);
-
-      setActiveRides(activeRes.data || []);
-      setEarnings(earningsRes.data);
-      setPendingRides(pendingRes.data || []);
-      
-      const profile = await refreshDriverProfile();
-      if (!profile) {
-        navigate('/driver/register');
-        return;
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      if (error.response?.status === 404) {
-        navigate('/driver/register');
-      }
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleToggleOnline = async () => {
