@@ -11,7 +11,7 @@ import { useWatchPosition } from '../map/hooks/useGeolocation';
 import { routeCache } from '../map/route/RouteCache';
 import { toast } from 'sonner';
 
-import { RotaryActiveRides } from '../components/driver/RotaryActiveRides';
+import { ActiveTripQueue } from '../components/driver/ActiveTripQueue';
 import { IncomingRequestPanel } from '../components/driver/IncomingRequestPanel';
 
 const DriverDashboard = () => {
@@ -427,6 +427,22 @@ const DriverDashboard = () => {
       }
     });
 
+    const activeRide = activeRides[0];
+    const isArrivedOrStarted = ['driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination', 'ongoing'].includes(activeRide.status);
+    
+    let getStatusText = () => {
+      switch(activeRide.status) {
+        case 'accepted': return 'Pick up passenger';
+        case 'driver_arrived': return 'Wait for passenger';
+        case 'ongoing': return 'Drop off passenger';
+        case 'ride_started': return 'Drop off passenger';
+        case 'ride_in_progress': return 'Drop off passenger';
+        default: return 'Active Ride';
+      }
+    };
+    
+    let targetLocation = !isArrivedOrStarted ? activeRide.pickup_location : activeRide.dropoff_location;
+
     return (
       <div className="fixed inset-0 bg-background overflow-hidden flex flex-col" data-testid="driver-active-ride">
         {/* Map Layer */}
@@ -442,34 +458,150 @@ const DriverDashboard = () => {
             interactive={true}
             className="w-full h-full"
           />
+          
+          {/* Navigation Overlay Button */}
+          {targetLocation && (
+            <div className="absolute top-4 right-4 z-10 pointer-events-auto">
+              <button
+                onClick={() => openNavigation(targetLocation)}
+                className="w-14 h-14 bg-black text-white rounded-full flex items-center justify-center shadow-2xl active:scale-95 transition-transform border-4 border-black/10"
+              >
+                <Navigation className="w-6 h-6" />
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Incoming Request Overlay */}
-        {showRideRequest && incomingRide && (
-          <IncomingRequestPanel 
-            request={incomingRide} 
-            onAccept={handleAcceptRide} 
-            onReject={handleDeclineRide} 
-            seatsLeft={(driverProfile?.vehicle_capacity || 4) - activeRides.reduce((acc, r) => acc + (r.passenger_count || 1), 0)}
-          />
-        )}
+        {/* Bottom Sheet Overlay */}
+        <motion.div
+          className="absolute bottom-0 left-0 right-0 bg-white dark:bg-zinc-950 rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-20 flex flex-col"
+          animate={{ y: isSheetExpanded ? 0 : "calc(100% - 160px)" }}
+          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+          drag="y"
+          dragConstraints={{ top: 0, bottom: 0 }}
+          dragElastic={0.2}
+          onDragEnd={(e, info) => {
+            if (info.offset.y > 50) setIsSheetExpanded(false);
+            if (info.offset.y < -50) setIsSheetExpanded(true);
+          }}
+        >
+          {/* Drag Handle */}
+          <div className="w-full flex justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing">
+            <div className="w-12 h-1.5 bg-zinc-300 dark:bg-zinc-800 rounded-full" />
+          </div>
 
-        {/* Rotary UI Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 z-20">
-          <RotaryActiveRides 
-            activeRides={activeRides}
-            onUpdateStatus={handleUpdateStatus}
-            onCall={(phone) => window.location.href = `tel:${phone}`}
-            onChat={(studentId) => navigate(`/ride/chat/${activeRides.find(r => r.student?.id === studentId)?.id}`)}
-          />
-        </div>
+          <div className="px-6 pb-8 pt-2 flex flex-col overflow-y-auto">
+            
+            {/* Minimized Header Row */}
+            <div className="flex flex-col gap-4" onClick={() => setIsSheetExpanded(!isSheetExpanded)}>
+               <div className="flex items-center justify-between">
+                  <h2 className="font-heading text-2xl font-bold text-foreground">{getStatusText()}</h2>
+                  <span className="text-sm font-bold text-gold uppercase tracking-wider">K{activeRide.driver_earning?.toFixed(2) || '0.00'}</span>
+               </div>
+               
+               <div className="flex items-center justify-between">
+                  <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded ${activeRide.ride_mode === 'shared' ? 'bg-blue-500/10 text-blue-500' : 'bg-zinc-100 dark:bg-zinc-800 text-muted-foreground'}`}>
+                    {activeRide.ride_mode === 'shared' ? 'Shared Ride' : 'Private Ride'}
+                  </span>
+                  {activeRide.ride_mode === 'shared' && (
+                    <span className="text-xs text-muted-foreground font-medium">
+                      {activeRides.reduce((acc, r) => acc + (r.passenger_count || 1), 0)}/{driverProfile?.vehicle_capacity || 4} Passengers ({(driverProfile?.vehicle_capacity || 4) - activeRides.reduce((acc, r) => acc + (r.passenger_count || 1), 0)} left)
+                    </span>
+                  )}
+               </div>
+               
+               <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center shrink-0">
+                    <span className="text-white font-bold">{activeRide.student?.name?.charAt(0) || '?'}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-foreground truncate">{activeRide.student?.name || 'Passenger'}</p>
+                    <p className="text-sm text-muted-foreground truncate">{targetLocation?.address || 'Location Unknown'}</p>
+                  </div>
+               </div>
+            </div>
+
+            {/* EXPANDED CONTENT */}
+            <AnimatePresence>
+              {isSheetExpanded && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="flex flex-col gap-6 overflow-hidden mt-6"
+                >
+                   {/* Quick Contact Icons */}
+                   <div className="flex gap-2">
+                      <button 
+                        className="flex-1 py-3 rounded-xl bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center gap-2 active:scale-95 transition-transform"
+                        onClick={() => navigate(`/ride/chat/${activeRide.id}`)}
+                      >
+                        <MessageCircle className="w-5 h-5" />
+                        <span className="font-bold">Chat</span>
+                      </button>
+                      <button 
+                        className="flex-1 py-3 rounded-xl bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center gap-2 active:scale-95 transition-transform"
+                        onClick={() => window.location.href = `tel:${activeRide.student?.phone}`}
+                      >
+                        <PhoneCall className="w-5 h-5" />
+                        <span className="font-bold">Call</span>
+                      </button>
+                   </div>
+
+                   {/* Shared Ride: Active Trip Queue Integration */}
+                   {activeRide.ride_mode === 'shared' ? (
+                     <ActiveTripQueue 
+                       trip={{
+                         capacity: { total: driverProfile?.vehicle_capacity || 4, occupied: activeRides.reduce((acc, r) => acc + (r.passenger_count || 1), 0), reserved: 0 },
+                         route_queue: activeRides.flatMap((r, i) => [
+                           { stop_id: `p_${r.id}`, stop_type: 'pickup', status: ['accepted', 'requested'].includes(r.status) ? 'pending' : 'completed', coordinates: r.pickup_location, student_id: r.student?.id || r.id, student_name: r.student?.name },
+                           { stop_id: `d_${r.id}`, stop_type: 'dropoff', status: ['driver_arrived', 'passenger_boarding', 'ride_started', 'ongoing'].includes(r.status) ? 'pending' : (['completed', 'arriving_destination'].includes(r.status) ? 'completed' : 'pending'), coordinates: r.dropoff_location, student_id: r.student?.id || r.id, student_name: r.student?.name }
+                         ]).filter(stop => stop.status === 'pending')
+                       }}
+                       onCompleteStop={(stop_id) => {
+                         const rideId = stop_id.split('_')[1];
+                         const type = stop_id.split('_')[0];
+                         if (type === 'p') handleUpdateStatus(rideId, 'driver_arrived');
+                         else if (type === 'd') handleUpdateStatus(rideId, 'ride_completed');
+                       }}
+                     />
+                   ) : (
+                     /* Private Ride: Classic Actions Group */
+                     <div className="flex flex-col gap-3 pt-2">
+                       {activeRide.status === 'accepted' && (
+                          <div className="flex gap-2">
+                             <button onClick={() => handleCancelRide(activeRide.id)} className="w-1/3 py-4 bg-zinc-100 dark:bg-zinc-900 text-red-500 rounded-xl font-bold active:scale-95 transition-transform">
+                               Cancel
+                             </button>
+                             <button onClick={() => handleUpdateStatus(activeRide.id, 'driver_arrived')} className="w-2/3 py-4 bg-black text-white rounded-xl font-bold active:scale-95 transition-transform">
+                               I've Arrived
+                             </button>
+                          </div>
+                       )}
+                       
+                       {['driver_arrived', 'passenger_boarding'].includes(activeRide.status) && (
+                          <button onClick={() => handleUpdateStatus(activeRide.id, 'ride_started')} className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold active:scale-95 shadow-lg shadow-blue-600/20 transition-transform">
+                            Start Ride
+                          </button>
+                       )}
+
+                       {['ongoing', 'ride_started', 'ride_in_progress', 'arriving_destination'].includes(activeRide.status) && (
+                          <button onClick={() => handleUpdateStatus(activeRide.id, 'ride_completed')} className="w-full py-4 bg-emerald-500 text-white rounded-xl font-bold active:scale-95 shadow-lg shadow-emerald-500/20 transition-transform">
+                            Complete Ride
+                          </button>
+                       )}
+                     </div>
+                   )}
+
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+          </div>
+        </motion.div>
       </div>
     );
   }
-
-
-  // ==========================================
-  // STANDARD DASHBOARD VIEW (NO ACTIVE RIDE)
   // ==========================================
   return (
     <Layout>

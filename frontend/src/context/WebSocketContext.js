@@ -17,6 +17,10 @@ export const WebSocketProvider = ({ children }) => {
   const connect = useCallback(() => {
     if (!user || !token) return;
 
+    if (wsRef.current && (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)) {
+      return;
+    }
+
     const backendUrl = process.env.REACT_APP_BACKEND_URL || window.location.origin;
     const wsUrl = backendUrl.replace('https://', 'wss://').replace('http://', 'ws://');
     const ws = new WebSocket(`${wsUrl}/ws?token=${token}`);
@@ -129,7 +133,28 @@ export const WebSocketProvider = ({ children }) => {
   useEffect(() => {
     connect();
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+          console.log('App became visible, forcing WebSocket reconnect...');
+          connect();
+        }
+      }
+    };
+
+    const handleOnline = () => {
+      if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+        console.log('Network became online, forcing WebSocket reconnect...');
+        connect();
+      }
+    };
+
+    window.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('online', handleOnline);
+
     return () => {
+      window.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('online', handleOnline);
       if (wsRef.current) {
         wsRef.current.close();
       }
