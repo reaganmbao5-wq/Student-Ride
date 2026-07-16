@@ -174,15 +174,17 @@ const DriverDashboard = () => {
 
   useEffect(() => {
     if (newRideRequest && isOnline) {
-      // ALWAYS use the Panel for ALL rides (Private & Shared)
-      setIncomingSharedRequests(prev => {
-        if (!prev.find(r => r.id === newRideRequest.id)) {
-          return [...prev, newRideRequest];
-        }
-        return prev;
-      });
+      // If the driver is already on an active ride, push to the floating SharedRideRequestPanel
+      if (activeRide) {
+        setIncomingSharedRequests(prev => {
+          if (!prev.find(r => r.id === newRideRequest.id)) {
+            return [...prev, newRideRequest];
+          }
+          return prev;
+        });
+      }
 
-      // Also add to pending rides list
+      // Always add to pending rides list (this feeds the "Available Rides" list on the home page)
       setPendingRides(prev => {
         if (!prev.find(r => r.id === newRideRequest.id)) {
           return [newRideRequest, ...prev];
@@ -634,13 +636,6 @@ const DriverDashboard = () => {
     // ==========================================
     return (
       <Layout>
-        {/* Always render SharedRideRequestPanel for shared rides */}
-        <SharedRideRequestPanel 
-          requests={incomingSharedRequests}
-          onAccept={handleAcceptSharedRide}
-          onDecline={handleDeclineSharedRide}
-        />
-
         <div className="p-4 md:p-8 space-y-6" data-testid="driver-dashboard">
 
         {/* Header with Online Toggle */}
