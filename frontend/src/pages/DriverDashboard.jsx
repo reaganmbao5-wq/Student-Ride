@@ -17,7 +17,7 @@ import { IncomingRequestPanel } from '../components/driver/IncomingRequestPanel'
 const DriverDashboard = () => {
   const navigate = useNavigate();
   const { user, api, driverProfile, refreshDriverProfile, logout } = useAuth();
-  const { newRideRequest, clearRideRequest, sendLocationUpdate, rideUpdate, driverLocation } = useWebSocket();
+  const { newRideRequest, clearRideRequest, sendLocationUpdate, rideUpdate, clearRideUpdate, driverLocation } = useWebSocket();
 
   const [isOnline, setIsOnline] = useState(false);
   const [activeRides, setActiveRides] = useState([]);
@@ -79,8 +79,13 @@ const DriverDashboard = () => {
     } else if (rideUpdate.type === 'completed') {
       setActiveRides(prev => prev.filter(r => r.id !== rideUpdate.ride_id));
       fetchData();
+    } else if (rideUpdate.type === 'ride_state_changed') {
+      setActiveRides(prev => prev.map(r => r.id === rideUpdate.ride_id ? { ...r, status: rideUpdate.state } : r));
     }
-  }, [rideUpdate, refreshDriverProfile, incomingRide, fetchData]);
+    
+    // CRITICAL: Clear the update to prevent deadlocks and stale state
+    clearRideUpdate();
+  }, [rideUpdate, refreshDriverProfile, incomingRide, fetchData, clearRideUpdate]);
 
   // Simulation Mode Logic: Just prevents watchPosition from overriding the python script
   useEffect(() => {
@@ -112,10 +117,20 @@ const DriverDashboard = () => {
 
   useEffect(() => {
     if (newRideRequest && isOnline) {
+      // Prevent mixing private and shared rides
+      const hasPrivateRide = activeRides.some(r => r.ride_mode === 'private');
+      if (hasPrivateRide || (newRideRequest.ride_mode === 'private' && activeRides.length > 0)) {
+        clearRideRequest();
+        return;
+      }
+
       // Don't show if vehicle is full
       const capacity = driverProfile?.vehicle_capacity || 4;
       const occupied = activeRides.reduce((acc, r) => acc + (r.passenger_count || 1), 0);
-      if (occupied >= capacity) return;
+      if (occupied >= capacity) {
+        clearRideRequest();
+        return;
+      }
 
       setIncomingRide(newRideRequest);
       setShowRideRequest(true);
@@ -128,16 +143,21 @@ const DriverDashboard = () => {
         return prev;
       });
 
-      // Auto-dismiss after 30 seconds
+      // CRITICAL: Clear immediately to prevent re-triggering from activeRides changing
+      clearRideRequest();
+    }
+  }, [newRideRequest, isOnline, activeRides, clearRideRequest, driverProfile]);
+
+  // Separate effect for the auto-dismiss timeout so it isn't cancelled immediately
+  useEffect(() => {
+    if (incomingRide) {
       const timeout = setTimeout(() => {
         setShowRideRequest(false);
         setIncomingRide(null);
-        clearRideRequest();
       }, 30000);
-
       return () => clearTimeout(timeout);
     }
-  }, [newRideRequest, isOnline, activeRides, clearRideRequest, driverProfile]);
+  }, [incomingRide]);
 
   useEffect(() => {
     if (activeRides.length > 0) {
