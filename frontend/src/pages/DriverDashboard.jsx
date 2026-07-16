@@ -17,7 +17,7 @@ import { IncomingRequestPanel } from '../components/driver/IncomingRequestPanel'
 const DriverDashboard = () => {
   const navigate = useNavigate();
   const { user, api, driverProfile, refreshDriverProfile, logout } = useAuth();
-  const { newRideRequest, clearRideRequest, sendLocationUpdate, rideUpdate, clearRideUpdate, driverLocation } = useWebSocket();
+  const { newRideRequest, clearRideRequest, sendLocationUpdate, rideUpdate, clearRideUpdate, driverLocation, isConnected } = useWebSocket();
 
   const [isOnline, setIsOnline] = useState(false);
   const [activeRides, setActiveRides] = useState([]);
@@ -81,7 +81,14 @@ const DriverDashboard = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
+
+  useEffect(() => {
+    if (isConnected) {
+      console.log('WebSocket connected. Fetching latest state for driver...');
+      fetchData();
+    }
+  }, [isConnected, fetchData]);
 
   useEffect(() => {
     if (!rideUpdate) return;
@@ -91,6 +98,7 @@ const DriverDashboard = () => {
       setEarnings(prev => ({ ...prev, rating: rideUpdate.new_average }));
       refreshDriverProfile();
     } else if (rideUpdate.type === 'cancelled') {
+      toast.error('Ride was cancelled by the passenger', { duration: 5000 });
       setPendingRides(prev => prev.filter(r => r.id !== rideUpdate.ride_id));
       setActiveRides(prev => prev.filter(r => r.id !== rideUpdate.ride_id));
       if (incomingRide?.id === rideUpdate.ride_id) {
