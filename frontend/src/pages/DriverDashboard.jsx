@@ -10,6 +10,7 @@ import { useWebSocket } from '../context/WebSocketContext';
 import { useWatchPosition } from '../map/hooks/useGeolocation';
 import { routeCache } from '../map/route/RouteCache';
 import { toast } from 'sonner';
+import { App } from '@capacitor/app';
 
 import { ActiveTripQueue } from '../components/driver/ActiveTripQueue';
 import { SharedRideRequestPanel } from '../components/driver/SharedRideRequestPanel';
@@ -89,6 +90,26 @@ const DriverDashboard = () => {
 
   useEffect(() => {
     fetchData();
+  }, [fetchData]);
+
+  // Handle Capacitor App State (Background -> Foreground)
+  useEffect(() => {
+    let listener = null;
+    const setupListener = async () => {
+      listener = await App.addListener('appStateChange', ({ isActive }) => {
+        if (isActive) {
+          console.log('App resumed, refreshing driver dashboard data...');
+          fetchData();
+        }
+      });
+    };
+    setupListener();
+
+    return () => {
+      if (listener) {
+        listener.remove();
+      }
+    };
   }, [fetchData]);
 
   useEffect(() => {

@@ -72,7 +72,7 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
         }}
       >
         <div className="bg-white/95 backdrop-blur-2xl border-y border-r border-black/10 shadow-2xl rounded-r-2xl py-2.5 px-3.5 flex items-center gap-2 transition-colors hover:bg-white">
-          <span className="text-sm">🔔</span>
+          <Users className="w-[18px] h-[18px] text-black" />
           <div className="text-black font-black text-sm tracking-wider flex overflow-hidden h-[20px] items-center relative w-[15px] justify-center">
             <AnimatePresence mode="popLayout">
               <motion.span 
@@ -94,19 +94,27 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
 
   // Handle Carousel Drag
   const handleDragEnd = (e, info) => {
-    const threshold = 30; // Threshold to trigger a swipe
-    if (info.offset.y < -threshold) {
-      // Swipe UP -> Next Student
-      if (currentIndex < requests.length - 1) {
-        setCurrentIndex(prev => prev + 1);
-        resetTimer();
+    const threshold = 40; // Swipe threshold
+    
+    // Swipe LEFT -> Minimize
+    if (info.offset.x < -threshold) {
+      setIsMinimized(true);
+      return;
+    }
+
+    // Swipe UP or RIGHT -> Next Student (Endless)
+    if (info.offset.y < -threshold || info.offset.x > threshold) {
+      if (requests.length > 1) {
+        setCurrentIndex(prev => (prev + 1) % requests.length);
       }
-    } else if (info.offset.y > threshold) {
-      // Swipe DOWN -> Previous Student
-      if (currentIndex > 0) {
-        setCurrentIndex(prev => prev - 1);
-        resetTimer();
+      resetTimer();
+    } 
+    // Swipe DOWN -> Previous Student (Endless)
+    else if (info.offset.y > threshold) {
+      if (requests.length > 1) {
+        setCurrentIndex(prev => (prev - 1 + requests.length) % requests.length);
       }
+      resetTimer();
     } else {
       // If barely dragged, reset timer anyway
       resetTimer();
@@ -134,7 +142,7 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
           >
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
             <span className="text-black text-xs font-bold tracking-wide flex items-center gap-1.5">
-              <span>🔔</span>
+              <Users className="w-3.5 h-3.5" />
               <div className="flex overflow-hidden h-[16px] items-center relative w-[10px] justify-center">
                 <AnimatePresence mode="popLayout">
                   <motion.span 
@@ -153,84 +161,71 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
             </span>
           </motion.div>
 
-        {/* Apple-style Wheel Container */}
-        <div className="relative w-full h-[230px] flex justify-center perspective-[1200px]">
-          <AnimatePresence>
-            {requests.map((request, index) => {
-              const diff = index - currentIndex;
-              
-              // Only render the active, previous, and next card to mimic a wheel and save DOM nodes
-              if (Math.abs(diff) > 1) return null;
+        {/* Solid Single Card View with Swipe Gestures */}
+        <div className="relative w-full h-[230px] flex justify-center">
+          <AnimatePresence mode="popLayout">
+            {requests.length > 0 && requests[currentIndex] && (
+              <motion.div
+                key={requests[currentIndex].id}
+                className="absolute w-full top-0"
+                initial={{ opacity: 0, y: 40, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -40, scale: 0.95, transition: { duration: 0.2 } }}
+                transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                drag
+                dragConstraints={{ top: 0, bottom: 0, left: 0, right: 0 }}
+                dragElastic={0.1}
+                onDragEnd={handleDragEnd}
+              >
+                <GlassCard className="p-3.5 shadow-2xl border border-black/5 bg-white/95 backdrop-blur-3xl">
+                  
+                  {/* Top Row: User & Fare */}
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <p className="text-lg font-heading font-extrabold text-black line-clamp-1 drop-shadow-sm">
+                        {requests[currentIndex].student_name || 'Student'}
+                      </p>
+                      <p className="text-[14px] text-zinc-900 mt-0.5 font-extrabold">K{requests[currentIndex].fare?.toFixed(2)}</p>
+                    </div>
+                    <div className="bg-blue-500/10 text-blue-600 text-[10px] uppercase font-black tracking-widest px-2.5 py-1 rounded-full border border-blue-500/20 backdrop-blur-md">
+                      {requests[currentIndex].ride_mode === 'shared' ? 'Shared' : 'Private'}
+                    </div>
+                  </div>
 
-              // Calculate positions for smoother Apple wheel 3D effect
-              const yOffset = diff * 115; // Closer spacing
-              const scale = diff === 0 ? 1 : 0.88;
-              const opacity = diff === 0 ? 1 : 0.35;
-              const zIndex = diff === 0 ? 10 : 5;
-              const rotateX = diff * -20; // Smoother 3D tilt
-
-              return (
-                <motion.div
-                  key={request.id}
-                  className="absolute w-full top-0"
-                  initial={{ opacity: 0, y: diff > 0 ? 120 : -120, scale: 0.85, rotateX: diff > 0 ? -25 : 25 }}
-                  animate={{ 
-                    y: yOffset, 
-                    scale, 
-                    opacity, 
-                    zIndex,
-                    rotateX 
-                  }}
-                  exit={{ opacity: 0, scale: 0.85, transition: { duration: 0.2 } }}
-                  transition={{ type: 'spring', stiffness: 350, damping: 35 }}
-                  drag={diff === 0 ? "y" : false} // Only center card receives swipe gestures
-                  dragConstraints={{ top: 0, bottom: 0 }}
-                  onDragEnd={handleDragEnd}
-                  style={{ transformStyle: "preserve-3d" }}
-                >
-                  <GlassCard className={`p-3.5 shadow-2xl border-black/5 bg-white/95 backdrop-blur-3xl ${diff !== 0 && 'pointer-events-none blur-[0.5px]'}`}>
+                  {/* Formatted Addresses */}
+                  <div className="space-y-3.5 mb-5 relative">
+                    {/* Connecting Line */}
+                    <div className="absolute left-[4.5px] top-3 bottom-3 w-[1px] bg-gradient-to-b from-black/20 to-blue-500/30" />
                     
-                    {/* Top Row: User & Fare */}
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <p className="text-lg font-heading font-extrabold text-black line-clamp-1 drop-shadow-sm">
-                          {request.student_name || 'Student'}
-                        </p>
-                        <p className="text-[14px] text-zinc-900 mt-0.5 font-extrabold">K{request.fare?.toFixed(2)}</p>
-                      </div>
-                      <div className="bg-blue-500/10 text-blue-600 text-[10px] uppercase font-black tracking-widest px-2.5 py-1 rounded-full border border-blue-500/20 backdrop-blur-md">
-                        {request.ride_mode === 'shared' ? 'Shared' : 'Private'}
-                      </div>
+                    <div className="flex items-start gap-3.5 pointer-events-none">
+                      <div className="w-2.5 h-2.5 rounded-full border-[2.5px] border-zinc-700 mt-1 shrink-0 bg-white z-10" />
+                      <p className="text-[13px] text-zinc-800 font-bold leading-tight drop-shadow-sm pointer-events-auto">
+                        {formatAddress(requests[currentIndex].pickup_location?.address)}
+                      </p>
                     </div>
-
-                    {/* Formatted Addresses */}
-                    <div className="space-y-3.5 mb-5 relative">
-                      {/* Connecting Line */}
-                      <div className="absolute left-[4.5px] top-3 bottom-3 w-[1px] bg-gradient-to-b from-black/20 to-blue-500/30" />
-                      
-                      <div className="flex items-start gap-3.5">
-                        <div className="w-2.5 h-2.5 rounded-full border-[2.5px] border-zinc-700 mt-1 shrink-0 bg-white z-10" />
-                        <p className="text-[13px] text-zinc-800 font-bold leading-tight drop-shadow-sm">{formatAddress(request.pickup_location?.address)}</p>
-                      </div>
-                      
-                      <div className="flex items-start gap-3.5">
-                        <div className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-1 shrink-0 shadow-[0_0_8px_rgba(59,130,246,0.5)] z-10" />
-                        <p className="text-[13px] text-zinc-800 font-bold leading-tight drop-shadow-sm">{formatAddress(request.dropoff_location?.address)}</p>
-                      </div>
+                    
+                    <div className="flex items-start gap-3.5 pointer-events-none">
+                      <div className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-1 shrink-0 shadow-[0_0_8px_rgba(59,130,246,0.5)] z-10" />
+                      <p className="text-[13px] text-zinc-800 font-bold leading-tight drop-shadow-sm pointer-events-auto">
+                        {formatAddress(requests[currentIndex].dropoff_location?.address)}
+                      </p>
                     </div>
+                  </div>
 
-                    {/* Accept Button */}
-                    <GoldButton
-                      className="w-full py-2.5 text-[13px] font-extrabold shadow-[0_4px_15px_rgba(255,215,0,0.25)] transition-transform active:scale-95"
-                      onClick={() => onAccept(request.id)}
-                    >
-                      Accept
-                    </GoldButton>
+                  {/* Accept Button */}
+                  <GoldButton
+                    className="w-full py-2.5 text-[13px] font-extrabold shadow-[0_4px_15px_rgba(255,215,0,0.25)] transition-transform active:scale-95"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAccept(requests[currentIndex].id);
+                    }}
+                  >
+                    Accept
+                  </GoldButton>
 
-                  </GlassCard>
-                </motion.div>
-              );
-            })}
+                </GlassCard>
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
 
