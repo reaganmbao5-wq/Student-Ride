@@ -191,9 +191,9 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
                   return (
                     <motion.div
                       key={virtualIndex} // Binds to the virtual position to trigger enter/exit perfectly
-                      initial={{ y: initialY, opacity: 0, scale: 0.8 }}
-                      animate={{ y, scale, opacity: 1, zIndex }}
-                      exit={{ y: exitY, opacity: 0, scale: 0.8, zIndex: 8 }}
+                      initial={{ y: initialY, scale: 0.8 }}
+                      animate={{ y, scale, zIndex }}
+                      exit={{ y: exitY, scale: 0.8, zIndex: 8 }}
                       transition={{ type: 'spring', stiffness: 350, damping: 30 }}
                       className="absolute w-full top-0 touch-none will-change-transform"
                       onPanEnd={isActive ? handlePanEnd : undefined}
@@ -234,7 +234,7 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
                                   <p className="text-[13px] text-zinc-800 font-bold leading-tight drop-shadow-sm pointer-events-auto">{formatAddress(req.dropoff_location?.address)}</p>
                                 </div>
                               </div>
-                              <GoldButton className="w-full py-2.5 text-[13px] font-extrabold shadow-[0_4px_15px_rgba(255,215,0,0.25)] transition-transform active:scale-95" onClick={(e) => { e.stopPropagation(); onAccept(req.id); }}>
+                              <GoldButton className="w-full py-2.5 text-[13px] font-extrabold shadow-none transition-transform active:scale-95" onClick={(e) => { e.stopPropagation(); onAccept(req.id); }}>
                                 Accept
                               </GoldButton>
                             </motion.div>
