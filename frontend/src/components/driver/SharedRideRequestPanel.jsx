@@ -136,7 +136,7 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="bg-white/95 backdrop-blur-2xl border border-black/10 rounded-full px-4 py-2 mb-4 flex items-center gap-2 cursor-pointer shadow-2xl transition-all hover:bg-white hover:border-black/20"
+            className="bg-white/95 backdrop-blur-2xl border border-black/10 rounded-full px-4 py-2 mb-8 flex items-center gap-2 cursor-pointer shadow-2xl transition-all hover:bg-white hover:border-black/20"
             onClick={() => setIsMinimized(true)}
           >
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
@@ -153,58 +153,15 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
                     className="absolute"
                   >
                     {requests.length}
-    <div className="h-full flex flex-col justify-end p-4 pointer-events-none overflow-hidden pb-[120px]">
-      
-      {/* Minimized Bubble */}
-      <AnimatePresence>
-        {isMinimized && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8, x: -50 }}
-            animate={{ opacity: 1, scale: 1, x: 0 }}
-            exit={{ opacity: 0, scale: 0.8, x: -50 }}
-            className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer"
-            onClick={() => setIsMinimized(false)}
-          >
-            <div className="bg-black/90 p-3 rounded-2xl shadow-2xl border border-white/10 flex items-center gap-3 backdrop-blur-xl">
-              <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
-              </span>
-              <span className="text-white font-extrabold text-sm">{requests.length}</span>
-            </div>
+                  </motion.span>
+                </AnimatePresence>
+              </div>
+              Ride{requests.length > 1 ? 's' : ''} Available
+            </span>
           </motion.div>
-        )}
-      </AnimatePresence>
 
-      <AnimatePresence>
-        {!isMinimized && (
-          <motion.div
-            initial={{ opacity: 0, y: 100 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 100 }}
-            className="w-full flex flex-col items-center pointer-events-none"
-          >
-        
         {/* Infinite Stacked Card View with Swipe Gestures */}
         <div className="relative w-full h-[230px] flex justify-center perspective-[1000px]">
-          
-          {/* Pending Rides Badge - placed nicely right above the stack */}
-          {requests.length > 0 && (
-            <div className="absolute -top-16 left-0 right-0 flex justify-center z-50 pointer-events-none">
-              <motion.div
-                initial={{ y: -20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                className="bg-white px-4 py-2 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-black/5 flex items-center gap-2 pointer-events-auto"
-              >
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-                </span>
-                <Users className="w-4 h-4 text-zinc-600" />
-                <span className="text-sm font-bold text-zinc-800">{requests.length} Rides Available</span>
-              </motion.div>
-            </div>
-          )}
           {requests.length > 0 && (() => {
             const len = requests.length;
             const normalizedPos = ((position % len) + len) % len;
@@ -233,7 +190,7 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
                  y = 50; scale = 0.9; opacity = 1; zIndex = 8;
               } else if (offset < 0) {
                  // Previous (Swiped up, hiding at top)
-                 y = -80; scale = 0.95; opacity = 0; zIndex = 11;
+                 y = -60; scale = 0.95; opacity = 0; zIndex = 11;
               } else {
                  // Far behind
                  y = 75; scale = 0.85; opacity = 0; zIndex = 7;
@@ -299,9 +256,8 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
           </motion.div>
         )}
         
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+      </div>
+      </motion.div>
+    </AnimatePresence>
   );
 };
