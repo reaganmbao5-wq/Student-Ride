@@ -171,7 +171,7 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
                   className="absolute w-full top-0 touch-none"
                   onPanEnd={handlePanEnd}
                 >
-                  <GlassCard className="p-3.5 shadow-2xl border border-black/5 bg-white/95 backdrop-blur-3xl overflow-hidden relative">
+                  <GlassCard className="p-3.5 shadow-2xl border border-black/5 bg-white/80 backdrop-blur-2xl overflow-hidden relative">
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <p className="text-lg font-heading font-extrabold text-black line-clamp-1 drop-shadow-sm">{req.student_name || 'Student'}</p>
@@ -212,29 +212,32 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
               
               if (!req) continue;
 
-              let y = 0, scale = 1, opacity = 1, zIndex = 10, blur = 'blur(0px)';
+              let y = 0, scale = 1, opacity = 1, zIndex = 10;
               
               if (offset === 0) {
-                 y = 0; scale = 1; opacity = 1; zIndex = 10; blur = 'blur(0px)';
+                 y = 0; scale = 1; opacity = 1; zIndex = 10;
               } else if (offset === 1) {
-                 y = 22; scale = 0.94; opacity = 1; zIndex = 9; blur = 'blur(0px) brightness(0.95)';
+                 y = 25; scale = 0.95; opacity = 1; zIndex = 9;
               } else if (offset === 2) {
-                 y = 44; scale = 0.88; opacity = 1; zIndex = 8; blur = 'blur(0.5px) brightness(0.9)';
+                 y = 50; scale = 0.9; opacity = 1; zIndex = 8;
               } else if (offset === -1) {
-                 y = -150; scale = 0.9; opacity = 0; zIndex = 11; blur = 'blur(0px)';
+                 y = -150; scale = 0.9; opacity = 0; zIndex = 11;
               }
 
               stack.push(
                 <motion.div
                   key={`${req.id}-${virtualIndex}`} // Deeply binds to the virtual stack position! No flash!
                   initial={offset > 0 ? { opacity: 0, y: y + 20 } : false}
-                  animate={{ y, scale, opacity, zIndex, filter: blur }}
+                  animate={{ y, scale, opacity, zIndex }}
                   transition={{ type: 'spring', stiffness: 350, damping: 30 }}
                   className="absolute w-full top-0 touch-none will-change-transform"
                   onPanEnd={offset === 0 ? handlePanEnd : undefined}
-                  style={{ pointerEvents: offset === 0 ? 'auto' : 'none' }}
+                  style={{ 
+                    pointerEvents: offset === 0 ? 'auto' : 'none',
+                    transformOrigin: 'top center' // Forces the scale to shrink from the bottom up, so translating Y pushes the bottom down!
+                  }}
                 >
-                  <GlassCard className="p-3.5 shadow-2xl border border-black/5 bg-white/95 backdrop-blur-3xl overflow-hidden relative">
+                  <GlassCard className="p-3.5 shadow-2xl border border-black/5 bg-white/80 backdrop-blur-2xl overflow-hidden relative">
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <p className="text-lg font-heading font-extrabold text-black line-clamp-1 drop-shadow-sm">{req.student_name || 'Student'}</p>
