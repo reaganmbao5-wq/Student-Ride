@@ -153,88 +153,103 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
                     className="absolute"
                   >
                     {requests.length}
-                  </motion.span>
-                </AnimatePresence>
-              </div>
-              Ride{requests.length > 1 ? 's' : ''} Available
-            </span>
+    <div className="h-full flex flex-col justify-end p-4 pointer-events-none overflow-hidden pb-[120px]">
+      
+      {/* Minimized Bubble */}
+      <AnimatePresence>
+        {isMinimized && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, x: -50 }}
+            animate={{ opacity: 1, scale: 1, x: 0 }}
+            exit={{ opacity: 0, scale: 0.8, x: -50 }}
+            className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer"
+            onClick={() => setIsMinimized(false)}
+          >
+            <div className="bg-black/90 p-3 rounded-2xl shadow-2xl border border-white/10 flex items-center gap-3 backdrop-blur-xl">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+              </span>
+              <span className="text-white font-extrabold text-sm">{requests.length}</span>
+            </div>
           </motion.div>
+        )}
+      </AnimatePresence>
 
+      <AnimatePresence>
+        {!isMinimized && (
+          <motion.div
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 100 }}
+            className="w-full flex flex-col items-center pointer-events-none"
+          >
+        
         {/* Infinite Stacked Card View with Swipe Gestures */}
         <div className="relative w-full h-[230px] flex justify-center perspective-[1000px]">
+          
+          {/* Pending Rides Badge - placed nicely right above the stack */}
+          {requests.length > 0 && (
+            <div className="absolute -top-16 left-0 right-0 flex justify-center z-50 pointer-events-none">
+              <motion.div
+                initial={{ y: -20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                className="bg-white px-4 py-2 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-black/5 flex items-center gap-2 pointer-events-auto"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                </span>
+                <Users className="w-4 h-4 text-zinc-600" />
+                <span className="text-sm font-bold text-zinc-800">{requests.length} Rides Available</span>
+              </motion.div>
+            </div>
+          )}
           {requests.length > 0 && (() => {
-            // If only 1 request, just render one card cleanly
-            if (requests.length === 1) {
-              const req = requests[0];
-              return (
-                <motion.div
-                  className="absolute w-full top-0 touch-none"
-                  onPanEnd={handlePanEnd}
-                >
-                  <GlassCard className="p-3.5 shadow-2xl border border-black/5 bg-white/80 backdrop-blur-2xl overflow-hidden relative">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <p className="text-lg font-heading font-extrabold text-black line-clamp-1 drop-shadow-sm">{req.student_name || 'Student'}</p>
-                        <p className="text-[14px] text-zinc-900 mt-0.5 font-extrabold">K{req.fare?.toFixed(2)}</p>
-                      </div>
-                      <div className="bg-blue-500/10 text-blue-600 text-[10px] uppercase font-black tracking-widest px-2.5 py-1 rounded-full border border-blue-500/20 backdrop-blur-md">
-                        {req.ride_mode === 'shared' ? 'Shared' : 'Private'}
-                      </div>
-                    </div>
-                    <div className="space-y-3.5 mb-5 relative">
-                      <div className="absolute left-[4.5px] top-3 bottom-3 w-[1px] bg-gradient-to-b from-black/20 to-blue-500/30" />
-                      <div className="flex items-start gap-3.5 pointer-events-none">
-                        <div className="w-2.5 h-2.5 rounded-full border-[2.5px] border-zinc-700 mt-1 shrink-0 bg-white z-10" />
-                        <p className="text-[13px] text-zinc-800 font-bold leading-tight drop-shadow-sm pointer-events-auto">{formatAddress(req.pickup_location?.address)}</p>
-                      </div>
-                      <div className="flex items-start gap-3.5 pointer-events-none">
-                        <div className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-1 shrink-0 shadow-[0_0_8px_rgba(59,130,246,0.5)] z-10" />
-                        <p className="text-[13px] text-zinc-800 font-bold leading-tight drop-shadow-sm pointer-events-auto">{formatAddress(req.dropoff_location?.address)}</p>
-                      </div>
-                    </div>
-                    <GoldButton className="w-full py-2.5 text-[13px] font-extrabold shadow-[0_4px_15px_rgba(255,215,0,0.25)] transition-transform active:scale-95" onClick={(e) => { e.stopPropagation(); onAccept(req.id); }}>
-                      Accept
-                    </GoldButton>
-                  </GlassCard>
-                </motion.div>
-              );
-            }
+            const len = requests.length;
+            const normalizedPos = ((position % len) + len) % len;
 
-            // If multiple requests, render the infinite deck stack!
-            const stack = [];
-            const maxOffset = requests.length > 2 ? 2 : 1; // Render up to 2 cards behind
+            return requests.map((req, i) => {
+              // Calculate logical offset for infinite loop
+              let offset = (i - normalizedPos) % len;
+              if (offset < 0) offset += len;
 
-            // Loop backwards so front card (offset=0) is pushed last (highest DOM order initially)
-            for (let offset = maxOffset; offset >= -1; offset--) {
-              const virtualIndex = position + offset;
-              const dataIndex = ((virtualIndex % requests.length) + requests.length) % requests.length;
-              const req = requests[dataIndex];
-              
-              if (!req) continue;
+              // Force the offset to correctly represent Next, Prev, etc.
+              // If we have 3 items: offsets are 0, 1, 2. We want 2 to wrap to -1.
+              if (offset > 2 || (len === 3 && offset === 2)) {
+                offset -= len;
+              }
 
               let y = 0, scale = 1, opacity = 1, zIndex = 10;
               
               if (offset === 0) {
+                 // Active
                  y = 0; scale = 1; opacity = 1; zIndex = 10;
               } else if (offset === 1) {
+                 // Behind 1
                  y = 25; scale = 0.95; opacity = 1; zIndex = 9;
               } else if (offset === 2) {
+                 // Behind 2
                  y = 50; scale = 0.9; opacity = 1; zIndex = 8;
-              } else if (offset === -1) {
-                 y = -150; scale = 0.9; opacity = 0; zIndex = 11;
+              } else if (offset < 0) {
+                 // Previous (Swiped up, hiding at top)
+                 y = -80; scale = 0.95; opacity = 0; zIndex = 11;
+              } else {
+                 // Far behind
+                 y = 75; scale = 0.85; opacity = 0; zIndex = 7;
               }
 
-              stack.push(
+              return (
                 <motion.div
-                  key={`${req.id}-${virtualIndex}`} // Deeply binds to the virtual stack position! No flash!
-                  initial={offset > 0 ? { opacity: 0, y: y + 20 } : false}
+                  key={req.id} // Re-use exactly the same DOM node for infinite loop!
+                  initial={false}
                   animate={{ y, scale, opacity, zIndex }}
                   transition={{ type: 'spring', stiffness: 350, damping: 30 }}
                   className="absolute w-full top-0 touch-none will-change-transform"
                   onPanEnd={offset === 0 ? handlePanEnd : undefined}
                   style={{ 
                     pointerEvents: offset === 0 ? 'auto' : 'none',
-                    transformOrigin: 'top center' // Forces the scale to shrink from the bottom up, so translating Y pushes the bottom down!
+                    transformOrigin: 'top center' // Forces the scale to shrink from the bottom up
                   }}
                 >
                   <GlassCard className="p-3.5 shadow-2xl border border-black/5 bg-white/80 backdrop-blur-2xl overflow-hidden relative">
@@ -264,8 +279,7 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
                   </GlassCard>
                 </motion.div>
               );
-            }
-            return stack;
+            });
           })()}
         </div>
 
