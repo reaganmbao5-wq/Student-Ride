@@ -299,8 +299,9 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
           </motion.div>
         )}
         
-      </div>
-      </motion.div>
-    </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 };
