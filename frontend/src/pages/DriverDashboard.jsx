@@ -73,18 +73,21 @@ const DriverDashboard = () => {
 
   const fetchData = useCallback(async () => {
     try {
-      const [activeRes, earningsRes, pendingRes] = await Promise.all([
+      const [activeRes, earningsRes] = await Promise.all([
         api.get('/rides/active'),
-        api.get('/drivers/earnings'),
-        api.get('/rides/pending')
+        api.get('/drivers/earnings')
       ]);
 
       setActiveRide(activeRes.data);
       setEarnings(earningsRes.data);
       
-      const allPending = pendingRes.data || [];
-      setPendingRides(allPending.filter(r => r.ride_mode !== 'shared'));
-      setMasterSharedRidePool(allPending.filter(r => r.ride_mode === 'shared'));
+      const pendingRes = await api.get('/rides/pending');
+      if (pendingRes.data) {
+        // Pending rides list should show BOTH private and shared rides if no active ride
+        const allPending = pendingRes.data || [];
+        setPendingRides(allPending);
+        setMasterSharedRidePool(allPending.filter(r => r.ride_mode === 'shared'));
+      }
       
       const profile = await refreshDriverProfile();
       if (!profile && !driverProfile) {
@@ -168,6 +171,7 @@ const DriverDashboard = () => {
   useEffect(() => {
     if (removedSharedRideId) {
       setMasterSharedRidePool(prev => prev.filter(r => r.id !== removedSharedRideId));
+      setPendingRides(prev => prev.filter(r => r.id !== removedSharedRideId));
     }
   }, [removedSharedRideId]);
 
@@ -192,8 +196,10 @@ const DriverDashboard = () => {
     }
   }, [isOnline, isWatching, isSimulating, startWatching, stopWatching]);
 
+  // Handle new incoming ride requests
   useEffect(() => {
     if (newRideRequest && isOnline) {
+      // Shared rides also go into the Master Pool
       if (newRideRequest.ride_mode === 'shared') {
         setMasterSharedRidePool(prev => {
           if (!prev.find(r => r.id === newRideRequest.id)) {
@@ -201,14 +207,15 @@ const DriverDashboard = () => {
           }
           return prev;
         });
-      } else {
-        setPendingRides(prev => {
-          if (!prev.find(r => r.id === newRideRequest.id)) {
-            return [newRideRequest, ...prev];
-          }
-          return prev;
-        });
       }
+      
+      // All rides go into the Pending Rides list so they show up on the Idle Home Page
+      setPendingRides(prev => {
+        if (!prev.find(r => r.id === newRideRequest.id)) {
+          return [newRideRequest, ...prev];
+        }
+        return prev;
+      });
       
       clearRideRequest();
     }
