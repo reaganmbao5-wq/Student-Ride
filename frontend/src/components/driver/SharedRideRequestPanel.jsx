@@ -44,9 +44,9 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
   if (isMinimized) {
     return (
       <motion.div 
-        initial={{ x: -100, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        exit={{ x: -100, opacity: 0 }}
+        initial={{ x: -150 }}
+        animate={{ x: 0 }}
+        exit={{ x: -150 }}
         transition={{ type: 'spring', stiffness: 350, damping: 30 }}
         className="fixed top-32 left-0 z-50 pointer-events-auto cursor-pointer"
         onClick={() => {
@@ -114,9 +114,9 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
   return (
     <AnimatePresence>
       <motion.div 
-        initial={{ x: -150, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        exit={{ x: -150, opacity: 0 }}
+        initial={{ x: -350 }}
+        animate={{ x: 0 }}
+        exit={{ x: -350 }}
         transition={{ type: 'spring', stiffness: 350, damping: 35 }}
         className="fixed top-24 left-4 z-50 w-full max-w-[280px] pointer-events-auto"
         onMouseEnter={resetTimer}
@@ -125,9 +125,7 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
         <div className="flex flex-col items-center">
           {/* Header / Minimizer */}
           <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="bg-white/95 backdrop-blur-2xl border border-black/10 rounded-full px-4 py-2 mb-10 flex items-center gap-2 cursor-pointer shadow-2xl transition-all hover:bg-white hover:border-black/20"
+            className="relative z-20 bg-white/95 backdrop-blur-2xl border border-black/10 rounded-full px-4 py-2 mb-10 flex items-center gap-2 cursor-pointer shadow-2xl transition-all hover:bg-white hover:border-black/20"
             onClick={() => setIsMinimized(true)}
           >
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
@@ -191,9 +189,9 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
                   return (
                     <motion.div
                       key={virtualIndex} // Binds to the virtual position to trigger enter/exit perfectly
-                      initial={{ y: initialY, scale: 0.8 }}
-                      animate={{ y, scale, zIndex }}
-                      exit={{ y: exitY, scale: 0.8, zIndex: 8 }}
+                      initial={{ y: initialY, opacity: 0, scale: 0.8 }}
+                      animate={{ y, scale, opacity: 1, zIndex }}
+                      exit={{ y: exitY, opacity: 0, scale: 0.8, zIndex: 8 }}
                       transition={{ type: 'spring', stiffness: 350, damping: 30 }}
                       className="absolute w-full top-0 touch-none will-change-transform"
                       onPanEnd={isActive ? handlePanEnd : undefined}
