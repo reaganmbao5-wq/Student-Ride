@@ -5,8 +5,13 @@ import { GlassCard, GoldButton } from '../common/GlassComponents';
 
 export const SharedRideRequestPanel = ({ requests, onAccept }) => {
   const [isMinimized, setIsMinimized] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [position, setPosition] = useState(0); // Track infinite scrolling position
   const timeoutRef = useRef(null);
+  
+  // Calculate the real array index from the infinite position
+  const activeIndex = requests && requests.length > 0 
+    ? ((position % requests.length) + requests.length) % requests.length 
+    : 0;
 
   // Address Truncator Helper
   const formatAddress = (address) => {
@@ -34,12 +39,11 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
     prevLengthRef.current = requests.length;
   }, [requests.length, isMinimized]);
 
-  // Ensure currentIndex stays within bounds when items are removed
+  // Ensure position gracefully handles if active request is accepted/removed
   useEffect(() => {
-    if (requests.length > 0 && currentIndex >= requests.length) {
-      setCurrentIndex(Math.max(0, requests.length - 1));
-    }
-  }, [requests, currentIndex]);
+    // If the list shrinks such that we have fewer items, React re-renders and the modulo 
+    // operator ensures we automatically fall onto a valid item!
+  }, [requests.length]);
 
   const resetTimer = () => {
     clearTimeout(timeoutRef.current);
@@ -104,19 +108,14 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
 
     // Swipe UP or RIGHT -> Next Student (Endless)
     if (info.offset.y < -threshold || info.offset.x > threshold) {
-      if (requests.length > 1) {
-        setCurrentIndex(prev => (prev + 1) % requests.length);
-      }
+      if (requests.length > 1) setPosition(prev => prev + 1);
       resetTimer();
     } 
     // Swipe DOWN -> Previous Student (Endless)
     else if (info.offset.y > threshold) {
-      if (requests.length > 1) {
-        setCurrentIndex(prev => (prev - 1 + requests.length) % requests.length);
-      }
+      if (requests.length > 1) setPosition(prev => prev - 1);
       resetTimer();
     } else {
-      // If barely swiped, reset timer anyway
       resetTimer();
     }
   };
@@ -161,73 +160,110 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
             </span>
           </motion.div>
 
-        {/* Solid Single Card View with Swipe Gestures */}
-        <div className="relative w-full h-[230px] flex justify-center">
-          {requests.length > 0 && requests[currentIndex] && (
-            <motion.div
-              className="absolute w-full top-0 touch-none"
-              onPanEnd={handlePanEnd}
-            >
-              <GlassCard className="p-3.5 shadow-2xl border border-black/5 bg-white/95 backdrop-blur-3xl overflow-hidden relative">
-                <AnimatePresence mode="popLayout">
-                  <motion.div
-                    key={requests[currentIndex].id}
-                    className="w-full"
-                    initial={{ opacity: 0, y: 40, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -40, scale: 0.95, transition: { duration: 0.2 } }}
-                    transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-                  >
-                  
-                  {/* Top Row: User & Fare */}
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <p className="text-lg font-heading font-extrabold text-black line-clamp-1 drop-shadow-sm">
-                        {requests[currentIndex].student_name || 'Student'}
-                      </p>
-                      <p className="text-[14px] text-zinc-900 mt-0.5 font-extrabold">K{requests[currentIndex].fare?.toFixed(2)}</p>
+        {/* Infinite Stacked Card View with Swipe Gestures */}
+        <div className="relative w-full h-[230px] flex justify-center perspective-[1000px]">
+          {requests.length > 0 && (() => {
+            // If only 1 request, just render one card cleanly
+            if (requests.length === 1) {
+              const req = requests[0];
+              return (
+                <motion.div
+                  className="absolute w-full top-0 touch-none"
+                  onPanEnd={handlePanEnd}
+                >
+                  <GlassCard className="p-3.5 shadow-2xl border border-black/5 bg-white/95 backdrop-blur-3xl overflow-hidden relative">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <p className="text-lg font-heading font-extrabold text-black line-clamp-1 drop-shadow-sm">{req.student_name || 'Student'}</p>
+                        <p className="text-[14px] text-zinc-900 mt-0.5 font-extrabold">K{req.fare?.toFixed(2)}</p>
+                      </div>
+                      <div className="bg-blue-500/10 text-blue-600 text-[10px] uppercase font-black tracking-widest px-2.5 py-1 rounded-full border border-blue-500/20 backdrop-blur-md">
+                        {req.ride_mode === 'shared' ? 'Shared' : 'Private'}
+                      </div>
                     </div>
-                    <div className="bg-blue-500/10 text-blue-600 text-[10px] uppercase font-black tracking-widest px-2.5 py-1 rounded-full border border-blue-500/20 backdrop-blur-md">
-                      {requests[currentIndex].ride_mode === 'shared' ? 'Shared' : 'Private'}
+                    <div className="space-y-3.5 mb-5 relative">
+                      <div className="absolute left-[4.5px] top-3 bottom-3 w-[1px] bg-gradient-to-b from-black/20 to-blue-500/30" />
+                      <div className="flex items-start gap-3.5 pointer-events-none">
+                        <div className="w-2.5 h-2.5 rounded-full border-[2.5px] border-zinc-700 mt-1 shrink-0 bg-white z-10" />
+                        <p className="text-[13px] text-zinc-800 font-bold leading-tight drop-shadow-sm pointer-events-auto">{formatAddress(req.pickup_location?.address)}</p>
+                      </div>
+                      <div className="flex items-start gap-3.5 pointer-events-none">
+                        <div className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-1 shrink-0 shadow-[0_0_8px_rgba(59,130,246,0.5)] z-10" />
+                        <p className="text-[13px] text-zinc-800 font-bold leading-tight drop-shadow-sm pointer-events-auto">{formatAddress(req.dropoff_location?.address)}</p>
+                      </div>
                     </div>
-                  </div>
+                    <GoldButton className="w-full py-2.5 text-[13px] font-extrabold shadow-[0_4px_15px_rgba(255,215,0,0.25)] transition-transform active:scale-95" onClick={(e) => { e.stopPropagation(); onAccept(req.id); }}>
+                      Accept
+                    </GoldButton>
+                  </GlassCard>
+                </motion.div>
+              );
+            }
 
-                  {/* Formatted Addresses */}
-                  <div className="space-y-3.5 mb-5 relative">
-                    {/* Connecting Line */}
-                    <div className="absolute left-[4.5px] top-3 bottom-3 w-[1px] bg-gradient-to-b from-black/20 to-blue-500/30" />
-                    
-                    <div className="flex items-start gap-3.5 pointer-events-none">
-                      <div className="w-2.5 h-2.5 rounded-full border-[2.5px] border-zinc-700 mt-1 shrink-0 bg-white z-10" />
-                      <p className="text-[13px] text-zinc-800 font-bold leading-tight drop-shadow-sm pointer-events-auto">
-                        {formatAddress(requests[currentIndex].pickup_location?.address)}
-                      </p>
-                    </div>
-                    
-                    <div className="flex items-start gap-3.5 pointer-events-none">
-                      <div className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-1 shrink-0 shadow-[0_0_8px_rgba(59,130,246,0.5)] z-10" />
-                      <p className="text-[13px] text-zinc-800 font-bold leading-tight drop-shadow-sm pointer-events-auto">
-                        {formatAddress(requests[currentIndex].dropoff_location?.address)}
-                      </p>
-                    </div>
-                  </div>
+            // If multiple requests, render the infinite deck stack!
+            const stack = [];
+            const maxOffset = requests.length > 2 ? 2 : 1; // Render up to 2 cards behind
 
-                  {/* Accept Button */}
-                  <GoldButton
-                    className="w-full py-2.5 text-[13px] font-extrabold shadow-[0_4px_15px_rgba(255,215,0,0.25)] transition-transform active:scale-95"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAccept(requests[currentIndex].id);
-                    }}
-                  >
-                    Accept
-                  </GoldButton>
+            // Loop backwards so front card (offset=0) is pushed last (highest DOM order initially)
+            for (let offset = maxOffset; offset >= -1; offset--) {
+              const virtualIndex = position + offset;
+              const dataIndex = ((virtualIndex % requests.length) + requests.length) % requests.length;
+              const req = requests[dataIndex];
+              
+              if (!req) continue;
 
-                  </motion.div>
-                </AnimatePresence>
-              </GlassCard>
-            </motion.div>
-          )}
+              let y = 0, scale = 1, opacity = 1, zIndex = 10, blur = 'blur(0px)';
+              
+              if (offset === 0) {
+                 y = 0; scale = 1; opacity = 1; zIndex = 10; blur = 'blur(0px)';
+              } else if (offset === 1) {
+                 y = 22; scale = 0.94; opacity = 1; zIndex = 9; blur = 'blur(0px) brightness(0.95)';
+              } else if (offset === 2) {
+                 y = 44; scale = 0.88; opacity = 1; zIndex = 8; blur = 'blur(0.5px) brightness(0.9)';
+              } else if (offset === -1) {
+                 y = -150; scale = 0.9; opacity = 0; zIndex = 11; blur = 'blur(0px)';
+              }
+
+              stack.push(
+                <motion.div
+                  key={`${req.id}-${virtualIndex}`} // Deeply binds to the virtual stack position! No flash!
+                  initial={offset > 0 ? { opacity: 0, y: y + 20 } : false}
+                  animate={{ y, scale, opacity, zIndex, filter: blur }}
+                  transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                  className="absolute w-full top-0 touch-none will-change-transform"
+                  onPanEnd={offset === 0 ? handlePanEnd : undefined}
+                  style={{ pointerEvents: offset === 0 ? 'auto' : 'none' }}
+                >
+                  <GlassCard className="p-3.5 shadow-2xl border border-black/5 bg-white/95 backdrop-blur-3xl overflow-hidden relative">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <p className="text-lg font-heading font-extrabold text-black line-clamp-1 drop-shadow-sm">{req.student_name || 'Student'}</p>
+                        <p className="text-[14px] text-zinc-900 mt-0.5 font-extrabold">K{req.fare?.toFixed(2)}</p>
+                      </div>
+                      <div className="bg-blue-500/10 text-blue-600 text-[10px] uppercase font-black tracking-widest px-2.5 py-1 rounded-full border border-blue-500/20 backdrop-blur-md">
+                        {req.ride_mode === 'shared' ? 'Shared' : 'Private'}
+                      </div>
+                    </div>
+                    <div className="space-y-3.5 mb-5 relative">
+                      <div className="absolute left-[4.5px] top-3 bottom-3 w-[1px] bg-gradient-to-b from-black/20 to-blue-500/30" />
+                      <div className="flex items-start gap-3.5 pointer-events-none">
+                        <div className="w-2.5 h-2.5 rounded-full border-[2.5px] border-zinc-700 mt-1 shrink-0 bg-white z-10" />
+                        <p className="text-[13px] text-zinc-800 font-bold leading-tight drop-shadow-sm pointer-events-auto">{formatAddress(req.pickup_location?.address)}</p>
+                      </div>
+                      <div className="flex items-start gap-3.5 pointer-events-none">
+                        <div className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-1 shrink-0 shadow-[0_0_8px_rgba(59,130,246,0.5)] z-10" />
+                        <p className="text-[13px] text-zinc-800 font-bold leading-tight drop-shadow-sm pointer-events-auto">{formatAddress(req.dropoff_location?.address)}</p>
+                      </div>
+                    </div>
+                    <GoldButton className="w-full py-2.5 text-[13px] font-extrabold shadow-[0_4px_15px_rgba(255,215,0,0.25)] transition-transform active:scale-95" onClick={(e) => { e.stopPropagation(); onAccept(req.id); }}>
+                      Accept
+                    </GoldButton>
+                  </GlassCard>
+                </motion.div>
+              );
+            }
+            return stack;
+          })()}
         </div>
 
         {/* Pagination Indicators */}
@@ -240,7 +276,7 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
             {requests.map((_, i) => (
               <div 
                 key={i} 
-                className={`transition-all duration-500 rounded-full ${i === currentIndex ? 'w-4 h-1.5 bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]' : 'w-1.5 h-1.5 bg-black/20'}`}
+                className={`transition-all duration-500 rounded-full ${i === activeIndex ? 'w-4 h-1.5 bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]' : 'w-1.5 h-1.5 bg-black/20'}`}
               />
             ))}
           </motion.div>
