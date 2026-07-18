@@ -54,8 +54,15 @@ class CameraAnimator {
           const size = this.map.getSize();
           // Ensure map has actual dimensions before fitting bounds
           if (size.x > 0 && size.y > 0) {
+            let paddingOpts = CAMERA_CONFIG.BOUNDS.getPaddingOptions();
+            
+            // Intelligent safeguard for mini maps (e.g. RideCard)
+            if (size.y < 250 || size.x < 250) {
+              paddingOpts = { paddingTopLeft: [15, 15], paddingBottomRight: [15, 15] };
+            }
+
             this.map.fitBounds(cameraState.targetBounds, {
-              ...CAMERA_CONFIG.BOUNDS.getPaddingOptions(),
+              ...paddingOpts,
               animate: true,
               duration: CAMERA_CONFIG.ANIMATION.DURATION_MS / 1000,
               maxZoom: 15.5
