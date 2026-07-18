@@ -74,7 +74,8 @@ class CameraAnimator {
             this.lastTargetCenter = null;
             this.lastTargetZoom = null;
           } else {
-            // Map is not ready (0x0). Do not cache lastTargetBounds so we try again next tick.
+            // Map is not ready (0x0). Force Leaflet to recalculate its size so it eventually becomes ready.
+            this.map.invalidateSize();
           }
         } catch (e) {
           // Leaflet fitBounds can fail if dimensions are zero
@@ -92,6 +93,12 @@ class CameraAnimator {
     const hasNewZoom = this.state.targetZoom && (this.lastTargetZoom !== this.state.targetZoom);
 
     if (hasNewCenter || hasNewZoom) {
+      const size = this.map.getSize();
+      if (size.x === 0 || size.y === 0) {
+        this.map.invalidateSize();
+        return;
+      }
+
       const currentCenter = this.map.getCenter();
       
       // We only strictly require targetZoom if we are flying, else we use current zoom
