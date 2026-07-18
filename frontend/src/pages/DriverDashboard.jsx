@@ -453,7 +453,7 @@ const DriverDashboard = () => {
       mapMarkers.push({
         lat: activeRide.pickup_location.lat,
         lng: activeRide.pickup_location.lng,
-        iconType: 'user', // We use the user icon for the passenger location
+        iconType: 'pickup',
         key: 'pickup'
       });
     }
