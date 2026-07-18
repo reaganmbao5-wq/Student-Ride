@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents, Tooltip } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import 'leaflet-rotatedmarker';
@@ -137,6 +137,7 @@ export const PlatformMap = ({
   onDragEnd,
   markers = [],
   drivers = [],
+  routes = [],
   routeGeometry = null,
   showRouteLine = false,
   interactive = true,
@@ -221,7 +222,13 @@ export const PlatformMap = ({
 
         {/* Static pickup/dropoff markers */}
         {markers.map((m, idx) => (
-          <Marker key={m.key || idx} position={[m.lat, m.lng]} icon={getIcon(m.iconType)} />
+          <Marker key={m.key || idx} position={[m.lat, m.lng]} icon={getIcon(m.iconType)}>
+            {m.pIndex && (
+              <Tooltip permanent direction="top" offset={[0, -30]} className="passenger-badge">
+                <div style={{ color: m.color, fontWeight: 'bold', fontSize: '14px' }}>{m.pIndex}</div>
+              </Tooltip>
+            )}
+          </Marker>
         ))}
 
         {/* Nearby driver markers handled by the new Vehicle Engine */}
@@ -230,13 +237,26 @@ export const PlatformMap = ({
         )}
 
         {/* Route Engine Phase 3.2.3 */}
-        {routeGeometry && routeGeometry.length > 0 && (
-          <RouteEngine 
-            geometry={routeGeometry}
-            driverLocation={driverLocation}
-            status={rideStatus}
-            onAnimationChange={onRouteAnimationChange}
-          />
+        {routes && routes.length > 0 ? (
+          routes.map((route, idx) => (
+             <RouteEngine 
+               key={`route-${route.rideId || idx}`}
+               geometry={route.geometry}
+               color={route.color}
+               driverLocation={driverLocation}
+               status={route.status || rideStatus}
+               onAnimationChange={onRouteAnimationChange}
+             />
+          ))
+        ) : (
+          routeGeometry && routeGeometry.length > 0 && (
+            <RouteEngine 
+              geometry={routeGeometry}
+              driverLocation={driverLocation}
+              status={rideStatus}
+              onAnimationChange={onRouteAnimationChange}
+            />
+          )
         )}
 
       </MapContainer>

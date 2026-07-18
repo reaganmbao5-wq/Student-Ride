@@ -26,7 +26,10 @@ const DriverDashboard = () => {
   const [activeRides, setActiveRides] = useState([]);
   const [pendingRides, setPendingRides] = useState([]);
   const [masterSharedRidePool, setMasterSharedRidePool] = useState([]);
-  const [routeGeometry, setRouteGeometry] = useState(null);
+  const [routesData, setRoutesData] = useState([]);
+  
+  // Passenger Colors for Shared Rides
+  const PASSENGER_COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f97316'];
   const [earnings, setEarnings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentLocation, setCurrentLocation] = useState(null);
@@ -228,26 +231,43 @@ const DriverDashboard = () => {
   }, [newRideRequest, isOnline, clearRideRequest]);
 
   useEffect(() => {
-    if (activeRide?.pickup_location && activeRide?.dropoff_location) {
-      const cachedGeometry = routeCache.getRoute(activeRide.pickup_location, activeRide.dropoff_location);
-      if (cachedGeometry) {
-        setRouteGeometry(cachedGeometry);
-        return;
-      }
-
-      api.post('/rides/estimate-fare', {
-        pickup: activeRide.pickup_location,
-        dropoff: activeRide.dropoff_location
-      }).then(res => {
-        if (res.data?.geometry) {
-          setRouteGeometry(res.data.geometry);
-          routeCache.setRoute(activeRide.pickup_location, activeRide.dropoff_location, res.data.geometry);
-        }
-      }).catch(err => console.error("Could not fetch route geometry:", err));
+    if (activeRides.length > 0) {
+      const fetchRoutes = async () => {
+        const routes = await Promise.all(
+          activeRides.map(async (ride, index) => {
+            if (!ride.pickup_location || !ride.dropoff_location) return null;
+            
+            const color = PASSENGER_COLORS[index % PASSENGER_COLORS.length];
+            const pIndex = `P${index + 1}`;
+            
+            const cachedGeometry = routeCache.getRoute(ride.pickup_location, ride.dropoff_location);
+            if (cachedGeometry) {
+              return { rideId: ride.id, geometry: cachedGeometry, color, pIndex, status: ride.status };
+            }
+            
+            try {
+              const res = await api.post('/rides/estimate-fare', {
+                pickup: ride.pickup_location,
+                dropoff: ride.dropoff_location
+              });
+              if (res.data?.geometry) {
+                routeCache.setRoute(ride.pickup_location, ride.dropoff_location, res.data.geometry);
+                return { rideId: ride.id, geometry: res.data.geometry, color, pIndex, status: ride.status };
+              }
+            } catch (err) {
+              console.error("Could not fetch route geometry for ride", ride.id, err);
+            }
+            return null;
+          })
+        );
+        setRoutesData(routes.filter(Boolean));
+      };
+      
+      fetchRoutes();
     } else {
-      setRouteGeometry(null);
+      setRoutesData([]);
     }
-  }, [activeRide?.id, activeRide?.pickup_location, activeRide?.dropoff_location, api]);
+  }, [activeRides, api]);
 
   const handleToggleOnline = async () => {
     if (!driverProfile?.is_approved) {
@@ -454,7 +474,9 @@ const DriverDashboard = () => {
     if (currentLocation) bounds.push([currentLocation.lat, currentLocation.lng]);
 
     // 2. Loop through ALL active rides to show pickups and dropoffs
-    activeRides.forEach(ride => {
+    activeRides.forEach((ride, index) => {
+      const pIndex = `P${index + 1}`;
+      const color = PASSENGER_COLORS[index % PASSENGER_COLORS.length];
       const isRideArrivedOrStarted = ['driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination', 'ongoing'].includes(ride.status);
       
       // Passenger pickup marker (Hide if driver has arrived or ride started)
@@ -463,22 +485,24 @@ const DriverDashboard = () => {
           lat: ride.pickup_location.lat,
           lng: ride.pickup_location.lng,
           iconType: 'pickup',
+          pIndex,
+          color,
           key: `pickup-${ride.id}`
         });
         bounds.push([ride.pickup_location.lat, ride.pickup_location.lng]);
       }
-
-      // Dropoff marker (Always show destination for active rides)
-      if (ride.dropoff_location) {
+      
+      // Passenger destination marker (Hide if arrived)
+      if (!['completed', 'ended'].includes(ride.status) && ride.dropoff_location) {
         mapMarkers.push({
           lat: ride.dropoff_location.lat,
           lng: ride.dropoff_location.lng,
           iconType: 'dropoff',
+          pIndex,
+          color,
           key: `dropoff-${ride.id}`
         });
-        if (isRideArrivedOrStarted) {
-          bounds.push([ride.dropoff_location.lat, ride.dropoff_location.lng]);
-        }
+        bounds.push([ride.dropoff_location.lat, ride.dropoff_location.lng]);
       }
     });
 
@@ -514,7 +538,7 @@ const DriverDashboard = () => {
             zoom={16}
             markers={mapMarkers}
             drivers={driversArray}
-            routeGeometry={routeGeometry}
+            routes={routesData}
             rideStatus={activeRide.status}
             showRouteLine={true}
             interactive={true}
@@ -536,7 +560,7 @@ const DriverDashboard = () => {
 
         {/* Bottom Sheet Overlay */}
         <motion.div
-          className="absolute bottom-0 left-0 right-0 bg-white dark:bg-zinc-950 rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-20 flex flex-col"
+          className="absolute bottom-0 left-0 right-0 bg-white dark:bg-zinc-950 rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-20 flex flex-col min-h-[60vh] max-h-[70vh] overflow-hidden"
           animate={{ y: isSheetExpanded ? 0 : "calc(100% - 160px)" }}
           transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
           drag="y"
@@ -575,9 +599,16 @@ const DriverDashboard = () => {
                    )}
                  </div>
                ) : (
-                 <h2 className="font-heading text-2xl font-bold text-foreground">
-                   {activeRides[0]?.student?.name || 'Passenger'}
-                 </h2>
+                 <div className="flex flex-col items-center gap-1">
+                   <h2 className="font-heading text-2xl font-bold text-foreground">
+                     {activeRides[0]?.passenger_count || 1} PASSENGER
+                   </h2>
+                   {['accepted', 'driver_accepted'].includes(activeRides[0]?.status) && (
+                     <span className="text-sm font-bold text-gold uppercase tracking-wider">
+                       +1 WAITING
+                     </span>
+                   )}
+                 </div>
                )}
             </div>
 
@@ -585,12 +616,14 @@ const DriverDashboard = () => {
             <AnimatePresence>
               {isSheetExpanded && (
                 <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="flex flex-col gap-8 overflow-hidden pt-4"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex flex-col gap-8 overflow-y-auto flex-1 pt-4 pb-12 pr-2"
                 >
                   {activeRides.map((ride, index) => {
+                    const color = PASSENGER_COLORS[index % PASSENGER_COLORS.length];
+                    const pIndex = `P${index + 1}`;
                     const rideStatusStr = ['accepted', 'driver_accepted'].includes(ride.status) ? 'WAITING' :
                                           ['driver_arrived', 'passenger_boarding'].includes(ride.status) ? 'ARRIVED' :
                                           ['ride_started', 'ride_in_progress', 'ongoing'].includes(ride.status) ? 'ACTIVE' :
@@ -599,11 +632,19 @@ const DriverDashboard = () => {
                     return (
                       <div key={ride.id} className="flex flex-col gap-4 pb-8 border-b border-zinc-100 dark:border-zinc-800 last:border-0 last:pb-0">
                         {/* Student Header */}
-                        <div className="flex flex-col items-center mb-2">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <span 
+                              className="text-white font-bold text-sm px-2.5 py-1 rounded-md"
+                              style={{ backgroundColor: color }}
+                            >
+                              {pIndex}
+                            </span>
+                            <span className="font-bold text-lg">{ride.student?.name || 'Passenger'}</span>
+                          </div>
                           <span className={`text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ${rideStatusStr === 'ACTIVE' ? 'bg-blue-500/10 text-blue-600' : 'bg-zinc-100 dark:bg-zinc-800 text-muted-foreground'}`}>
                             {rideStatusStr}
                           </span>
-                          <span className="mt-2 font-bold text-lg">{ride.student?.name || 'Passenger'}</span>
                         </div>
                         
                         {/* Trip Info */}

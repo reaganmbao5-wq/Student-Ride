@@ -7,11 +7,11 @@ import { Polyline } from 'react-leaflet';
  * Renders the travelled path in a muted style, and the remaining path in a bright, prominent style.
  * Includes smooth animation for initial route drawing and high accuracy rendering.
  */
-export const RouteRenderer = ({ travelledPath, remainingPath, status, onAnimationChange }) => {
+export const RouteRenderer = ({ travelledPath, remainingPath, status, onAnimationChange, color }) => {
   const isHeadingToPickup = status === 'accepted' || status === 'driver_arrived';
   
   // Style config
-  const remainingColor = isHeadingToPickup ? '#10B981' : '#3B82F6'; // Green for pickup, Blue for dropoff
+  const remainingColor = color || (isHeadingToPickup ? '#10B981' : '#3B82F6'); // Use provided color, else fallback
   const remainingWeight = 5;
   const remainingOpacity = 0.9;
   
