@@ -57,9 +57,12 @@ const DriverDashboard = () => {
 
     const availableSeats = (driverProfile?.vehicle_capacity || 4) - occupiedPassengers;
     
-    // Filter and strictly limit requests by available seats
-    const fittingRides = masterSharedRidePool.filter(ride => ride.passenger_count <= availableSeats);
-    return fittingRides.slice(0, Math.max(0, availableSeats));
+    if (availableSeats <= 0) {
+      return [];
+    }
+    
+    // Return FULL synchronized pool (capacity decides ACCEPTANCE, not VISIBILITY)
+    return masterSharedRidePool;
   }, [masterSharedRidePool, driverProfile?.accepts_shared_rides, driverProfile?.vehicle_capacity, activeRides]);
   
   const [isSimulating, setIsSimulating] = useState(false);
