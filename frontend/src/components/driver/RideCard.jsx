@@ -65,6 +65,7 @@ export const RideCard = ({
               {/* REAL MINI MAP (RideMap as screenshot) */}
               <div className="w-full h-[120px] rounded-xl overflow-hidden pointer-events-none shadow-sm border border-black/10 dark:border-white/10 relative isolate">
                 <RideMap 
+                  className="w-full h-full"
                   interactive={false}
                   pickup={request.pickup_location}
                   dropoff={request.dropoff_location}
@@ -84,21 +85,33 @@ export const RideCard = ({
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1 overflow-hidden pr-2">
               <p className="text-xl font-heading font-extrabold text-black dark:text-white line-clamp-1 drop-shadow-sm">{studentName}</p>
-              <p className="text-[16px] text-zinc-900 dark:text-white font-extrabold tracking-tight mt-0.5">K{price}</p>
+              <p className="text-[16px] text-zinc-900 dark:text-white font-extrabold tracking-tight mt-0.5 mb-3">K{price}</p>
+              
+              <div className="flex flex-col gap-2">
+                <div>
+                  <p className="text-[10px] uppercase font-bold text-zinc-500 dark:text-zinc-400 tracking-wider">Pickup:</p>
+                  <p className="text-[12px] font-bold text-zinc-800 dark:text-zinc-200 truncate">{formatAddress(request.pickup_location?.address)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase font-bold text-zinc-500 dark:text-zinc-400 tracking-wider">Destination:</p>
+                  <p className="text-[12px] font-bold text-zinc-800 dark:text-zinc-200 truncate">{formatAddress(request.dropoff_location?.address)}</p>
+                </div>
+              </div>
             </div>
-            <div className={`text-[10px] uppercase font-black tracking-widest px-2.5 py-1 rounded-full border shrink-0 ${isShared ? 'bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400 dark:border-blue-500/30' : 'bg-purple-500/10 text-purple-600 border-purple-500/20 dark:text-purple-400 dark:border-purple-500/30'}`}>
-              {isShared ? 'Shared' : 'Private'}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2 mb-2">
-            <div>
-              <p className="text-[10px] uppercase font-bold text-zinc-500 dark:text-zinc-400 tracking-wider">Pickup:</p>
-              <p className="text-[12px] font-bold text-zinc-800 dark:text-zinc-200 truncate">{formatAddress(request.pickup_location?.address)}</p>
-            </div>
-            <div>
-              <p className="text-[10px] uppercase font-bold text-zinc-500 dark:text-zinc-400 tracking-wider">Destination:</p>
-              <p className="text-[12px] font-bold text-zinc-800 dark:text-zinc-200 truncate">{formatAddress(request.dropoff_location?.address)}</p>
+            
+            <div className="w-[100px] flex flex-col items-end shrink-0">
+              <div className={`text-[10px] uppercase font-black tracking-widest px-2.5 py-1 rounded-full border mb-3 ${isShared ? 'bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400 dark:border-blue-500/30' : 'bg-purple-500/10 text-purple-600 border-purple-500/20 dark:text-purple-400 dark:border-purple-500/30'}`}>
+                {isShared ? 'Shared' : 'Private'}
+              </div>
+              <div className="w-full h-[90px] rounded-xl overflow-hidden pointer-events-none shadow-sm border border-black/10 dark:border-white/10 relative isolate">
+                <RideMap 
+                  className="w-full h-full"
+                  interactive={false}
+                  pickup={request.pickup_location}
+                  dropoff={request.dropoff_location}
+                  driverLocation={driverLocation}
+                />
+              </div>
             </div>
           </div>
 
