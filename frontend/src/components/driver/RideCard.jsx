@@ -4,7 +4,7 @@ import { GlassCard, GoldButton } from '../common/GlassComponents';
 import { PlatformMap } from '../../map/components/PlatformMap';
 import { CAMERA_MODES } from '../../map/camera/CameraConfig';
 import { routeCache } from '../../map/route/RouteCache';
-import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 export const RideCard = ({
   mode = 'COMPACT', // 'FULL' or 'COMPACT'
@@ -13,6 +13,7 @@ export const RideCard = ({
   onAccept,
   driverLocation = null
 }) => {
+  const { api } = useAuth();
   const [routeGeometry, setRouteGeometry] = useState(null);
 
   useEffect(() => {
@@ -33,7 +34,7 @@ export const RideCard = ({
         }
       }).catch(err => console.error("Error fetching route for mini map:", err));
     }
-  }, [request?.pickup_location, request?.dropoff_location]);
+  }, [request?.pickup_location, request?.dropoff_location, api]);
 
   if (!request) return null;
 
