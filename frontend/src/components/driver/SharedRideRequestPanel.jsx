@@ -177,9 +177,11 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
                   // Position mapping
                   let y = 0, scale = 1, zIndex = 10;
                   if (offset === -1) {
-                    y = -90; scale = 0.85; zIndex = 9;
+                    y = -90; scale = 0.85; 
+                    zIndex = direction.current === -1 ? 8 : 9;
                   } else if (offset === 1) {
-                    y = 200; scale = 0.85; zIndex = 9;
+                    y = 200; scale = 0.85; 
+                    zIndex = direction.current === 1 ? 8 : 9;
                   }
 
                   // Determine entry/exit animations based on swipe direction
@@ -192,11 +194,12 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
                     <motion.div
                       key={permanentKey} // Permanent rotating deck of 3 cards, never destroyed!
                       initial={{ y: initialY, scale: 0.8 }} // Plays only on very first mount
-                      animate={{ y, scale, opacity: 1, zIndex }}
+                      animate={{ y, scale, opacity: 1 }} // Removed zIndex from animate to prevent delayed step transitions
                       transition={{ type: 'spring', stiffness: 120, damping: 20 }}
                       className="absolute w-full top-0 touch-none will-change-transform"
                       onPanEnd={isActive ? handlePanEnd : undefined}
                       style={{ 
+                        zIndex, // Applied instantly on render
                         pointerEvents: isActive ? 'auto' : 'none',
                         transformOrigin: 'top center'
                       }}
