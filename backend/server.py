@@ -2314,6 +2314,21 @@ async def complete_ride(ride_id: str, user: dict = Depends(require_driver)):
         wallet_status = WalletStatus.RESTRICTED.value
         is_still_online = False
         
+    remaining_active_rides = await db.rides.count_documents({
+        "driver_id": driver["id"],
+        "status": {"$in": get_active_ride_states()}
+    })
+
+    set_ops = {
+        "wallet_balance": new_balance,
+        "total_commission_due": total_due,
+        "wallet_status": wallet_status,
+        "is_online": is_still_online
+    }
+    
+    if remaining_active_rides == 0:
+        set_ops["current_ride_id"] = None
+
     await db.drivers.update_one(
         {"id": driver["id"]},
         {
@@ -2321,14 +2336,7 @@ async def complete_ride(ride_id: str, user: dict = Depends(require_driver)):
                 "total_rides": 1,
                 "total_earnings": ride.get("driver_earning", 0.0)
             },
-            "$set": { # Unset current_ride_id separately or here? 
-                      # Wait, $set is already above. Merge them.
-                "wallet_balance": new_balance,
-                "total_commission_due": total_due,
-                "wallet_status": wallet_status,
-                "is_online": is_still_online,
-                "current_ride_id": None 
-            }
+            "$set": set_ops
         }
     )
     

@@ -34,14 +34,33 @@ const DriverDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [currentLocation, setCurrentLocation] = useState(null);
   
+  const getPassengerState = (status) => {
+    if (['requested', 'accepted', 'driver_accepted', 'driver_en_route_to_pickup'].includes(status)) return 'WAITING PICKUP';
+    if (['driver_arrived'].includes(status)) return 'DRIVER ARRIVED';
+    if (['passenger_boarding', 'ride_started', 'ongoing', 'ride_in_progress', 'arriving_destination'].includes(status)) return 'INSIDE VEHICLE';
+    if (['completed', 'ended'].includes(status)) return 'COMPLETED';
+    if (['cancelled', 'declined'].includes(status)) return 'CANCELLED';
+    return 'UNKNOWN';
+  };
+
   const incomingSharedRequests = useMemo(() => {
     if (!driverProfile?.accepts_shared_rides) return [];
     
-    // We filter masterSharedRidePool based on capacity
-    const availableSeats = (driverProfile?.vehicle_capacity || 4) - (activeRide?.active_passengers || 0);
+    // Calculate dynamically based on Passenger States
+    const occupiedPassengers = activeRides.reduce((sum, ride) => {
+      const state = getPassengerState(ride.status);
+      if (['WAITING PICKUP', 'DRIVER ARRIVED', 'INSIDE VEHICLE'].includes(state)) {
+        return sum + (ride.passenger_count || 1);
+      }
+      return sum;
+    }, 0);
+
+    const availableSeats = (driverProfile?.vehicle_capacity || 4) - occupiedPassengers;
     
-    return masterSharedRidePool.filter(ride => ride.passenger_count <= availableSeats);
-  }, [masterSharedRidePool, driverProfile?.accepts_shared_rides, driverProfile?.vehicle_capacity, activeRide?.active_passengers]);
+    // Filter and strictly limit requests by available seats
+    const fittingRides = masterSharedRidePool.filter(ride => ride.passenger_count <= availableSeats);
+    return fittingRides.slice(0, Math.max(0, availableSeats));
+  }, [masterSharedRidePool, driverProfile?.accepts_shared_rides, driverProfile?.vehicle_capacity, activeRides]);
   
   const [isSimulating, setIsSimulating] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -477,10 +496,10 @@ const DriverDashboard = () => {
     activeRides.forEach((ride, index) => {
       const pIndex = `P${index + 1}`;
       const color = PASSENGER_COLORS[index % PASSENGER_COLORS.length];
-      const isRideArrivedOrStarted = ['driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination', 'ongoing'].includes(ride.status);
+      const state = getPassengerState(ride.status);
       
-      // Passenger pickup marker (Hide if driver has arrived or ride started)
-      if (!isRideArrivedOrStarted && ride.pickup_location) {
+      // WAITING PICKUP: Show pickup location
+      if (['WAITING PICKUP', 'DRIVER ARRIVED'].includes(state) && ride.pickup_location) {
         mapMarkers.push({
           lat: ride.pickup_location.lat,
           lng: ride.pickup_location.lng,
@@ -492,8 +511,8 @@ const DriverDashboard = () => {
         bounds.push([ride.pickup_location.lat, ride.pickup_location.lng]);
       }
       
-      // Passenger destination marker (Hide if arrived)
-      if (!['completed', 'ended'].includes(ride.status) && ride.dropoff_location) {
+      // INSIDE VEHICLE / WAITING: Show destination location
+      if (['WAITING PICKUP', 'DRIVER ARRIVED', 'INSIDE VEHICLE'].includes(state) && ride.dropoff_location) {
         mapMarkers.push({
           lat: ride.dropoff_location.lat,
           lng: ride.dropoff_location.lng,
