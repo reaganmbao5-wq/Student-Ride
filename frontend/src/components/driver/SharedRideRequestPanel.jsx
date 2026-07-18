@@ -186,12 +186,13 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
                   const initialY = direction.current === 1 ? 300 : -200;
                   const exitY = direction.current === 1 ? -200 : 300;
 
+                  const permanentKey = ((virtualIndex % 3) + 3) % 3;
+
                   return (
                     <motion.div
-                      key={virtualIndex} // Binds to the virtual position to trigger enter/exit perfectly
-                      initial={{ y: initialY, scale: 0.8 }}
+                      key={permanentKey} // Permanent rotating deck of 3 cards, never destroyed!
+                      initial={{ y: initialY, scale: 0.8 }} // Plays only on very first mount
                       animate={{ y, scale, opacity: 1, zIndex }}
-                      exit={{ y: exitY, opacity: 0, scale: 0.8, zIndex: 8 }}
                       transition={{ type: 'spring', stiffness: 250, damping: 25 }}
                       className="absolute w-full top-0 touch-none will-change-transform"
                       onPanEnd={isActive ? handlePanEnd : undefined}
