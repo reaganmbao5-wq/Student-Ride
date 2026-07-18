@@ -39,7 +39,7 @@ export const RideCard = ({
   if (!request) return null;
 
   const isShared = request.ride_mode === 'shared';
-  const studentName = request.student_name || 'Guest';
+  const studentName = request.student?.name || request.student_name || 'Guest';
   const price = request.fare?.toFixed(2) || '0.00';
 
   const formatAddress = (address) => {
