@@ -579,7 +579,7 @@ const DriverDashboard = () => {
             <div className="w-12 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full" />
           </div>
 
-          <div className="px-6 pb-6 pt-2 flex flex-col gap-6">
+          <div className="px-6 pb-6 pt-2 flex flex-col gap-6 flex-1 overflow-hidden">
             
             {/* Minimized Header Row */}
             <div className="flex flex-col gap-4 text-center cursor-pointer" onClick={() => setIsSheetExpanded(!isSheetExpanded)}>
