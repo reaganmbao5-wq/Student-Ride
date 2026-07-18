@@ -207,7 +207,8 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
                       <GlassCard className="p-3.5 shadow-2xl border border-black/5 bg-white/80 backdrop-blur-2xl overflow-hidden relative">
                         <div className="flex justify-between items-center">
                           <div>
-                            <p className="text-lg font-heading font-extrabold text-black line-clamp-1 drop-shadow-sm">{req.student_name || 'Student'}</p>
+                            <p className="text-[11px] uppercase tracking-wider font-black text-zinc-500/80 mb-[-2px]">Student</p>
+                            <p className="text-xl font-heading font-extrabold text-black line-clamp-1 drop-shadow-sm">{req.student_name || 'Guest'}</p>
                             <p className="text-[14px] text-zinc-900 mt-0.5 font-extrabold">K{req.fare?.toFixed(2)}</p>
                           </div>
                           <div className="bg-blue-500/10 text-blue-600 text-[10px] uppercase font-black tracking-widest px-2.5 py-1 rounded-full border border-blue-500/20 backdrop-blur-md">
