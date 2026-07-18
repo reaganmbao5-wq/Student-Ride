@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard, GoldButton } from '../common/GlassComponents';
-import { RideMap } from '../../map/components/RideMap';
+import { PlatformMap } from '../../map/components/PlatformMap';
+import { CAMERA_MODES } from '../../map/camera/CameraConfig';
 
 export const RideCard = ({
   mode = 'COMPACT', // 'FULL' or 'COMPACT'
@@ -27,6 +28,28 @@ export const RideCard = ({
     e.stopPropagation();
     if (onAccept) onAccept(request.id);
   };
+
+  const mapMarkers = [];
+  const mapBounds = [];
+  if (request.pickup_location) {
+    mapMarkers.push({ lat: request.pickup_location.lat, lng: request.pickup_location.lng, iconType: 'pickup', key: 'pickup' });
+    mapBounds.push([request.pickup_location.lat, request.pickup_location.lng]);
+  }
+  if (request.dropoff_location) {
+    mapMarkers.push({ lat: request.dropoff_location.lat, lng: request.dropoff_location.lng, iconType: 'dropoff', key: 'dropoff' });
+    mapBounds.push([request.dropoff_location.lat, request.dropoff_location.lng]);
+  }
+  
+  const mapDrivers = driverLocation ? [{
+    id: 'driver-self',
+    latitude: driverLocation.lat,
+    longitude: driverLocation.lng,
+    heading: driverLocation.heading || 0
+  }] : [];
+  
+  if (driverLocation) {
+    mapBounds.push([driverLocation.lat, driverLocation.lng]);
+  }
 
   return (
     <GlassCard className={`p-4 shadow-2xl border border-black/5 bg-white/80 dark:bg-zinc-900/90 dark:border-white/10 backdrop-blur-2xl relative overflow-hidden ${mode === 'FULL' ? 'w-full mb-3' : ''}`}>
@@ -64,12 +87,13 @@ export const RideCard = ({
               </div>
               {/* REAL MINI MAP (RideMap as screenshot) */}
               <div className="w-full h-[120px] rounded-xl overflow-hidden pointer-events-none shadow-sm border border-black/10 dark:border-white/10 relative isolate">
-                <RideMap 
+                <PlatformMap 
                   className="w-full h-full"
                   interactive={false}
-                  pickup={request.pickup_location}
-                  dropoff={request.dropoff_location}
-                  driverLocation={driverLocation}
+                  markers={mapMarkers}
+                  drivers={mapDrivers}
+                  bounds={mapBounds.length > 1 ? mapBounds : null}
+                  cameraMode={CAMERA_MODES.OVERVIEW}
                 />
               </div>
             </div>
@@ -104,12 +128,13 @@ export const RideCard = ({
                 {isShared ? 'Shared' : 'Private'}
               </div>
               <div className="w-full h-[90px] rounded-xl overflow-hidden pointer-events-none shadow-sm border border-black/10 dark:border-white/10 relative isolate">
-                <RideMap 
+                <PlatformMap 
                   className="w-full h-full"
                   interactive={false}
-                  pickup={request.pickup_location}
-                  dropoff={request.dropoff_location}
-                  driverLocation={driverLocation}
+                  markers={mapMarkers}
+                  drivers={mapDrivers}
+                  bounds={mapBounds.length > 1 ? mapBounds : null}
+                  cameraMode={CAMERA_MODES.OVERVIEW}
                 />
               </div>
             </div>
