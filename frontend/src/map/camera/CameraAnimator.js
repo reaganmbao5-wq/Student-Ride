@@ -1,4 +1,4 @@
-import { cameraState } from './CameraState';
+
 import { CAMERA_CONFIG } from './CameraConfig';
 
 /**
@@ -6,7 +6,8 @@ import { CAMERA_CONFIG } from './CameraConfig';
  * into actual Leaflet map operations, ensuring smooth 60FPS animation.
  */
 class CameraAnimator {
-  constructor() {
+  constructor(state) {
+    this.state = state;
     this.map = null;
     this.animationFrameId = null;
     this.lastTargetCenter = null;
@@ -38,7 +39,7 @@ class CameraAnimator {
   }
 
   tick = () => {
-    if (this.map && !cameraState.isUserInteracting && cameraState.isIdle(CAMERA_CONFIG.INTERACTION.IDLE_TIMEOUT_MS)) {
+    if (this.map && !this.state.isUserInteracting && this.state.isIdle(CAMERA_CONFIG.INTERACTION.IDLE_TIMEOUT_MS)) {
       this.applyTargets();
     }
     this.animationFrameId = requestAnimationFrame(this.tick);
@@ -46,9 +47,9 @@ class CameraAnimator {
 
   applyTargets() {
     // 1. Handle Bounds (OVERVIEW, FOLLOW_ROUTE)
-    if (cameraState.targetBounds) {
+    if (this.state.targetBounds) {
       // Prevent spamming fitBounds if bounds haven't changed by deep comparing the array
-      const currentBoundsStr = JSON.stringify(cameraState.targetBounds);
+      const currentBoundsStr = JSON.stringify(this.state.targetBounds);
       if (this.lastTargetBounds !== currentBoundsStr) {
         try {
           const size = this.map.getSize();
@@ -61,7 +62,7 @@ class CameraAnimator {
               paddingOpts = { paddingTopLeft: [15, 15], paddingBottomRight: [15, 15] };
             }
 
-            this.map.fitBounds(cameraState.targetBounds, {
+            this.map.fitBounds(this.state.targetBounds, {
               ...paddingOpts,
               animate: true,
               duration: CAMERA_CONFIG.ANIMATION.DURATION_MS / 1000,
@@ -76,57 +77,53 @@ class CameraAnimator {
             // Map is not ready (0x0). Do not cache lastTargetBounds so we try again next tick.
           }
         } catch (e) {
-          console.warn("CameraAnimator: Invalid bounds", e);
-          // DO NOT cache lastTargetBounds on error, so it can retry if it was a temporary map initialization issue
+          // Leaflet fitBounds can fail if dimensions are zero
         }
       }
-      return; // Bounds override center/zoom
+      // If we have bounds, we don't try to fly to center/zoom
+      return; 
     }
 
     // 2. Handle Center & Zoom (FOLLOW_DRIVER, PICKUP_SELECTION)
-    const hasNewCenter = cameraState.targetCenter && 
-      (this.lastTargetCenter?.lat !== cameraState.targetCenter.lat || 
-       this.lastTargetCenter?.lng !== cameraState.targetCenter.lng);
+    const hasNewCenter = this.state.targetCenter && 
+      (this.lastTargetCenter?.lat !== this.state.targetCenter.lat || 
+       this.lastTargetCenter?.lng !== this.state.targetCenter.lng);
        
-    const hasNewZoom = cameraState.targetZoom && (this.lastTargetZoom !== cameraState.targetZoom);
+    const hasNewZoom = this.state.targetZoom && (this.lastTargetZoom !== this.state.targetZoom);
 
     if (hasNewCenter || hasNewZoom) {
-      const size = this.map.getSize();
-      if (size.x === 0 || size.y === 0) {
-        // Map container hasn't rendered yet. Force an update and retry next frame.
-        this.map.invalidateSize();
-        return; 
-      }
-
-      const targetZoom = cameraState.targetZoom || this.map.getZoom();
+      const currentCenter = this.map.getCenter();
       
+      // We only strictly require targetZoom if we are flying, else we use current zoom
+      const targetZoom = this.state.targetZoom || this.map.getZoom();
+
       if (hasNewCenter) {
-        // If center changed, use setView or flyTo
-        const currentCenter = this.map.getCenter();
-        const dist = currentCenter.distanceTo(cameraState.targetCenter);
-        
-        if (dist > 5000) {
-          // Large jump (e.g. initial geolocation), use flyTo
-          this.map.flyTo(cameraState.targetCenter, targetZoom, {
-            animate: true,
-            duration: 1.5
+        // If the new center is very far away, jump. Otherwise smooth animate.
+        const dist = currentCenter.distanceTo(this.state.targetCenter);
+        if (dist > 15000) {
+          // Distance > 15km, teleport instantly
+          this.map.flyTo(this.state.targetCenter, targetZoom, {
+            animate: false
           });
         } else {
-          // Continuous tracking (e.g. driver moving), use panTo/setView
-          this.map.setView(cameraState.targetCenter, targetZoom, {
+          // Smooth pan
+          this.map.setView(this.state.targetCenter, targetZoom, {
             animate: true,
-            duration: 1.0,
-            easeLinearity: 0.25
+            duration: CAMERA_CONFIG.ANIMATION.DURATION_MS / 1000
           });
         }
-        this.lastTargetCenter = cameraState.targetCenter;
+        this.lastTargetCenter = this.state.targetCenter;
+        this.lastTargetBounds = null; // Bounds invalidated
       } else if (hasNewZoom) {
         // Only zoom changed
-        this.map.setZoom(targetZoom, { animate: true });
+        this.map.setZoom(targetZoom, {
+          animate: true
+        });
       }
+
       this.lastTargetZoom = targetZoom;
     }
   }
 }
 
-export const cameraAnimator = new CameraAnimator();
+export { CameraAnimator };

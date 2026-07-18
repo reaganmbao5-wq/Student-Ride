@@ -48,4 +48,6 @@ class CameraState {
   }
 }
 
-export const cameraState = new CameraState();
+}
+
+export { CameraState };

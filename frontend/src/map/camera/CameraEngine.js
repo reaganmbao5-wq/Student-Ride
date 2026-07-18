@@ -1,8 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useMap, useMapEvents } from 'react-leaflet';
-import { cameraState } from './CameraState';
-import { cameraController } from './CameraController';
-import { cameraAnimator } from './CameraAnimator';
+import { CameraState } from './CameraState';
+import { CameraController } from './CameraController';
+import { CameraAnimator } from './CameraAnimator';
 import { CAMERA_MODES } from './CameraConfig';
 
 /**
@@ -25,6 +25,13 @@ const CameraEngine = ({
 }) => {
   const map = useMap();
 
+  const { cameraState, cameraController, cameraAnimator } = useMemo(() => {
+    const state = new CameraState();
+    const controller = new CameraController(state);
+    const animator = new CameraAnimator(state);
+    return { cameraState: state, cameraController: controller, cameraAnimator: animator };
+  }, []);
+
   // 1. Attach/Detach Animator to the Leaflet instance
   useEffect(() => {
     if (!map) return;
@@ -32,7 +39,7 @@ const CameraEngine = ({
     return () => {
       cameraAnimator.detach();
     };
-  }, [map]);
+  }, [map, cameraAnimator]);
 
   // 2. Intercept User Interactions
   useMapEvents({
@@ -53,9 +60,10 @@ const CameraEngine = ({
   // 3. Orchestrate State Updates
   useEffect(() => {
     cameraController.update(mode, driverLocation, routeBounds, selectionLocation, map);
-  }, [mode, driverLocation, routeBounds, selectionLocation, map]);
+  }, [mode, driverLocation, routeBounds, selectionLocation, map, cameraController]);
 
   return null; // The engine renders nothing visually, it purely controls the map camera
 };
 
 export default CameraEngine;
+

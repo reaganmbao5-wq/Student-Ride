@@ -1,5 +1,4 @@
 import { CAMERA_MODES, CAMERA_CONFIG } from './CameraConfig';
-import { cameraState } from './CameraState';
 import { zoomController } from './ZoomController';
 import { followController } from './FollowController';
 
@@ -9,18 +8,21 @@ import { followController } from './FollowController';
  * and continuously updates the CameraState with the 'ideal' target.
  */
 class CameraController {
+  constructor(state) {
+    this.state = state;
+  }
   
   update(mode, driverLocation, routeBounds, selectionLocation, map) {
     // 1. Update Mode
-    cameraState.setMode(mode);
+    this.state.setMode(mode);
 
     // 2. Check for idle timeout (resume auto-follow after user interaction)
-    if (cameraState.isUserInteracting) {
+    if (this.state.isUserInteracting) {
       // Do not fight the user
       return;
     }
 
-    if (!cameraState.isIdle(CAMERA_CONFIG.INTERACTION.IDLE_TIMEOUT_MS)) {
+    if (!this.state.isIdle(CAMERA_CONFIG.INTERACTION.IDLE_TIMEOUT_MS)) {
       // Still in timeout period, wait for it to elapse before taking over again
       return;
     }
@@ -28,7 +30,7 @@ class CameraController {
     // 3. Determine ideal zoom
     const idealZoom = zoomController.getIdealZoom(mode);
     if (idealZoom !== null) {
-      cameraState.targetZoom = idealZoom;
+      this.state.targetZoom = idealZoom;
     }
 
     // 4. Determine ideal bounds or center based on mode
@@ -36,19 +38,19 @@ class CameraController {
       case CAMERA_MODES.FOLLOW_DRIVER:
         // Frame both the driver and the target (pickup/dropoff) if bounds exist
         if (routeBounds && routeBounds.length > 1) {
-          cameraState.targetBounds = routeBounds;
-          cameraState.targetCenter = null;
+          this.state.targetBounds = routeBounds;
+          this.state.targetCenter = null;
         } else {
           const driverCenter = followController.getTargetCenter(driverLocation);
           if (driverCenter) {
             const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
             const offset = isMobile ? 0.0008 : 0.0004; // Larger offset for mobile due to taller bottom sheet
             
-            cameraState.targetCenter = {
+            this.state.targetCenter = {
               lat: driverCenter.lat - offset,
               lng: driverCenter.lng
             };
-            cameraState.targetBounds = null; // Clear bounds
+            this.state.targetBounds = null; // Clear bounds
           }
         }
         break;
@@ -56,16 +58,16 @@ class CameraController {
       case CAMERA_MODES.PICKUP_SELECTION:
       case CAMERA_MODES.DESTINATION_SELECTION:
         if (selectionLocation) {
-          cameraState.targetCenter = selectionLocation;
-          cameraState.targetBounds = null;
+          this.state.targetCenter = selectionLocation;
+          this.state.targetBounds = null;
         }
         break;
 
       case CAMERA_MODES.FOLLOW_ROUTE:
       case CAMERA_MODES.OVERVIEW:
         if (routeBounds) {
-          cameraState.targetBounds = routeBounds;
-          cameraState.targetCenter = null; // Bounds override center
+          this.state.targetBounds = routeBounds;
+          this.state.targetCenter = null; // Bounds override center
         }
         break;
 
@@ -76,5 +78,6 @@ class CameraController {
     }
   }
 }
+}
 
-export const cameraController = new CameraController();
+export { CameraController };
