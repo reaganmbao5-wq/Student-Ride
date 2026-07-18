@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GlassCard, GoldButton } from '../common/GlassComponents';
+import { RideCard } from './RideCard';
 
 export const SharedRideRequestPanel = ({ requests, onAccept }) => {
   const [isMinimized, setIsMinimized] = useState(false);
@@ -204,46 +204,14 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
                         transformOrigin: 'top center'
                       }}
                     >
-                      <GlassCard className="p-3.5 shadow-2xl border border-black/5 bg-white/80 backdrop-blur-2xl overflow-hidden relative">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="text-[11px] uppercase tracking-wider font-black text-zinc-500/80 mb-[-2px]">Student</p>
-                            <p className="text-xl font-heading font-extrabold text-black line-clamp-1 drop-shadow-sm">{req.student_name || 'Guest'}</p>
-                            <p className="text-[14px] text-zinc-900 mt-0.5 font-extrabold">K{req.fare?.toFixed(2)}</p>
-                          </div>
-                          <div className="bg-blue-500/10 text-blue-600 text-[10px] uppercase font-black tracking-widest px-2.5 py-1 rounded-full border border-blue-500/20 backdrop-blur-md">
-                            {req.ride_mode === 'shared' ? 'Shared' : 'Private'}
-                          </div>
-                        </div>
-
-                        {/* Collapsible Details */}
-                        <AnimatePresence initial={false}>
-                          {isActive && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: 'auto', opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.25, ease: 'easeOut' }}
-                              className="overflow-hidden"
-                            >
-                              <div className="space-y-3.5 mb-5 relative mt-4">
-                                <div className="absolute left-[4.5px] top-3 bottom-3 w-[1px] bg-gradient-to-b from-black/20 to-blue-500/30" />
-                                <div className="flex items-start gap-3.5 pointer-events-none">
-                                  <div className="w-2.5 h-2.5 rounded-full border-[2.5px] border-zinc-700 mt-1 shrink-0 bg-white z-10" />
-                                  <p className="text-[13px] text-zinc-800 font-bold leading-tight drop-shadow-sm pointer-events-auto">{formatAddress(req.pickup_location?.address)}</p>
-                                </div>
-                                <div className="flex items-start gap-3.5 pointer-events-none">
-                                  <div className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-1 shrink-0 shadow-[0_0_8px_rgba(59,130,246,0.5)] z-10" />
-                                  <p className="text-[13px] text-zinc-800 font-bold leading-tight drop-shadow-sm pointer-events-auto">{formatAddress(req.dropoff_location?.address)}</p>
-                                </div>
-                              </div>
-                              <GoldButton className="w-full py-2.5 text-[13px] font-extrabold shadow-none transition-transform active:scale-95" onClick={(e) => { e.stopPropagation(); onAccept(req.id); }}>
-                                Accept
-                              </GoldButton>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </GlassCard>
+                      <RideCard 
+                        mode="COMPACT"
+                        request={req}
+                        isActive={isActive}
+                        onAccept={(id) => {
+                          onAccept(id);
+                        }}
+                      />
                     </motion.div>
                   );
                 })}

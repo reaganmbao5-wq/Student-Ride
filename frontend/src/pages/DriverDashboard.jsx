@@ -14,6 +14,7 @@ import { App } from '@capacitor/app';
 
 import { ActiveTripQueue } from '../components/driver/ActiveTripQueue';
 import { SharedRideRequestPanel } from '../components/driver/SharedRideRequestPanel';
+import { RideCard } from '../components/driver/RideCard';
 
 const DriverDashboard = () => {
   const navigate = useNavigate();
@@ -778,29 +779,13 @@ const DriverDashboard = () => {
             <h2 className="font-heading font-semibold text-foreground text-lg mb-4">Available Rides</h2>
             <div className="space-y-3">
               {pendingRides.map((ride) => (
-                <GlassCard key={ride.id} className="p-4" data-testid={`pending-ride-${ride.id}`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-gold font-heading font-bold">K{ride.fare?.toFixed(2)}</span>
-                    <span className="text-muted-foreground text-sm">{ride.distance?.toFixed(1)} km</span>
-                  </div>
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center gap-2 text-sm">
-                      <MapPin className="w-4 h-4 text-gold" />
-                      <span className="text-foreground truncate">{ride.pickup_location?.address}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <MapPin className="w-4 h-4 text-emerald-500" />
-                      <span className="text-muted-foreground truncate">{ride.dropoff_location?.address}</span>
-                    </div>
-                  </div>
-                  <GoldButton
-                    size="sm"
-                    className="w-full"
-                    onClick={() => handleAcceptRide(ride.id)}
-                  >
-                    Accept Ride
-                  </GoldButton>
-                </GlassCard>
+                <RideCard
+                  key={ride.id}
+                  mode="FULL"
+                  request={ride}
+                  driverLocation={currentLocation}
+                  onAccept={(id) => handleAcceptRide(id)}
+                />
               ))}
             </div>
           </div>
