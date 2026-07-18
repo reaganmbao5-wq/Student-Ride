@@ -3,7 +3,7 @@ import { Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RideCard } from './RideCard';
 
-export const SharedRideRequestPanel = ({ requests, onAccept }) => {
+export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [position, setPosition] = useState(0); // Track infinite scrolling position
   const direction = useRef(0); // 1 for UP, -1 for DOWN
@@ -208,6 +208,7 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
                         mode="COMPACT"
                         request={req}
                         isActive={isActive}
+                        driverLocation={driverLocation}
                         onAccept={(id) => {
                           onAccept(id);
                         }}

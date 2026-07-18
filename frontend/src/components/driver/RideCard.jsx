@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard, GoldButton } from '../common/GlassComponents';
 import { PlatformMap } from '../../map/components/PlatformMap';
 import { CAMERA_MODES } from '../../map/camera/CameraConfig';
+import { routeCache } from '../../map/route/RouteCache';
+import api from '../../services/api';
 
 export const RideCard = ({
   mode = 'COMPACT', // 'FULL' or 'COMPACT'
@@ -11,6 +13,28 @@ export const RideCard = ({
   onAccept,
   driverLocation = null
 }) => {
+  const [routeGeometry, setRouteGeometry] = useState(null);
+
+  useEffect(() => {
+    if (request?.pickup_location && request?.dropoff_location) {
+      const cachedGeometry = routeCache.getRoute(request.pickup_location, request.dropoff_location);
+      if (cachedGeometry) {
+        setRouteGeometry(cachedGeometry);
+        return;
+      }
+      
+      api.post('/rides/estimate-fare', {
+        pickup: request.pickup_location,
+        dropoff: request.dropoff_location
+      }).then(res => {
+        if (res.data?.geometry) {
+          setRouteGeometry(res.data.geometry);
+          routeCache.setRoute(request.pickup_location, request.dropoff_location, res.data.geometry);
+        }
+      }).catch(err => console.error("Error fetching route for mini map:", err));
+    }
+  }, [request?.pickup_location, request?.dropoff_location]);
+
   if (!request) return null;
 
   const isShared = request.ride_mode === 'shared';
@@ -94,6 +118,7 @@ export const RideCard = ({
                   drivers={mapDrivers}
                   bounds={mapBounds.length > 1 ? mapBounds : null}
                   cameraMode={CAMERA_MODES.OVERVIEW}
+                  routeGeometry={routeGeometry}
                 />
               </div>
             </div>
@@ -135,6 +160,7 @@ export const RideCard = ({
                   drivers={mapDrivers}
                   bounds={mapBounds.length > 1 ? mapBounds : null}
                   cameraMode={CAMERA_MODES.OVERVIEW}
+                  routeGeometry={routeGeometry}
                 />
               </div>
             </div>

@@ -494,6 +494,7 @@ const DriverDashboard = () => {
           requests={incomingSharedRequests}
           onAccept={handleAcceptSharedRide}
           onDecline={handleDeclineSharedRide}
+          driverLocation={currentLocation}
         />
         
         {/* Map Layer */}
