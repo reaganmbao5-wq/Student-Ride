@@ -78,6 +78,5 @@ class CameraController {
     }
   }
 }
-}
 
 export { CameraController };
