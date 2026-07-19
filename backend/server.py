@@ -916,7 +916,7 @@ class ConnectionManager:
         
         # Broadcast to student if driver is in an active ride
         if driver:
-            active_ride = await db.rides.find_one({
+            active_rides = await db.rides.find({
                 "driver_id": driver["id"],
                 "status": {"$in": [
                     RideStatus.DRIVER_ACCEPTED.value,
@@ -930,17 +930,18 @@ class ConnectionManager:
                     RideStatus.ACCEPTED.value,
                     RideStatus.ONGOING.value
                 ]}
-            }, {"_id": 0}, sort=[("created_at", -1)])
+            }, {"_id": 0}).to_list(None)
             
-            if active_ride:
-                # Broadcast to the student
-                await self.send_personal_message({
-                    "type": "driver_location",
-                    "lat": location["lat"],
-                    "lng": location["lng"],
-                    "heading": location.get("heading", 0),
-                    "ride_id": active_ride["id"]
-                }, active_ride["student_id"])
+            if active_rides:
+                # Broadcast to all students in an active ride with this driver
+                for active_ride in active_rides:
+                    await self.send_personal_message({
+                        "type": "driver_location",
+                        "lat": location["lat"],
+                        "lng": location["lng"],
+                        "heading": location.get("heading", 0),
+                        "ride_id": active_ride["id"]
+                    }, active_ride["student_id"])
                 
                 # Broadcast back to the driver so their own map moves during simulation
                 await self.send_personal_message({
@@ -948,7 +949,7 @@ class ConnectionManager:
                     "lat": location["lat"],
                     "lng": location["lng"],
                     "heading": location.get("heading", 0),
-                    "ride_id": active_ride["id"]
+                    "ride_id": active_rides[0]["id"]
                 }, driver["user_id"])
 
     async def broadcast_to_nearby_drivers(self, message: dict, location: dict, radius_km: float = 3.0):

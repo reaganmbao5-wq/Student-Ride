@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Power, MapPin, Clock, DollarSign, Star, Navigation, AlertCircle, Bell, Check, X, Upload, FileText, MessageCircle, PhoneCall, Loader2 } from 'lucide-react';
+import { Power, MapPin, Clock, DollarSign, Star, Navigation, AlertCircle, Bell, Check, X, Upload, FileText, MessageCircle, PhoneCall, Loader2, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard, GoldButton, StatusBadge, LoadingSpinner, EmptyState } from '../components/common/GlassComponents';
 import { PlatformMap } from '../map/components/PlatformMap';
@@ -43,27 +43,28 @@ const DriverDashboard = () => {
     return 'UNKNOWN';
   };
 
-  const incomingSharedRequests = useMemo(() => {
-    if (!driverProfile?.accepts_shared_rides) return [];
-    
-    // Calculate dynamically based on Passenger States
-    const occupiedPassengers = activeRides.reduce((sum, ride) => {
+  // Calculate dynamically based on Passenger States
+  const occupiedPassengers = useMemo(() => {
+    return activeRides.reduce((sum, ride) => {
       const state = getPassengerState(ride.status);
       if (['WAITING PICKUP', 'DRIVER ARRIVED', 'INSIDE VEHICLE'].includes(state)) {
         return sum + (ride.passenger_count || 1);
       }
       return sum;
     }, 0);
+  }, [activeRides]);
 
-    const availableSeats = (driverProfile?.vehicle_capacity || 4) - occupiedPassengers;
-    
-    if (availableSeats <= 0) {
-      return [];
-    }
+  const availableSeats = useMemo(() => {
+    return (driverProfile?.vehicle_capacity || 4) - occupiedPassengers;
+  }, [driverProfile?.vehicle_capacity, occupiedPassengers]);
+
+  const incomingSharedRequests = useMemo(() => {
+    if (!driverProfile?.accepts_shared_rides) return [];
+    if (availableSeats <= 0) return [];
     
     // Return FULL synchronized pool (capacity decides ACCEPTANCE, not VISIBILITY)
     return masterSharedRidePool;
-  }, [masterSharedRidePool, driverProfile?.accepts_shared_rides, driverProfile?.vehicle_capacity, activeRides]);
+  }, [masterSharedRidePool, driverProfile?.accepts_shared_rides, availableSeats]);
   
   const [isSimulating, setIsSimulating] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -173,6 +174,7 @@ const DriverDashboard = () => {
       toast.success(`You received a ${rideUpdate.rating}-star rating!`);
       setEarnings(prev => ({ ...prev, rating: rideUpdate.new_average }));
       refreshDriverProfile();
+      clearRideUpdate();
     } else if (rideUpdate.type === 'cancelled' || rideUpdate.type === 'declined') {
         // Find if this was an active shared ride being cancelled by a specific student
         if (activeRide && activeRide.ride_mode === 'shared' && rideUpdate.ride_id === activeRide.id && rideUpdate.student_id) {
@@ -191,12 +193,14 @@ const DriverDashboard = () => {
         // Always remove from pending lists
         setPendingRides(prev => prev.filter(r => r.id !== rideUpdate.ride_id));
         setMasterSharedRidePool(prev => prev.filter(r => r.id !== rideUpdate.ride_id));
+        clearRideUpdate();
       } else if (rideUpdate.type === 'accepted') {
         // Remove from pending rides once someone accepts it
         setPendingRides(prev => prev.filter(r => r.id !== rideUpdate.ride?.id));
         setMasterSharedRidePool(prev => prev.filter(r => r.id !== rideUpdate.ride?.id));
+        clearRideUpdate();
     }
-  }, [rideUpdate, refreshDriverProfile, activeRide, refreshActiveRide]);
+  }, [rideUpdate, refreshDriverProfile, activeRide, refreshActiveRide, clearRideUpdate]);
 
   // Handle real-time synchronization for shared pool
   useEffect(() => {
@@ -554,6 +558,44 @@ const DriverDashboard = () => {
         
         {/* Map Layer */}
         <div className="flex-1 relative z-0">
+          {/* Animated Capacity Indicator for Shared Rides */}
+          {activeRide.ride_mode === 'shared' && driverProfile?.accepts_shared_rides && (
+            <motion.div 
+              initial={{ y: -50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              className="absolute top-6 left-4 z-10"
+            >
+              <div className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md px-4 py-2 rounded-full shadow-lg border border-zinc-200/50 dark:border-zinc-800/50 flex items-center gap-3">
+                <div className="relative">
+                  <Users className="w-5 h-5 text-emerald-500" />
+                  <AnimatePresence>
+                    {availableSeats <= 0 && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-zinc-900"
+                      />
+                    )}
+                  </AnimatePresence>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider leading-none mb-0.5">Capacity</span>
+                  <div className="flex items-baseline gap-1 leading-none">
+                    <motion.span 
+                      key={availableSeats}
+                      initial={{ y: -10, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      className={`font-heading font-bold text-lg ${availableSeats > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}
+                    >
+                      {Math.max(0, availableSeats)}
+                    </motion.span>
+                    <span className="text-sm font-medium text-muted-foreground">/ {driverProfile?.vehicle_capacity || 4} seats</span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           <PlatformMap
             center={currentLocation || { lat: -14.4087, lng: 28.2849 }}
             bounds={bounds.length > 1 ? bounds : null}
@@ -583,6 +625,7 @@ const DriverDashboard = () => {
         {/* Bottom Sheet Overlay */}
         <motion.div
           className="absolute bottom-0 left-0 right-0 bg-white dark:bg-zinc-950 rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-20 flex flex-col min-h-[60vh] max-h-[70vh] overflow-hidden"
+          initial={{ y: "calc(100% - 160px)" }}
           animate={{ y: isSheetExpanded ? 0 : "calc(100% - 160px)" }}
           transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
           drag="y"
@@ -635,14 +678,7 @@ const DriverDashboard = () => {
             </div>
 
             {/* EXPANDED CONTENT */}
-            <AnimatePresence>
-              {isSheetExpanded && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="flex flex-col gap-8 overflow-y-auto flex-1 pt-4 pb-12 pr-2"
-                >
+            <div className="flex flex-col gap-8 overflow-y-auto flex-1 pt-4 pb-12 pr-2">
                   {activeRides.map((ride, index) => {
                     const color = PASSENGER_COLORS[index % PASSENGER_COLORS.length];
                     const pIndex = `P${index + 1}`;
@@ -730,9 +766,7 @@ const DriverDashboard = () => {
                       </div>
                     );
                   })}
-                </motion.div>
-              )}
-            </AnimatePresence>
+            </div>
 
           </div>
         </motion.div>

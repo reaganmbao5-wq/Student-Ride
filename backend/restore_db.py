@@ -1,54 +1,43 @@
 import asyncio
 import os
-from dotenv import load_dotenv
+import json
 from motor.motor_asyncio import AsyncIOMotorClient
+from bson import json_util
 
 async def restore():
-    load_dotenv('.env')
-    client = AsyncIOMotorClient(os.environ['MONGO_URL'])
-    db = client[os.environ.get('DB_NAME', 'mulungushi_rides')]
+    print("Connecting to MongoDB...")
+    client = AsyncIOMotorClient('mongodb+srv://admin:reaganmbao31?@cluster0.mucpxu8.mongodb.net/?appName=Cluster0')
+    db = client['mulungushi_rides']
     
-    # 1. Delete ALL dummy rides that I just created to clean the slate
-    await db.rides.delete_many({"student_id": {"$regex": "^dummy_student"}})
-    # Also delete the ones where fare was 35.00 because those were my dummy rides
-    await db.rides.delete_many({"fare": 35.00})
-    await db.rides.delete_many({"fare": 40.00})
-    
-    # 2. Get Driver A's ID
-    user_a = await db.users.find_one({'email': 'driver_a@qa.com'})
-    driver_a = await db.drivers.find_one({'user_id': user_a['id']})
-    driver_id = driver_a['id']
-    
-    # 3. Find 4 real rides (shared) that were cancelled and restore them!
-    # I will sort by created_at DESC to get the most recent ones the user created
-    cancelled_shared = await db.rides.find({'status': 'cancelled', 'ride_mode': 'shared'}).sort('created_at', -1).to_list(4)
-    
-    if len(cancelled_shared) < 4:
-        print("Not enough cancelled shared rides to restore.")
+    print("Loading backup from backup_db.json...")
+    try:
+        with open('backup_db.json', 'r') as f:
+            data = json.load(f, object_hook=json_util.object_hook)
+    except FileNotFoundError:
+        print("Error: backup_db.json not found! Cannot restore.")
         return
-        
-    # The first one goes to Driver A!
-    ride_for_a = cancelled_shared[0]
-    await db.rides.update_one(
-        {'_id': ride_for_a['_id']},
-        {'$set': {
-            'status': 'driver_accepted',
-            'driver_id': driver_id
-        }}
-    )
-    print(f"Restored ride {ride_for_a['id']} to Driver A as accepted")
-    
-    # The other 3 go to the pool!
-    for r in cancelled_shared[1:]:
-        await db.rides.update_one(
-            {'_id': r['_id']},
-            {'$set': {
-                'status': 'requested',
-                'driver_id': None
-            }}
-        )
-        print(f"Restored ride {r['id']} to pool as requested")
-        
-    print("Database restoration complete. The app should now reflect the correct state.")
 
-asyncio.run(restore())
+    users = data.get('users', [])
+    rides = data.get('rides', [])
+    drivers = data.get('drivers', [])
+
+    print(f"Loaded {len(users)} users, {len(rides)} rides, {len(drivers)} drivers.")
+
+    # Drop existing collections to ensure a clean slate
+    print("Clearing current database state...")
+    await db.users.delete_many({})
+    await db.rides.delete_many({})
+    await db.drivers.delete_many({})
+
+    # Restore the data
+    if users:
+        await db.users.insert_many(users)
+    if rides:
+        await db.rides.insert_many(rides)
+    if drivers:
+        await db.drivers.insert_many(drivers)
+
+    print("✅ Database successfully restored to the previous state!")
+
+if __name__ == "__main__":
+    asyncio.run(restore())
