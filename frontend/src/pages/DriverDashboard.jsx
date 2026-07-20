@@ -32,7 +32,14 @@ const DriverDashboard = () => {
   const [routesData, setRoutesData] = useState([]);
   
   // Passenger Colors for Shared Rides
-  const PASSENGER_COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f97316'];
+  const PASSENGER_COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899', '#ef4444'];
+  
+  const getColorForRideId = (rideId) => {
+    if (!rideId) return '#3b82f6';
+    const index = activeRides.findIndex(r => r.id === rideId);
+    if (index === -1) return '#3b82f6';
+    return PASSENGER_COLORS[index % PASSENGER_COLORS.length];
+  };
   const [earnings, setEarnings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentLocation, setCurrentLocation] = useState(null);
@@ -278,45 +285,82 @@ const DriverDashboard = () => {
   useEffect(() => {
     if (routeQueue.length > 0) {
       const fetchRoutes = async () => {
-        const routes = [];
         const waypoints = [];
         if (driverLocRef.current) {
-          waypoints.push(driverLocRef.current);
+          waypoints.push({ ...driverLocRef.current, ride_id: 'driver' });
         }
         routeQueue.forEach(stop => {
-          if (stop.coordinates) waypoints.push(stop.coordinates);
+          if (stop.coordinates) waypoints.push({ ...stop.coordinates, ride_id: stop.ride_id });
         });
+
+        const fetchPromises = [];
+        const orderedSegments = [];
 
         for (let i = 0; i < waypoints.length - 1; i++) {
           const origin = waypoints[i];
           const dest = waypoints[i+1];
           if (!origin?.lat || !dest?.lat) continue;
           
-          const cachedGeometry = routeCache.getRoute(origin, dest);
+          const segmentKey = `${origin.ride_id || 'p'+i}-${dest.ride_id || 'p'+(i+1)}`;
+          const color = getColorForRideId(dest.ride_id);
+          
+          let cachedGeometry = routeCache.getRoute(origin, dest);
+          if (!cachedGeometry && origin.ride_id === 'driver') {
+            cachedGeometry = routeCache.getLenientRoute(origin, dest, 0.0002);
+          }
+          
           if (cachedGeometry) {
-            routes.push({ rideId: `route-${i}`, geometry: cachedGeometry, color: '#3b82f6', pIndex: '', status: 'active' });
+            const segment = { rideId: segmentKey, geometry: cachedGeometry, color, pIndex: '', status: 'active' };
+            orderedSegments.push(segment);
+            
+            // Incrementally show cached segments to prevent empty map flicker
+            setRoutesData(prev => {
+              if (!prev.find(r => r.rideId === segmentKey)) return [...prev, segment];
+              return prev;
+            });
             continue;
           }
           
-          try {
-            const res = await api.post('/rides/estimate-fare', {
-              pickup: origin,
-              dropoff: dest
-            });
+          const fetchPromise = api.post('/rides/estimate-fare', {
+            pickup: origin,
+            dropoff: dest
+          }).then(res => {
             if (res.data?.geometry) {
               routeCache.setRoute(origin, dest, res.data.geometry);
-              routes.push({ rideId: `route-${i}`, geometry: res.data.geometry, color: '#3b82f6', pIndex: '', status: 'active' });
+              const newSegment = { rideId: segmentKey, geometry: res.data.geometry, color, pIndex: '', status: 'active' };
+              setRoutesData(prev => {
+                if (!prev.find(r => r.rideId === segmentKey)) return [...prev, newSegment];
+                return prev;
+              });
+              return newSegment;
             }
-          } catch (err) {
+            return null;
+          }).catch(err => {
             console.error("Could not fetch route geometry for segment", err);
-          }
+            return null;
+          });
+          
+          orderedSegments.push(fetchPromise);
+          fetchPromises.push(fetchPromise);
         }
-        setRoutesData(routes);
+        
+        // Wait for all missing segments, then commit clean exact array to remove obsolete segments
+        if (fetchPromises.length > 0) {
+          await Promise.all(fetchPromises);
+        }
+        
+        // Ensure final array matches exact current queue
+        const finalSegments = orderedSegments.map(s => s instanceof Promise ? null : s).filter(Boolean);
+        // Wait for promises to resolve inside orderedSegments! 
+        // Actually, orderedSegments has raw promises, we need to await them
+        const resolvedSegments = await Promise.all(orderedSegments);
+        setRoutesData(resolvedSegments.filter(Boolean));
       };
       
       fetchRoutes();
     } else {
-      setRoutesData([]);
+      // Don't clear immediately, wait for backend delay to settle, or if truly empty, clear
+      if (activeRides.length === 0) setRoutesData([]);
     }
   }, [routeQueue, api]);
 
@@ -533,7 +577,7 @@ const DriverDashboard = () => {
         lng: stop.coordinates.lng,
         iconType: stop.stop_type,
         pIndex: `${index + 1}`, // Sequential Stop Numbering
-        color: stop.stop_type === 'pickup' ? '#3b82f6' : '#10b981', // Blue for pickup, Green for dropoff
+        color: getColorForRideId(stop.ride_id), // Colored by Passenger Ownership
         key: stop.stop_id
       });
       bounds.push([stop.coordinates.lat, stop.coordinates.lng]);
@@ -687,7 +731,7 @@ const DriverDashboard = () => {
             {/* EXPANDED CONTENT */}
             <div className="flex flex-col gap-8 overflow-y-auto flex-1 pt-4 pb-12 pr-2">
                   {activeRides.map((ride, index) => {
-                    const color = PASSENGER_COLORS[index % PASSENGER_COLORS.length];
+                    const color = getColorForRideId(ride.id);
                     const pIndex = `P${index + 1}`;
                     const rideStatusStr = ['accepted', 'driver_accepted'].includes(ride.status) ? 'WAITING' :
                                           ['driver_arrived', 'passenger_boarding'].includes(ride.status) ? 'ARRIVED' :
