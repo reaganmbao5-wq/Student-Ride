@@ -1,6 +1,7 @@
 import logging
 from typing import List, Dict, Any
 from datetime import datetime, timezone
+from backend.services.route_optimizer import RouteOptimizer
 
 logger = logging.getLogger(__name__)
 
@@ -13,11 +14,16 @@ class DriverTripRebuilder:
         """
         try:
             # 1. Get Driver Info
-            driver_doc = await db.drivers.find_one({"_id": driver_id})
+            driver_doc = await db.drivers.find_one({"id": driver_id})
             if not driver_doc:
                 raise Exception("Driver not found")
             
             capacity = driver_doc.get("vehicle_capacity", 4)
+            
+            # Extract driver location for optimization
+            driver_loc = driver_doc.get("current_location", {})
+            driver_lat = driver_loc.get("lat", 0.0)
+            driver_lng = driver_loc.get("lng", 0.0)
             
             # 2. Get all active rides for this driver
             # The active rides are what dictates the trip state.
@@ -72,6 +78,11 @@ class DriverTripRebuilder:
                     "status": "pending",
                     "coordinates": ride.get("destination", {})
                 })
+
+            # 4. Optimize the route queue
+            # If we have a valid driver location, pass it to the optimizer
+            if driver_lat and driver_lng:
+                route_queue = RouteOptimizer.optimize_queue(driver_lat, driver_lng, route_queue)
 
             state = "available"
             if occupied > 0:

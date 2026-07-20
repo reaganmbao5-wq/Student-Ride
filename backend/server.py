@@ -29,6 +29,7 @@ from services.osrm_service import get_route
 from services.notification_service import NotificationService
 from services.event_bus import internal_bus
 from services.trip_manager import DriverTripManager
+from services.trip_rebuilder import DriverTripRebuilder
 from services.background_tasks import BackgroundOrchestrator
 import jwt
 import bcrypt
@@ -1247,7 +1248,6 @@ async def google_login(request: GoogleLoginRequest):
         raise HTTPException(status_code=401, detail="Invalid Google token")
 
 @api_router.delete("/users/me")
-
 async def delete_me(user: dict = Depends(get_current_user)):
     """Allow a user to delete their own account."""
     user_id = user["id"]
@@ -1260,6 +1260,16 @@ async def delete_me(user: dict = Depends(get_current_user)):
     await db.users.delete_one({"id": user_id})
     
     return {"status": "deleted"}
+
+async def broadcast_route_queue(driver_id: str):
+    trip = await DriverTripRebuilder.rebuild(driver_id, db)
+    if trip:
+        driver = await db.drivers.find_one({"id": driver_id})
+        if driver:
+            await manager.send_personal_message({
+                "type": "routeQueueUpdate",
+                "route_queue": trip.get("route_queue", [])
+            }, driver["user_id"])
 
 # ==================== DRIVER ROUTES ====================
 @api_router.get("/drivers/nearby", response_model=List[NearbyDriverResponse])
@@ -1605,6 +1615,19 @@ async def accept_trip():
 async def get_active_ride_for_simulation():
     ride = await db.rides.find_one({"status": {"$in": ["requested", "accepted", "driver_arrived", "ongoing"]}}, sort=[("created_at", -1)], projection={"_id": 0})
     return ride
+
+@api_router.get("/rides/driver/trip")
+async def get_driver_trip_state(user: dict = Depends(require_driver)):
+    """Returns the current rebuilt and optimized trip queue for the driver"""
+    driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver not found")
+        
+    trip = await DriverTripRebuilder.rebuild(driver["id"], db)
+    if not trip:
+        return {"route_queue": [], "state": "available"}
+        
+    return trip
 
 @api_router.get("/rides/driver/active", response_model=List[RideResponse])
 async def get_active_rides_for_driver(user: dict = Depends(require_driver)):
@@ -2159,6 +2182,8 @@ async def accept_ride(ride_id: str, user: dict = Depends(require_driver)):
         "ride": target_ride,
         "driver": driver
     }, target_ride["student_id"])
+
+    await broadcast_route_queue(driver["id"])
     
     # Broadcast to all other drivers that this ride is no longer in the shared pool
     await manager.broadcast_to_nearby_drivers({
@@ -2488,6 +2513,7 @@ async def arriving_destination(ride_id: str, user: dict = Depends(require_driver
         "state": RideStatus.ARRIVING_DESTINATION.value,
         "ride_id": ride_id
     }, ride["student_id"])
+    await broadcast_route_queue(driver["id"])
     return {"status": "arriving_destination"}
 
 @api_router.post("/rides/{ride_id}/cancel")
@@ -2592,6 +2618,7 @@ async def cancel_ride(ride_id: str, user: dict = Depends(get_current_user)):
             "ride": ride
         }, ride.get("pickup_location"))
         
+        await broadcast_route_queue(ride["driver_id"])
         return {"status": "reassigned"}
     else:
         # Rider cancelled: terminate the ride completely
@@ -2612,6 +2639,10 @@ async def cancel_ride(ride_id: str, user: dict = Depends(get_current_user)):
                 "type": "shared_ride_cancelled",
                 "ride_id": ride_id
             }, ride.get("pickup_location"))
+            
+        if ride.get("driver_id"):
+            await broadcast_route_queue(ride["driver_id"])
+            
         return {"status": "cancelled"}
 
 @api_router.post("/emergency/sos")

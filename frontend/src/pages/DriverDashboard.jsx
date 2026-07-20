@@ -11,6 +11,7 @@ import { useWatchPosition } from '../map/hooks/useGeolocation';
 import { routeCache } from '../map/route/RouteCache';
 import { toast } from 'sonner';
 import { App } from '@capacitor/app';
+import { useRef } from 'react';
 
 import { ActiveTripQueue } from '../components/driver/ActiveTripQueue';
 import { SharedRideRequestPanel } from '../components/driver/SharedRideRequestPanel';
@@ -19,7 +20,9 @@ import { RideCard } from '../components/driver/RideCard';
 const DriverDashboard = () => {
   const navigate = useNavigate();
   const { user, api, driverProfile, refreshDriverProfile, logout } = useAuth();
-  const { newRideRequest, removedSharedRideId, clearRideRequest, sendLocationUpdate, rideUpdate, clearRideUpdate, driverLocation, isConnected } = useWebSocket();
+  const { newRideRequest, removedSharedRideId, clearRideRequest, sendLocationUpdate, rideUpdate, clearRideUpdate, routeQueueUpdate, clearRouteQueueUpdate, driverLocation, isConnected } = useWebSocket();
+
+  const [routeQueue, setRouteQueue] = useState([]);
 
   const [isOnline, setIsOnline] = useState(false);
   const [activeRide, setActiveRide] = useState(null);
@@ -103,15 +106,19 @@ const DriverDashboard = () => {
 
   const fetchData = useCallback(async () => {
     try {
-      const [activeRes, earningsRes] = await Promise.all([
+      const [activeRes, earningsRes, tripRes] = await Promise.all([
         api.get('/rides/driver/active'),
-        api.get('/drivers/earnings')
+        api.get('/drivers/earnings'),
+        api.get('/rides/driver/trip').catch(() => ({ data: { route_queue: [] } }))
       ]);
 
       const ridesArray = activeRes.data || [];
       setActiveRides(ridesArray);
       setActiveRide(ridesArray.length > 0 ? ridesArray[0] : null);
       setEarnings(earningsRes.data);
+      if (tripRes?.data?.route_queue) {
+        setRouteQueue(tripRes.data.route_queue);
+      }
       
       const pendingRes = await api.get('/rides/pending');
       if (pendingRes.data) {
@@ -202,6 +209,13 @@ const DriverDashboard = () => {
     }
   }, [rideUpdate, refreshDriverProfile, activeRide, refreshActiveRide, clearRideUpdate]);
 
+  useEffect(() => {
+    if (routeQueueUpdate) {
+      setRouteQueue(routeQueueUpdate);
+      clearRouteQueueUpdate();
+    }
+  }, [routeQueueUpdate, clearRouteQueueUpdate]);
+
   // Handle real-time synchronization for shared pool
   useEffect(() => {
     if (removedSharedRideId) {
@@ -256,44 +270,55 @@ const DriverDashboard = () => {
     }
   }, [newRideRequest, isOnline, clearRideRequest]);
 
+  const driverLocRef = useRef(null);
   useEffect(() => {
-    if (activeRides.length > 0) {
+    driverLocRef.current = currentLocation;
+  }, [currentLocation]);
+
+  useEffect(() => {
+    if (routeQueue.length > 0) {
       const fetchRoutes = async () => {
-        const routes = await Promise.all(
-          activeRides.map(async (ride, index) => {
-            if (!ride.pickup_location || !ride.dropoff_location) return null;
-            
-            const color = PASSENGER_COLORS[index % PASSENGER_COLORS.length];
-            const pIndex = `P${index + 1}`;
-            
-            const cachedGeometry = routeCache.getRoute(ride.pickup_location, ride.dropoff_location);
-            if (cachedGeometry) {
-              return { rideId: ride.id, geometry: cachedGeometry, color, pIndex, status: ride.status };
+        const routes = [];
+        const waypoints = [];
+        if (driverLocRef.current) {
+          waypoints.push(driverLocRef.current);
+        }
+        routeQueue.forEach(stop => {
+          if (stop.coordinates) waypoints.push(stop.coordinates);
+        });
+
+        for (let i = 0; i < waypoints.length - 1; i++) {
+          const origin = waypoints[i];
+          const dest = waypoints[i+1];
+          if (!origin?.lat || !dest?.lat) continue;
+          
+          const cachedGeometry = routeCache.getRoute(origin, dest);
+          if (cachedGeometry) {
+            routes.push({ rideId: `route-${i}`, geometry: cachedGeometry, color: '#3b82f6', pIndex: '', status: 'active' });
+            continue;
+          }
+          
+          try {
+            const res = await api.post('/rides/estimate-fare', {
+              pickup: origin,
+              dropoff: dest
+            });
+            if (res.data?.geometry) {
+              routeCache.setRoute(origin, dest, res.data.geometry);
+              routes.push({ rideId: `route-${i}`, geometry: res.data.geometry, color: '#3b82f6', pIndex: '', status: 'active' });
             }
-            
-            try {
-              const res = await api.post('/rides/estimate-fare', {
-                pickup: ride.pickup_location,
-                dropoff: ride.dropoff_location
-              });
-              if (res.data?.geometry) {
-                routeCache.setRoute(ride.pickup_location, ride.dropoff_location, res.data.geometry);
-                return { rideId: ride.id, geometry: res.data.geometry, color, pIndex, status: ride.status };
-              }
-            } catch (err) {
-              console.error("Could not fetch route geometry for ride", ride.id, err);
-            }
-            return null;
-          })
-        );
-        setRoutesData(routes.filter(Boolean));
+          } catch (err) {
+            console.error("Could not fetch route geometry for segment", err);
+          }
+        }
+        setRoutesData(routes);
       };
       
       fetchRoutes();
     } else {
       setRoutesData([]);
     }
-  }, [activeRides, api]);
+  }, [routeQueue, api]);
 
   const handleToggleOnline = async () => {
     if (!driverProfile?.is_approved) {
@@ -499,37 +524,19 @@ const DriverDashboard = () => {
     const driversArray = currentLocation ? [{ id: 'driver-self', latitude: currentLocation.lat, longitude: currentLocation.lng, heading: 0 }] : [];
     if (currentLocation) bounds.push([currentLocation.lat, currentLocation.lng]);
 
-    // 2. Loop through ALL active rides to show pickups and dropoffs
-    activeRides.forEach((ride, index) => {
-      const pIndex = `P${index + 1}`;
-      const color = PASSENGER_COLORS[index % PASSENGER_COLORS.length];
-      const state = getPassengerState(ride.status);
+    // 2. Loop through routeQueue to show stops in optimized order
+    routeQueue.forEach((stop, index) => {
+      if (!stop.coordinates || !stop.coordinates.lat) return;
       
-      // WAITING PICKUP: Show pickup location
-      if (['WAITING PICKUP', 'DRIVER ARRIVED'].includes(state) && ride.pickup_location) {
-        mapMarkers.push({
-          lat: ride.pickup_location.lat,
-          lng: ride.pickup_location.lng,
-          iconType: 'pickup',
-          pIndex,
-          color,
-          key: `pickup-${ride.id}`
-        });
-        bounds.push([ride.pickup_location.lat, ride.pickup_location.lng]);
-      }
-      
-      // INSIDE VEHICLE / WAITING: Show destination location
-      if (['WAITING PICKUP', 'DRIVER ARRIVED', 'INSIDE VEHICLE'].includes(state) && ride.dropoff_location) {
-        mapMarkers.push({
-          lat: ride.dropoff_location.lat,
-          lng: ride.dropoff_location.lng,
-          iconType: 'dropoff',
-          pIndex,
-          color,
-          key: `dropoff-${ride.id}`
-        });
-        bounds.push([ride.dropoff_location.lat, ride.dropoff_location.lng]);
-      }
+      mapMarkers.push({
+        lat: stop.coordinates.lat,
+        lng: stop.coordinates.lng,
+        iconType: stop.stop_type,
+        pIndex: `${index + 1}`, // Sequential Stop Numbering
+        color: stop.stop_type === 'pickup' ? '#3b82f6' : '#10b981', // Blue for pickup, Green for dropoff
+        key: stop.stop_id
+      });
+      bounds.push([stop.coordinates.lat, stop.coordinates.lng]);
     });
 
     const getStatusText = () => {
