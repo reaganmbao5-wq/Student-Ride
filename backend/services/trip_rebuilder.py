@@ -65,7 +65,7 @@ class DriverTripRebuilder:
                         "stop_type": "pickup",
                         "sequence": len(route_queue) + 1,
                         "status": "pending",
-                        "coordinates": ride.get("pickup", {})
+                        "coordinates": ride.get("pickup_location", {})
                     })
                 
                 # Everyone needs a dropoff stop.
@@ -76,7 +76,7 @@ class DriverTripRebuilder:
                     "stop_type": "dropoff",
                     "sequence": len(route_queue) + 2, # Will be sorted by optimizer
                     "status": "pending",
-                    "coordinates": ride.get("destination", {})
+                    "coordinates": ride.get("dropoff_location", {})
                 })
 
             # 4. Optimize the route queue
