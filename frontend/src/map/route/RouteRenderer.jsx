@@ -36,9 +36,9 @@ export const RouteRenderer = ({ travelledPath, remainingPath, status, onAnimatio
       return;
     }
 
-    // If we've already animated this specific destination, just update the path immediately
-    // This allows the route to trim smoothly as the driver moves without restarting the animation
-    if (animatedDestinationRef.current === destinationSignature) {
+    // If we already have a path or destination animated, update instantly to avoid polyline flickering!
+    if (animatedRemainingPath.length > 0 || animatedDestinationRef.current === destinationSignature) {
+      animatedDestinationRef.current = destinationSignature;
       setAnimatedRemainingPath(remainingPath);
       if (onAnimationChange) onAnimationChange(false);
       return;
@@ -46,7 +46,7 @@ export const RouteRenderer = ({ travelledPath, remainingPath, status, onAnimatio
 
     // New destination detected! Animate the drawing of the route.
     animatedDestinationRef.current = destinationSignature;
-    setAnimatedRemainingPath([]); // Reset before drawing
+    setAnimatedRemainingPath([]); // Reset before initial draw
     if (onAnimationChange) onAnimationChange(true);
     
     let currentIndex = 0;

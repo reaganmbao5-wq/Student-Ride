@@ -473,46 +473,61 @@ const DriverDashboard = () => {
 
   const handleDriverArrived = async (targetRide = activeRide) => {
     if (!targetRide) return;
+    // Optimistic UI update: instantly reflect arrived status
+    setActiveRides(prev => prev.map(r => r.id === targetRide.id ? { ...r, status: 'driver_arrived' } : r));
+    toast.success('Passenger notified of your arrival');
     try {
       await api.post(`/rides/${targetRide.id}/arrived`);
       refreshActiveRide();
-      toast.success('Passenger notified of your arrival');
     } catch (error) {
       toast.error('Failed to update status');
+      refreshActiveRide();
     }
   };
 
   const handleStartRide = async (targetRide = activeRide) => {
     if (!targetRide) return;
+    // Optimistic UI update: instantly reflect started status
+    setActiveRides(prev => prev.map(r => r.id === targetRide.id ? { ...r, status: 'ongoing' } : r));
+    toast.success('Ride started');
     try {
       await api.post(`/rides/${targetRide.id}/start`);
       refreshActiveRide();
-      toast.success('Ride started');
     } catch (error) {
       toast.error('Failed to start ride');
+      refreshActiveRide();
     }
   };
 
   const handleCompleteRide = async (targetRide = activeRide) => {
     if (!targetRide) return;
+    // Optimistic UI update: instantly filter out completed ride
+    setActiveRides(prev => prev.filter(r => r.id !== targetRide.id));
+    toast.success('Ride completed!');
     try {
       const response = await api.post(`/rides/${targetRide.id}/complete`);
-      toast.success(`Ride completed! Fare: K${response.data.fare}`);
+      if (response.data?.fare) {
+        toast.success(`Fare: K${response.data.fare}`);
+      }
       refreshActiveRide();
       fetchData(); // Refresh earnings
     } catch (error) {
       toast.error('Failed to complete ride');
+      refreshActiveRide();
     }
   };
 
   const handleCancelRide = async (targetRide = activeRide) => {
     if (!targetRide) return;
+    // Optimistic UI update: filter out cancelled ride immediately
+    setActiveRides(prev => prev.filter(r => r.id !== targetRide.id));
+    toast.info('Ride cancelled');
     try {
       await api.post(`/rides/${targetRide.id}/cancel`);
-      toast.info('Ride cancelled');
       refreshActiveRide();
     } catch (error) {
       toast.error('Failed to cancel ride');
+      refreshActiveRide();
     }
   };
 
