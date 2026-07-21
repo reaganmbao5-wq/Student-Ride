@@ -23,7 +23,7 @@ class RouteOptimizer:
         return R * c
 
     @staticmethod
-    def optimize_queue(driver_lat: float, driver_lng: float, stops: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def optimize_queue(driver_lat: float, driver_lng: float, stops: List[Dict[str, Any]], onboard_student_ids: set = None) -> List[Dict[str, Any]]:
         """
         Lightweight heuristic: Closest logical stop first.
         Rules:
@@ -37,7 +37,7 @@ class RouteOptimizer:
         completed_stops = [s for s in stops if s.get("status") != "pending"]
         
         # Track which passengers are currently onboard to ensure dropoff logic
-        onboard_students = set()
+        onboard_students = set(onboard_student_ids) if onboard_student_ids else set()
         
         optimized_pending = []
         current_lat = driver_lat

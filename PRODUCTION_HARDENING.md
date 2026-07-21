@@ -173,6 +173,41 @@ In production, the app will constantly send GPS pings in the background. If a dr
         if now - last_active > 30:
 ```
 
+## 10. The Master Route Tester Script
+To support dynamic Route Recalculation testing, we built `MasterRouteTester.py`. This script interacts directly with the production Render instance using the unsecured `/test/inject_drivers` endpoint. Leaving this endpoint active in production would allow arbitrary location spoofing by unauthenticated users.
+
+**Recommendation: Revert for Production.**
+The script itself is safe to remain in the repository (inside `backend/qa_env/`), but the backend endpoint it relies on MUST be deleted.
+
+**Location**: `backend/server.py` (Around line 1550)
+
+**What to remove**:
+Completely delete the `@api_router.post("/test/inject_drivers")` route and its entire function block.
+
+---
+
+## 11. Driver Dashboard WebSocket Feedback Loop
+To solve the "invisible car" bug while running the Master Route Tester, we added a `useEffect` inside `DriverDashboard.jsx` that actively listens to the WebSocket for the driver's own location ONLY when `isSimulating` is true.
+
+**Recommendation: Revert for Production.**
+When using the app in real life, the phone's native GPS API (`navigator.geolocation.watchPosition`) should be the ONLY source of truth for the driver's location. If the dashboard listens to the backend WebSocket to set its own `currentLocation`, it creates a nasty feedback loop where the frontend overrides its native GPS with delayed backend GPS data, causing chaos, jumping markers, and map snapping.
+
+**Location**: `frontend/src/pages/DriverDashboard.jsx` (Around line 245)
+
+**What to remove**:
+```jsx
+  // When simulating, if we receive a driverLocation from the WebSocket, use it!
+  useEffect(() => {
+    if (isSimulating && driverLocation) {
+      setCurrentLocation({
+        lat: driverLocation.lat,
+        lng: driverLocation.lng,
+        heading: driverLocation.heading
+      });
+    }
+  }, [isSimulating, driverLocation]);
+```
+
 ---
 
 ### Summary Checklist for Launch Day:
@@ -186,4 +221,5 @@ In production, the app will constantly send GPS pings in the background. If a dr
 - [ ] Delete `/test/inject_drivers` route in `server.py`
 - [ ] Delete `/test/accept_trip` route in `server.py`
 - [ ] Delete `/test/get_active_ride_for_simulation` route in `server.py`
+- [ ] Remove `isSimulating` WebSocket location listener from `DriverDashboard.jsx`
 - [ ] (Optional) Restore the strict WebSocket offline toggle in `server.py`

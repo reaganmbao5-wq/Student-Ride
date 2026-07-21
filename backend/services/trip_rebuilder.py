@@ -40,6 +40,7 @@ class DriverTripRebuilder:
             reserved = 0
             route_queue = []
             active_ride_ids = []
+            onboard_student_ids = set()
             
             for ride in active_rides:
                 active_ride_ids.append(ride["id"])
@@ -49,6 +50,7 @@ class DriverTripRebuilder:
                 
                 if ride["status"] in ["ride_started", "ongoing", "ride_in_progress"]:
                     occupied += passengers
+                    onboard_student_ids.add(ride["student_id"])
                 else:
                     reserved += passengers
                     
@@ -82,7 +84,7 @@ class DriverTripRebuilder:
             # 4. Optimize the route queue
             # If we have a valid driver location, pass it to the optimizer
             if driver_lat and driver_lng:
-                route_queue = RouteOptimizer.optimize_queue(driver_lat, driver_lng, route_queue)
+                route_queue = RouteOptimizer.optimize_queue(driver_lat, driver_lng, route_queue, onboard_student_ids)
 
             state = "available"
             if occupied > 0:

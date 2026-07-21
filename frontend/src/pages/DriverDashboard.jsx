@@ -242,6 +242,17 @@ const DriverDashboard = () => {
     }
   }, [isSimulating, isOnline]);
 
+  // When simulating, if we receive a driverLocation from the WebSocket, use it!
+  useEffect(() => {
+    if (isSimulating && driverLocation) {
+      setCurrentLocation({
+        lat: driverLocation.lat,
+        lng: driverLocation.lng,
+        heading: driverLocation.heading
+      });
+    }
+  }, [isSimulating, driverLocation]);
+
   useEffect(() => {
     if (driverProfile) {
       setIsOnline(driverProfile.is_online);
