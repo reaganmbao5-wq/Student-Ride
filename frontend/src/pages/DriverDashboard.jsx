@@ -80,7 +80,18 @@ const DriverDashboard = () => {
     return masterSharedRidePool;
   }, [masterSharedRidePool, driverProfile?.accepts_shared_rides, availableSeats]);
   
-  const [isSimulating, setIsSimulating] = useState(false);
+  const [isSimulating, setIsSimulating] = useState(() => {
+    return localStorage.getItem('driver_is_simulating') === 'true';
+  });
+
+  const toggleSimulating = () => {
+    setIsSimulating(prev => {
+      const next = !prev;
+      localStorage.setItem('driver_is_simulating', String(next));
+      return next;
+    });
+  };
+
   const [uploading, setUploading] = useState(false);
   
   // Bottom Sheet State
@@ -770,9 +781,16 @@ const DriverDashboard = () => {
 
             {/* EXPANDED CONTENT */}
             <div className="flex flex-col gap-8 overflow-y-auto flex-1 pt-4 pb-12 pr-2">
-                  {activeRides.map((ride, index) => {
-                    const color = getColorForRideId(ride.id);
-                    const pIndex = `P${index + 1}`;
+                  {(() => {
+                    const activeStopRideId = routeQueue && routeQueue.length > 0 ? routeQueue[0].ride_id : null;
+                    const sortedActiveRides = activeStopRideId 
+                      ? [...activeRides].sort((a, b) => (a.id === activeStopRideId ? -1 : b.id === activeStopRideId ? 1 : 0))
+                      : activeRides;
+
+                    return sortedActiveRides.map((ride) => {
+                      const color = getColorForRideId(ride.id);
+                      const originalIndex = activeRides.findIndex(r => r.id === ride.id);
+                      const pIndex = `P${(originalIndex >= 0 ? originalIndex : 0) + 1}`;
                     const rideStatusStr = ['accepted', 'driver_accepted'].includes(ride.status) ? 'WAITING' :
                                           ['driver_arrived', 'passenger_boarding'].includes(ride.status) ? 'ARRIVED' :
                                           ['ride_started', 'ride_in_progress', 'ongoing'].includes(ride.status) ? 'ACTIVE' :
@@ -858,7 +876,6 @@ const DriverDashboard = () => {
                     );
                   })}
             </div>
-
           </div>
         </motion.div>
       </div>
@@ -899,7 +916,7 @@ const DriverDashboard = () => {
             </button>
             {isOnline && (
               <button
-                onClick={() => setIsSimulating(!isSimulating)}
+                onClick={toggleSimulating}
                 className={`text-xs px-3 py-1.5 rounded-lg border transition-all shadow-sm ${isSimulating
                   ? 'bg-amber-500/10 border-amber-500 text-amber-600 font-bold'
                   : 'bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50'
