@@ -244,11 +244,11 @@ const DriverDashboard = () => {
 
   // When simulating, if we receive a driverLocation from the WebSocket, use it!
   useEffect(() => {
-    if (isSimulating && driverLocation) {
+    if (isSimulating && driverLocation && driverLocation.location) {
       setCurrentLocation({
-        lat: driverLocation.lat,
-        lng: driverLocation.lng,
-        heading: driverLocation.heading
+        lat: driverLocation.location.lat,
+        lng: driverLocation.location.lng,
+        heading: driverLocation.location.heading || 0
       });
     }
   }, [isSimulating, driverLocation]);
