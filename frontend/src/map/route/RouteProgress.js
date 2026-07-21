@@ -108,7 +108,64 @@ export class RouteProgress {
       travelledPath,
       remainingPath,
       distanceLeftKm: remainingDist,
-      percentageComplete
+      percentageComplete,
+      minDistanceKm: minDistance // expose the cross-track distance
     };
+  }
+
+  /**
+   * Checks if the driver has deviated significantly from the active route.
+   * Uses 50 meters (0.05 km) as the threshold.
+   * 
+   * @param {Object} driverLocation - Current driver location {lat, lng}
+   * @param {Array<Array<number>>} geometry - Route coordinates [[lat, lng], ...]
+   * @returns {string} 'ON_ROUTE' or 'OFF_ROUTE'
+   */
+  static checkDeviationLevel(driverLocation, geometry) {
+    if (!geometry || geometry.length < 2 || !driverLocation) return 'ON_ROUTE';
+    
+    // We can reuse calculateSplit to get the min cross-track distance
+    const { minDistanceKm } = this.calculateSplit(geometry, driverLocation);
+    
+    if (minDistanceKm > 0.05) { // 50 meters
+      return 'OFF_ROUTE';
+    }
+    return 'ON_ROUTE';
+  }
+
+  /**
+   * Evaluates if a deviated route requires a HARD recalculation (queue rebuild)
+   * or just a SOFT recalculation (re-drawing the line to Stop 1).
+   * 
+   * @param {Object} driverLocation - Current driver location {lat, lng}
+   * @param {Array<Object>} routeQueue - The pending stops
+   * @returns {string} 'SOFT' or 'HARD'
+   */
+  static evaluateLogicalThreshold(driverLocation, routeQueue) {
+    if (!routeQueue || routeQueue.length === 0) return 'SOFT';
+    if (!driverLocation) return 'SOFT';
+
+    const driverPt = [driverLocation.lat, driverLocation.lng];
+    let minDistance = Infinity;
+    let closestStopIndex = -1;
+
+    routeQueue.forEach((stop, index) => {
+      if (stop.coordinates) {
+        const stopPt = [stop.coordinates.lat, stop.coordinates.lng];
+        const dist = this.getDistance(driverPt, stopPt);
+        if (dist < minDistance) {
+          minDistance = dist;
+          closestStopIndex = index;
+        }
+      }
+    });
+
+    // If the closest stop physically is NOT the first stop in the logical queue,
+    // the structure of the queue is compromised.
+    if (closestStopIndex > 0) {
+      return 'HARD';
+    }
+    
+    return 'SOFT';
   }
 }

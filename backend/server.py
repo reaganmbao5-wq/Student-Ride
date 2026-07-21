@@ -3588,6 +3588,20 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(None)):
                                 "ride_id": active_ride["id"]
                             }, active_ride["student_id"])
                 
+                elif data.get("type") == "request_hard_recalculation":
+                    logger.info(f"HARD RECALCULATION requested by driver {user_id}")
+                    driver = await db.drivers.find_one({"user_id": user_id}, {"_id": 0})
+                    if driver:
+                        try:
+                            trip = await DriverTripRebuilder.rebuild(driver["id"], db)
+                            if trip and "route_queue" in trip:
+                                await manager.send_personal_message({
+                                    "type": "route_queue_update",
+                                    "queue": trip["route_queue"]
+                                }, user_id)
+                        except Exception as e:
+                            logger.error(f"Failed to hard recalculate queue for driver {user_id}: {e}")
+                
                 elif data.get("type") == "ping":
                     await websocket.send_json({"type": "pong"})
     

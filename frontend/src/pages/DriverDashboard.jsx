@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { useWebSocket } from '../context/WebSocketContext';
 import { useWatchPosition } from '../map/hooks/useGeolocation';
 import { routeCache } from '../map/route/RouteCache';
+import { RouteProgress } from '../map/route/RouteProgress';
 import { toast } from 'sonner';
 import { App } from '@capacitor/app';
 import { useRef } from 'react';
@@ -20,9 +21,12 @@ import { RideCard } from '../components/driver/RideCard';
 const DriverDashboard = () => {
   const navigate = useNavigate();
   const { user, api, driverProfile, refreshDriverProfile, logout } = useAuth();
-  const { newRideRequest, removedSharedRideId, clearRideRequest, sendLocationUpdate, rideUpdate, clearRideUpdate, routeQueueUpdate, clearRouteQueueUpdate, driverLocation, isConnected } = useWebSocket();
+  const { newRideRequest, removedSharedRideId, clearRideRequest, sendLocationUpdate, requestHardRecalculation, rideUpdate, clearRideUpdate, routeQueueUpdate, clearRouteQueueUpdate, driverLocation, isConnected } = useWebSocket();
 
   const [routeQueue, setRouteQueue] = useState([]);
+  const [isRecalculating, setIsRecalculating] = useState(false);
+  const [recalcTrigger, setRecalcTrigger] = useState(0);
+  const hardCooldownRef = useRef(0);
 
   const [isOnline, setIsOnline] = useState(false);
   const [activeRide, setActiveRide] = useState(null);
@@ -280,7 +284,32 @@ const DriverDashboard = () => {
   const driverLocRef = useRef(null);
   useEffect(() => {
     driverLocRef.current = currentLocation;
-  }, [currentLocation]);
+    
+    // Phase 3.2.5C: Route Recalculation Watchdog
+    if (currentLocation && routeQueue.length > 0 && routesData.length > 0) {
+      if (isRecalculating) return;
+      if (Date.now() < hardCooldownRef.current) return;
+      
+      const driverFirstSegment = routesData.find(r => r.rideId.startsWith('driver-'));
+      if (driverFirstSegment && driverFirstSegment.geometry) {
+        const deviationStatus = RouteProgress.checkDeviationLevel(currentLocation, driverFirstSegment.geometry);
+        if (deviationStatus === 'OFF_ROUTE') {
+           const logicalStatus = RouteProgress.evaluateLogicalThreshold(currentLocation, routeQueue);
+           if (logicalStatus === 'SOFT') {
+              setIsRecalculating(true);
+              setRecalcTrigger(v => v + 1);
+              // Unlock after 5 seconds to prevent spamming while API resolves
+              setTimeout(() => setIsRecalculating(false), 5000);
+           } else if (logicalStatus === 'HARD') {
+              hardCooldownRef.current = Date.now() + 30000; // 30 second cooldown
+              if (requestHardRecalculation) {
+                requestHardRecalculation();
+              }
+           }
+        }
+      }
+    }
+  }, [currentLocation, routeQueue, routesData, isRecalculating, requestHardRecalculation]);
 
   useEffect(() => {
     if (routeQueue.length > 0) {
@@ -362,7 +391,7 @@ const DriverDashboard = () => {
       // Don't clear immediately, wait for backend delay to settle, or if truly empty, clear
       if (activeRides.length === 0) setRoutesData([]);
     }
-  }, [routeQueue, api]);
+  }, [routeQueue, api, recalcTrigger]);
 
   const handleToggleOnline = async () => {
     if (!driverProfile?.is_approved) {

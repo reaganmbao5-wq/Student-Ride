@@ -193,6 +193,14 @@ export const WebSocketProvider = ({ children }) => {
     }
   }, []);
 
+  const requestHardRecalculation = useCallback(() => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'request_hard_recalculation'
+      }));
+    }
+  }, []);
+
   const clearRideRequest = useCallback(() => {
     setNewRideRequest(null);
   }, []);
@@ -213,6 +221,7 @@ export const WebSocketProvider = ({ children }) => {
     driverLocation,
     newMessage,
     sendLocationUpdate,
+    requestHardRecalculation,
     clearRideRequest,
     clearRideUpdate,
     clearNewMessage
