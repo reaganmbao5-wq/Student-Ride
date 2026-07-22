@@ -137,6 +137,7 @@ export const WebSocketProvider = ({ children }) => {
                 ride_id: data.ride_id,
                 briefing_text: data.briefing_text,
                 x3_state: data.x3_state,
+                is_pinned: Boolean(data.is_pinned),
                 carousel_messages: data.carousel_messages || [],
                 stops_remaining: data.stops_remaining,
                 is_next_stop: data.is_next_stop,

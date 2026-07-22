@@ -217,28 +217,30 @@ class DriverTripRebuilder:
                                 x3_state = "DRIVER_ARRIVED_OTHER_DROPOFF" if is_stop0_arrived else "DRIVER_EN_ROUTE_OTHER_DROPOFF"
 
                         # ==================================================
-                        # PHASE X.2: PASSENGER BRIEFING ENGINE
-                        # Pure display engine. Maps X.3 state to display strings & 6s rotation items.
+                        # PHASE X.2: PASSENGER BRIEFING ENGINE (FROZEN DICTIONARY & PINNED STATES)
+                        # Pure display engine. Maps X.3 state to frozen display strings & 6s rotation items.
+                        # ZERO generic fallbacks allowed.
                         # ==================================================
                         X2_STATE_TEXTS = {
                             "DRIVER_ARRIVED_MY_DROPOFF": "Driver has arrived at your destination!",
                             "DRIVER_ARRIVED_MY_PICKUP": "Driver has arrived at your pickup!",
-                            "HEADING_TO_MY_DROPOFF": "Heading to your destination",
-                            "HEADING_TO_MY_PICKUP": "Driver is approaching your pickup point",
-                            "DRIVER_EN_ROUTE_OTHER_PICKUP": "Driver is approaching another pickup",
-                            "DRIVER_ARRIVED_OTHER_PICKUP": "Driver is picking up another student",
-                            "DRIVER_EN_ROUTE_OTHER_DROPOFF": "Driver is on the way to another student's destination",
-                            "DRIVER_ARRIVED_OTHER_DROPOFF": "Driver is dropping off another student",
+                            "HEADING_TO_MY_DROPOFF": "Heading to your destination.",
+                            "HEADING_TO_MY_PICKUP": "Driver is approaching your pickup point.",
+                            "DRIVER_EN_ROUTE_OTHER_PICKUP": "Driver is approaching another pickup.",
+                            "DRIVER_ARRIVED_OTHER_PICKUP": "Driver is picking up another student.",
+                            "DRIVER_EN_ROUTE_OTHER_DROPOFF": "Driver is on the way to another student's destination.",
+                            "DRIVER_ARRIVED_OTHER_DROPOFF": "Driver is dropping off another student.",
                         }
 
-                        briefing_text = X2_STATE_TEXTS.get(x3_state, "Active Ride")
+                        briefing_text = X2_STATE_TEXTS.get(x3_state, "Driver accepted your ride.")
+                        is_pinned = x3_state in ["DRIVER_ARRIVED_MY_PICKUP", "DRIVER_ARRIVED_MY_DROPOFF"]
 
-                        # Build rotation carousel messages for X.2
+                        # Build rotation carousel messages for X.2 (6-second intervals)
                         stop_label_type = "destination" if is_onboard else "pickup"
-                        stops_count_str = f"1 stop remaining before your {stop_label_type}" if stops_remaining == 1 else f"{stops_remaining} stops remaining before your {stop_label_type}"
+                        stops_count_str = f"1 stop remaining before your {stop_label_type}." if stops_remaining == 1 else f"{stops_remaining} stops remaining before your {stop_label_type}."
                         
                         carousel_messages = []
-                        if is_arrived:
+                        if is_pinned:
                             carousel_messages = [briefing_text]
                         else:
                             carousel_messages = [stops_count_str, briefing_text, "Shared Ride"]
@@ -283,6 +285,7 @@ class DriverTripRebuilder:
                             "ride_id": r_id,
                             "student_id": s_id,
                             "x3_state": x3_state,
+                            "is_pinned": is_pinned,
                             "briefing_text": briefing_text,
                             "carousel_messages": carousel_messages,
                             "stops_remaining": stops_remaining,

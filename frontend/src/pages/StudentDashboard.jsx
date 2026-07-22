@@ -296,13 +296,19 @@ const StudentDashboard = () => {
       cameraMode = CAMERA_MODES.FOLLOW_DRIVER;
     }
 
+    const isPinnedState = isBriefingForThisRide && (
+      passengerBriefing?.is_pinned || 
+      activeRide.status === 'driver_arrived' ||
+      ['Driver has arrived at your pickup!', 'Driver has arrived at your destination!', 'Destination reached.', 'Thank you for riding with us.'].includes(passengerBriefing?.briefing_text)
+    );
+
     const carouselMessages = (isBriefingForThisRide && passengerBriefing?.carousel_messages && passengerBriefing.carousel_messages.length > 0)
       ? passengerBriefing.carousel_messages
       : (passengerBriefing?.briefing_text ? [passengerBriefing.briefing_text] : []);
 
-    const activeBriefingText = carouselMessages.length > 0
-      ? carouselMessages[carouselIndex % carouselMessages.length]
-      : getStatusText();
+    const activeBriefingText = isPinnedState
+      ? (passengerBriefing?.briefing_text || getStatusText())
+      : (carouselMessages.length > 0 ? carouselMessages[carouselIndex % carouselMessages.length] : getStatusText());
 
     const displayRouteGeometry = (isBriefingForThisRide && passengerBriefing.route_geometry && passengerBriefing.route_geometry.length > 2)
       ? passengerBriefing.route_geometry
