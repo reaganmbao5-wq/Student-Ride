@@ -934,7 +934,7 @@ class ConnectionManager:
             }, {"_id": 0}).to_list(None)
             
             if active_rides:
-                # Broadcast to all students in an active ride with this driver
+                # Broadcast location to all students in an active ride with this driver
                 for active_ride in active_rides:
                     await self.send_personal_message({
                         "type": "driver_location",
@@ -952,6 +952,23 @@ class ConnectionManager:
                     "heading": location.get("heading", 0),
                     "ride_id": active_rides[0]["id"]
                 }, driver["user_id"])
+
+                # Phase X: Re-calculate passenger briefing and clipped geometry on location updates
+                try:
+                    trip = await DriverTripRebuilder.rebuild(driver["id"], db)
+                    if trip and "passenger_briefings" in trip:
+                        for s_id, briefing in trip["passenger_briefings"].items():
+                            await self.send_personal_message({
+                                "type": "passenger_briefing_update",
+                                "ride_id": briefing["ride_id"],
+                                "briefing_text": briefing["briefing_text"],
+                                "stops_remaining": briefing["stops_remaining"],
+                                "is_next_stop": briefing["is_next_stop"],
+                                "route_geometry": briefing["route_geometry"],
+                                "eta_seconds": None
+                            }, s_id)
+                except Exception as ex:
+                    logger.error(f"Failed to update passenger briefings on driver location update: {ex}")
 
     async def broadcast_to_nearby_drivers(self, message: dict, location: dict, radius_km: float = 3.0):
         """Broadcast ride request to nearby online drivers using geospatial query"""
