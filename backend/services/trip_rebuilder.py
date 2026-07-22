@@ -1,7 +1,12 @@
 import logging
+import math
 from typing import List, Dict, Any
 from datetime import datetime, timezone
 from backend.services.route_optimizer import RouteOptimizer
+try:
+    from backend.services.osrm_service import get_multi_waypoint_route
+except ImportError:
+    from services.osrm_service import get_multi_waypoint_route
 
 logger = logging.getLogger(__name__)
 
@@ -112,39 +117,63 @@ class DriverTripRebuilder:
 
                 if target_idx != -1:
                     stops_remaining = target_idx
-                    is_next_stop = (target_idx == 0)
+                    # Check distance from driver to target stop for arrival detection
+                    target_stop = route_queue[target_idx]
+                    target_coords = target_stop.get("coordinates", {})
+                    dist_km = 999.0
+                    if driver_lat and driver_lng and target_coords.get("lat") and target_coords.get("lng"):
+                        # Haversine distance in km
+                        lat1, lon1 = math.radians(driver_lat), math.radians(driver_lng)
+                        lat2, lon2 = math.radians(target_coords["lat"]), math.radians(target_coords["lng"])
+                        dlat = lat2 - lat1
+                        dlon = lon2 - lon1
+                        a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
+                        dist_km = 6371.0 * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+                    is_arrived = (r_status == "driver_arrived") or (is_next_stop and dist_km <= 0.05)
 
                     # Priority Engine Briefing Generation
-                    if r_status == "driver_arrived":
-                        briefing_text = "Driver has arrived at your location!"
+                    if is_arrived:
+                        if is_onboard:
+                            briefing_text = "Driver has arrived at your destination!"
+                        else:
+                            briefing_text = "Driver has arrived at your pickup!"
                     elif is_next_stop:
                         if is_onboard:
                             briefing_text = "Heading to your destination"
                         else:
                             briefing_text = "Driver is approaching your pickup point"
                     else:
-                        next_stop_type = route_queue[0].get("stop_type") if route_queue else None
-                        if next_stop_type == "pickup":
-                            briefing_text = "Driver is picking up another student"
-                        elif next_stop_type == "dropoff":
-                            briefing_text = "Driver is dropping off another student"
-                        elif stops_remaining == 1:
-                            briefing_text = "1 stop remaining before your stop"
+                        if stops_remaining == 1:
+                            if is_onboard:
+                                briefing_text = "1 stop remaining before your destination"
+                            else:
+                                briefing_text = "1 stop remaining before your pickup"
                         else:
-                            briefing_text = f"{stops_remaining} stops remaining before your stop"
+                            if is_onboard:
+                                briefing_text = f"{stops_remaining} stops remaining before your destination"
+                            else:
+                                briefing_text = f"{stops_remaining} stops remaining before your pickup"
 
-                    # Construct Student-Clipped Route Geometry
-                    # Use ride's detailed OSRM verified_geometry if available so Leaflet renders full road polyline
-                    student_geo = ride.get("verified_geometry", [])
-                    if not student_geo or len(student_geo) <= 2:
-                        student_geo = []
-                        if driver_lat and driver_lng:
-                            student_geo.append([driver_lat, driver_lng])
-                        
-                        for i in range(target_idx + 1):
-                            st_coords = route_queue[i].get("coordinates", {})
-                            if st_coords and "lat" in st_coords and "lng" in st_coords:
-                                student_geo.append([st_coords["lat"], st_coords["lng"]])
+                    # Construct Student-Clipped Route Geometry using multi-stop OSRM road polyline
+                    wps = []
+                    if driver_lat and driver_lng:
+                        wps.append({"lat": driver_lat, "lng": driver_lng})
+                    
+                    for i in range(target_idx + 1):
+                        st_coords = route_queue[i].get("coordinates", {})
+                        if st_coords and "lat" in st_coords and "lng" in st_coords:
+                            wps.append(st_coords)
+
+                    student_geo = []
+                    if len(wps) >= 2:
+                        try:
+                            student_geo = await get_multi_waypoint_route(wps)
+                        except Exception as ex:
+                            logger.error(f"Failed to fetch multi-waypoint OSRM route for student {s_id}: {ex}")
+                    
+                    if not student_geo:
+                        student_geo = ride.get("verified_geometry", [])
 
                     passenger_briefings[s_id] = {
                         "ride_id": r_id,

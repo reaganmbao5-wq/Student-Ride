@@ -61,9 +61,60 @@ async def get_route(pickup_lat: float, pickup_lng: float, drop_lat: float, drop_
     return {
         "distance_km": dist,
         "duration_minutes": duration_minutes,
-        "geometry": [], # No geometry for fallback
+        "geometry": [[pickup_lat, pickup_lng], [drop_lat, drop_lng]],
         "source": "haversine_fallback"
     }
+
+async def get_multi_waypoint_route(waypoints: list):
+    """
+    Calculates multi-stop road route using OSRM.
+    waypoints: list of dicts or tuples e.g. [{"lat": y, "lng": x}, ...] or [[lat, lng], ...]
+    Returns list of [lat, lng] coordinates following road network.
+    """
+    if not waypoints or len(waypoints) < 2:
+        return []
+    
+    formatted_coords = []
+    for wp in waypoints:
+        if isinstance(wp, dict):
+            lat, lng = wp.get("lat"), wp.get("lng")
+        elif isinstance(wp, (list, tuple)):
+            lat, lng = wp[0], wp[1]
+        else:
+            continue
+            
+        if lat is not None and lng is not None:
+            formatted_coords.append(f"{lng},{lat}")
+            
+    if len(formatted_coords) < 2:
+        return []
+
+    coord_str = ";".join(formatted_coords)
+    url = f"{OSRM_BASE_URL}/{coord_str}"
+    params = {
+        "overview": "full",
+        "geometries": "geojson"
+    }
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, params=params, timeout=5.0)
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("code") == "Ok" and data.get("routes"):
+                    route = data["routes"][0]
+                    raw_geometry = route["geometry"]["coordinates"]
+                    # OSRM returns [lng, lat], convert to [lat, lng]
+                    return [[coord[1], coord[0]] for coord in raw_geometry]
+    except Exception as e:
+        logger.error(f"OSRM Multi-Waypoint Error: {e}")
+
+    # Fallback to raw waypoints
+    fallback_geo = []
+    for c in formatted_coords:
+        parts = c.split(",")
+        fallback_geo.append([float(parts[1]), float(parts[0])])
+    return fallback_geo
 
 def haversine_distance(lat1, lon1, lat2, lon2):
     R = 6371  # Earth radius in km
