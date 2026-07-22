@@ -201,6 +201,23 @@ const StudentDashboard = () => {
 
     const driversArray = assignedDriverMarker ? [assignedDriverMarker] : nearbyDrivers;
 
+    // 1.5 Intermediate & Target Stop Markers for Student Route Engine (Phase X.1 Passive Consumer Architecture)
+    const isBriefingForThisRide = passengerBriefing && 
+      (!passengerBriefing.ride_id || passengerBriefing.ride_id === activeRide?.id || passengerBriefing.ride_id === activeRide?._id);
+
+    if (isBriefingForThisRide && Array.isArray(passengerBriefing.intermediate_stops)) {
+      passengerBriefing.intermediate_stops.forEach((st, idx) => {
+        if (st.lat && st.lng) {
+          mapMarkers.push({
+            lat: st.lat,
+            lng: st.lng,
+            iconType: st.stop_type === 'dropoff' ? 'dropoff' : 'pickup',
+            key: `intermediate-${st.stop_id || idx}`
+          });
+        }
+      });
+    }
+
     // 2. Passenger pickup marker (Hide if driver has arrived or ride started)
     if (!isArrivedOrStarted && activeRide.pickup_location) {
       mapMarkers.push({
@@ -280,6 +297,10 @@ const StudentDashboard = () => {
       ? passengerBriefing.route_geometry
       : activeRide?.verified_geometry;
 
+    const displayRouteSegments = (isBriefingForThisRide && passengerBriefing.route_segments && passengerBriefing.route_segments.length > 0)
+      ? passengerBriefing.route_segments
+      : [];
+
     return (
       <div className="fixed inset-0 bg-background overflow-hidden flex flex-col" data-testid="student-active-ride">
         {/* Map Layer */}
@@ -296,6 +317,7 @@ const StudentDashboard = () => {
             zoom={15}
             markers={mapMarkers}
             drivers={driversArray}
+            routes={displayRouteSegments}
             routeGeometry={displayRouteGeometry}
             rideStatus={activeRide.status}
             onRouteAnimationChange={setIsRouteAnimating}

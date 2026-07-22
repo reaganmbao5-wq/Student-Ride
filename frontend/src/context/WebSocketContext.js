@@ -132,6 +132,8 @@ export const WebSocketProvider = ({ children }) => {
               briefing_text: data.briefing_text,
               stops_remaining: data.stops_remaining,
               is_next_stop: data.is_next_stop,
+              intermediate_stops: data.intermediate_stops || [],
+              route_segments: data.route_segments || [],
               route_geometry: data.route_geometry,
               eta_seconds: data.eta_seconds || null
             });

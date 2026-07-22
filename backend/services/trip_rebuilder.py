@@ -97,7 +97,47 @@ class DriverTripRebuilder:
             elif reserved > 0:
                 state = "driving_to_pickup"
 
-            # 5. Build Passenger-Specific Briefings and Route Projections (Phase X.1)
+            # PASSENGER_COLORS palette matching Driver Dashboard exactly
+            PASSENGER_COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899', '#ef4444']
+            
+            # Map each ride_id to a specific color index from active_rides
+            active_ride_ids_list = [r["id"] for r in active_rides]
+            def get_color_for_ride(r_id):
+                if not r_id: return '#3b82f6'
+                try:
+                    idx = active_ride_ids_list.index(r_id)
+                    return PASSENGER_COLORS[idx % len(PASSENGER_COLORS)]
+                except ValueError:
+                    return '#3b82f6'
+
+            # Build full Driver Route Segments first (Driver is single source of truth)
+            driver_waypoints = []
+            if driver_lat and driver_lng:
+                driver_waypoints.append({"lat": driver_lat, "lng": driver_lng, "ride_id": "driver"})
+            for st in route_queue:
+                st_c = st.get("coordinates", {})
+                if st_c and "lat" in st_c and "lng" in st_c:
+                    driver_waypoints.append({"lat": st_c["lat"], "lng": st_c["lng"], "ride_id": st.get("ride_id"), "stop_id": st.get("stop_id")})
+
+            full_driver_segments = []
+            for i in range(len(driver_waypoints) - 1):
+                orig = driver_waypoints[i]
+                dest = driver_waypoints[i+1]
+                leg_color = get_color_for_ride(dest.get("ride_id"))
+                leg_geo = []
+                try:
+                    leg_geo = await get_multi_waypoint_route([orig, dest])
+                except Exception as ex:
+                    logger.error(f"Leg route error {orig}->{dest}: {ex}")
+                if leg_geo:
+                    full_driver_segments.append({
+                        "rideId": f"seg-{i}",
+                        "geometry": leg_geo,
+                        "color": leg_color,
+                        "status": "active"
+                    })
+
+            # 5. Build Passenger-Specific Briefings and Route Projections (Phase X.1 Passive Consumer Architecture)
             passenger_briefings = {}
             try:
                 for ride in active_rides:
@@ -125,7 +165,6 @@ class DriverTripRebuilder:
                         target_coords = target_stop.get("coordinates", {})
                         dist_km = 999.0
                         if driver_lat and driver_lng and target_coords.get("lat") and target_coords.get("lng"):
-                            # Haversine distance in km
                             lat1, lon1 = math.radians(driver_lat), math.radians(driver_lng)
                             lat2, lon2 = math.radians(target_coords["lat"]), math.radians(target_coords["lng"])
                             dlat = lat2 - lat1
@@ -172,25 +211,17 @@ class DriverTripRebuilder:
                                     "lat": st_c["lat"],
                                     "lng": st_c["lng"],
                                     "label": label,
-                                    "is_my_stop": is_my_stop
+                                    "is_my_stop": is_my_stop,
+                                    "color": get_color_for_ride(st.get("ride_id"))
                                 })
 
-                        # Construct Student-Clipped Route Geometry using driver's optimized queue waypoints
-                        wps = []
-                        if driver_lat and driver_lng:
-                            wps.append({"lat": driver_lat, "lng": driver_lng})
-                        
-                        for i in range(target_idx + 1):
-                            st_coords = route_queue[i].get("coordinates", {})
-                            if st_coords and "lat" in st_coords and "lng" in st_coords:
-                                wps.append(st_coords)
+                        # CLIP DRIVER ROUTE SEGMENTS AT MY STOP (target_idx)
+                        student_segments = full_driver_segments[:target_idx + 1]
 
+                        # Concatenate geometries of clipped segments for backwards compatibility
                         student_geo = []
-                        if len(wps) >= 2:
-                            try:
-                                student_geo = await get_multi_waypoint_route(wps)
-                            except Exception as ex:
-                                logger.error(f"Failed to fetch multi-waypoint OSRM route for student {s_id}: {ex}")
+                        for seg in student_segments:
+                            student_geo.extend(seg["geometry"])
                         
                         if not student_geo:
                             student_geo = ride.get("verified_geometry", [])
@@ -202,6 +233,7 @@ class DriverTripRebuilder:
                             "stops_remaining": stops_remaining,
                             "is_next_stop": is_next_stop,
                             "intermediate_stops": intermediate_stops,
+                            "route_segments": student_segments,
                             "route_geometry": student_geo
                         }
             except Exception as pb_err:

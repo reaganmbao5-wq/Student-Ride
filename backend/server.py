@@ -964,6 +964,8 @@ class ConnectionManager:
                                 "briefing_text": briefing["briefing_text"],
                                 "stops_remaining": briefing["stops_remaining"],
                                 "is_next_stop": briefing["is_next_stop"],
+                                "intermediate_stops": briefing.get("intermediate_stops", []),
+                                "route_segments": briefing.get("route_segments", []),
                                 "route_geometry": briefing["route_geometry"],
                                 "eta_seconds": None
                             }, s_id)
@@ -1297,6 +1299,8 @@ async def broadcast_route_queue(driver_id: str):
                 "briefing_text": briefing["briefing_text"],
                 "stops_remaining": briefing["stops_remaining"],
                 "is_next_stop": briefing["is_next_stop"],
+                "intermediate_stops": briefing.get("intermediate_stops", []),
+                "route_segments": briefing.get("route_segments", []),
                 "route_geometry": briefing["route_geometry"],
                 "eta_seconds": None
             }, student_id)
@@ -3639,6 +3643,8 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(None)):
                                         "briefing_text": briefing["briefing_text"],
                                         "stops_remaining": briefing["stops_remaining"],
                                         "is_next_stop": briefing["is_next_stop"],
+                                        "intermediate_stops": briefing.get("intermediate_stops", []),
+                                        "route_segments": briefing.get("route_segments", []),
                                         "route_geometry": briefing["route_geometry"],
                                         "eta_seconds": None
                                     }, s_id)
