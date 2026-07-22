@@ -11,6 +11,7 @@ export const WebSocketProvider = ({ children }) => {
   const [removedSharedRideId, setRemovedSharedRideId] = useState(null);
   const [rideUpdate, setRideUpdate] = useState(null);
   const [routeQueueUpdate, setRouteQueueUpdate] = useState(null);
+  const [passengerBriefing, setPassengerBriefing] = useState(null);
   const [newMessage, setNewMessage] = useState(null);
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
@@ -125,6 +126,16 @@ export const WebSocketProvider = ({ children }) => {
           case 'routeQueueUpdate':
             setRouteQueueUpdate(data.route_queue);
             break;
+          case 'passenger_briefing_update':
+            setPassengerBriefing({
+              ride_id: data.ride_id,
+              briefing_text: data.briefing_text,
+              stops_remaining: data.stops_remaining,
+              is_next_stop: data.is_next_stop,
+              route_geometry: data.route_geometry,
+              eta_seconds: data.eta_seconds || null
+            });
+            break;
           case 'pong':
             // Keep-alive response
             break;
@@ -219,6 +230,7 @@ export const WebSocketProvider = ({ children }) => {
     removedSharedRideId,
     rideUpdate,
     driverLocation,
+    passengerBriefing,
     newMessage,
     sendLocationUpdate,
     requestHardRecalculation,

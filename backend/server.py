@@ -1271,6 +1271,19 @@ async def broadcast_route_queue(driver_id: str):
                 "route_queue": trip.get("route_queue", [])
             }, driver["user_id"])
 
+        # Phase X: Broadcast passenger briefings to each active student
+        passenger_briefings = trip.get("passenger_briefings", {})
+        for student_id, briefing in passenger_briefings.items():
+            await manager.send_personal_message({
+                "type": "passenger_briefing_update",
+                "ride_id": briefing["ride_id"],
+                "briefing_text": briefing["briefing_text"],
+                "stops_remaining": briefing["stops_remaining"],
+                "is_next_stop": briefing["is_next_stop"],
+                "route_geometry": briefing["route_geometry"],
+                "eta_seconds": None
+            }, student_id)
+
 # ==================== DRIVER ROUTES ====================
 @api_router.get("/drivers/nearby", response_model=List[NearbyDriverResponse])
 async def get_nearby_drivers(
@@ -3594,11 +3607,24 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(None)):
                     if driver:
                         try:
                             trip = await DriverTripRebuilder.rebuild(driver["id"], db)
-                            if trip and "route_queue" in trip:
-                                await manager.send_personal_message({
-                                    "type": "route_queue_update",
-                                    "queue": trip["route_queue"]
-                                }, user_id)
+                            if trip:
+                                if "route_queue" in trip:
+                                    await manager.send_personal_message({
+                                        "type": "route_queue_update",
+                                        "queue": trip["route_queue"]
+                                    }, user_id)
+                                
+                                passenger_briefings = trip.get("passenger_briefings", {})
+                                for s_id, briefing in passenger_briefings.items():
+                                    await manager.send_personal_message({
+                                        "type": "passenger_briefing_update",
+                                        "ride_id": briefing["ride_id"],
+                                        "briefing_text": briefing["briefing_text"],
+                                        "stops_remaining": briefing["stops_remaining"],
+                                        "is_next_stop": briefing["is_next_stop"],
+                                        "route_geometry": briefing["route_geometry"],
+                                        "eta_seconds": None
+                                    }, s_id)
                         except Exception as e:
                             logger.error(f"Failed to hard recalculate queue for driver {user_id}: {e}")
                 

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Clock, Car, Star, ChevronRight, Navigation, AlertCircle, MessageCircle, Phone, PhoneCall } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,10 +16,19 @@ import { toast } from 'sonner';
 const StudentDashboard = () => {
   const navigate = useNavigate();
   const { user, api } = useAuth();
-  const { isConnected, rideUpdate, driverLocation, clearRideUpdate } = useWebSocket();
+  const { isConnected, rideUpdate, driverLocation, passengerBriefing, clearRideUpdate } = useWebSocket();
   const { location: userLocation } = useGeolocation();
   
   const [activeRide, setActiveRide] = useState(null);
+  
+  // 6-Second Alternating Awareness Message Banner Timer
+  const [showBriefingBanner, setShowBriefingBanner] = useState(false);
+  useEffect(() => {
+    const bannerInterval = setInterval(() => {
+      setShowBriefingBanner(prev => !prev);
+    }, 6000);
+    return () => clearInterval(bannerInterval);
+  }, []);
   
   // Fetch drivers near the pickup location if in an active ride, otherwise use physical user location
   const searchLocation = activeRide?.pickup_location || userLocation;
@@ -261,6 +270,13 @@ const StudentDashboard = () => {
       cameraMode = CAMERA_MODES.FOLLOW_DRIVER;
     }
 
+    const hasBriefing = passengerBriefing && passengerBriefing.ride_id === activeRide?.id && passengerBriefing.briefing_text;
+    const activeBriefingText = hasBriefing ? passengerBriefing.briefing_text : null;
+
+    const displayRouteGeometry = (passengerBriefing && passengerBriefing.ride_id === activeRide?.id && passengerBriefing.route_geometry && passengerBriefing.route_geometry.length > 0)
+      ? passengerBriefing.route_geometry
+      : activeRide?.verified_geometry;
+
     return (
       <div className="fixed inset-0 bg-background overflow-hidden flex flex-col" data-testid="student-active-ride">
         {/* Map Layer */}
@@ -277,7 +293,7 @@ const StudentDashboard = () => {
             zoom={15}
             markers={mapMarkers}
             drivers={driversArray}
-            routeGeometry={activeRide.verified_geometry}
+            routeGeometry={displayRouteGeometry}
             rideStatus={activeRide.status}
             onRouteAnimationChange={setIsRouteAnimating}
             showRouteLine={true}
@@ -311,11 +327,37 @@ const StudentDashboard = () => {
             
             {/* Minimized Header Row */}
             <div className="flex items-center justify-between" onClick={() => setIsSheetExpanded(!isSheetExpanded)}>
-              <div>
-                <h2 className="font-heading text-xl font-bold text-foreground">{getStatusText()}</h2>
+              <div className="flex-1 min-w-0 pr-4">
+                <div className="h-7 flex items-center overflow-hidden">
+                  <AnimatePresence mode="wait">
+                    {showBriefingBanner && activeBriefingText ? (
+                      <motion.h2 
+                        key="briefing"
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.35 }}
+                        className="font-heading text-lg font-bold text-gold truncate"
+                      >
+                        {activeBriefingText}
+                      </motion.h2>
+                    ) : (
+                      <motion.h2 
+                        key="status"
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.35 }}
+                        className="font-heading text-xl font-bold text-foreground truncate"
+                      >
+                        {getStatusText()}
+                      </motion.h2>
+                    )}
+                  </AnimatePresence>
+                </div>
                 {activeRide.driver && (
-                  <p className="text-sm text-muted-foreground font-medium">
-                    {activeRide.driver.vehicle_color} {activeRide.driver.vehicle_model} ΓÇó <span className="text-foreground uppercase bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">{activeRide.driver.plate_number}</span>
+                  <p className="text-sm text-muted-foreground font-medium truncate">
+                    {activeRide.driver.vehicle_color} {activeRide.driver.vehicle_model} • <span className="text-foreground uppercase bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">{activeRide.driver.plate_number}</span>
                   </p>
                 )}
               </div>
