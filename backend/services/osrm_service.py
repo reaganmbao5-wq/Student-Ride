@@ -109,12 +109,8 @@ async def get_multi_waypoint_route(waypoints: list):
     except Exception as e:
         logger.error(f"OSRM Multi-Waypoint Error: {e}")
 
-    # Fallback to raw waypoints
-    fallback_geo = []
-    for c in formatted_coords:
-        parts = c.split(",")
-        fallback_geo.append([float(parts[1]), float(parts[0])])
-    return fallback_geo
+    # NEVER return straight lines when OSRM fails. Return empty list to trigger last valid route preservation.
+    return []
 
 def haversine_distance(lat1, lon1, lat2, lon2):
     R = 6371  # Earth radius in km

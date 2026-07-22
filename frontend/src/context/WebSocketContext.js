@@ -127,15 +127,28 @@ export const WebSocketProvider = ({ children }) => {
             setRouteQueueUpdate(data.route_queue);
             break;
           case 'passenger_briefing_update':
-            setPassengerBriefing({
-              ride_id: data.ride_id,
-              briefing_text: data.briefing_text,
-              stops_remaining: data.stops_remaining,
-              is_next_stop: data.is_next_stop,
-              intermediate_stops: data.intermediate_stops || [],
-              route_segments: data.route_segments || [],
-              route_geometry: data.route_geometry,
-              eta_seconds: data.eta_seconds || null
+            setPassengerBriefing(prev => {
+              const incomingSegs = data.route_segments || [];
+              const incomingGeo = data.route_geometry || [];
+              const isValidGeo = incomingGeo && incomingGeo.length > 2;
+              
+              // HARDENING RULE: Preserve last valid route, colors, and segments if update has empty/invalid geometry
+              return {
+                ride_id: data.ride_id,
+                briefing_text: data.briefing_text,
+                stops_remaining: data.stops_remaining,
+                is_next_stop: data.is_next_stop,
+                intermediate_stops: (data.intermediate_stops && data.intermediate_stops.length > 0) 
+                  ? data.intermediate_stops 
+                  : (prev?.intermediate_stops || []),
+                route_segments: (incomingSegs.length > 0) 
+                  ? incomingSegs 
+                  : (prev?.route_segments || []),
+                route_geometry: isValidGeo 
+                  ? incomingGeo 
+                  : (prev?.route_geometry || []),
+                eta_seconds: data.eta_seconds || null
+              };
             });
             break;
           case 'pong':

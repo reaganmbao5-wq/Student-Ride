@@ -97,6 +97,11 @@ class DriverTripRebuilder:
             elif reserved > 0:
                 state = "driving_to_pickup"
 
+            # Fetch previous trip doc for last-valid route preservation
+            prev_trip = await db.driver_trips.find_one({"driver_id": driver_id})
+            prev_briefings = prev_trip.get("passenger_briefings", {}) if prev_trip else {}
+            prev_driver_segments = prev_trip.get("full_driver_segments", []) if prev_trip else []
+
             # PASSENGER_COLORS palette matching Driver Dashboard exactly
             PASSENGER_COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899', '#ef4444']
             
@@ -129,7 +134,14 @@ class DriverTripRebuilder:
                     leg_geo = await get_multi_waypoint_route([orig, dest])
                 except Exception as ex:
                     logger.error(f"Leg route error {orig}->{dest}: {ex}")
-                if leg_geo:
+                
+                # HARDENING RULE: Only accept detailed road geometries (len > 2).
+                # Never accept 2-point straight lines. If OSRM fails, preserve previous valid segment.
+                if not leg_geo or len(leg_geo) <= 2:
+                    if i < len(prev_driver_segments) and prev_driver_segments[i].get("geometry") and len(prev_driver_segments[i]["geometry"]) > 2:
+                        leg_geo = prev_driver_segments[i]["geometry"]
+                
+                if leg_geo and len(leg_geo) > 2:
                     full_driver_segments.append({
                         "rideId": f"seg-{i}",
                         "geometry": leg_geo,
@@ -223,6 +235,13 @@ class DriverTripRebuilder:
                         for seg in student_segments:
                             student_geo.extend(seg["geometry"])
                         
+                        # HARDENING RULE: Preserve last valid student route if current update returned no valid geometry
+                        prev_student_briefing = prev_briefings.get(s_id, {})
+                        if not student_geo or len(student_geo) <= 2:
+                            if prev_student_briefing.get("route_geometry") and len(prev_student_briefing["route_geometry"]) > 2:
+                                student_geo = prev_student_briefing["route_geometry"]
+                                student_segments = prev_student_briefing.get("route_segments", [])
+
                         if not student_geo:
                             student_geo = ride.get("verified_geometry", [])
 

@@ -376,12 +376,16 @@ const DriverDashboard = () => {
             pickup: origin,
             dropoff: dest
           }).then(res => {
-            if (res.data?.geometry) {
-              routeCache.setRoute(origin, dest, res.data.geometry);
-              const newSegment = { rideId: segmentKey, geometry: res.data.geometry, color, pIndex: '', status: 'active' };
+            const geo = res.data?.geometry;
+            if (geo && geo.length > 2) {
+              routeCache.setRoute(origin, dest, geo);
+              const newSegment = { rideId: segmentKey, geometry: geo, color, pIndex: '', status: 'active' };
               setRoutesData(prev => {
-                if (!prev.find(r => r.rideId === segmentKey)) return [...prev, newSegment];
-                return prev;
+                const existingIndex = prev.findIndex(r => r.rideId === segmentKey);
+                if (existingIndex === -1) return [...prev, newSegment];
+                const updated = [...prev];
+                updated[existingIndex] = newSegment;
+                return updated;
               });
               return newSegment;
             }
