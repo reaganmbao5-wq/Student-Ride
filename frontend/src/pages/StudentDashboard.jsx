@@ -276,7 +276,7 @@ const StudentDashboard = () => {
     const hasBriefing = isBriefingForThisRide && Boolean(passengerBriefing.briefing_text);
     const activeBriefingText = hasBriefing ? passengerBriefing.briefing_text : null;
 
-    const displayRouteGeometry = (isBriefingForThisRide && passengerBriefing.route_geometry && passengerBriefing.route_geometry.length > 0)
+    const displayRouteGeometry = (isBriefingForThisRide && passengerBriefing.route_geometry && passengerBriefing.route_geometry.length > 2)
       ? passengerBriefing.route_geometry
       : activeRide?.verified_geometry;
 

@@ -133,15 +133,18 @@ class DriverTripRebuilder:
                         else:
                             briefing_text = f"{stops_remaining} stops remaining before your stop"
 
-                    # Construct Student-Clipped Route Geometry (Driver -> Intermediate Stops -> Target Stop)
-                    student_geo = []
-                    if driver_lat and driver_lng:
-                        student_geo.append([driver_lat, driver_lng])
-                    
-                    for i in range(target_idx + 1):
-                        st_coords = route_queue[i].get("coordinates", {})
-                        if st_coords and "lat" in st_coords and "lng" in st_coords:
-                            student_geo.append([st_coords["lat"], st_coords["lng"]])
+                    # Construct Student-Clipped Route Geometry
+                    # Use ride's detailed OSRM verified_geometry if available so Leaflet renders full road polyline
+                    student_geo = ride.get("verified_geometry", [])
+                    if not student_geo or len(student_geo) <= 2:
+                        student_geo = []
+                        if driver_lat and driver_lng:
+                            student_geo.append([driver_lat, driver_lng])
+                        
+                        for i in range(target_idx + 1):
+                            st_coords = route_queue[i].get("coordinates", {})
+                            if st_coords and "lat" in st_coords and "lng" in st_coords:
+                                student_geo.append([st_coords["lat"], st_coords["lng"]])
 
                     passenger_briefings[s_id] = {
                         "ride_id": r_id,
