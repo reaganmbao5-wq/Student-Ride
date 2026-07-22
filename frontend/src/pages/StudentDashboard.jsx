@@ -287,10 +287,7 @@ const StudentDashboard = () => {
       cameraMode = CAMERA_MODES.FOLLOW_DRIVER;
     }
 
-    const isBriefingForThisRide = passengerBriefing && 
-      (!passengerBriefing.ride_id || passengerBriefing.ride_id === activeRide?.id || passengerBriefing.ride_id === activeRide?._id);
-
-    const hasBriefing = isBriefingForThisRide && Boolean(passengerBriefing.briefing_text);
+    const hasBriefing = isBriefingForThisRide && Boolean(passengerBriefing?.briefing_text);
     const activeBriefingText = hasBriefing ? passengerBriefing.briefing_text : null;
 
     const displayRouteGeometry = (isBriefingForThisRide && passengerBriefing.route_geometry && passengerBriefing.route_geometry.length > 2)
