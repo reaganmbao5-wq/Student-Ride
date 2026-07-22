@@ -136,6 +136,8 @@ export const WebSocketProvider = ({ children }) => {
               return {
                 ride_id: data.ride_id,
                 briefing_text: data.briefing_text,
+                x3_state: data.x3_state,
+                carousel_messages: data.carousel_messages || [],
                 stops_remaining: data.stops_remaining,
                 is_next_stop: data.is_next_stop,
                 intermediate_stops: (data.intermediate_stops && data.intermediate_stops.length > 0) 

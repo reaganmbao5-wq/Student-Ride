@@ -50,6 +50,15 @@ const StudentDashboard = () => {
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [ratingRideId, setRatingRideId] = useState(null);
   const [driverName, setDriverName] = useState('');
+  const [carouselIndex, setCarouselIndex] = useState(0);
+
+  // Phase X.2: 6-second message rotation carousel
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCarouselIndex(prev => prev + 1);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (rideUpdate) {
@@ -287,8 +296,13 @@ const StudentDashboard = () => {
       cameraMode = CAMERA_MODES.FOLLOW_DRIVER;
     }
 
-    const hasBriefing = isBriefingForThisRide && Boolean(passengerBriefing?.briefing_text);
-    const activeBriefingText = hasBriefing ? passengerBriefing.briefing_text : null;
+    const carouselMessages = (isBriefingForThisRide && passengerBriefing?.carousel_messages && passengerBriefing.carousel_messages.length > 0)
+      ? passengerBriefing.carousel_messages
+      : (passengerBriefing?.briefing_text ? [passengerBriefing.briefing_text] : []);
+
+    const activeBriefingText = carouselMessages.length > 0
+      ? carouselMessages[carouselIndex % carouselMessages.length]
+      : getStatusText();
 
     const displayRouteGeometry = (isBriefingForThisRide && passengerBriefing.route_geometry && passengerBriefing.route_geometry.length > 2)
       ? passengerBriefing.route_geometry
@@ -352,29 +366,16 @@ const StudentDashboard = () => {
               <div className="flex-1 min-w-0 pr-4">
                 <div className="h-7 flex items-center overflow-hidden">
                   <AnimatePresence mode="wait">
-                    {showBriefingBanner && activeBriefingText ? (
-                      <motion.h2 
-                        key="briefing"
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        transition={{ duration: 0.35 }}
-                        className="font-heading text-lg font-bold text-gold truncate"
-                      >
-                        {activeBriefingText}
-                      </motion.h2>
-                    ) : (
-                      <motion.h2 
-                        key="status"
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        transition={{ duration: 0.35 }}
-                        className="font-heading text-xl font-bold text-foreground truncate"
-                      >
-                        {getStatusText()}
-                      </motion.h2>
-                    )}
+                    <motion.h2 
+                      key={`msg-${activeBriefingText}`}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.35 }}
+                      className="font-heading text-lg font-bold text-gold truncate"
+                    >
+                      {activeBriefingText}
+                    </motion.h2>
                   </AnimatePresence>
                 </div>
                 {activeRide.driver && (

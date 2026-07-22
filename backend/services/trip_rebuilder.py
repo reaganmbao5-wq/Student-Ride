@@ -186,28 +186,62 @@ class DriverTripRebuilder:
 
                         is_arrived = (r_status == "driver_arrived") or (is_next_stop and dist_km <= 0.05)
 
-                        # Priority Engine Briefing Generation (Commit 5ecff37 preserved)
+                        # ==================================================
+                        # PHASE X.3: STOP SYNCHRONIZATION ENGINE
+                        # Pure calculation engine. Computes exact states.
+                        # ==================================================
+                        x3_state = "UNKNOWN"
+                        stop_0 = route_queue[0] if route_queue else None
+                        stop_0_coords = stop_0.get("coordinates", {}) if stop_0 else {}
+                        dist_stop0_km = 999.0
+                        if driver_lat and driver_lng and stop_0_coords.get("lat") and stop_0_coords.get("lng"):
+                            lat1, lon1 = math.radians(driver_lat), math.radians(driver_lng)
+                            lat2, lon2 = math.radians(stop_0_coords["lat"]), math.radians(stop_0_coords["lng"])
+                            dlat = lat2 - lat1
+                            dlon = lon2 - lon1
+                            a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
+                            dist_stop0_km = 6371.0 * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+                        is_stop0_arrived = (r_status == "driver_arrived") or (dist_stop0_km <= 0.05)
+
                         if is_arrived:
-                            if is_onboard:
-                                briefing_text = "Driver has arrived at your destination!"
-                            else:
-                                briefing_text = "Driver has arrived at your pickup!"
+                            x3_state = "DRIVER_ARRIVED_MY_DROPOFF" if is_onboard else "DRIVER_ARRIVED_MY_PICKUP"
                         elif is_next_stop:
-                            if is_onboard:
-                                briefing_text = "Heading to your destination"
-                            else:
-                                briefing_text = "Driver is approaching your pickup point"
+                            x3_state = "HEADING_TO_MY_DROPOFF" if is_onboard else "HEADING_TO_MY_PICKUP"
                         else:
-                            if stops_remaining == 1:
-                                if is_onboard:
-                                    briefing_text = "1 stop remaining before your destination"
-                                else:
-                                    briefing_text = "1 stop remaining before your pickup"
+                            # Driver is heading to or arrived at an intermediate stop prior to passenger's stop
+                            stop_0_type = stop_0.get("stop_type", "pickup") if stop_0 else "pickup"
+                            if stop_0_type == "pickup":
+                                x3_state = "DRIVER_ARRIVED_OTHER_PICKUP" if is_stop0_arrived else "DRIVER_EN_ROUTE_OTHER_PICKUP"
                             else:
-                                if is_onboard:
-                                    briefing_text = f"{stops_remaining} stops remaining before your destination"
-                                else:
-                                    briefing_text = f"{stops_remaining} stops remaining before your pickup"
+                                x3_state = "DRIVER_ARRIVED_OTHER_DROPOFF" if is_stop0_arrived else "DRIVER_EN_ROUTE_OTHER_DROPOFF"
+
+                        # ==================================================
+                        # PHASE X.2: PASSENGER BRIEFING ENGINE
+                        # Pure display engine. Maps X.3 state to display strings & 6s rotation items.
+                        # ==================================================
+                        X2_STATE_TEXTS = {
+                            "DRIVER_ARRIVED_MY_DROPOFF": "Driver has arrived at your destination!",
+                            "DRIVER_ARRIVED_MY_PICKUP": "Driver has arrived at your pickup!",
+                            "HEADING_TO_MY_DROPOFF": "Heading to your destination",
+                            "HEADING_TO_MY_PICKUP": "Driver is approaching your pickup point",
+                            "DRIVER_EN_ROUTE_OTHER_PICKUP": "Driver is approaching another pickup",
+                            "DRIVER_ARRIVED_OTHER_PICKUP": "Driver is picking up another student",
+                            "DRIVER_EN_ROUTE_OTHER_DROPOFF": "Driver is on the way to another student's destination",
+                            "DRIVER_ARRIVED_OTHER_DROPOFF": "Driver is dropping off another student",
+                        }
+
+                        briefing_text = X2_STATE_TEXTS.get(x3_state, "Active Ride")
+
+                        # Build rotation carousel messages for X.2
+                        stop_label_type = "destination" if is_onboard else "pickup"
+                        stops_count_str = f"1 stop remaining before your {stop_label_type}" if stops_remaining == 1 else f"{stops_remaining} stops remaining before your {stop_label_type}"
+                        
+                        carousel_messages = []
+                        if is_arrived:
+                            carousel_messages = [briefing_text]
+                        else:
+                            carousel_messages = [stops_count_str, briefing_text, "Shared Ride"]
 
                         # Extract intermediate stops prior to and including student's target stop for Privacy Shield visualization
                         intermediate_stops = []
@@ -248,7 +282,9 @@ class DriverTripRebuilder:
                         passenger_briefings[s_id] = {
                             "ride_id": r_id,
                             "student_id": s_id,
+                            "x3_state": x3_state,
                             "briefing_text": briefing_text,
+                            "carousel_messages": carousel_messages,
                             "stops_remaining": stops_remaining,
                             "is_next_stop": is_next_stop,
                             "intermediate_stops": intermediate_stops,
