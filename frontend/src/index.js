@@ -5,18 +5,16 @@ import "./map/styles/map.css";
 import App from "@/App";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import * as Sentry from "@sentry/react";
-import { BrowserTracing } from "@sentry/tracing";
 
 Sentry.init({
   dsn: process.env.REACT_APP_SENTRY_DSN,
   integrations: [
-    new BrowserTracing(),
-    Sentry.replayIntegration()
+    Sentry.browserTracingIntegration ? Sentry.browserTracingIntegration() : new Sentry.BrowserTracing(),
+    Sentry.replayIntegration ? Sentry.replayIntegration() : new Sentry.Replay()
   ],
   tracesSampleRate: 1.0,
   replaysSessionSampleRate: 0.1,
-  replaysOnErrorSampleRate: 1.0,
-  enableLogs: true
+  replaysOnErrorSampleRate: 1.0
 });
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
