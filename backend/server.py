@@ -123,10 +123,7 @@ sentry_sdk.init(
     dsn=os.environ.get("SENTRY_DSN", "https://fb662cce0aa16c927aedc2da33dff16a@o4511784708472832.ingest.de.sentry.io/4511785200844880"),
     integrations=[FastApiIntegration()],
     send_default_pii=True,
-    enable_logs=True,
-    traces_sample_rate=1.0,
-    profile_session_sample_rate=1.0,
-    profile_lifecycle="trace"
+    traces_sample_rate=1.0
 )
 
 app = FastAPI(title="Mulungushi Rides API")
