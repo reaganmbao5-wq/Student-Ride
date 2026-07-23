@@ -310,11 +310,11 @@ const StudentDashboard = () => {
       ? (passengerBriefing?.briefing_text || getStatusText())
       : (carouselMessages.length > 0 ? carouselMessages[carouselIndex % carouselMessages.length] : getStatusText());
 
-    const displayRouteGeometry = (isBriefingForThisRide && passengerBriefing.route_geometry && passengerBriefing.route_geometry.length > 2)
-      ? passengerBriefing.route_geometry
-      : activeRide?.verified_geometry;
+    const displayRouteGeometry = (isBriefingForThisRide && Array.isArray(passengerBriefing?.route_geometry))
+      ? (passengerBriefing.route_geometry.length > 2 ? passengerBriefing.route_geometry : [])
+      : (activeRide?.verified_geometry || []);
 
-    const displayRouteSegments = (isBriefingForThisRide && passengerBriefing.route_segments && passengerBriefing.route_segments.length > 0)
+    const displayRouteSegments = (isBriefingForThisRide && passengerBriefing?.route_segments && passengerBriefing.route_segments.length > 0)
       ? passengerBriefing.route_segments
       : [];
 
