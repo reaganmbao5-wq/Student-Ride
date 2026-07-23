@@ -41,6 +41,8 @@
     "@radix-ui/react-toggle-group": "^1.1.7",
     "@radix-ui/react-tooltip": "^1.2.4",
     "@react-oauth/google": "^0.13.4",
+    "@sentry/react": "^10.67.0",
+    "@sentry/tracing": "^7.120.4",
     "ajv": "^8.17.1",
     "ajv-keywords": "^5.1.0",
     "axios": "^1.8.4",

@@ -4,6 +4,20 @@ import "@/index.css";
 import "./map/styles/map.css";
 import App from "@/App";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import * as Sentry from "@sentry/react";
+import { BrowserTracing } from "@sentry/tracing";
+
+Sentry.init({
+  dsn: process.env.REACT_APP_SENTRY_DSN,
+  integrations: [
+    new BrowserTracing(),
+    Sentry.replayIntegration()
+  ],
+  tracesSampleRate: 1.0,
+  replaysSessionSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1.0,
+  enableLogs: true
+});
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || "613545438163-5eo9e0tpustjgotq6u7m7elsas8gkjst.apps.googleusercontent.com";

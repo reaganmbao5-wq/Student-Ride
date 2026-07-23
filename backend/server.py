@@ -35,7 +35,8 @@ import jwt
 import bcrypt
 import asyncio
 import resend
-import secrets
+import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastApiIntegration
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from typing import List, Optional, Dict, Any
@@ -118,6 +119,16 @@ SUPER_ADMIN_EMAIL = "Reaganmbao5@gmail.com"
 DEFAULT_COMMISSION_RATE = 15.0
 
 # Create the main app
+sentry_sdk.init(
+    dsn=os.environ.get("SENTRY_DSN", "https://fb662cce0aa16c927aedc2da33dff16a@o4511784708472832.ingest.de.sentry.io/4511785200844880"),
+    integrations=[FastApiIntegration()],
+    send_default_pii=True,
+    enable_logs=True,
+    traces_sample_rate=1.0,
+    profile_session_sample_rate=1.0,
+    profile_lifecycle="trace"
+)
+
 app = FastAPI(title="Mulungushi Rides API")
 
 # Configure CORS — allow all origins for APK/mobile/script support
