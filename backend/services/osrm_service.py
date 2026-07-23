@@ -1,7 +1,7 @@
 import httpx
 import math
 import logging
-
+import time
 # Configure logging
 logger = logging.getLogger(__name__)
 
@@ -122,12 +122,26 @@ def haversine_distance(lat1, lon1, lat2, lon2):
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return R * c
 
+_eta_cache = {}  # key: "drop_lat,drop_lng", value: {"pickup_lat": lat, "pickup_lng": lng, "eta": seconds, "timestamp": time.time()}
+
 async def calculate_eta(pickup_lat: float, pickup_lng: float, drop_lat: float, drop_lng: float) -> int:
     """
     Independent ETA calculation (Phase 4). Returns ETA in seconds.
     Hierarchy: OSRM -> Haversine fallback (30km/h). No Google Maps.
     """
-    # 1. Try OSRM
+    global _eta_cache
+    cache_key = f"{drop_lat},{drop_lng}"
+    current_time = time.time()
+    
+    # 1. Check Movement-Based Cache
+    if cache_key in _eta_cache:
+        cached = _eta_cache[cache_key]
+        dist_moved_km = haversine_distance(pickup_lat, pickup_lng, cached["pickup_lat"], cached["pickup_lng"])
+        # If driver moved less than 20 meters (0.02 km), use cache
+        if dist_moved_km < 0.02:
+            return cached["eta"]
+
+    # 2. Try OSRM
     try:
         url = f"{OSRM_BASE_URL}/{pickup_lng},{pickup_lat};{drop_lng},{drop_lat}"
         async with httpx.AsyncClient() as client:
@@ -135,12 +149,30 @@ async def calculate_eta(pickup_lat: float, pickup_lng: float, drop_lat: float, d
             if response.status_code == 200:
                 data = response.json()
                 if data.get("code") == "Ok" and data.get("routes"):
-                    return int(data["routes"][0]["duration"])
+                    eta = int(data["routes"][0]["duration"])
+                    _eta_cache[cache_key] = {
+                        "pickup_lat": pickup_lat, 
+                        "pickup_lng": pickup_lng, 
+                        "eta": eta, 
+                        "timestamp": current_time
+                    }
+                    return eta
     except Exception as e:
-        logger.warning(f"OSRM ETA failed, using Haversine: {e}")
+        logger.warning(f"OSRM ETA failed, using fallback: {e}")
 
-    # 2. Haversine Fallback (30 km/h)
+    # 3. Fallback to Last Valid ETA if OSRM fails
+    if cache_key in _eta_cache:
+        return _eta_cache[cache_key]["eta"]
+
+    # 4. Final Haversine Fallback (30 km/h) if no cache exists
     dist_km = haversine_distance(pickup_lat, pickup_lng, drop_lat, drop_lng)
     speed_kmh = 30.0
     duration_hours = dist_km / speed_kmh
-    return int(duration_hours * 3600)
+    eta = int(duration_hours * 3600)
+    _eta_cache[cache_key] = {
+        "pickup_lat": pickup_lat, 
+        "pickup_lng": pickup_lng, 
+        "eta": eta, 
+        "timestamp": current_time
+    }
+    return eta
