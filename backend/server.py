@@ -25,7 +25,7 @@ _backend_dir = _os.path.dirname(_os.path.abspath(__file__))
 if _backend_dir not in _sys.path:
     _sys.path.insert(0, _backend_dir)
 # ─────────────────────────────────────────────────────────────────────────────
-from services.osrm_service import get_route
+from services.osrm_service import get_route, calculate_eta
 from services.notification_service import NotificationService
 from services.event_bus import internal_bus
 from services.trip_manager import DriverTripManager
@@ -44,6 +44,55 @@ import math
 import json
 
 ROOT_DIR = Path(__file__).parent
+
+# Phase 4 ETA Helpers
+def format_eta_text(seconds: int) -> str:
+    if seconds is None:
+        return ""
+    if seconds < 60:
+        return "<1 min"
+    return f"{int(seconds // 60)} min"
+
+async def inject_etas_into_trip(trip: dict, driver_location: dict):
+    if not trip or not driver_location:
+        return trip
+    
+    route_queue = trip.get("route_queue", [])
+    briefings = trip.get("passenger_briefings", {})
+    
+    if not route_queue or not briefings:
+        return trip
+        
+    curr_lat = driver_location.get("lat")
+    curr_lng = driver_location.get("lng")
+    if not curr_lat or not curr_lng:
+        return trip
+        
+    cumulative_seconds = 0
+    eta_dict = {} # Maps ride_id -> seconds
+    
+    for stop in route_queue:
+        stop_lat = stop["coordinates"].get("lat")
+        stop_lng = stop["coordinates"].get("lng")
+        
+        if stop_lat and stop_lng:
+            leg_seconds = await calculate_eta(curr_lat, curr_lng, stop_lat, stop_lng)
+            cumulative_seconds += leg_seconds
+            curr_lat = stop_lat
+            curr_lng = stop_lng
+            
+            ride_id = stop.get("ride_id")
+            if ride_id and ride_id not in eta_dict:
+                eta_dict[ride_id] = cumulative_seconds
+                
+    # Inject into briefings
+    for s_id, briefing in briefings.items():
+        ride_id = briefing.get("ride_id")
+        if ride_id in eta_dict:
+            briefing["eta_seconds"] = eta_dict[ride_id]
+            briefing["eta_text"] = format_eta_text(eta_dict[ride_id])
+            
+    return trip
 load_dotenv(ROOT_DIR / '.env')
 
 # MongoDB connection
@@ -447,6 +496,8 @@ class RideResponse(BaseModel):
     created_at: str
     accepted_at: Optional[str] = None
     completed_at: Optional[str] = None
+    eta_seconds: Optional[int] = None
+    eta_text: Optional[str] = None
 
 class MessageCreate(BaseModel):
     ride_id: str
@@ -956,6 +1007,7 @@ class ConnectionManager:
                 # Phase X: Re-calculate passenger briefing and clipped geometry on location updates
                 try:
                     trip = await DriverTripRebuilder.rebuild(driver["id"], db)
+                    trip = await inject_etas_into_trip(trip, location)
                     if trip and "passenger_briefings" in trip:
                         for s_id, briefing in trip["passenger_briefings"].items():
                             await self.send_personal_message({
@@ -970,7 +1022,8 @@ class ConnectionManager:
                                 "intermediate_stops": briefing.get("intermediate_stops", []),
                                 "route_segments": briefing.get("route_segments", []),
                                 "route_geometry": briefing["route_geometry"],
-                                "eta_seconds": None
+                                "eta_seconds": briefing.get("eta_seconds"),
+                                "eta_text": briefing.get("eta_text")
                             }, s_id)
                 except Exception as ex:
                     logger.error(f"Failed to update passenger briefings on driver location update: {ex}")
@@ -1288,6 +1341,7 @@ async def broadcast_route_queue(driver_id: str):
     if trip:
         driver = await db.drivers.find_one({"id": driver_id})
         if driver:
+            trip = await inject_etas_into_trip(trip, driver.get("current_location", {}))
             await manager.send_personal_message({
                 "type": "routeQueueUpdate",
                 "route_queue": trip.get("route_queue", [])
@@ -1308,7 +1362,8 @@ async def broadcast_route_queue(driver_id: str):
                 "intermediate_stops": briefing.get("intermediate_stops", []),
                 "route_segments": briefing.get("route_segments", []),
                 "route_geometry": briefing["route_geometry"],
-                "eta_seconds": None
+                "eta_seconds": briefing.get("eta_seconds"),
+                "eta_text": briefing.get("eta_text")
             }, student_id)
 
 # ==================== DRIVER ROUTES ====================
@@ -2830,6 +2885,19 @@ async def get_active_ride(user: dict = Depends(get_current_user)):
                         is_active=driver_user.get("is_active", True)
                     )
                 ride["driver"] = DriverResponse(**driver)
+                
+                # Phase 4 ETA Restoration on Refresh
+                if user["role"] == UserRole.STUDENT.value:
+                    try:
+                        trip = await DriverTripRebuilder.rebuild(driver["id"], db)
+                        trip = await inject_etas_into_trip(trip, driver.get("current_location", {}))
+                        if trip and "passenger_briefings" in trip:
+                            briefings = trip["passenger_briefings"]
+                            if user["id"] in briefings:
+                                ride["eta_seconds"] = briefings[user["id"]].get("eta_seconds")
+                                ride["eta_text"] = briefings[user["id"]].get("eta_text")
+                    except Exception as e:
+                        logger.error(f"Failed to restore ETA on refresh: {e}")
         
         return RideResponse(**ride)
     
@@ -3635,6 +3703,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(None)):
                         try:
                             trip = await DriverTripRebuilder.rebuild(driver["id"], db)
                             if trip:
+                                trip = await inject_etas_into_trip(trip, driver.get("current_location", {}))
                                 if "route_queue" in trip:
                                     await manager.send_personal_message({
                                         "type": "route_queue_update",
@@ -3655,7 +3724,8 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(None)):
                                         "intermediate_stops": briefing.get("intermediate_stops", []),
                                         "route_segments": briefing.get("route_segments", []),
                                         "route_geometry": briefing["route_geometry"],
-                                        "eta_seconds": None
+                                        "eta_seconds": briefing.get("eta_seconds"),
+                                        "eta_text": briefing.get("eta_text")
                                     }, s_id)
                         except Exception as e:
                             logger.error(f"Failed to hard recalculate queue for driver {user_id}: {e}")

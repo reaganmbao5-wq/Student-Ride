@@ -150,7 +150,8 @@ export const WebSocketProvider = ({ children }) => {
                 route_geometry: isValidGeo 
                   ? incomingGeo 
                   : (prev?.route_geometry || []),
-                eta_seconds: data.eta_seconds || null
+                eta_seconds: data.eta_seconds !== undefined ? data.eta_seconds : null,
+                eta_text: data.eta_text || null
               };
             });
             break;

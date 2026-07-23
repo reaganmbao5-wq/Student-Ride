@@ -121,3 +121,26 @@ def haversine_distance(lat1, lon1, lat2, lon2):
         math.sin(dlon / 2) * math.sin(dlon / 2)
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return R * c
+
+async def calculate_eta(pickup_lat: float, pickup_lng: float, drop_lat: float, drop_lng: float) -> int:
+    """
+    Independent ETA calculation (Phase 4). Returns ETA in seconds.
+    Hierarchy: OSRM -> Haversine fallback (30km/h). No Google Maps.
+    """
+    # 1. Try OSRM
+    try:
+        url = f"{OSRM_BASE_URL}/{pickup_lng},{pickup_lat};{drop_lng},{drop_lat}"
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, timeout=5.0)
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("code") == "Ok" and data.get("routes"):
+                    return int(data["routes"][0]["duration"])
+    except Exception as e:
+        logger.warning(f"OSRM ETA failed, using Haversine: {e}")
+
+    # 2. Haversine Fallback (30 km/h)
+    dist_km = haversine_distance(pickup_lat, pickup_lng, drop_lat, drop_lng)
+    speed_kmh = 30.0
+    duration_hours = dist_km / speed_kmh
+    return int(duration_hours * 3600)

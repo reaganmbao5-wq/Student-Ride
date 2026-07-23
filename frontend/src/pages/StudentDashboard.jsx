@@ -344,6 +344,26 @@ const StudentDashboard = () => {
           />
         </div>
 
+        {/* Phase 4 ETA Badge Overlay */}
+        {passengerBriefing?.eta_text && (
+          <div className="absolute top-4 right-4 z-50">
+            <div className="bg-white dark:bg-zinc-950 px-4 py-2 rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-zinc-100 dark:border-zinc-800 flex items-center justify-center min-w-[70px]">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={passengerBriefing.eta_text}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="font-heading font-bold text-foreground text-sm whitespace-nowrap"
+                >
+                  {passengerBriefing.eta_text}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </div>
+        )}
+
         {/* Bottom Sheet Overlay */}
         <motion.div
           className="absolute bottom-0 left-0 right-0 bg-white dark:bg-zinc-950 rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-20 flex flex-col"
