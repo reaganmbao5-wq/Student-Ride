@@ -163,10 +163,12 @@ class DriverTripRebuilder:
                     
                     # Find index of target stop in optimized route_queue
                     target_idx = -1
+                    dropoff_idx = -1
                     for idx, stop in enumerate(route_queue):
                         if stop.get("stop_id") == target_stop_id:
                             target_idx = idx
-                            break
+                        if stop.get("stop_id") == f"stop_dropoff_{r_id}":
+                            dropoff_idx = idx
 
                     if target_idx != -1:
                         stops_remaining = target_idx
@@ -248,47 +250,45 @@ class DriverTripRebuilder:
                             stops_count_str = f"1 stop remaining before your {stop_label_type}." if stops_remaining == 1 else f"{stops_remaining} stops remaining before your {stop_label_type}."
                             carousel_messages = [stops_count_str, briefing_text, "Shared Ride"] if len(active_rides) > 1 else [stops_count_str, briefing_text]
 
-                        # Extract intermediate stops prior to and including student's target stop for Privacy Shield visualization
+                        # Extract intermediate stops prior to and including student's final dropoff
                         intermediate_stops = []
-                        for i in range(target_idx + 1):
-                            st = route_queue[i]
-                            st_c = st.get("coordinates", {})
-                            if st_c and "lat" in st_c and "lng" in st_c:
-                                is_my_stop = (i == target_idx)
-                                label = "My Destination" if (is_my_stop and is_onboard) else ("My Pickup" if is_my_stop else f"Stop {i+1}")
-                                intermediate_stops.append({
-                                    "stop_id": st.get("stop_id"),
-                                    "stop_type": st.get("stop_type", "pickup"),
-                                    "lat": st_c["lat"],
-                                    "lng": st_c["lng"],
-                                    "label": label,
-                                    "is_my_stop": is_my_stop,
-                                    "color": get_color_for_ride(st.get("ride_id"))
-                                })
+                        if dropoff_idx != -1:
+                            for i in range(dropoff_idx + 1):
+                                st = route_queue[i]
+                                st_c = st.get("coordinates", {})
+                                if st_c and "lat" in st_c and "lng" in st_c:
+                                    is_my_pickup = (st.get("stop_id") == f"stop_pickup_{r_id}")
+                                    is_my_dropoff = (st.get("stop_id") == f"stop_dropoff_{r_id}")
+                                    label = "My Destination" if is_my_dropoff else ("My Pickup" if is_my_pickup else f"Stop {i+1}")
+                                    intermediate_stops.append({
+                                        "stop_id": st.get("stop_id"),
+                                        "stop_type": st.get("stop_type", "pickup"),
+                                        "lat": st_c["lat"],
+                                        "lng": st_c["lng"],
+                                        "label": label,
+                                        "is_my_stop": is_my_pickup or is_my_dropoff,
+                                        "color": get_color_for_ride(st.get("ride_id"))
+                                    })
 
-                        # CLIP DRIVER ROUTE SEGMENTS AT MY STOP (target_idx)
-                        # HARDENING RULE: When driver has arrived at student's pickup/destination (is_arrived == True),
-                        # no route line should be drawn to previous or subsequent stops.
-                        if is_arrived:
-                            student_segments = []
-                            student_geo = []
-                        else:
-                            student_segments = full_driver_segments[:target_idx + 1]
+                        # CLIP DRIVER ROUTE SEGMENTS AT MY FINAL DESTINATION (dropoff_idx)
+                        student_segments = []
+                        if dropoff_idx != -1:
+                            student_segments = full_driver_segments[:dropoff_idx + 1]
 
-                            # Concatenate geometries of clipped segments for backwards compatibility
-                            student_geo = []
-                            for seg in student_segments:
-                                student_geo.extend(seg["geometry"])
-                            
-                            # Preserve last valid student route if current en-route update returned no valid geometry
-                            prev_student_briefing = prev_briefings.get(s_id, {})
-                            if not student_geo or len(student_geo) <= 2:
-                                if prev_student_briefing.get("route_geometry") and len(prev_student_briefing["route_geometry"]) > 2:
-                                    student_geo = prev_student_briefing["route_geometry"]
-                                    student_segments = prev_student_briefing.get("route_segments", [])
+                        # Concatenate geometries of clipped segments for backwards compatibility
+                        student_geo = []
+                        for seg in student_segments:
+                            student_geo.extend(seg["geometry"])
+                        
+                        # Preserve last valid student route if current en-route update returned no valid geometry
+                        prev_student_briefing = prev_briefings.get(s_id, {})
+                        if not student_geo or len(student_geo) <= 2:
+                            if prev_student_briefing.get("route_geometry") and len(prev_student_briefing["route_geometry"]) > 2:
+                                student_geo = prev_student_briefing["route_geometry"]
+                                student_segments = prev_student_briefing.get("route_segments", [])
 
-                            if not student_geo:
-                                student_geo = ride.get("verified_geometry", [])
+                        if not student_geo:
+                            student_geo = ride.get("verified_geometry", [])
 
                         passenger_briefings[s_id] = {
                             "ride_id": r_id,
