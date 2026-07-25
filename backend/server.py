@@ -508,6 +508,7 @@ class RideResponse(BaseModel):
     completed_at: Optional[str] = None
     eta_seconds: Optional[int] = None
     eta_text: Optional[str] = None
+    passenger_briefing: Optional[Dict[str, Any]] = None
 
 class MessageCreate(BaseModel):
     ride_id: str

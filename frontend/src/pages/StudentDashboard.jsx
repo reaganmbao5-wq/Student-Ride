@@ -323,8 +323,8 @@ const StudentDashboard = () => {
     
     if (activeRide && ['requested', 'cancelled'].includes(activeRide.status) === false) {
       if (!passengerBriefing || passengerBriefing.ride_id !== activeRide.id) {
-        routeState = 'LOADING ROUTE...';
-        activeBriefingText = 'LOADING ROUTE...';
+        routeState = 'Loading route...';
+        activeBriefingText = 'Loading route...';
       } else if (isBriefingForThisRide && Array.isArray(passengerBriefing?.route_geometry) && passengerBriefing.route_geometry.length > 2) {
         routeState = 'ROUTE AVAILABLE';
         displayRouteGeometry = passengerBriefing.route_geometry;
