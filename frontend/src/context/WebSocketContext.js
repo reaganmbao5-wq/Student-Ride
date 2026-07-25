@@ -255,7 +255,8 @@ export const WebSocketProvider = ({ children }) => {
     requestHardRecalculation,
     clearRideRequest,
     clearRideUpdate,
-    clearNewMessage
+    clearNewMessage,
+    setPassengerBriefing
   };
 
   return (

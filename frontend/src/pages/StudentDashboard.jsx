@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 const StudentDashboard = () => {
   const navigate = useNavigate();
   const { user, api } = useAuth();
-  const { isConnected, rideUpdate, driverLocation, passengerBriefing, clearRideUpdate } = useWebSocket();
+  const { isConnected, rideUpdate, driverLocation, passengerBriefing, clearRideUpdate, setPassengerBriefing } = useWebSocket();
   const { location: userLocation } = useGeolocation();
   
   const [activeRide, setActiveRide] = useState(null);
@@ -123,6 +123,12 @@ const StudentDashboard = () => {
       ]);
 
       setActiveRide(activeRes.data);
+      
+      // Restore Passenger Briefing instantly (Problem 01)
+      if (activeRes.data?.passenger_briefing) {
+        setPassengerBriefing(activeRes.data.passenger_briefing);
+      }
+      
       if (activeRes.data?.driver?.current_location) {
         setDriverPos(activeRes.data.driver.current_location);
       } else {
@@ -306,13 +312,25 @@ const StudentDashboard = () => {
       ? passengerBriefing.carousel_messages
       : (passengerBriefing?.briefing_text ? [passengerBriefing.briefing_text] : []);
 
-    const activeBriefingText = isPinnedState
+    let activeBriefingText = isPinnedState
       ? (passengerBriefing?.briefing_text || getStatusText())
       : (carouselMessages.length > 0 ? carouselMessages[carouselIndex % carouselMessages.length] : getStatusText());
 
-    const displayRouteGeometry = (isBriefingForThisRide && Array.isArray(passengerBriefing?.route_geometry))
-      ? (passengerBriefing.route_geometry.length > 2 ? passengerBriefing.route_geometry : [])
-      : (activeRide?.verified_geometry || []);
+    // Problem 01: Route State Tracking (Single Source of Truth)
+    let routeState = 'ROUTE UNAVAILABLE';
+    let displayRouteGeometry = [];
+    
+    if (activeRide && ['requested', 'cancelled'].includes(activeRide.status) === false) {
+      if (!passengerBriefing || passengerBriefing.ride_id !== activeRide.id) {
+        routeState = 'LOADING ROUTE...';
+        activeBriefingText = 'LOADING ROUTE...';
+      } else if (isBriefingForThisRide && Array.isArray(passengerBriefing?.route_geometry) && passengerBriefing.route_geometry.length > 2) {
+        routeState = 'ROUTE AVAILABLE';
+        displayRouteGeometry = passengerBriefing.route_geometry;
+      } else {
+        routeState = 'ROUTE UNAVAILABLE';
+      }
+    }
 
     const displayRouteSegments = (isBriefingForThisRide && passengerBriefing?.route_segments && passengerBriefing.route_segments.length > 0)
       ? passengerBriefing.route_segments

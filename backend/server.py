@@ -2901,9 +2901,13 @@ async def get_active_ride(user: dict = Depends(get_current_user)):
                         trip = await inject_etas_into_trip(trip, driver.get("current_location", {}))
                         if trip and "passenger_briefings" in trip:
                             briefings = trip["passenger_briefings"]
+                            # STRICT PASSENGER OWNERSHIP VERIFICATION
                             if user["id"] in briefings:
-                                ride["eta_seconds"] = briefings[user["id"]].get("eta_seconds")
-                                ride["eta_text"] = briefings[user["id"]].get("eta_text")
+                                my_briefing = briefings[user["id"]]
+                                if my_briefing.get("ride_id") == ride["id"]:
+                                    ride["eta_seconds"] = my_briefing.get("eta_seconds")
+                                    ride["eta_text"] = my_briefing.get("eta_text")
+                                    ride["passenger_briefing"] = my_briefing
                     except Exception as e:
                         logger.error(f"Failed to restore ETA on refresh: {e}")
         
