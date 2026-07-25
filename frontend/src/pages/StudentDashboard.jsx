@@ -65,6 +65,7 @@ const StudentDashboard = () => {
       if (rideUpdate.type === 'accepted') {
         setActiveRide(prev => ({ ...prev, ...rideUpdate.ride, driver: rideUpdate.driver }));
         toast.success('Driver accepted your ride!');
+        fetchData();
       } else if (rideUpdate.type === 'driver_arrived') {
         setActiveRide(prev => prev ? { ...prev, status: 'driver_arrived' } : null);
         toast.success('Driver has arrived at pickup!');
