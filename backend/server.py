@@ -1348,7 +1348,9 @@ async def delete_me(user: dict = Depends(get_current_user)):
     return {"status": "deleted"}
 
 async def broadcast_route_queue(driver_id: str):
-    trip = await DriverTripRebuilder.rebuild(driver_id, db)
+    trip = await db.driver_trips.find_one({"driver_id": driver_id})
+    if not trip:
+        logger.warning(f"CACHE MISS in broadcast_route_queue for driver {driver_id} - zero fallback execution as per Phase 01 rules")
     if trip:
         driver = await db.drivers.find_one({"id": driver_id})
         if driver:
@@ -2897,11 +2899,10 @@ async def get_active_ride(user: dict = Depends(get_current_user)):
                     )
                 ride["driver"] = DriverResponse(**driver)
                 
-                # Phase 4 ETA Restoration on Refresh
+                # Phase 4 ETA Restoration on Refresh via MongoDB Cache (Phase 01)
                 if user["role"] == UserRole.STUDENT.value:
                     try:
-                        trip = await DriverTripRebuilder.rebuild(driver["id"], db)
-                        trip = await inject_etas_into_trip(trip, driver.get("current_location", {}))
+                        trip = await db.driver_trips.find_one({"driver_id": driver["id"]})
                         if trip and "passenger_briefings" in trip:
                             briefings = trip["passenger_briefings"]
                             # STRICT PASSENGER OWNERSHIP VERIFICATION
@@ -2911,8 +2912,10 @@ async def get_active_ride(user: dict = Depends(get_current_user)):
                                     ride["eta_seconds"] = my_briefing.get("eta_seconds")
                                     ride["eta_text"] = my_briefing.get("eta_text")
                                     ride["passenger_briefing"] = my_briefing
+                        elif not trip:
+                            logger.warning(f"CACHE MISS in GET /rides/active for driver {driver['id']} - zero fallback execution as per Phase 01 rules")
                     except Exception as e:
-                        logger.error(f"Failed to restore ETA on refresh: {e}")
+                        logger.error(f"Failed to restore cached briefing on refresh: {e}")
         
         return RideResponse(**ride)
     
