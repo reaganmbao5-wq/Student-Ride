@@ -2,7 +2,10 @@ import logging
 import math
 from typing import List, Dict, Any
 from datetime import datetime, timezone
-from backend.services.route_optimizer import RouteOptimizer
+try:
+    from backend.services.route_optimizer import RouteOptimizer
+except ImportError:
+    from services.route_optimizer import RouteOptimizer
 try:
     from backend.services.osrm_service import get_multi_waypoint_route
 except ImportError:
