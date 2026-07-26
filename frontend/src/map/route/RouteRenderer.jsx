@@ -8,7 +8,8 @@ import { Polyline } from 'react-leaflet';
  * Includes smooth animation for initial route drawing and high accuracy rendering.
  */
 export const RouteRenderer = ({ travelledPath, remainingPath, status, onAnimationChange, color }) => {
-  const isHeadingToPickup = status === 'accepted' || status === 'driver_arrived';
+  const normalizedStatus = status ? String(status).toLowerCase() : '';
+  const isHeadingToPickup = ['accepted', 'driver_accepted', 'driver_en_route_to_pickup', 'driver_arrived'].includes(normalizedStatus);
   
   // Style config
   const remainingColor = color || (isHeadingToPickup ? '#10B981' : '#3B82F6'); // Use provided color, else fallback

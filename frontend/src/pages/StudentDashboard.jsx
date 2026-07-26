@@ -123,7 +123,18 @@ const StudentDashboard = () => {
         api.get('/rides/history?limit=5')
       ]);
 
-      setActiveRide(activeRes.data);
+      setActiveRide(prev => {
+        if (!activeRes.data) return null;
+        if (prev && prev.id === activeRes.data.id) {
+          // Preserve optimistic status and passenger_briefing if activeRes has older/null data
+          return {
+            ...activeRes.data,
+            status: prev.status || activeRes.data.status,
+            passenger_briefing: activeRes.data.passenger_briefing || prev.passenger_briefing
+          };
+        }
+        return activeRes.data;
+      });
       
       // Restore Passenger Briefing instantly (Problem 01)
       if (activeRes.data?.passenger_briefing) {
@@ -192,7 +203,8 @@ const StudentDashboard = () => {
   // ACTIVE RIDE FULL-SCREEN VIEW
   // ==========================================
   if (activeRide) {
-    const isArrivedOrStarted = ['driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination', 'ongoing'].includes(activeRide.status);
+    const currentStatus = activeRide.status ? activeRide.status.toLowerCase() : '';
+    const isArrivedOrStarted = ['driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination', 'ongoing'].includes(currentStatus);
     
     // Debug overlay to verify websocket data
     const debugOverlay = (
@@ -257,19 +269,19 @@ const StudentDashboard = () => {
     let bounds = [];
     if (driverPos) bounds.push([driverPos.lat, driverPos.lng]);
     
-    if (activeRide.status in ['accepted', 'driver_accepted', 'driver_en_route_to_pickup']) {
+    if (['accepted', 'driver_accepted', 'driver_en_route_to_pickup'].includes(currentStatus)) {
       // Driver is on the way to pickup: frame Driver + Pickup ALWAYS
       if (activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
-    } else if (activeRide.status === 'driver_arrived') {
+    } else if (currentStatus === 'driver_arrived') {
       // Driver arrived at pickup: frame Pickup + Destination to show the full route about to be driven
       if (activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
       if (activeRide.dropoff_location) bounds.push([activeRide.dropoff_location.lat, activeRide.dropoff_location.lng]);
-    } else if (activeRide.status in ['ongoing', 'ride_started', 'ride_in_progress', 'arriving_destination']) {
+    } else if (['ongoing', 'ride_started', 'ride_in_progress', 'arriving_destination'].includes(currentStatus)) {
       // Ride ongoing: frame Driver + Destination IF animating (edge case), else zoom in
       if (activeRide.dropoff_location && isRouteAnimating) {
         bounds.push([activeRide.dropoff_location.lat, activeRide.dropoff_location.lng]);
       }
-    } else if (activeRide.status === 'requested') {
+    } else if (currentStatus === 'requested') {
       // Searching for driver: frame Pickup + Destination
       // We don't frame nearby drivers here because their continuous movement causes the camera to constantly bounce/alternate zoom levels.
       // Framing pickup and destination is cleaner and more stable.
@@ -278,9 +290,9 @@ const StudentDashboard = () => {
     }
 
     // Final Bounds Logic
-    if (activeRide.status in ['accepted', 'driver_accepted', 'driver_en_route_to_pickup']) {
+    if (['accepted', 'driver_accepted', 'driver_en_route_to_pickup'].includes(currentStatus)) {
       bounds = bounds.length > 1 ? bounds : null; // Keep bounds forever
-    } else if (['driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination', 'ongoing'].includes(activeRide.status)) {
+    } else if (['driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination', 'ongoing'].includes(currentStatus)) {
       bounds = (!isRouteAnimating) ? null : (bounds.length > 1 ? bounds : null);
     } else {
       bounds = bounds.length > 1 ? bounds : null;

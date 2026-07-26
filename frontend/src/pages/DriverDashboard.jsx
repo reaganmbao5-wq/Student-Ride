@@ -461,14 +461,16 @@ const DriverDashboard = () => {
     } catch (error) {
       console.error('Error accepting shared ride:', error);
       toast.error(error.response?.data?.detail || 'Failed to accept ride');
-      setIncomingSharedRequests(prev => prev.filter(r => r.id !== rideId));
+      setMasterSharedRidePool(prev => prev.filter(r => r.id !== rideId));
+      setPendingRides(prev => prev.filter(r => r.id !== rideId));
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeclineSharedRide = (rideId) => {
-    setIncomingSharedRequests(prev => prev.filter(r => r.id !== rideId));
+    setMasterSharedRidePool(prev => prev.filter(r => r.id !== rideId));
+    setPendingRides(prev => prev.filter(r => r.id !== rideId));
   };
 
   const handleDeclineRide = () => {
