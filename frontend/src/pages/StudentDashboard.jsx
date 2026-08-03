@@ -290,10 +290,13 @@ const StudentDashboard = () => {
     }
 
     // Final Bounds Logic
+    // For en-route states (driver accepted / en_route), bound driver + pickup.
+    // For arrived/started/ongoing states, set bounds to null so FOLLOW_DRIVER mode
+    // centers directly on the driver without zooming out to fit all points.
     if (['accepted', 'driver_accepted', 'driver_en_route_to_pickup'].includes(currentStatus)) {
-      bounds = bounds.length > 1 ? bounds : null; // Keep bounds forever
+      bounds = bounds.length > 1 ? bounds : null; // Frame driver + pickup
     } else if (['driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination', 'ongoing'].includes(currentStatus)) {
-      bounds = (!isRouteAnimating) ? null : (bounds.length > 1 ? bounds : null);
+      bounds = null; // Let FOLLOW_DRIVER lock directly onto the driver marker, no forced zoom-out
     } else {
       bounds = bounds.length > 1 ? bounds : null;
     }
