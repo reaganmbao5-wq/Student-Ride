@@ -48,6 +48,14 @@ const StudentDashboard = () => {
     fetchData();
   }, []);
 
+  // Automatic 4-Second Resync Loop: Guarantees status & route transitions update automatically without manual refresh
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchData();
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [ratingRideId, setRatingRideId] = useState(null);
   const [driverName, setDriverName] = useState('');
@@ -152,15 +160,11 @@ const StudentDashboard = () => {
 
       setActiveRide(prev => {
         if (!activeRes.data) return null;
-        if (prev && prev.id === activeRes.data.id) {
-          // Preserve optimistic status and passenger_briefing if activeRes has older/null data
-          return {
-            ...activeRes.data,
-            status: prev.status || activeRes.data.status,
-            passenger_briefing: activeRes.data.passenger_briefing || prev.passenger_briefing
-          };
-        }
-        return activeRes.data;
+        // Server status is authoritative — allow transition from requested -> accepted/arrived/ongoing
+        return {
+          ...activeRes.data,
+          passenger_briefing: activeRes.data.passenger_briefing || prev?.passenger_briefing
+        };
       });
       
       // Restore Passenger Briefing instantly (Problem 01)
