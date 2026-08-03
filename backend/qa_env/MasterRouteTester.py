@@ -230,6 +230,9 @@ async def main():
     email = input("Enter driver's email (e.g., driver@test.com): ")
 
     load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+    load_dotenv(os.path.join(os.path.dirname(__file__), '..', 'backend', '.env'))
+    load_dotenv('backend/.env')
+    load_dotenv('.env')
     mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
     db_client = AsyncIOMotorClient(mongo_url)
     db = db_client[os.environ.get('DB_NAME', 'mulungushi_rides')]
