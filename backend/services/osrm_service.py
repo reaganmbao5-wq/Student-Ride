@@ -60,7 +60,7 @@ async def get_route(pickup_lat: float, pickup_lng: float, drop_lat: float, drop_
     return {
         "distance_km": dist,
         "duration_minutes": duration_minutes,
-        "geometry": [[pickup_lat, pickup_lng], [drop_lat, drop_lng]],
+        "geometry": [],
         "source": "haversine_fallback"
     }
 
