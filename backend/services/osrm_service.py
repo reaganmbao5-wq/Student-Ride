@@ -5,6 +5,8 @@ import time
 # Configure logging
 logger = logging.getLogger(__name__)
 
+OSRM_BASE_URL = "http://router.project-osrm.org/route/v1/driving"
+
 async def get_route(pickup_lat: float, pickup_lng: float, drop_lat: float, drop_lng: float):
     """
     Calculates route using OSRM.
