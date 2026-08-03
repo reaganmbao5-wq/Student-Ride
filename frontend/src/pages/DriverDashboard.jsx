@@ -225,10 +225,13 @@ const DriverDashboard = () => {
       }
       clearRideUpdate();
     } else if (rideUpdate.type === 'completed') {
-      setActiveRides(prev => prev.filter(r => getRideId(r) !== rideUpdate.ride_id));
-      if (activeRide && getRideId(activeRide) === rideUpdate.ride_id) {
-        setActiveRide(null);
-      }
+      setActiveRides(prev => {
+        const remaining = prev.filter(r => getRideId(r) !== rideUpdate.ride_id);
+        if (activeRide && getRideId(activeRide) === rideUpdate.ride_id) {
+          setActiveRide(remaining.length > 0 ? remaining[0] : null);
+        }
+        return remaining;
+      });
       clearRideUpdate();
     } else if (rideUpdate.type === 'rating_received') {
       toast.success(`You received a ${rideUpdate.rating}-star rating!`);
@@ -549,11 +552,14 @@ const DriverDashboard = () => {
     const targetId = getRideId(targetRide);
     if (!targetId) return;
 
-    // Optimistic UI update: instantly filter out completed ride
-    setActiveRides(prev => prev.filter(r => getRideId(r) !== targetId));
-    if (activeRide && getRideId(activeRide) === targetId) {
-      setActiveRide(null);
-    }
+    // Optimistic UI update: instantly transition to remaining student ride if any
+    setActiveRides(prev => {
+      const remaining = prev.filter(r => getRideId(r) !== targetId);
+      if (activeRide && getRideId(activeRide) === targetId) {
+        setActiveRide(remaining.length > 0 ? remaining[0] : null);
+      }
+      return remaining;
+    });
     toast.success('Ride completed!');
 
     try {
