@@ -229,11 +229,11 @@ const StudentDashboard = () => {
 
     const driversArray = assignedDriverMarker ? [assignedDriverMarker] : nearbyDrivers;
 
-    // 1.5 Intermediate & Target Stop Markers for Student Route Engine (Phase X.1 Passive Consumer Architecture)
-    const isBriefingForThisRide = passengerBriefing && 
+    // 1.5 Intermediate & Target Stop Markers for Student Route Engine
+    const isBriefingValidForRide = activeRide && activeRide.status !== 'requested' && passengerBriefing && 
       (!passengerBriefing.ride_id || passengerBriefing.ride_id === activeRide?.id || passengerBriefing.ride_id === activeRide?._id);
 
-    if (isBriefingForThisRide && Array.isArray(passengerBriefing.intermediate_stops)) {
+    if (isBriefingValidForRide && Array.isArray(passengerBriefing.intermediate_stops)) {
       passengerBriefing.intermediate_stops.forEach((st, idx) => {
         if (st.lat && st.lng) {
           mapMarkers.push({
@@ -318,19 +318,21 @@ const StudentDashboard = () => {
       cameraMode = CAMERA_MODES.FOLLOW_DRIVER;
     }
 
-    const isPinnedState = isBriefingForThisRide && (
+    const isPinnedState = isBriefingValidForRide && (
       passengerBriefing?.is_pinned || 
       activeRide.status === 'driver_arrived' ||
       ['Driver has arrived at your pickup!', 'Driver has arrived at your destination!', 'Destination reached.', 'Thank you for riding with us.'].includes(passengerBriefing?.briefing_text)
     );
 
-    const carouselMessages = (isBriefingForThisRide && passengerBriefing?.carousel_messages && passengerBriefing.carousel_messages.length > 0)
+    const carouselMessages = (isBriefingValidForRide && passengerBriefing?.carousel_messages && passengerBriefing.carousel_messages.length > 0)
       ? passengerBriefing.carousel_messages
-      : (passengerBriefing?.briefing_text ? [passengerBriefing.briefing_text] : []);
+      : (isBriefingValidForRide && passengerBriefing?.briefing_text ? [passengerBriefing.briefing_text] : []);
 
-    let activeBriefingText = isPinnedState
-      ? (passengerBriefing?.briefing_text || getStatusText())
-      : (carouselMessages.length > 0 ? carouselMessages[carouselIndex % carouselMessages.length] : getStatusText());
+    let activeBriefingText = activeRide.status === 'requested'
+      ? getStatusText()
+      : (isPinnedState
+          ? (passengerBriefing?.briefing_text || getStatusText())
+          : (carouselMessages.length > 0 ? carouselMessages[carouselIndex % carouselMessages.length] : getStatusText()));
 
     // Problem 01: Route State Tracking (Single Source of Truth)
     let routeState = 'ROUTE UNAVAILABLE';
