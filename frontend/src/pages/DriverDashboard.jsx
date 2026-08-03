@@ -473,7 +473,11 @@ const DriverDashboard = () => {
     try {
       const response = await api.post(`/rides/${rideId}/accept`);
       setActiveRide(response.data);
-      refreshActiveRide();
+      const tripRes = await api.get('/rides/driver/trip');
+      if (tripRes.data?.route_queue) setRouteQueue(tripRes.data.route_queue);
+      if (tripRes.data?.full_driver_segments && Array.isArray(tripRes.data.full_driver_segments) && tripRes.data.full_driver_segments.length > 0) {
+        setRoutesData(tripRes.data.full_driver_segments);
+      }
     } catch (error) {
       console.error('Error accepting ride:', error);
       toast.error(error.response?.data?.detail || 'Failed to accept ride');
@@ -490,7 +494,11 @@ const DriverDashboard = () => {
     
     try {
       await api.post(`/rides/${rideId}/accept`);
-      fetchData(); // Refresh everything safely
+      const tripRes = await api.get('/rides/driver/trip');
+      if (tripRes.data?.route_queue) setRouteQueue(tripRes.data.route_queue);
+      if (tripRes.data?.full_driver_segments && Array.isArray(tripRes.data.full_driver_segments) && tripRes.data.full_driver_segments.length > 0) {
+        setRoutesData(tripRes.data.full_driver_segments);
+      }
     } catch (error) {
       console.error('Error accepting shared ride:', error);
       toast.error(error.response?.data?.detail || 'Failed to accept ride');

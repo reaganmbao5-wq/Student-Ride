@@ -2311,6 +2311,7 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
     )
 
     background_tasks.add_task(broadcast_route_queue, driver["id"])
+    background_tasks.add_task(DriverTripRebuilder.rebuild, driver["id"], db)
     
     # Broadcast to all other drivers that this ride is no longer in the shared pool
     background_tasks.add_task(manager.broadcast_to_nearby_drivers, {
