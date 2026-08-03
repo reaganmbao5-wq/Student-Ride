@@ -215,18 +215,11 @@ export const RideMap = ({
           <SmoothDriverMarker position={driverLocation} heading={driverLocation.heading} />
         )}
 
-        {pickup && dropoff && (
-          routeGeometry ? (
-            <Polyline
-              positions={routeGeometry.map(coord => [coord[1], coord[0]])}
-              pathOptions={{ color: '#3B82F6', weight: 5, opacity: 0.8, lineCap: 'round', lineJoin: 'round' }}
-            />
-          ) : (
-            <Polyline
-              positions={[[pickup.lat, pickup.lng], [dropoff.lat, dropoff.lng]]}
-              pathOptions={{ color: '#D4AF37', weight: 4, opacity: 0.8, dashArray: '10, 10' }}
-            />
-          )
+        {pickup && dropoff && routeGeometry && routeGeometry.length > 2 && (
+          <Polyline
+            positions={routeGeometry}
+            pathOptions={{ color: '#3B82F6', weight: 5, opacity: 0.8, lineCap: 'round', lineJoin: 'round' }}
+          />
         )}
       </MapContainer>
     </div>

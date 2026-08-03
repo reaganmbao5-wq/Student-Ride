@@ -54,7 +54,8 @@ class RouteCache {
 
   setRoute(pickup, dropoff, geometry) {
     const key = this._generateKey(pickup, dropoff);
-    if (key && geometry) {
+    // STRICT GUARD: Never cache 2-point straight line fallbacks!
+    if (key && geometry && Array.isArray(geometry) && geometry.length > 2) {
       this.cache.set(key, geometry);
     }
   }

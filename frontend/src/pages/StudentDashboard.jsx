@@ -12,6 +12,7 @@ import { useWebSocket } from '../context/WebSocketContext';
 import { useGeolocation } from '../map/hooks/useGeolocation';
 import { useDriverDiscovery } from '../map/discovery/DriverDiscoveryEngine';
 import { toast } from 'sonner';
+import { routeCache } from '../map/route/RouteCache';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
@@ -47,10 +48,66 @@ const StudentDashboard = () => {
     fetchData();
   }, []);
 
+  // Automatic 4-Second Resync Loop: Guarantees status & route transitions update automatically without manual refresh
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchData();
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [ratingRideId, setRatingRideId] = useState(null);
   const [driverName, setDriverName] = useState('');
   const [carouselIndex, setCarouselIndex] = useState(0);
+  const [requestedRouteGeometry, setRequestedRouteGeometry] = useState(null);
+
+  // Fetch route geometry for requested (searching) state from cache or backend estimate (auto-retry straight lines)
+  useEffect(() => {
+    let retryInterval = null;
+
+    const fetchRequestedRoute = () => {
+      if (activeRide && activeRide.status === 'requested' && activeRide.pickup_location && activeRide.dropoff_location) {
+        const p = activeRide.pickup_location;
+        const d = activeRide.dropoff_location;
+        
+        const cached = routeCache.getRoute(p, d);
+        if (cached && cached.length > 2) {
+          setRequestedRouteGeometry(cached);
+          if (retryInterval) clearInterval(retryInterval);
+        } else {
+          api.post('/rides/estimate-fare', { pickup: p, dropoff: d })
+            .then(res => {
+              const geo = res.data?.geometry;
+              if (geo && geo.length > 0) {
+                setRequestedRouteGeometry(geo);
+                if (geo.length > 2) {
+                  routeCache.setRoute(p, d, geo);
+                  if (retryInterval) clearInterval(retryInterval);
+                }
+              }
+            })
+            .catch(err => console.error("Error fetching requested route geometry:", err));
+        }
+      }
+    };
+
+    fetchRequestedRoute();
+
+    // If geometry is missing or still a 2-point straight line, retry every 5 seconds until OSRM returns curve
+    retryInterval = setInterval(() => {
+      setRequestedRouteGeometry(prev => {
+        if (!prev || prev.length <= 2) {
+          fetchRequestedRoute();
+        }
+        return prev;
+      });
+    }, 5000);
+
+    return () => {
+      if (retryInterval) clearInterval(retryInterval);
+    };
+  }, [activeRide, api]);
 
   // Phase X.2: 6-second message rotation carousel
   useEffect(() => {
@@ -123,7 +180,14 @@ const StudentDashboard = () => {
         api.get('/rides/history?limit=5')
       ]);
 
-      setActiveRide(activeRes.data);
+      setActiveRide(prev => {
+        if (!activeRes.data) return null;
+        // Server status is authoritative — allow transition from requested -> accepted/arrived/ongoing
+        return {
+          ...activeRes.data,
+          passenger_briefing: activeRes.data.passenger_briefing || prev?.passenger_briefing
+        };
+      });
       
       // Restore Passenger Briefing instantly (Problem 01)
       if (activeRes.data?.passenger_briefing) {
@@ -192,7 +256,8 @@ const StudentDashboard = () => {
   // ACTIVE RIDE FULL-SCREEN VIEW
   // ==========================================
   if (activeRide) {
-    const isArrivedOrStarted = ['driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination', 'ongoing'].includes(activeRide.status);
+    const currentStatus = activeRide.status ? activeRide.status.toLowerCase() : '';
+    const isArrivedOrStarted = ['driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination', 'ongoing'].includes(currentStatus);
     
     // Debug overlay to verify websocket data
     const debugOverlay = (
@@ -217,9 +282,15 @@ const StudentDashboard = () => {
 
     const driversArray = assignedDriverMarker ? [assignedDriverMarker] : nearbyDrivers;
 
-    // 1.5 Intermediate & Target Stop Markers for Student Route Engine (Phase X.1 Passive Consumer Architecture)
-    const isBriefingForThisRide = passengerBriefing && 
-      (!passengerBriefing.ride_id || passengerBriefing.ride_id === activeRide?.id || passengerBriefing.ride_id === activeRide?._id);
+    // 1.5 Intermediate & Target Stop Markers for Student Route Engine
+    const currentRideId = activeRide?.id || activeRide?._id;
+    const isBriefingForThisRide = Boolean(
+      passengerBriefing && 
+      currentRideId &&
+      passengerBriefing.ride_id === currentRideId &&
+      activeRide?.status !== 'requested' &&
+      activeRide?.status !== 'cancelled'
+    );
 
     if (isBriefingForThisRide && Array.isArray(passengerBriefing.intermediate_stops)) {
       passengerBriefing.intermediate_stops.forEach((st, idx) => {
@@ -257,19 +328,19 @@ const StudentDashboard = () => {
     let bounds = [];
     if (driverPos) bounds.push([driverPos.lat, driverPos.lng]);
     
-    if (activeRide.status in ['accepted', 'driver_accepted', 'driver_en_route_to_pickup']) {
+    if (['accepted', 'driver_accepted', 'driver_en_route_to_pickup'].includes(currentStatus)) {
       // Driver is on the way to pickup: frame Driver + Pickup ALWAYS
       if (activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
-    } else if (activeRide.status === 'driver_arrived') {
+    } else if (currentStatus === 'driver_arrived') {
       // Driver arrived at pickup: frame Pickup + Destination to show the full route about to be driven
       if (activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
       if (activeRide.dropoff_location) bounds.push([activeRide.dropoff_location.lat, activeRide.dropoff_location.lng]);
-    } else if (activeRide.status in ['ongoing', 'ride_started', 'ride_in_progress', 'arriving_destination']) {
+    } else if (['ongoing', 'ride_started', 'ride_in_progress', 'arriving_destination'].includes(currentStatus)) {
       // Ride ongoing: frame Driver + Destination IF animating (edge case), else zoom in
       if (activeRide.dropoff_location && isRouteAnimating) {
         bounds.push([activeRide.dropoff_location.lat, activeRide.dropoff_location.lng]);
       }
-    } else if (activeRide.status === 'requested') {
+    } else if (currentStatus === 'requested') {
       // Searching for driver: frame Pickup + Destination
       // We don't frame nearby drivers here because their continuous movement causes the camera to constantly bounce/alternate zoom levels.
       // Framing pickup and destination is cleaner and more stable.
@@ -278,10 +349,13 @@ const StudentDashboard = () => {
     }
 
     // Final Bounds Logic
-    if (activeRide.status in ['accepted', 'driver_accepted', 'driver_en_route_to_pickup']) {
-      bounds = bounds.length > 1 ? bounds : null; // Keep bounds forever
-    } else if (['driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination', 'ongoing'].includes(activeRide.status)) {
-      bounds = (!isRouteAnimating) ? null : (bounds.length > 1 ? bounds : null);
+    // For en-route states (driver accepted / en_route), bound driver + pickup.
+    // For arrived/started/ongoing states, set bounds to null so FOLLOW_DRIVER mode
+    // centers directly on the driver without zooming out to fit all points.
+    if (['accepted', 'driver_accepted', 'driver_en_route_to_pickup'].includes(currentStatus)) {
+      bounds = bounds.length > 1 ? bounds : null; // Frame driver + pickup
+    } else if (['driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination', 'ongoing'].includes(currentStatus)) {
+      bounds = null; // Let FOLLOW_DRIVER lock directly onto the driver marker, no forced zoom-out
     } else {
       bounds = bounds.length > 1 ? bounds : null;
     }
@@ -311,18 +385,23 @@ const StudentDashboard = () => {
 
     const carouselMessages = (isBriefingForThisRide && passengerBriefing?.carousel_messages && passengerBriefing.carousel_messages.length > 0)
       ? passengerBriefing.carousel_messages
-      : (passengerBriefing?.briefing_text ? [passengerBriefing.briefing_text] : []);
+      : (isBriefingForThisRide && passengerBriefing?.briefing_text ? [passengerBriefing.briefing_text] : []);
 
-    let activeBriefingText = isPinnedState
-      ? (passengerBriefing?.briefing_text || getStatusText())
-      : (carouselMessages.length > 0 ? carouselMessages[carouselIndex % carouselMessages.length] : getStatusText());
+    let activeBriefingText = activeRide.status === 'requested'
+      ? getStatusText()
+      : (isPinnedState
+          ? (passengerBriefing?.briefing_text || getStatusText())
+          : (carouselMessages.length > 0 ? carouselMessages[carouselIndex % carouselMessages.length] : getStatusText()));
 
-    // Problem 01: Route State Tracking (Single Source of Truth)
+    // Route State Tracking
     let routeState = 'ROUTE UNAVAILABLE';
     let displayRouteGeometry = [];
     
-    if (activeRide && ['requested', 'cancelled'].includes(activeRide.status) === false) {
-      if (!passengerBriefing || passengerBriefing.ride_id !== activeRide.id) {
+    if (activeRide?.status === 'requested') {
+      displayRouteGeometry = requestedRouteGeometry || [];
+      routeState = displayRouteGeometry.length > 0 ? 'ROUTE AVAILABLE' : 'Loading route...';
+    } else if (activeRide && activeRide.status !== 'cancelled') {
+      if (!passengerBriefing || passengerBriefing.ride_id !== currentRideId) {
         routeState = 'Loading route...';
         activeBriefingText = 'Loading route...';
       } else if (isBriefingForThisRide && Array.isArray(passengerBriefing?.route_geometry) && passengerBriefing.route_geometry.length > 2) {

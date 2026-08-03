@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, WebSocket, WebSocketDisconnect, status, Query, File, UploadFile, Response
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, WebSocket, WebSocketDisconnect, status, Query, File, UploadFile, Response, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
@@ -242,6 +242,21 @@ ACTIVE_RIDE_STATES = [
 
 def get_active_ride_states():
     return ACTIVE_RIDE_STATES
+
+async def find_ride_by_id(ride_id: str):
+    or_clauses = [{"id": ride_id}, {"_id": ride_id}]
+    if ObjectId.is_valid(ride_id):
+        or_clauses.append({"_id": ObjectId(ride_id)})
+    return await db.rides.find_one({"$or": or_clauses})
+
+async def find_driver_ride(ride_id: str, driver_id: str):
+    or_clauses = [{"id": ride_id}, {"_id": ride_id}]
+    if ObjectId.is_valid(ride_id):
+        or_clauses.append({"_id": ObjectId(ride_id)})
+    return await db.rides.find_one({
+        "$or": or_clauses,
+        "driver_id": driver_id
+    })
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ==================== ENUMS ====================
@@ -1348,12 +1363,14 @@ async def delete_me(user: dict = Depends(get_current_user)):
     return {"status": "deleted"}
 
 async def broadcast_route_queue(driver_id: str):
-    trip = await DriverTripRebuilder.rebuild(driver_id, db)
+    trip = await db.driver_trips.find_one({"driver_id": driver_id})
+    if not trip:
+        logger.warning(f"CACHE MISS in broadcast_route_queue for driver {driver_id} - zero fallback execution as per Phase 01 rules")
     if trip:
         driver = await db.drivers.find_one({"id": driver_id})
         if driver:
             trip = await inject_etas_into_trip(trip, driver.get("current_location", {}))
-            await manager.send_personal_message({
+            background_tasks.add_task(manager.send_personal_message, {
                 "type": "routeQueueUpdate",
                 "route_queue": trip.get("route_queue", [])
             }, driver["user_id"])
@@ -1361,7 +1378,7 @@ async def broadcast_route_queue(driver_id: str):
         # Phase X: Broadcast passenger briefings to each active student
         passenger_briefings = trip.get("passenger_briefings", {})
         for student_id, briefing in passenger_briefings.items():
-            await manager.send_personal_message({
+            background_tasks.add_task(manager.send_personal_message, {
                 "type": "passenger_briefing_update",
                 "ride_id": briefing["ride_id"],
                 "briefing_text": briefing["briefing_text"],
@@ -1709,7 +1726,7 @@ async def accept_trip():
     # Broadcast to user
     ride["status"] = "accepted"
     ride["driver_id"] = driver["id"]
-    await manager.send_personal_message({
+    background_tasks.add_task(manager.send_personal_message, {
         "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
         "type": "ride_accepted",
         "ride": ride,
@@ -1797,7 +1814,7 @@ async def update_trip_status(req: UpdateTripStatusReq):
     }
     
     # Broadcast to user
-    await manager.send_personal_message({
+    background_tasks.add_task(manager.send_personal_message, {
         "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
         "type": event_type_map.get(req.status, "status_update"),
         "ride_id": req.ride_id,
@@ -2206,7 +2223,7 @@ def is_driver_eligible(driver: dict, active_state: dict, requested_mode: str = N
 
 
 @api_router.post("/rides/{ride_id}/accept", response_model=RideResponse)
-async def accept_ride(ride_id: str, user: dict = Depends(require_driver)):
+async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dict = Depends(require_driver)):
     driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
     if not driver:
         raise HTTPException(status_code=404, detail="Driver profile not found")
@@ -2278,37 +2295,43 @@ async def accept_ride(ride_id: str, user: dict = Depends(require_driver)):
         )
         
     # Phase 3.2.6.X: DTM & Event Bus Wiring
-    await DriverTripManager.handle_ride_accepted(driver["id"], ride_id, db)
-    await internal_bus.publish("ride_accepted", {"driver_id": driver["id"], "ride_id": ride_id})
+    background_tasks.add_task(DriverTripManager.handle_ride_accepted, driver["id"], ride_id, db)
+    background_tasks.add_task(internal_bus.publish, "ride_accepted", {"driver_id": driver["id"], "ride_id": ride_id})
     
     # Notify student
-    await manager.send_personal_message({
-        "ride_mode": ride_mode,
-        "type": "ride_accepted",
-        "ride": target_ride,
-        "driver": driver
-    }, target_ride["student_id"])
+    background_tasks.add_task(
+        manager.send_personal_message,
+        {
+            "ride_mode": ride_mode,
+            "type": "ride_accepted",
+            "ride": target_ride,
+            "driver": driver
+        },
+        target_ride["student_id"]
+    )
 
-    await broadcast_route_queue(driver["id"])
+    background_tasks.add_task(broadcast_route_queue, driver["id"])
     
     # Broadcast to all other drivers that this ride is no longer in the shared pool
-    await manager.broadcast_to_nearby_drivers({
+    background_tasks.add_task(manager.broadcast_to_nearby_drivers, {
         "type": "shared_ride_accepted_by_other",
         "ride_id": ride_id
     }, target_ride.get("pickup_location"))
     
     # Push notification
-    await notification_service.send(
-        user_id=ride["student_id"],
-        type="ride_accepted",
-        payload={
-            "title": "Ride Accepted",
-            "body": f"{user.get('name', 'Your driver')} is on the way!",
-            "url": f"/ride/{ride_id}",
-            "icon": "/logo192.png",
-            "badge": "/favicon-32x32.png"
-        }
-    )
+    async def send_accept_push(student_id, r_id, user_name):
+        await notification_service.send(
+            user_id=student_id,
+            type="ride_accepted",
+            payload={
+                "title": "Ride Accepted",
+                "body": f"{user_name} is on the way!",
+                "url": f"/ride/{r_id}",
+                "icon": "/logo192.png",
+                "badge": "/favicon-32x32.png"
+            }
+        )
+    background_tasks.add_task(send_accept_push, ride["student_id"], ride_id, user.get('name', 'Your driver'))
     
     # Add both to ride room
     manager.add_to_ride(ride_id, ride["student_id"])
@@ -2318,62 +2341,83 @@ async def accept_ride(ride_id: str, user: dict = Depends(require_driver)):
     return RideResponse(**ride)
 
 @api_router.post("/rides/{ride_id}/arrived")
-async def driver_arrived(ride_id: str, user: dict = Depends(require_driver)):
+async def driver_arrived(ride_id: str, background_tasks: BackgroundTasks, user: dict = Depends(require_driver)):
     driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
     if not driver:
          raise HTTPException(status_code=404, detail="Driver profile not found")
 
-    target_ride = await db.rides.find_one({"id": ride_id, "driver_id": driver["id"]})
+    target_ride = await find_driver_ride(ride_id, driver["id"])
     if not target_ride:
         raise HTTPException(status_code=404, detail="Ride not found or not assigned to you")
-    validate_ride_transition(target_ride.get("status"), RideStatus.DRIVER_ARRIVED.value)
+    
+    current_status = target_ride.get("status")
+    if current_status == RideStatus.DRIVER_ARRIVED.value:
+        logger.info(f"Ride {ride_id} is already in driver_arrived status. Returning 200 OK.")
+        return {"status": "arrived"}
 
-    # ATOMIC UPDATE
+    validate_ride_transition(current_status, RideStatus.DRIVER_ARRIVED.value)
+
+    actual_query = {"_id": target_ride["_id"], "status": current_status}
     ride = await db.rides.find_one_and_update(
-        {"id": ride_id, "driver_id": driver["id"], "status": target_ride["status"]},
+        actual_query,
         {"$set": {"status": RideStatus.DRIVER_ARRIVED.value}},
         return_document=True
     )
     if ride: ride.pop("_id", None)
     
     if not ride:
+        updated = await find_driver_ride(ride_id, driver["id"])
+        if updated and updated.get("status") == RideStatus.DRIVER_ARRIVED.value:
+            return {"status": "arrived"}
         raise HTTPException(status_code=400, detail="Invalid transition or double update.")
     
-    await manager.send_personal_message({
-        "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
-        "type": "driver_arrived",
-        "ride_id": ride_id
-    }, ride["student_id"])
-    
-    # Push notification
-    await notification_service.send(
-        user_id=ride["student_id"],
-        type="ride_arrived",
-        payload={
-            "title": "Driver Arrived",
-            "body": "Your driver has arrived at the pickup location.",
-            "url": f"/ride/{ride_id}",
-            "icon": "/logo192.png",
-            "badge": "/favicon-32x32.png"
-        }
+    background_tasks.add_task(
+        manager.send_personal_message,
+        {
+            "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value),
+            "type": "driver_arrived",
+            "ride_id": ride_id
+        },
+        ride["student_id"]
     )
+    
+    async def send_arrived_push(student_id, r_id):
+        await notification_service.send(
+            user_id=student_id,
+            type="ride_arrived",
+            payload={
+                "title": "Driver Arrived",
+                "body": "Your driver has arrived at the pickup location.",
+                "url": f"/ride/{r_id}",
+                "icon": "/logo192.png",
+                "badge": "/favicon-32x32.png"
+            }
+        )
+    background_tasks.add_task(send_arrived_push, ride["student_id"], ride_id)
+    background_tasks.add_task(DriverTripRebuilder.rebuild, driver["id"], db)
     
     return {"status": "arrived"}
 
 @api_router.post("/rides/{ride_id}/start")
-async def start_ride(ride_id: str, user: dict = Depends(require_driver)):
+async def start_ride(ride_id: str, background_tasks: BackgroundTasks, user: dict = Depends(require_driver)):
     driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
     if not driver:
          raise HTTPException(status_code=404, detail="Driver profile not found")
 
-    target_ride = await db.rides.find_one({"id": ride_id, "driver_id": driver["id"]})
+    target_ride = await find_driver_ride(ride_id, driver["id"])
     if not target_ride:
         raise HTTPException(status_code=404, detail="Ride not found or not assigned to you")
-    validate_ride_transition(target_ride.get("status"), RideStatus.RIDE_STARTED.value)
+        
+    current_status = target_ride.get("status")
+    if current_status in [RideStatus.RIDE_STARTED.value, "ongoing"]:
+        logger.info(f"Ride {ride_id} is already started. Returning 200 OK.")
+        return {"status": "ongoing"}
 
-    # ATOMIC UPDATE
+    validate_ride_transition(current_status, RideStatus.RIDE_STARTED.value)
+
+    actual_query = {"_id": target_ride["_id"], "status": current_status}
     ride = await db.rides.find_one_and_update(
-        {"id": ride_id, "driver_id": driver["id"], "status": target_ride["status"]},
+        actual_query,
         {"$set": {
             "status": RideStatus.RIDE_STARTED.value,
             "started_at": datetime.now(timezone.utc).isoformat()
@@ -2383,53 +2427,63 @@ async def start_ride(ride_id: str, user: dict = Depends(require_driver)):
     if ride: ride.pop("_id", None)
     
     if not ride:
-         raise HTTPException(status_code=400, detail="Invalid transition or double update.")
+        updated = await find_driver_ride(ride_id, driver["id"])
+        if updated and updated.get("status") in [RideStatus.RIDE_STARTED.value, "ongoing"]:
+            return {"status": "ongoing"}
+        raise HTTPException(status_code=400, detail="Invalid transition or double update.")
     
-    await manager.send_personal_message({
-        "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
-        "type": "ride_started",
-        "ride_id": ride_id
-    }, ride["student_id"])
+    background_tasks.add_task(
+        manager.send_personal_message,
+        {
+            "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value),
+            "type": "ride_started",
+            "ride_id": ride_id
+        },
+        ride["student_id"]
+    )
+    
+    background_tasks.add_task(DriverTripRebuilder.rebuild, driver["id"], db)
     
     return {"status": "ongoing"}
 
 @api_router.post("/rides/{ride_id}/complete")
-async def complete_ride(ride_id: str, user: dict = Depends(require_driver)):
+async def complete_ride(ride_id: str, background_tasks: BackgroundTasks, user: dict = Depends(require_driver)):
     driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
     if not driver:
          raise HTTPException(status_code=404, detail="Driver profile not found")
 
-    # FRAUD PROTECTION: Prevent instant completes (Lowered to 2s for testing)
-    ride_check = await db.rides.find_one({"id": ride_id})
-    if ride_check:
-        started_at_str = ride_check.get("started_at")
-        if started_at_str:
-            started_at = datetime.fromisoformat(started_at_str)
-            delta = (datetime.now(timezone.utc) - started_at).total_seconds()
-            logger.info(f"FRAUD CHECK: Ride {ride_id} started at {started_at_str}. Current delta: {delta}s")
-            if delta < 2:
-                raise HTTPException(status_code=400, detail="Fraud Protection: Cannot complete ride instantly.")
-
-    target_ride = await db.rides.find_one({"id": ride_id, "driver_id": driver["id"]})
+    target_ride = await find_driver_ride(ride_id, driver["id"])
     if not target_ride:
         raise HTTPException(status_code=404, detail="Ride not found or not assigned to you")
-        
-    validate_ride_transition(target_ride["status"], RideStatus.RIDE_COMPLETED.value)
+
+    current_status = target_ride.get("status")
+    if current_status == RideStatus.RIDE_COMPLETED.value:
+        logger.info(f"Ride {ride_id} is already completed. Returning 200 OK.")
+        return {"status": "completed", "fare": target_ride.get("fare", 0.0), "driver_earning": target_ride.get("driver_earning", 0.0)}
+
+    # FRAUD PROTECTION: Prevent instant completes (Lowered to 2s for testing)
+    started_at_str = target_ride.get("started_at")
+    if started_at_str:
+        started_at = datetime.fromisoformat(started_at_str)
+        delta = (datetime.now(timezone.utc) - started_at).total_seconds()
+        logger.info(f"FRAUD CHECK: Ride {ride_id} started at {started_at_str}. Current delta: {delta}s")
+        if delta < 2:
+            raise HTTPException(status_code=400, detail="Fraud Protection: Cannot complete ride instantly.")
+
+    validate_ride_transition(current_status, RideStatus.RIDE_COMPLETED.value)
     
-    # ATOMIC UPDATE: Only update if status matches target
-    # This prevents double completion and double deduction
+    actual_query = {"_id": target_ride["_id"], "status": current_status}
     ride = await db.rides.find_one_and_update(
-        {
-            "id": ride_id, 
-            "driver_id": driver["id"], 
-            "status": target_ride["status"]
-        },
+        actual_query,
         {"$set": {"status": RideStatus.RIDE_COMPLETED.value, "completed_at": datetime.now(timezone.utc).isoformat()}},
         return_document=True
     )
     if ride: ride.pop("_id", None)
     
     if not ride:
+        updated = await find_driver_ride(ride_id, driver["id"])
+        if updated and updated.get("status") == RideStatus.RIDE_COMPLETED.value:
+            return {"status": "completed", "fare": updated.get("fare", 0.0), "driver_earning": updated.get("driver_earning", 0.0)}
         raise HTTPException(status_code=400, detail="Invalid transition. Race condition prevented.")
     
     now = datetime.now(timezone.utc).isoformat()
@@ -2492,27 +2546,40 @@ async def complete_ride(ride_id: str, user: dict = Depends(require_driver)):
     }
     await db.driver_wallet_transactions.insert_one(transaction)
     
-    await manager.send_personal_message({
-        "type": "ride_completed",
-        "ride_id": ride_id,
-        "fare": ride["fare"]
-    }, ride["student_id"])
+    background_tasks.add_task(
+        manager.send_personal_message,
+        {
+            "type": "ride_completed",
+            "ride_id": ride_id,
+            "fare": ride["fare"]
+        },
+        ride["student_id"]
+    )
     
     # Notify Driver of Wallet Update and Ride Completion
-    await manager.send_personal_message({
-        "type": "wallet_updated",
-        "wallet_balance": new_balance,
-        "wallet_status": wallet_status
-    }, user["id"])
+    background_tasks.add_task(
+        manager.send_personal_message,
+        {
+            "type": "wallet_updated",
+            "wallet_balance": new_balance,
+            "wallet_status": wallet_status
+        },
+        user["id"]
+    )
     
-    await manager.send_personal_message({
-        "type": "ride_completed",
-        "ride_id": ride_id,
-        "fare": ride["fare"]
-    }, user["id"])
+    background_tasks.add_task(
+        manager.send_personal_message,
+        {
+            "type": "ride_completed",
+            "ride_id": ride_id,
+            "fare": ride["fare"]
+        },
+        user["id"]
+    )
     
-    manager.remove_from_ride(ride_id, ride["student_id"])
-    manager.remove_from_ride(ride_id, user["id"])
+    background_tasks.add_task(manager.remove_from_ride, ride_id, ride["student_id"])
+    background_tasks.add_task(manager.remove_from_ride, ride_id, user["id"])
+    background_tasks.add_task(DriverTripRebuilder.rebuild, driver["id"], db)
     
     return {"status": "completed", "fare": ride["fare"]}
 
@@ -2535,7 +2602,7 @@ async def driver_en_route(ride_id: str, user: dict = Depends(require_driver)):
     )
     if ride: ride.pop("_id", None)
     
-    await manager.send_personal_message({
+    background_tasks.add_task(manager.send_personal_message, {
         "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
         "type": "ride_state_changed",
         "state": RideStatus.DRIVER_EN_ROUTE_TO_PICKUP.value,
@@ -2561,7 +2628,7 @@ async def passenger_boarding(ride_id: str, user: dict = Depends(require_driver))
     )
     if ride: ride.pop("_id", None)
     
-    await manager.send_personal_message({
+    background_tasks.add_task(manager.send_personal_message, {
         "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
         "type": "ride_state_changed",
         "state": RideStatus.PASSENGER_BOARDING.value,
@@ -2587,7 +2654,7 @@ async def ride_in_progress(ride_id: str, user: dict = Depends(require_driver)):
     )
     if ride: ride.pop("_id", None)
     
-    await manager.send_personal_message({
+    background_tasks.add_task(manager.send_personal_message, {
         "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
         "type": "ride_state_changed",
         "state": RideStatus.RIDE_IN_PROGRESS.value,
@@ -2613,7 +2680,7 @@ async def arriving_destination(ride_id: str, user: dict = Depends(require_driver
     )
     if ride: ride.pop("_id", None)
     
-    await manager.send_personal_message({
+    background_tasks.add_task(manager.send_personal_message, {
         "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
         "type": "ride_state_changed",
         "state": RideStatus.ARRIVING_DESTINATION.value,
@@ -2623,7 +2690,7 @@ async def arriving_destination(ride_id: str, user: dict = Depends(require_driver
     return {"status": "arriving_destination"}
 
 @api_router.post("/rides/{ride_id}/cancel")
-async def cancel_ride(ride_id: str, user: dict = Depends(get_current_user)):
+async def cancel_ride(ride_id: str, background_tasks: BackgroundTasks, user: dict = Depends(get_current_user)):
     ride = await db.rides.find_one({"id": ride_id}, {"_id": 0})
     
     if not ride:
@@ -2710,21 +2777,25 @@ async def cancel_ride(ride_id: str, user: dict = Depends(get_current_user)):
         )
         
         # Notify the student
-        await manager.send_personal_message({
-            "type": "driver_cancelled_reassigning",
-            "ride_id": ride_id,
-            "message": "Your driver had to cancel. Finding a new driver..."
-        }, ride["student_id"])
+        background_tasks.add_task(
+            manager.send_personal_message,
+            {
+                "type": "driver_cancelled_reassigning",
+                "ride_id": ride_id,
+                "message": "Your driver had to cancel. Finding a new driver..."
+            },
+            ride["student_id"]
+        )
         
         # Broadcast to pool that ride is back available
         ride["status"] = RideStatus.REQUESTED.value
         ride["driver_id"] = None
-        await manager.broadcast_to_nearby_drivers({
+        background_tasks.add_task(manager.broadcast_to_nearby_drivers, {
             "type": "new_ride_request",
             "ride": ride
         }, ride.get("pickup_location"))
         
-        await broadcast_route_queue(ride["driver_id"])
+        background_tasks.add_task(broadcast_route_queue, ride["driver_id"])
         return {"status": "reassigned"}
     else:
         # Rider cancelled: terminate the ride completely
@@ -2735,19 +2806,23 @@ async def cancel_ride(ride_id: str, user: dict = Depends(get_current_user)):
         
         if ride.get("driver_id"):
             # Notify assigned driver
-            await manager.send_personal_message({
-                "type": "ride_cancelled",
-                "ride_id": ride_id
-            }, ride["driver_id"])
+            background_tasks.add_task(
+                manager.send_personal_message,
+                {
+                    "type": "ride_cancelled",
+                    "ride_id": ride_id
+                },
+                ride["driver_id"]
+            )
         else:
             # If no driver was assigned, broadcast cancellation to the shared pool
-            await manager.broadcast_to_nearby_drivers({
+            background_tasks.add_task(manager.broadcast_to_nearby_drivers, {
                 "type": "shared_ride_cancelled",
                 "ride_id": ride_id
             }, ride.get("pickup_location"))
             
         if ride.get("driver_id"):
-            await broadcast_route_queue(ride["driver_id"])
+            background_tasks.add_task(broadcast_route_queue, ride["driver_id"])
             
         return {"status": "cancelled"}
 
@@ -2839,7 +2914,7 @@ async def rate_ride(ride_id: str, rating_data: RatingCreate, user: dict = Depend
             # Notify driver via WebSocket
             driver = await db.drivers.find_one({"id": ride["driver_id"]}, {"_id": 0})
             if driver and "user_id" in driver:
-                await manager.send_personal_message({
+                background_tasks.add_task(manager.send_personal_message, {
         "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
                     "type": "rating_received",
                     "rating": rating_data.rating,
@@ -2897,11 +2972,10 @@ async def get_active_ride(user: dict = Depends(get_current_user)):
                     )
                 ride["driver"] = DriverResponse(**driver)
                 
-                # Phase 4 ETA Restoration on Refresh
+                # Phase 4 ETA Restoration on Refresh via MongoDB Cache (Phase 01)
                 if user["role"] == UserRole.STUDENT.value:
                     try:
-                        trip = await DriverTripRebuilder.rebuild(driver["id"], db)
-                        trip = await inject_etas_into_trip(trip, driver.get("current_location", {}))
+                        trip = await db.driver_trips.find_one({"driver_id": driver["id"]})
                         if trip and "passenger_briefings" in trip:
                             briefings = trip["passenger_briefings"]
                             # STRICT PASSENGER OWNERSHIP VERIFICATION
@@ -2911,8 +2985,10 @@ async def get_active_ride(user: dict = Depends(get_current_user)):
                                     ride["eta_seconds"] = my_briefing.get("eta_seconds")
                                     ride["eta_text"] = my_briefing.get("eta_text")
                                     ride["passenger_briefing"] = my_briefing
+                        elif not trip:
+                            logger.warning(f"CACHE MISS in GET /rides/active for driver {driver['id']} - zero fallback execution as per Phase 01 rules")
                     except Exception as e:
-                        logger.error(f"Failed to restore ETA on refresh: {e}")
+                        logger.error(f"Failed to restore cached briefing on refresh: {e}")
         
         return RideResponse(**ride)
     
@@ -3040,7 +3116,7 @@ async def send_message(message: MessageCreate, user: dict = Depends(get_current_
             recipient_id = driver["user_id"]
     
     if recipient_id:
-        await manager.send_personal_message({
+        background_tasks.add_task(manager.send_personal_message, {
         "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
             "type": "new_message",
             "message": msg
@@ -3704,7 +3780,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(None)):
                         }, {"_id": 0})
                         
                         if active_ride:
-                            await manager.send_personal_message({
+                            background_tasks.add_task(manager.send_personal_message, {
         "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
                                 "type": "driver_location",
                                 "location": data.get("location"),
@@ -3720,14 +3796,14 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(None)):
                             if trip:
                                 trip = await inject_etas_into_trip(trip, driver.get("current_location", {}))
                                 if "route_queue" in trip:
-                                    await manager.send_personal_message({
+                                    background_tasks.add_task(manager.send_personal_message, {
                                         "type": "route_queue_update",
                                         "queue": trip["route_queue"]
                                     }, user_id)
                                 
                                 passenger_briefings = trip.get("passenger_briefings", {})
                                 for s_id, briefing in passenger_briefings.items():
-                                    await manager.send_personal_message({
+                                    background_tasks.add_task(manager.send_personal_message, {
                                         "type": "passenger_briefing_update",
                                         "ride_id": briefing["ride_id"],
                                         "briefing_text": briefing["briefing_text"],

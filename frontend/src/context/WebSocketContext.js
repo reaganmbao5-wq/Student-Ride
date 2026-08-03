@@ -243,11 +243,16 @@ export const WebSocketProvider = ({ children }) => {
     setNewMessage(null);
   }, []);
 
+  const clearRouteQueueUpdate = useCallback(() => {
+    setRouteQueueUpdate(null);
+  }, []);
+
   const value = {
     isConnected,
     newRideRequest,
     removedSharedRideId,
     rideUpdate,
+    routeQueueUpdate,
     driverLocation,
     passengerBriefing,
     newMessage,
@@ -255,6 +260,7 @@ export const WebSocketProvider = ({ children }) => {
     requestHardRecalculation,
     clearRideRequest,
     clearRideUpdate,
+    clearRouteQueueUpdate,
     clearNewMessage,
     setPassengerBriefing
   };

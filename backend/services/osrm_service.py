@@ -14,19 +14,18 @@ async def get_route(pickup_lat: float, pickup_lng: float, drop_lat: float, drop_
         dict: {
             "distance_km": float,
             "duration_minutes": float,
-            "geometry": list[list[float]]  # [[lng, lat], ...]
+            "geometry": list[list[float]]  # [[lat, lng], ...]
         }
     """
     try:
-        # OSRM expects {lng},{lat};{lng},{lat}
         url = f"{OSRM_BASE_URL}/{pickup_lng},{pickup_lat};{drop_lng},{drop_lat}"
         params = {
             "overview": "full",
             "geometries": "geojson"
         }
         
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url, params=params, timeout=5.0)
+        async with httpx.AsyncClient(timeout=httpx.Timeout(3.0, connect=1.5)) as client:
+            response = await client.get(url, params=params)
             
             if response.status_code == 200:
                 data = response.json()
@@ -61,7 +60,7 @@ async def get_route(pickup_lat: float, pickup_lng: float, drop_lat: float, drop_
     return {
         "distance_km": dist,
         "duration_minutes": duration_minutes,
-        "geometry": [[pickup_lat, pickup_lng], [drop_lat, drop_lng]],
+        "geometry": [],
         "source": "haversine_fallback"
     }
 

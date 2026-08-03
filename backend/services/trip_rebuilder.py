@@ -2,7 +2,10 @@ import logging
 import math
 from typing import List, Dict, Any
 from datetime import datetime, timezone
-from backend.services.route_optimizer import RouteOptimizer
+try:
+    from backend.services.route_optimizer import RouteOptimizer
+except ImportError:
+    from services.route_optimizer import RouteOptimizer
 try:
     from backend.services.osrm_service import get_multi_waypoint_route
 except ImportError:
@@ -136,10 +139,13 @@ class DriverTripRebuilder:
                     logger.error(f"Leg route error {orig}->{dest}: {ex}")
                 
                 # HARDENING RULE: Only accept detailed road geometries (len > 2).
-                # Never accept 2-point straight lines. If OSRM fails, preserve previous valid segment.
+                # Never accept 2-point straight lines if detailed cached geometry is available.
+                # If OSRM fails and cache fails, fallback to straight line to guarantee segment array integrity.
                 if not leg_geo or len(leg_geo) <= 2:
                     if i < len(prev_driver_segments) and prev_driver_segments[i].get("geometry") and len(prev_driver_segments[i]["geometry"]) > 2:
                         leg_geo = prev_driver_segments[i]["geometry"]
+                    else:
+                        leg_geo = None
                 
                 if leg_geo and len(leg_geo) > 2:
                     full_driver_segments.append({
@@ -313,6 +319,7 @@ class DriverTripRebuilder:
                 "active_ride_ids": active_ride_ids,
                 "route_queue": route_queue,
                 "passenger_briefings": passenger_briefings,
+                "full_driver_segments": full_driver_segments,
                 "seat_reservations": [],
                 "capacity": {
                     "total": capacity,
