@@ -230,10 +230,16 @@ const StudentDashboard = () => {
     const driversArray = assignedDriverMarker ? [assignedDriverMarker] : nearbyDrivers;
 
     // 1.5 Intermediate & Target Stop Markers for Student Route Engine
-    const isBriefingValidForRide = activeRide && activeRide.status !== 'requested' && passengerBriefing && 
-      (!passengerBriefing.ride_id || passengerBriefing.ride_id === activeRide?.id || passengerBriefing.ride_id === activeRide?._id);
+    const currentRideId = activeRide?.id || activeRide?._id;
+    const isBriefingForThisRide = Boolean(
+      passengerBriefing && 
+      currentRideId &&
+      passengerBriefing.ride_id === currentRideId &&
+      activeRide?.status !== 'requested' &&
+      activeRide?.status !== 'cancelled'
+    );
 
-    if (isBriefingValidForRide && Array.isArray(passengerBriefing.intermediate_stops)) {
+    if (isBriefingForThisRide && Array.isArray(passengerBriefing.intermediate_stops)) {
       passengerBriefing.intermediate_stops.forEach((st, idx) => {
         if (st.lat && st.lng) {
           mapMarkers.push({
@@ -318,15 +324,15 @@ const StudentDashboard = () => {
       cameraMode = CAMERA_MODES.FOLLOW_DRIVER;
     }
 
-    const isPinnedState = isBriefingValidForRide && (
+    const isPinnedState = isBriefingForThisRide && (
       passengerBriefing?.is_pinned || 
       activeRide.status === 'driver_arrived' ||
       ['Driver has arrived at your pickup!', 'Driver has arrived at your destination!', 'Destination reached.', 'Thank you for riding with us.'].includes(passengerBriefing?.briefing_text)
     );
 
-    const carouselMessages = (isBriefingValidForRide && passengerBriefing?.carousel_messages && passengerBriefing.carousel_messages.length > 0)
+    const carouselMessages = (isBriefingForThisRide && passengerBriefing?.carousel_messages && passengerBriefing.carousel_messages.length > 0)
       ? passengerBriefing.carousel_messages
-      : (isBriefingValidForRide && passengerBriefing?.briefing_text ? [passengerBriefing.briefing_text] : []);
+      : (isBriefingForThisRide && passengerBriefing?.briefing_text ? [passengerBriefing.briefing_text] : []);
 
     let activeBriefingText = activeRide.status === 'requested'
       ? getStatusText()
@@ -339,7 +345,7 @@ const StudentDashboard = () => {
     let displayRouteGeometry = [];
     
     if (activeRide && ['requested', 'cancelled'].includes(activeRide.status) === false) {
-      if (!passengerBriefing || passengerBriefing.ride_id !== activeRide.id) {
+      if (!passengerBriefing || passengerBriefing.ride_id !== currentRideId) {
         routeState = 'Loading route...';
         activeBriefingText = 'Loading route...';
       } else if (isBriefingForThisRide && Array.isArray(passengerBriefing?.route_geometry) && passengerBriefing.route_geometry.length > 2) {
