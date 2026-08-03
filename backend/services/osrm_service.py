@@ -5,16 +5,6 @@ import time
 # Configure logging
 logger = logging.getLogger(__name__)
 
-OSRM_BASE_URL = "http://router.project-osrm.org/route/v1/driving"
-
-_osrm_client = None
-
-def get_osrm_client():
-    global _osrm_client
-    if _osrm_client is None or _osrm_client.is_closed:
-        _osrm_client = httpx.AsyncClient(timeout=httpx.Timeout(2.0, connect=1.0))
-    return _osrm_client
-
 async def get_route(pickup_lat: float, pickup_lng: float, drop_lat: float, drop_lng: float):
     """
     Calculates route using OSRM.
@@ -32,8 +22,8 @@ async def get_route(pickup_lat: float, pickup_lng: float, drop_lat: float, drop_
             "geometries": "geojson"
         }
         
-        client = get_osrm_client()
-        response = await client.get(url, params=params)
+        async with httpx.AsyncClient(timeout=httpx.Timeout(3.0, connect=1.5)) as client:
+            response = await client.get(url, params=params)
             
             if response.status_code == 200:
                 data = response.json()

@@ -62,29 +62,51 @@ const StudentDashboard = () => {
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [requestedRouteGeometry, setRequestedRouteGeometry] = useState(null);
 
-  // Fetch route geometry for requested (searching) state from cache or backend estimate
+  // Fetch route geometry for requested (searching) state from cache or backend estimate (auto-retry straight lines)
   useEffect(() => {
-    if (activeRide && activeRide.status === 'requested' && activeRide.pickup_location && activeRide.dropoff_location) {
-      const p = activeRide.pickup_location;
-      const d = activeRide.dropoff_location;
-      
-      const cached = routeCache.getRoute(p, d);
-      if (cached && cached.length > 0) {
-        setRequestedRouteGeometry(cached);
-      } else {
-        api.post('/rides/estimate-fare', { pickup: p, dropoff: d })
-          .then(res => {
-            const geo = res.data?.geometry;
-            if (geo && geo.length > 0) {
-              routeCache.setRoute(p, d, geo);
-              setRequestedRouteGeometry(geo);
-            }
-          })
-          .catch(err => console.error("Error fetching requested route geometry:", err));
+    let retryInterval = null;
+
+    const fetchRequestedRoute = () => {
+      if (activeRide && activeRide.status === 'requested' && activeRide.pickup_location && activeRide.dropoff_location) {
+        const p = activeRide.pickup_location;
+        const d = activeRide.dropoff_location;
+        
+        const cached = routeCache.getRoute(p, d);
+        if (cached && cached.length > 2) {
+          setRequestedRouteGeometry(cached);
+          if (retryInterval) clearInterval(retryInterval);
+        } else {
+          api.post('/rides/estimate-fare', { pickup: p, dropoff: d })
+            .then(res => {
+              const geo = res.data?.geometry;
+              if (geo && geo.length > 0) {
+                setRequestedRouteGeometry(geo);
+                if (geo.length > 2) {
+                  routeCache.setRoute(p, d, geo);
+                  if (retryInterval) clearInterval(retryInterval);
+                }
+              }
+            })
+            .catch(err => console.error("Error fetching requested route geometry:", err));
+        }
       }
-    } else {
-      setRequestedRouteGeometry(null);
-    }
+    };
+
+    fetchRequestedRoute();
+
+    // If geometry is missing or still a 2-point straight line, retry every 5 seconds until OSRM returns curve
+    retryInterval = setInterval(() => {
+      setRequestedRouteGeometry(prev => {
+        if (!prev || prev.length <= 2) {
+          fetchRequestedRoute();
+        }
+        return prev;
+      });
+    }, 5000);
+
+    return () => {
+      if (retryInterval) clearInterval(retryInterval);
+    };
   }, [activeRide, api]);
 
   // Phase X.2: 6-second message rotation carousel
