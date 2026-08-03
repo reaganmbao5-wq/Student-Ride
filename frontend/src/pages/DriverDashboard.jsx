@@ -464,15 +464,20 @@ const DriverDashboard = () => {
 
   const handleAcceptRide = async (rideId) => {
     const fakeAcceptedRide = pendingRides.find(r => getRideId(r) === rideId) || { id: rideId, status: 'accepted' };
-    setActiveRide(prev => prev || { ...fakeAcceptedRide, status: 'accepted' });
-    setActiveRides(prev => [...prev, { ...fakeAcceptedRide, status: 'accepted' }]);
+    const targetRide = { ...fakeAcceptedRide, status: 'accepted' };
+
+    setActiveRide(prev => prev || targetRide);
+    setActiveRides(prev => {
+      if (prev.some(r => getRideId(r) === rideId)) return prev;
+      return [...prev, targetRide];
+    });
     setPendingRides(prev => prev.filter(r => getRideId(r) !== rideId));
     clearRideRequest();
     toast.success('Ride accepted!');
 
     try {
       const response = await api.post(`/rides/${rideId}/accept`);
-      setActiveRide(response.data);
+      if (response.data) setActiveRide(response.data);
       const tripRes = await api.get('/rides/driver/trip');
       if (tripRes.data?.route_queue) setRouteQueue(tripRes.data.route_queue);
       if (tripRes.data?.full_driver_segments && Array.isArray(tripRes.data.full_driver_segments) && tripRes.data.full_driver_segments.length > 0) {
@@ -486,14 +491,21 @@ const DriverDashboard = () => {
   };
 
   const handleAcceptSharedRide = async (rideId) => {
-    const fakeAcceptedRide = masterSharedRidePool.find(r => getRideId(r) === rideId) || { id: rideId, status: 'accepted' };
-    setActiveRides(prev => [...prev, { ...fakeAcceptedRide, status: 'accepted' }]);
+    const fakeAcceptedRide = masterSharedRidePool.find(r => getRideId(r) === rideId) || pendingRides.find(r => getRideId(r) === rideId) || { id: rideId, status: 'accepted' };
+    const targetRide = { ...fakeAcceptedRide, status: 'accepted' };
+
+    setActiveRide(prev => prev || targetRide);
+    setActiveRides(prev => {
+      if (prev.some(r => getRideId(r) === rideId)) return prev;
+      return [...prev, targetRide];
+    });
     setMasterSharedRidePool(prev => prev.filter(r => getRideId(r) !== rideId));
     setPendingRides(prev => prev.filter(r => getRideId(r) !== rideId));
     toast.success('Shared ride accepted!');
     
     try {
-      await api.post(`/rides/${rideId}/accept`);
+      const response = await api.post(`/rides/${rideId}/accept`);
+      if (response.data) setActiveRide(response.data);
       const tripRes = await api.get('/rides/driver/trip');
       if (tripRes.data?.route_queue) setRouteQueue(tripRes.data.route_queue);
       if (tripRes.data?.full_driver_segments && Array.isArray(tripRes.data.full_driver_segments) && tripRes.data.full_driver_segments.length > 0) {
