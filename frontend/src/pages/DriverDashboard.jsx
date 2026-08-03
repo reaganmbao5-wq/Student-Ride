@@ -457,10 +457,10 @@ const DriverDashboard = () => {
   };
 
   const handleAcceptRide = async (rideId) => {
-    const fakeAcceptedRide = pendingRides.find(r => r.id === rideId) || { id: rideId, status: 'accepted' };
+    const fakeAcceptedRide = pendingRides.find(r => getRideId(r) === rideId) || { id: rideId, status: 'accepted' };
     setActiveRide(prev => prev || { ...fakeAcceptedRide, status: 'accepted' });
     setActiveRides(prev => [...prev, { ...fakeAcceptedRide, status: 'accepted' }]);
-    setPendingRides(prev => prev.filter(r => r.id !== rideId));
+    setPendingRides(prev => prev.filter(r => getRideId(r) !== rideId));
     clearRideRequest();
     toast.success('Ride accepted!');
 
@@ -476,10 +476,10 @@ const DriverDashboard = () => {
   };
 
   const handleAcceptSharedRide = async (rideId) => {
-    const fakeAcceptedRide = masterSharedRidePool.find(r => r.id === rideId) || { id: rideId, status: 'accepted' };
+    const fakeAcceptedRide = masterSharedRidePool.find(r => getRideId(r) === rideId) || { id: rideId, status: 'accepted' };
     setActiveRides(prev => [...prev, { ...fakeAcceptedRide, status: 'accepted' }]);
-    setMasterSharedRidePool(prev => prev.filter(r => r.id !== rideId));
-    setPendingRides(prev => prev.filter(r => r.id !== rideId));
+    setMasterSharedRidePool(prev => prev.filter(r => getRideId(r) !== rideId));
+    setPendingRides(prev => prev.filter(r => getRideId(r) !== rideId));
     toast.success('Shared ride accepted!');
     
     try {
