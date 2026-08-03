@@ -516,9 +516,8 @@ const DriverDashboard = () => {
     try {
       await api.post(`/rides/${targetId}/arrived`);
     } catch (error) {
-      console.error('Failed to update arrived status:', error);
-      toast.error('Failed to update status');
-      refreshActiveRide();
+      console.error('Failed to update arrived status asynchronously:', error);
+      // Keep optimistic UI locked on driver_arrived (zero-flicker policy)
     }
   };
 
@@ -537,9 +536,8 @@ const DriverDashboard = () => {
     try {
       await api.post(`/rides/${targetId}/start`);
     } catch (error) {
-      console.error('Failed to start ride:', error);
-      toast.error('Failed to start ride');
-      refreshActiveRide();
+      console.error('Failed to start ride asynchronously:', error);
+      // Keep optimistic UI locked on ongoing (zero-flicker policy)
     }
   };
 
@@ -560,12 +558,9 @@ const DriverDashboard = () => {
       if (response.data?.fare) {
         toast.success(`Fare: K${response.data.fare}`);
       }
-      refreshActiveRide();
       fetchData(); // Refresh earnings
     } catch (error) {
-      console.error('Failed to complete ride:', error);
-      toast.error('Failed to complete ride');
-      refreshActiveRide();
+      console.error('Failed to complete ride asynchronously:', error);
     }
   };
 

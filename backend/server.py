@@ -242,6 +242,21 @@ ACTIVE_RIDE_STATES = [
 
 def get_active_ride_states():
     return ACTIVE_RIDE_STATES
+
+async def find_ride_by_id(ride_id: str):
+    or_clauses = [{"id": ride_id}, {"_id": ride_id}]
+    if ObjectId.is_valid(ride_id):
+        or_clauses.append({"_id": ObjectId(ride_id)})
+    return await db.rides.find_one({"$or": or_clauses})
+
+async def find_driver_ride(ride_id: str, driver_id: str):
+    or_clauses = [{"id": ride_id}, {"_id": ride_id}]
+    if ObjectId.is_valid(ride_id):
+        or_clauses.append({"_id": ObjectId(ride_id)})
+    return await db.rides.find_one({
+        "$or": or_clauses,
+        "driver_id": driver_id
+    })
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ==================== ENUMS ====================
@@ -2331,33 +2346,41 @@ async def driver_arrived(ride_id: str, background_tasks: BackgroundTasks, user: 
     if not driver:
          raise HTTPException(status_code=404, detail="Driver profile not found")
 
-    target_ride = await db.rides.find_one({"id": ride_id, "driver_id": driver["id"]})
+    target_ride = await find_driver_ride(ride_id, driver["id"])
     if not target_ride:
         raise HTTPException(status_code=404, detail="Ride not found or not assigned to you")
-    validate_ride_transition(target_ride.get("status"), RideStatus.DRIVER_ARRIVED.value)
+    
+    current_status = target_ride.get("status")
+    if current_status == RideStatus.DRIVER_ARRIVED.value:
+        logger.info(f"Ride {ride_id} is already in driver_arrived status. Returning 200 OK.")
+        return {"status": "arrived"}
 
-    # ATOMIC UPDATE
+    validate_ride_transition(current_status, RideStatus.DRIVER_ARRIVED.value)
+
+    actual_query = {"_id": target_ride["_id"], "status": current_status}
     ride = await db.rides.find_one_and_update(
-        {"id": ride_id, "driver_id": driver["id"], "status": target_ride["status"]},
+        actual_query,
         {"$set": {"status": RideStatus.DRIVER_ARRIVED.value}},
         return_document=True
     )
     if ride: ride.pop("_id", None)
     
     if not ride:
+        updated = await find_driver_ride(ride_id, driver["id"])
+        if updated and updated.get("status") == RideStatus.DRIVER_ARRIVED.value:
+            return {"status": "arrived"}
         raise HTTPException(status_code=400, detail="Invalid transition or double update.")
     
     background_tasks.add_task(
         manager.send_personal_message,
         {
-            "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
+            "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value),
             "type": "driver_arrived",
             "ride_id": ride_id
         },
         ride["student_id"]
     )
     
-    # Push notification
     async def send_arrived_push(student_id, r_id):
         await notification_service.send(
             user_id=student_id,
@@ -2380,14 +2403,20 @@ async def start_ride(ride_id: str, background_tasks: BackgroundTasks, user: dict
     if not driver:
          raise HTTPException(status_code=404, detail="Driver profile not found")
 
-    target_ride = await db.rides.find_one({"id": ride_id, "driver_id": driver["id"]})
+    target_ride = await find_driver_ride(ride_id, driver["id"])
     if not target_ride:
         raise HTTPException(status_code=404, detail="Ride not found or not assigned to you")
-    validate_ride_transition(target_ride.get("status"), RideStatus.RIDE_STARTED.value)
+        
+    current_status = target_ride.get("status")
+    if current_status in [RideStatus.RIDE_STARTED.value, "ongoing"]:
+        logger.info(f"Ride {ride_id} is already started. Returning 200 OK.")
+        return {"status": "ongoing"}
 
-    # ATOMIC UPDATE
+    validate_ride_transition(current_status, RideStatus.RIDE_STARTED.value)
+
+    actual_query = {"_id": target_ride["_id"], "status": current_status}
     ride = await db.rides.find_one_and_update(
-        {"id": ride_id, "driver_id": driver["id"], "status": target_ride["status"]},
+        actual_query,
         {"$set": {
             "status": RideStatus.RIDE_STARTED.value,
             "started_at": datetime.now(timezone.utc).isoformat()
@@ -2397,12 +2426,15 @@ async def start_ride(ride_id: str, background_tasks: BackgroundTasks, user: dict
     if ride: ride.pop("_id", None)
     
     if not ride:
-         raise HTTPException(status_code=400, detail="Invalid transition or double update.")
+        updated = await find_driver_ride(ride_id, driver["id"])
+        if updated and updated.get("status") in [RideStatus.RIDE_STARTED.value, "ongoing"]:
+            return {"status": "ongoing"}
+        raise HTTPException(status_code=400, detail="Invalid transition or double update.")
     
     background_tasks.add_task(
         manager.send_personal_message,
         {
-            "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
+            "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value),
             "type": "ride_started",
             "ride_id": ride_id
         },
@@ -2417,37 +2449,38 @@ async def complete_ride(ride_id: str, background_tasks: BackgroundTasks, user: d
     if not driver:
          raise HTTPException(status_code=404, detail="Driver profile not found")
 
-    # FRAUD PROTECTION: Prevent instant completes (Lowered to 2s for testing)
-    ride_check = await db.rides.find_one({"id": ride_id})
-    if ride_check:
-        started_at_str = ride_check.get("started_at")
-        if started_at_str:
-            started_at = datetime.fromisoformat(started_at_str)
-            delta = (datetime.now(timezone.utc) - started_at).total_seconds()
-            logger.info(f"FRAUD CHECK: Ride {ride_id} started at {started_at_str}. Current delta: {delta}s")
-            if delta < 2:
-                raise HTTPException(status_code=400, detail="Fraud Protection: Cannot complete ride instantly.")
-
-    target_ride = await db.rides.find_one({"id": ride_id, "driver_id": driver["id"]})
+    target_ride = await find_driver_ride(ride_id, driver["id"])
     if not target_ride:
         raise HTTPException(status_code=404, detail="Ride not found or not assigned to you")
-        
-    validate_ride_transition(target_ride["status"], RideStatus.RIDE_COMPLETED.value)
+
+    current_status = target_ride.get("status")
+    if current_status == RideStatus.RIDE_COMPLETED.value:
+        logger.info(f"Ride {ride_id} is already completed. Returning 200 OK.")
+        return {"status": "completed", "fare": target_ride.get("fare", 0.0), "driver_earning": target_ride.get("driver_earning", 0.0)}
+
+    # FRAUD PROTECTION: Prevent instant completes (Lowered to 2s for testing)
+    started_at_str = target_ride.get("started_at")
+    if started_at_str:
+        started_at = datetime.fromisoformat(started_at_str)
+        delta = (datetime.now(timezone.utc) - started_at).total_seconds()
+        logger.info(f"FRAUD CHECK: Ride {ride_id} started at {started_at_str}. Current delta: {delta}s")
+        if delta < 2:
+            raise HTTPException(status_code=400, detail="Fraud Protection: Cannot complete ride instantly.")
+
+    validate_ride_transition(current_status, RideStatus.RIDE_COMPLETED.value)
     
-    # ATOMIC UPDATE: Only update if status matches target
-    # This prevents double completion and double deduction
+    actual_query = {"_id": target_ride["_id"], "status": current_status}
     ride = await db.rides.find_one_and_update(
-        {
-            "id": ride_id, 
-            "driver_id": driver["id"], 
-            "status": target_ride["status"]
-        },
+        actual_query,
         {"$set": {"status": RideStatus.RIDE_COMPLETED.value, "completed_at": datetime.now(timezone.utc).isoformat()}},
         return_document=True
     )
     if ride: ride.pop("_id", None)
     
     if not ride:
+        updated = await find_driver_ride(ride_id, driver["id"])
+        if updated and updated.get("status") == RideStatus.RIDE_COMPLETED.value:
+            return {"status": "completed", "fare": updated.get("fare", 0.0), "driver_earning": updated.get("driver_earning", 0.0)}
         raise HTTPException(status_code=400, detail="Invalid transition. Race condition prevented.")
     
     now = datetime.now(timezone.utc).isoformat()
