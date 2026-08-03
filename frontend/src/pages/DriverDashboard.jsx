@@ -435,36 +435,38 @@ const DriverDashboard = () => {
   };
 
   const handleAcceptRide = async (rideId) => {
+    const fakeAcceptedRide = pendingRides.find(r => r.id === rideId) || { id: rideId, status: 'accepted' };
+    setActiveRide(prev => prev || { ...fakeAcceptedRide, status: 'accepted' });
+    setActiveRides(prev => [...prev, { ...fakeAcceptedRide, status: 'accepted' }]);
+    setPendingRides(prev => prev.filter(r => r.id !== rideId));
+    clearRideRequest();
+    toast.success('Ride accepted!');
+
     try {
-      setLoading(true);
       const response = await api.post(`/rides/${rideId}/accept`);
       setActiveRide(response.data);
-      clearRideRequest();
-      toast.success('Ride accepted!');
+      refreshActiveRide();
     } catch (error) {
       console.error('Error accepting ride:', error);
       toast.error(error.response?.data?.detail || 'Failed to accept ride');
-    } finally {
-      setLoading(false);
+      fetchData(); // Rollback on error
     }
   };
 
   const handleAcceptSharedRide = async (rideId) => {
+    const fakeAcceptedRide = masterSharedRidePool.find(r => r.id === rideId) || { id: rideId, status: 'accepted' };
+    setActiveRides(prev => [...prev, { ...fakeAcceptedRide, status: 'accepted' }]);
+    setMasterSharedRidePool(prev => prev.filter(r => r.id !== rideId));
+    setPendingRides(prev => prev.filter(r => r.id !== rideId));
+    toast.success('Shared ride accepted!');
+    
     try {
-      setLoading(true);
-      const response = await api.post(`/rides/${rideId}/accept`);
-      setActiveRide(response.data);
-      setMasterSharedRidePool(prev => prev.filter(r => r.id !== rideId));
-      setPendingRides(prev => prev.filter(r => r.id !== rideId));
-      toast.success('Shared ride accepted!');
+      await api.post(`/rides/${rideId}/accept`);
       fetchData(); // Refresh everything safely
     } catch (error) {
       console.error('Error accepting shared ride:', error);
       toast.error(error.response?.data?.detail || 'Failed to accept ride');
-      setMasterSharedRidePool(prev => prev.filter(r => r.id !== rideId));
-      setPendingRides(prev => prev.filter(r => r.id !== rideId));
-    } finally {
-      setLoading(false);
+      fetchData(); // Revert on error
     }
   };
 
@@ -481,6 +483,9 @@ const DriverDashboard = () => {
     if (!targetRide) return;
     // Optimistic UI update: instantly reflect arrived status
     setActiveRides(prev => prev.map(r => r.id === targetRide.id ? { ...r, status: 'driver_arrived' } : r));
+    if (activeRide && activeRide.id === targetRide.id) {
+      setActiveRide(prev => ({ ...prev, status: 'driver_arrived' }));
+    }
     toast.success('Passenger notified of your arrival');
     try {
       await api.post(`/rides/${targetRide.id}/arrived`);
@@ -495,6 +500,9 @@ const DriverDashboard = () => {
     if (!targetRide) return;
     // Optimistic UI update: instantly reflect started status
     setActiveRides(prev => prev.map(r => r.id === targetRide.id ? { ...r, status: 'ongoing' } : r));
+    if (activeRide && activeRide.id === targetRide.id) {
+      setActiveRide(prev => ({ ...prev, status: 'ongoing' }));
+    }
     toast.success('Ride started');
     try {
       await api.post(`/rides/${targetRide.id}/start`);
@@ -527,6 +535,9 @@ const DriverDashboard = () => {
     if (!targetRide) return;
     // Optimistic UI update: filter out cancelled ride immediately
     setActiveRides(prev => prev.filter(r => r.id !== targetRide.id));
+    if (activeRide && activeRide.id === targetRide.id) {
+      setActiveRide(null);
+    }
     toast.info('Ride cancelled');
     try {
       await api.post(`/rides/${targetRide.id}/cancel`);
