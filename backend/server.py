@@ -2394,6 +2394,7 @@ async def driver_arrived(ride_id: str, background_tasks: BackgroundTasks, user: 
             }
         )
     background_tasks.add_task(send_arrived_push, ride["student_id"], ride_id)
+    background_tasks.add_task(DriverTripRebuilder.rebuild, driver["id"], db)
     
     return {"status": "arrived"}
 
@@ -2440,6 +2441,8 @@ async def start_ride(ride_id: str, background_tasks: BackgroundTasks, user: dict
         },
         ride["student_id"]
     )
+    
+    background_tasks.add_task(DriverTripRebuilder.rebuild, driver["id"], db)
     
     return {"status": "ongoing"}
 
@@ -2576,6 +2579,7 @@ async def complete_ride(ride_id: str, background_tasks: BackgroundTasks, user: d
     
     background_tasks.add_task(manager.remove_from_ride, ride_id, ride["student_id"])
     background_tasks.add_task(manager.remove_from_ride, ride_id, user["id"])
+    background_tasks.add_task(DriverTripRebuilder.rebuild, driver["id"], db)
     
     return {"status": "completed", "fare": ride["fare"]}
 
