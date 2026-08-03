@@ -51,6 +51,32 @@ const StudentDashboard = () => {
   const [ratingRideId, setRatingRideId] = useState(null);
   const [driverName, setDriverName] = useState('');
   const [carouselIndex, setCarouselIndex] = useState(0);
+  const [requestedRouteGeometry, setRequestedRouteGeometry] = useState(null);
+
+  // Fetch route geometry for requested (searching) state from cache or backend estimate
+  useEffect(() => {
+    if (activeRide && activeRide.status === 'requested' && activeRide.pickup_location && activeRide.dropoff_location) {
+      const p = activeRide.pickup_location;
+      const d = activeRide.dropoff_location;
+      
+      const cached = routeCache.getRoute(p, d);
+      if (cached && cached.length > 0) {
+        setRequestedRouteGeometry(cached);
+      } else {
+        api.post('/rides/estimate-fare', { pickup: p, dropoff: d })
+          .then(res => {
+            const geo = res.data?.geometry;
+            if (geo && geo.length > 0) {
+              routeCache.setRoute(p, d, geo);
+              setRequestedRouteGeometry(geo);
+            }
+          })
+          .catch(err => console.error("Error fetching requested route geometry:", err));
+      }
+    } else {
+      setRequestedRouteGeometry(null);
+    }
+  }, [activeRide, api]);
 
   // Phase X.2: 6-second message rotation carousel
   useEffect(() => {
@@ -340,11 +366,14 @@ const StudentDashboard = () => {
           ? (passengerBriefing?.briefing_text || getStatusText())
           : (carouselMessages.length > 0 ? carouselMessages[carouselIndex % carouselMessages.length] : getStatusText()));
 
-    // Problem 01: Route State Tracking (Single Source of Truth)
+    // Route State Tracking
     let routeState = 'ROUTE UNAVAILABLE';
     let displayRouteGeometry = [];
     
-    if (activeRide && ['requested', 'cancelled'].includes(activeRide.status) === false) {
+    if (activeRide?.status === 'requested') {
+      displayRouteGeometry = requestedRouteGeometry || [];
+      routeState = displayRouteGeometry.length > 0 ? 'ROUTE AVAILABLE' : 'Loading route...';
+    } else if (activeRide && activeRide.status !== 'cancelled') {
       if (!passengerBriefing || passengerBriefing.ride_id !== currentRideId) {
         routeState = 'Loading route...';
         activeBriefingText = 'Loading route...';
