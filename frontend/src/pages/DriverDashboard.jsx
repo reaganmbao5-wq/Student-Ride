@@ -140,8 +140,11 @@ const DriverDashboard = () => {
       setActiveRides(ridesArray);
       setActiveRide(ridesArray.length > 0 ? ridesArray[0] : null);
       setEarnings(earningsRes.data);
-      if (tripRes?.data?.route_queue) {
-        setRouteQueue(tripRes.data.route_queue);
+      if (tripRes?.data) {
+        if (tripRes.data.route_queue) setRouteQueue(tripRes.data.route_queue);
+        if (tripRes.data.full_driver_segments && Array.isArray(tripRes.data.full_driver_segments) && tripRes.data.full_driver_segments.length > 0) {
+          setRoutesData(tripRes.data.full_driver_segments);
+        }
       }
       
       const pendingRes = await api.get('/rides/pending');

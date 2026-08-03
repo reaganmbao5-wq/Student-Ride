@@ -145,9 +145,9 @@ class DriverTripRebuilder:
                     if i < len(prev_driver_segments) and prev_driver_segments[i].get("geometry") and len(prev_driver_segments[i]["geometry"]) > 2:
                         leg_geo = prev_driver_segments[i]["geometry"]
                     else:
-                        leg_geo = [[orig["lat"], orig["lng"]], [dest["lat"], dest["lng"]]]
+                        leg_geo = None
                 
-                if leg_geo:
+                if leg_geo and len(leg_geo) > 2:
                     full_driver_segments.append({
                         "rideId": f"seg-{i}",
                         "geometry": leg_geo,
