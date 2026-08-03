@@ -144,7 +144,6 @@ const DriverDashboard = () => {
       
       const pendingRes = await api.get('/rides/pending');
       if (pendingRes.data) {
-        // Pending rides list should show BOTH private and shared rides if no active ride
         const allPending = pendingRes.data || [];
         setPendingRides(allPending);
         setMasterSharedRidePool(allPending.filter(r => r.ride_mode === 'shared'));
@@ -163,11 +162,16 @@ const DriverDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [api, navigate, refreshDriverProfile, driverProfile]);
+  // NOTE: driverProfile intentionally excluded — including it causes fetchData to
+  // recreate on every profile update, triggering a stale GET that clobbers optimistic UI state.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [api, navigate, refreshDriverProfile]);
 
+  // Initial data load on mount — stable, runs exactly once
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Handle Capacitor App State (Background -> Foreground)
   useEffect(() => {
@@ -189,12 +193,16 @@ const DriverDashboard = () => {
     };
   }, [fetchData]);
 
+  // On WebSocket reconnect: only refresh the route queue and earnings.
+  // Do NOT call fetchData() here — it fetches activeRides from the backend and
+  // clobbers any optimistic UI state that was set before the reconnect.
   useEffect(() => {
     if (isConnected) {
-      console.log('WebSocket connected. Fetching latest state for driver...');
-      fetchData();
+      api.get('/rides/driver/trip')
+        .then(res => { if (res?.data?.route_queue) setRouteQueue(res.data.route_queue); })
+        .catch(() => {});
     }
-  }, [isConnected, fetchData]);
+  }, [isConnected, api]);
 
   useEffect(() => {
     if (!rideUpdate) return;
