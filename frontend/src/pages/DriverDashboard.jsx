@@ -489,10 +489,11 @@ const DriverDashboard = () => {
     toast.success('Passenger notified of your arrival');
     try {
       await api.post(`/rides/${targetRide.id}/arrived`);
-      refreshActiveRide();
+      // Do NOT call refreshActiveRide() here — it races with the backend cache and reverts the optimistic state.
+      // The WebSocket event will confirm the final state.
     } catch (error) {
       toast.error('Failed to update status');
-      refreshActiveRide();
+      refreshActiveRide(); // Rollback on error only
     }
   };
 
@@ -506,10 +507,11 @@ const DriverDashboard = () => {
     toast.success('Ride started');
     try {
       await api.post(`/rides/${targetRide.id}/start`);
-      refreshActiveRide();
+      // Do NOT call refreshActiveRide() here — it races with the backend cache and reverts the optimistic state.
+      // The WebSocket event will confirm the final state.
     } catch (error) {
       toast.error('Failed to start ride');
-      refreshActiveRide();
+      refreshActiveRide(); // Rollback on error only
     }
   };
 
