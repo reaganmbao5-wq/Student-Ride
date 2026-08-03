@@ -57,6 +57,8 @@ const DriverDashboard = () => {
     return 'UNKNOWN';
   };
 
+  const getRideId = (r) => r?.id || r?._id || (typeof r === 'string' ? r : null);
+
   // Calculate dynamically based on Passenger States
   const occupiedPassengers = useMemo(() => {
     return activeRides.reduce((sum, ride) => {
@@ -207,34 +209,46 @@ const DriverDashboard = () => {
   useEffect(() => {
     if (!rideUpdate) return;
     
-    if (rideUpdate.type === 'rating_received') {
+    if (rideUpdate.type === 'driver_arrived') {
+      setActiveRides(prev => prev.map(r => getRideId(r) === rideUpdate.ride_id ? { ...r, status: 'driver_arrived' } : r));
+      if (activeRide && getRideId(activeRide) === rideUpdate.ride_id) {
+        setActiveRide(prev => ({ ...prev, status: 'driver_arrived' }));
+      }
+      clearRideUpdate();
+    } else if (rideUpdate.type === 'started' || rideUpdate.type === 'ride_started') {
+      setActiveRides(prev => prev.map(r => getRideId(r) === rideUpdate.ride_id ? { ...r, status: 'ongoing' } : r));
+      if (activeRide && getRideId(activeRide) === rideUpdate.ride_id) {
+        setActiveRide(prev => ({ ...prev, status: 'ongoing' }));
+      }
+      clearRideUpdate();
+    } else if (rideUpdate.type === 'completed') {
+      setActiveRides(prev => prev.filter(r => getRideId(r) !== rideUpdate.ride_id));
+      if (activeRide && getRideId(activeRide) === rideUpdate.ride_id) {
+        setActiveRide(null);
+      }
+      clearRideUpdate();
+    } else if (rideUpdate.type === 'rating_received') {
       toast.success(`You received a ${rideUpdate.rating}-star rating!`);
       setEarnings(prev => ({ ...prev, rating: rideUpdate.new_average }));
       refreshDriverProfile();
       clearRideUpdate();
     } else if (rideUpdate.type === 'cancelled' || rideUpdate.type === 'declined') {
-        // Find if this was an active shared ride being cancelled by a specific student
-        if (activeRide && activeRide.ride_mode === 'shared' && rideUpdate.ride_id === activeRide.id && rideUpdate.student_id) {
-          // It's a partial cancellation (one student cancelled their seat)
-          // We don't remove the whole activeRide, we just refresh it
+        if (activeRide && activeRide.ride_mode === 'shared' && getRideId(activeRide) === rideUpdate.ride_id && rideUpdate.student_id) {
           refreshActiveRide();
           toast.info("A passenger cancelled their shared ride request.");
         } 
-        else if (activeRide?.id === rideUpdate.ride_id) {
-          // The entire ride was cancelled
+        else if (getRideId(activeRide) === rideUpdate.ride_id) {
           setActiveRide(null);
           setRouteGeometry(null);
           toast.info('Ride was cancelled');
         }
         
-        // Always remove from pending lists
-        setPendingRides(prev => prev.filter(r => r.id !== rideUpdate.ride_id));
-        setMasterSharedRidePool(prev => prev.filter(r => r.id !== rideUpdate.ride_id));
+        setPendingRides(prev => prev.filter(r => getRideId(r) !== rideUpdate.ride_id));
+        setMasterSharedRidePool(prev => prev.filter(r => getRideId(r) !== rideUpdate.ride_id));
         clearRideUpdate();
       } else if (rideUpdate.type === 'accepted') {
-        // Remove from pending rides once someone accepts it
-        setPendingRides(prev => prev.filter(r => r.id !== rideUpdate.ride?.id));
-        setMasterSharedRidePool(prev => prev.filter(r => r.id !== rideUpdate.ride?.id));
+        setPendingRides(prev => prev.filter(r => getRideId(r) !== getRideId(rideUpdate.ride)));
+        setMasterSharedRidePool(prev => prev.filter(r => getRideId(r) !== getRideId(rideUpdate.ride)));
         clearRideUpdate();
     }
   }, [rideUpdate, refreshDriverProfile, activeRide, refreshActiveRide, clearRideUpdate]);
@@ -489,53 +503,67 @@ const DriverDashboard = () => {
 
   const handleDriverArrived = async (targetRide = activeRide) => {
     if (!targetRide) return;
-    // Optimistic UI update: instantly reflect arrived status
-    setActiveRides(prev => prev.map(r => r.id === targetRide.id ? { ...r, status: 'driver_arrived' } : r));
-    if (activeRide && activeRide.id === targetRide.id) {
+    const targetId = getRideId(targetRide);
+    if (!targetId) return;
+
+    // Optimistic UI update: instantly reflect arrived status across activeRides & activeRide
+    setActiveRides(prev => prev.map(r => getRideId(r) === targetId ? { ...r, status: 'driver_arrived' } : r));
+    if (activeRide && getRideId(activeRide) === targetId) {
       setActiveRide(prev => ({ ...prev, status: 'driver_arrived' }));
     }
     toast.success('Passenger notified of your arrival');
+
     try {
-      await api.post(`/rides/${targetRide.id}/arrived`);
-      // Do NOT call refreshActiveRide() here — it races with the backend cache and reverts the optimistic state.
-      // The WebSocket event will confirm the final state.
+      await api.post(`/rides/${targetId}/arrived`);
     } catch (error) {
+      console.error('Failed to update arrived status:', error);
       toast.error('Failed to update status');
-      refreshActiveRide(); // Rollback on error only
+      refreshActiveRide();
     }
   };
 
   const handleStartRide = async (targetRide = activeRide) => {
     if (!targetRide) return;
+    const targetId = getRideId(targetRide);
+    if (!targetId) return;
+
     // Optimistic UI update: instantly reflect started status
-    setActiveRides(prev => prev.map(r => r.id === targetRide.id ? { ...r, status: 'ongoing' } : r));
-    if (activeRide && activeRide.id === targetRide.id) {
+    setActiveRides(prev => prev.map(r => getRideId(r) === targetId ? { ...r, status: 'ongoing' } : r));
+    if (activeRide && getRideId(activeRide) === targetId) {
       setActiveRide(prev => ({ ...prev, status: 'ongoing' }));
     }
     toast.success('Ride started');
+
     try {
-      await api.post(`/rides/${targetRide.id}/start`);
-      // Do NOT call refreshActiveRide() here — it races with the backend cache and reverts the optimistic state.
-      // The WebSocket event will confirm the final state.
+      await api.post(`/rides/${targetId}/start`);
     } catch (error) {
+      console.error('Failed to start ride:', error);
       toast.error('Failed to start ride');
-      refreshActiveRide(); // Rollback on error only
+      refreshActiveRide();
     }
   };
 
   const handleCompleteRide = async (targetRide = activeRide) => {
     if (!targetRide) return;
+    const targetId = getRideId(targetRide);
+    if (!targetId) return;
+
     // Optimistic UI update: instantly filter out completed ride
-    setActiveRides(prev => prev.filter(r => r.id !== targetRide.id));
+    setActiveRides(prev => prev.filter(r => getRideId(r) !== targetId));
+    if (activeRide && getRideId(activeRide) === targetId) {
+      setActiveRide(null);
+    }
     toast.success('Ride completed!');
+
     try {
-      const response = await api.post(`/rides/${targetRide.id}/complete`);
+      const response = await api.post(`/rides/${targetId}/complete`);
       if (response.data?.fare) {
         toast.success(`Fare: K${response.data.fare}`);
       }
       refreshActiveRide();
       fetchData(); // Refresh earnings
     } catch (error) {
+      console.error('Failed to complete ride:', error);
       toast.error('Failed to complete ride');
       refreshActiveRide();
     }
@@ -543,16 +571,21 @@ const DriverDashboard = () => {
 
   const handleCancelRide = async (targetRide = activeRide) => {
     if (!targetRide) return;
+    const targetId = getRideId(targetRide);
+    if (!targetId) return;
+
     // Optimistic UI update: filter out cancelled ride immediately
-    setActiveRides(prev => prev.filter(r => r.id !== targetRide.id));
-    if (activeRide && activeRide.id === targetRide.id) {
+    setActiveRides(prev => prev.filter(r => getRideId(r) !== targetId));
+    if (activeRide && getRideId(activeRide) === targetId) {
       setActiveRide(null);
     }
     toast.info('Ride cancelled');
+
     try {
-      await api.post(`/rides/${targetRide.id}/cancel`);
+      await api.post(`/rides/${targetId}/cancel`);
       refreshActiveRide();
     } catch (error) {
+      console.error('Failed to cancel ride:', error);
       toast.error('Failed to cancel ride');
       refreshActiveRide();
     }
