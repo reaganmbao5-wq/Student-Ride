@@ -111,14 +111,14 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
         animate={{ x: 0 }}
         exit={{ x: -350 }}
         transition={{ type: 'spring', stiffness: 250, damping: 30 }}
-        className="fixed top-28 left-4 z-50 w-full max-w-[305px] pointer-events-auto"
+        className="fixed top-20 left-4 z-50 w-full max-w-[305px] pointer-events-auto"
         onMouseEnter={resetTimer}
         onTouchStart={resetTimer}
       >
         <div className="flex flex-col items-center">
-          {/* Header / Minimizer Banner - Elevated z-50 and mb-12 margin to float cleanly ABOVE top card */}
+          {/* Layer 2: Header Minimizer Banner - Positioned in dedicated row ABOVE card deck with zero card overlap */}
           <motion.div 
-            className="relative z-50 bg-white/95 backdrop-blur-2xl border border-black/10 rounded-full px-4 py-2 mb-12 flex items-center gap-2 cursor-pointer shadow-2xl transition-all hover:bg-white hover:border-black/20"
+            className="relative z-50 bg-white/95 backdrop-blur-2xl border border-black/10 rounded-full px-4 py-2 mb-4 flex items-center gap-2 cursor-pointer shadow-2xl transition-all hover:bg-white hover:border-black/20"
             onClick={() => setIsMinimized(true)}
           >
             <span className="text-black text-xs font-bold tracking-wide flex items-center gap-1.5">
@@ -141,8 +141,8 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
             </span>
           </motion.div>
 
-        {/* Circular Queue Carousel Stack - Container sized h-[290px] to encapsulate full bottom card extent */}
-        <div className="relative w-full h-[290px] flex justify-center perspective-[1000px]">
+        {/* Layer 3: Card Deck Container - Starts cleanly BELOW banner */}
+        <div className="relative w-full h-[350px] flex justify-center perspective-[1000px]">
           {requests.length > 0 && (() => {
             const len = requests.length;
             let offsetsToRender = [];
@@ -166,18 +166,18 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
 
                   const isActive = offset === 0;
                   
-                  // Position mapping - Compact vertical offsets
-                  let y = 0, scale = 1, zIndex = 10;
+                  // Position mapping - Downward stacked offsets starting below banner
+                  let y = 65, scale = 1, zIndex = 10;
                   if (offset === -1) {
-                    y = -65; scale = 0.85; 
+                    y = 0; scale = 0.85; 
                     zIndex = direction.current === -1 ? 8 : 9;
                   } else if (offset === 1) {
-                    y = 150; scale = 0.85; 
+                    y = 215; scale = 0.85; 
                     zIndex = direction.current === 1 ? 8 : 9;
                   }
 
                   // Determine entry/exit animations based on swipe direction
-                  const initialY = direction.current === 1 ? 260 : -160;
+                  const initialY = direction.current === 1 ? 320 : -100;
 
                   const permanentKey = ((virtualIndex % 3) + 3) % 3;
 
@@ -212,7 +212,7 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
           })()}
         </div>
 
-        {/* Pagination Indicators - Elevated z-50 and mt-4 margin anchored 100% BELOW the lowest card edge */}
+        {/* Layer 4: Pagination Indicators - Positioned 100% BELOW lowest card edge */}
         {requests.length > 1 && (
           <motion.div 
             initial={{ opacity: 0 }}
