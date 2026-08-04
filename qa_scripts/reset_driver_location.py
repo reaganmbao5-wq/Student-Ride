@@ -16,13 +16,17 @@ async def main():
 
     driver_id = driver_user["id"]
 
-    # Starting test coordinates (Mulungushi University, Kabwe)
-    mulungushi_loc = {"lat": -14.4087, "lng": 28.2849, "heading": 0}
+    # Starting test coordinates (Mulungushi University, Kabwe Main Campus)
+    mulungushi_loc = {"lat": -14.294532832852411, "lng": 28.54970049702143, "heading": 0}
 
     # Reset driver location in db.drivers and db.driver_locations
     await db.drivers.update_one(
         {"user_id": driver_id},
-        {"$set": {"current_location": mulungushi_loc, "is_online": True}}
+        {"$set": {
+            "current_location": mulungushi_loc,
+            "location": {"type": "Point", "coordinates": [mulungushi_loc["lng"], mulungushi_loc["lat"]]},
+            "is_online": True
+        }}
     )
 
     await db.driver_locations.update_one(

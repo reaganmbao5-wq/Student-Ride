@@ -1060,20 +1060,31 @@ class ConnectionManager:
         max_distance_meters = radius_km * 1000
         logger.info(f"Broadcasting ride request to drivers near {location} within {radius_km}km")
         
-        online_drivers = await db.drivers.find({
-            "is_online": True,
-            "is_approved": True,
-            "wallet_status": {"$ne": WalletStatus.RESTRICTED.value},
-            "location": {
-                "$near": {
-                    "$geometry": {
-                        "type": "Point",
-                        "coordinates": [location["lng"], location["lat"]]
-                    },
-                    "$maxDistance": max_distance_meters
+        try:
+            online_drivers = await db.drivers.find({
+                "is_online": True,
+                "is_approved": True,
+                "wallet_status": {"$ne": WalletStatus.RESTRICTED.value},
+                "location": {
+                    "$near": {
+                        "$geometry": {
+                            "type": "Point",
+                            "coordinates": [location["lng"], location["lat"]]
+                        },
+                        "$maxDistance": max_distance_meters
+                    }
                 }
-            }
-        }, {"_id": 0}).to_list(20)
+            }, {"_id": 0}).to_list(20)
+        except Exception as geo_err:
+            logger.warning(f"Geospatial $near query failed: {geo_err}. Falling back to all online drivers.")
+            online_drivers = []
+
+        if not online_drivers:
+            online_drivers = await db.drivers.find({
+                "is_online": True,
+                "is_approved": True,
+                "wallet_status": {"$ne": WalletStatus.RESTRICTED.value}
+            }, {"_id": 0}).to_list(50)
         
         ride = message.get("ride", {})
         ride_mode = ride.get("ride_mode", "private")
