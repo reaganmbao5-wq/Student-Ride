@@ -38,9 +38,10 @@ export const RideCard = ({
 
   if (!request) return null;
 
-  const isShared = request.ride_mode === 'shared';
-  const studentName = request.student?.name || request.student_name || 'Guest';
-  const price = request.fare?.toFixed(2) || '0.00';
+  const isShared = !request.ride_mode || String(request.ride_mode).toLowerCase() === 'shared';
+  const studentName = request.student?.name || request.student_name || request.user_name || request.student?.full_name || request.user?.name || request.name || 'Student';
+  const rawFare = request.fare ?? request.calculated_fare ?? request.price ?? request.amount ?? 0;
+  const price = Number(rawFare).toFixed(2);
 
   const formatAddress = (address) => {
     if (!address) return 'Unknown Location';

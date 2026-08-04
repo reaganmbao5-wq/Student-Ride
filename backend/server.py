@@ -2153,22 +2153,21 @@ async def request_ride(ride_data: RideRequest, user: dict = Depends(get_current_
         }
         await db.rides.insert_one(ride)
         ride.pop("_id", None)
+        student_obj = {
+            "id": user["id"],
+            "email": user["email"],
+            "name": user["name"],
+            "phone": user.get("phone", ""),
+            "role": str(user.get("role", "student"))
+        }
+        ride["student"] = student_obj
+        ride["student_name"] = user["name"]
         
         # Broadcast to available drivers
         await manager.broadcast_to_nearby_drivers({
             "type": "new_ride_request",
             "ride": ride
         }, ride_data.pickup_location)
-        
-        ride["student"] = UserResponse(
-            id=user["id"],
-            email=user["email"],
-            name=user["name"],
-            phone=user["phone"],
-            role=UserRole(user["role"]),
-            created_at=user["created_at"],
-            is_active=user.get("is_active", True)
-        )
         
         return RideResponse(**ride)
     except Exception as e:
