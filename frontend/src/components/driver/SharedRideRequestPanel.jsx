@@ -145,13 +145,7 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
         <div className="relative w-full h-[350px] flex justify-center perspective-[1000px]">
           {requests.length > 0 && (() => {
             const len = requests.length;
-            let offsetsToRender = [];
-            
-            if (len === 1) {
-              offsetsToRender = [0]; // Single card
-            } else {
-              offsetsToRender = [-1, 0, 1]; // Persistent 3-slot rotation for seamless continuous swipes
-            }
+            const offsetsToRender = len === 1 ? [0] : [-1, 0, 1];
 
             return (
               <AnimatePresence mode="popLayout">
@@ -177,7 +171,7 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
                   // Determine entry/exit animations based on swipe direction
                   const initialY = direction.current === 1 ? 320 : -100;
 
-                  const permanentKey = len === 2 ? dataIndex : ((virtualIndex % 3) + 3) % 3;
+                  const permanentKey = ((virtualIndex % 3) + 3) % 3;
 
                   return (
                     <motion.div
