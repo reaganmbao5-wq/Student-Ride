@@ -111,7 +111,7 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
         animate={{ x: 0 }}
         exit={{ x: -350 }}
         transition={{ type: 'spring', stiffness: 250, damping: 30 }}
-        className="fixed top-32 left-4 z-50 w-full max-w-[305px] pointer-events-auto"
+        className="fixed top-24 left-4 z-50 w-full max-w-[305px] pointer-events-auto"
         onMouseEnter={resetTimer}
         onTouchStart={resetTimer}
       >
