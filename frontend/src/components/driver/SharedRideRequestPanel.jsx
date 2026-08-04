@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GlassCard, GoldButton } from '../common/GlassComponents';
+import { RideCard } from './RideCard';
 
-export const SharedRideRequestPanel = ({ requests, onAccept }) => {
+export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [position, setPosition] = useState(0); // Track infinite scrolling position
   const direction = useRef(0); // 1 for UP, -1 for DOWN
@@ -13,30 +13,16 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
     ? ((position % requests.length) + requests.length) % requests.length 
     : 0;
 
-  const formatAddress = (address) => {
-    if (!address) return 'Unknown Location';
-    const parts = address.split(',');
-    if (parts.length <= 2) return address;
-    return `${parts[0].trim()}, ${parts[1].trim()}`;
-  };
-
   const prevLengthRef = useRef(requests ? requests.length : 0);
 
   useEffect(() => {
-    const currentLength = requests ? requests.length : 0;
-    // 0 -> 1: Expand panel instantly when the first nearby request arrives
-    if (prevLengthRef.current === 0 && currentLength > 0) {
+    if (prevLengthRef.current === 0 && requests.length > 0) {
       setIsMinimized(false);
       resetTimer();
-    } 
-    // 1 -> 2 -> 3: If new requests arrive, update count badge and reset 10s reading timer
-    else if (currentLength > 0 && currentLength !== prevLengthRef.current) {
-      if (!isMinimized) {
-        resetTimer();
-      }
+    } else if (!isMinimized && requests.length > 0) {
+      resetTimer();
     }
-    
-    prevLengthRef.current = currentLength;
+    prevLengthRef.current = requests.length;
   }, [requests ? requests.length : 0, isMinimized]);
 
   const resetTimer = () => {
@@ -93,7 +79,6 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
   const handlePanEnd = (e, info) => {
     const threshold = 40; 
     
-    // Swipe LEFT -> Minimize
     if (info.offset.x < -threshold) {
       setIsMinimized(true);
       return;
@@ -126,14 +111,14 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
         animate={{ x: 0 }}
         exit={{ x: -350 }}
         transition={{ type: 'spring', stiffness: 250, damping: 30 }}
-        className="fixed top-24 left-4 z-50 w-full max-w-[280px] pointer-events-auto"
+        className="fixed top-24 left-4 z-50 w-full max-w-[320px] pointer-events-auto"
         onMouseEnter={resetTimer}
         onTouchStart={resetTimer}
       >
         <div className="flex flex-col items-center">
           {/* Header / Minimizer */}
           <motion.div 
-            className="relative z-20 bg-white/95 backdrop-blur-2xl border border-black/10 rounded-full px-4 py-2 mb-8 flex items-center gap-2 cursor-pointer shadow-2xl transition-all hover:bg-white hover:border-black/20"
+            className="relative z-20 bg-white/95 backdrop-blur-2xl border border-black/10 rounded-full px-4 py-2 mb-4 flex items-center gap-2 cursor-pointer shadow-2xl transition-all hover:bg-white hover:border-black/20"
             onClick={() => setIsMinimized(true)}
           >
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
@@ -158,7 +143,7 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
           </motion.div>
 
         {/* Circular Queue Carousel */}
-        <div className="relative w-full h-[250px] flex justify-center perspective-[1000px]">
+        <div className="relative w-full h-[260px] flex justify-center perspective-[1000px]">
           {requests.length > 0 && (() => {
             const len = requests.length;
             let offsetsToRender = [];
@@ -181,7 +166,6 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
                   if (!req) return null;
 
                   const isActive = offset === 0;
-                  const rideId = req.id || req._id;
                   
                   // Position mapping
                   let y = 0, scale = 1, zIndex = 10;
@@ -196,9 +180,11 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
                   // Determine entry/exit animations based on swipe direction
                   const initialY = direction.current === 1 ? 300 : -200;
 
+                  const permanentKey = ((virtualIndex % 3) + 3) % 3;
+
                   return (
                     <motion.div
-                      key={rideId || `req-${dataIndex}`}
+                      key={permanentKey}
                       initial={{ y: initialY, scale: 0.8 }}
                       animate={{ y, scale, opacity: 1 }}
                       transition={{ type: 'spring', stiffness: 120, damping: 20 }}
@@ -210,46 +196,15 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
                         transformOrigin: 'top center'
                       }}
                     >
-                      <GlassCard className="p-3.5 shadow-2xl border border-black/5 bg-white/80 backdrop-blur-2xl overflow-hidden relative">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="text-[11px] uppercase tracking-wider font-black text-zinc-500/80 mb-[-2px]">Student</p>
-                            <p className="text-xl font-heading font-extrabold text-black line-clamp-1 drop-shadow-sm">{req.student_name || req.passenger_name || 'Guest'}</p>
-                            <p className="text-[14px] text-zinc-900 mt-0.5 font-extrabold">K{req.fare ? Number(req.fare).toFixed(2) : '0.00'}</p>
-                          </div>
-                          <div className="bg-blue-500/10 text-blue-600 text-[10px] uppercase font-black tracking-widest px-2.5 py-1 rounded-full border border-blue-500/20 backdrop-blur-md">
-                            {req.ride_mode === 'shared' ? 'Shared' : 'Private'}
-                          </div>
-                        </div>
-
-                        {/* Collapsible Details */}
-                        <AnimatePresence initial={false}>
-                          {isActive && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: 'auto', opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.25, ease: 'easeOut' }}
-                              className="overflow-hidden"
-                            >
-                              <div className="space-y-3.5 mb-5 relative mt-4">
-                                <div className="absolute left-[4.5px] top-3 bottom-3 w-[1px] bg-gradient-to-b from-black/20 to-blue-500/30" />
-                                <div className="flex items-start gap-3.5 pointer-events-none">
-                                  <div className="w-2.5 h-2.5 rounded-full border-[2.5px] border-zinc-700 mt-1 shrink-0 bg-white z-10" />
-                                  <p className="text-[13px] text-zinc-800 font-bold leading-tight drop-shadow-sm pointer-events-auto">{formatAddress(req.pickup_location?.address)}</p>
-                                </div>
-                                <div className="flex items-start gap-3.5 pointer-events-none">
-                                  <div className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-1 shrink-0 shadow-[0_0_8px_rgba(59,130,246,0.5)] z-10" />
-                                  <p className="text-[13px] text-zinc-800 font-bold leading-tight drop-shadow-sm pointer-events-auto">{formatAddress(req.dropoff_location?.address)}</p>
-                                </div>
-                              </div>
-                              <GoldButton className="w-full py-2.5 text-[13px] font-extrabold shadow-none transition-transform active:scale-95" onClick={(e) => { e.stopPropagation(); onAccept(rideId); }}>
-                                Accept
-                              </GoldButton>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </GlassCard>
+                      <RideCard 
+                        mode="COMPACT"
+                        request={req}
+                        isActive={isActive}
+                        driverLocation={driverLocation}
+                        onAccept={(id) => {
+                          onAccept(id);
+                        }}
+                      />
                     </motion.div>
                   );
                 })}
@@ -279,5 +234,6 @@ export const SharedRideRequestPanel = ({ requests, onAccept }) => {
     </AnimatePresence>
   );
 };
+
 
 
