@@ -149,7 +149,7 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
             if (len === 1) {
               offsetsToRender = [0]; // Single card
             } else if (len === 2) {
-              offsetsToRender = direction.current === -1 ? [0, 1] : [-1, 0]; // Exactly 2 slots: zero duplicated third card
+              offsetsToRender = direction.current === 1 ? [0, 1] : [-1, 0]; // Swapped mapping: UP gesture -> UP animation, DOWN gesture -> DOWN animation
             } else {
               offsetsToRender = [-1, 0, 1]; // 3-card carousel rotation
             }
