@@ -597,48 +597,45 @@ const StudentDashboard = () => {
     <Layout>
       <div className="p-4 md:p-8 space-y-8 max-w-4xl mx-auto" data-testid="student-dashboard">
         {/* Top Greeting & Hero Ride Request Feature matching Mockup */}
-        <div className="flex flex-col items-center text-center space-y-6 pt-2 pb-2">
+        <div className="flex flex-col items-center text-center space-y-8 pt-2 pb-4">
           {/* Header Greeting */}
-          <div className="w-full text-left font-heading border-b border-zinc-200 dark:border-white/10 pb-4">
-            <h1 className="text-3xl md:text-4xl font-bold text-zinc-900 dark:text-white tracking-tight">
+          <div className="w-full text-left font-heading border-b border-border pb-4">
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight">
               Hello, {user?.name ? user.name.split(' ')[0] : 'Name'}
             </h1>
-            <p className="text-zinc-600 dark:text-neutral-400 text-sm md:text-base font-medium mt-1">
+            <p className="text-muted-foreground text-sm md:text-base font-medium mt-1">
               Where Would You Like To Go ?
             </p>
           </div>
 
           {/* Hero Top-Down Car with Yellow Circle Background */}
-          <div className="relative flex flex-col items-center justify-center w-full py-2 overflow-hidden">
-            {/* Yellow Circle Container - Flat background with zero surrounding glow/shadow */}
-            <div className="relative flex items-center justify-center my-4 w-full">
-              {/* Flat Yellow/Gold Circle (no shadow/glow surrounding it) */}
-              <div className="w-52 h-52 sm:w-60 sm:h-60 rounded-full bg-amber-400 border-0 shrink-0" />
-
-              {/* Top-Down Car Image - Bigger than circle & dead centered */}
+          <div className="relative flex flex-col items-center justify-center w-full pt-4 pb-2 overflow-hidden">
+            {/* Yellow/Gold Circle Background (Flat yellow, no outer glow/shadows) */}
+            <div className="relative w-56 h-56 md:w-64 md:h-64 rounded-full bg-amber-400 flex items-center justify-center my-2">
+              {/* Top-Down Transparent Car Image (Bigger than circle, overflowing circle boundary cleanly) */}
               <motion.img
                 src="/car_top.png"
                 alt="Ride Car"
                 initial={{ y: 0, scale: 1, opacity: 1 }}
                 animate={isDriving ? { y: 450, scale: 0.85, opacity: [1, 1, 0] } : { y: 0, scale: 1, opacity: 1 }}
                 transition={{ duration: 0.85, ease: [0.45, 0, 0.55, 1] }}
-                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-64 sm:w-72 md:w-80 h-auto drop-shadow-2xl z-10 select-none pointer-events-none"
+                className="w-60 md:w-72 h-auto drop-shadow-xl z-10 select-none pointer-events-none absolute"
               />
             </div>
 
-            {/* Subtext Guidance - Pushed down */}
-            <p className="text-xs md:text-sm text-zinc-600 dark:text-neutral-400 font-medium mt-10 md:mt-12 mb-4 max-w-xs">
+            {/* Subtext Guidance (Moved further down) */}
+            <p className="text-xs md:text-sm text-muted-foreground font-medium mt-10 md:mt-12 mb-4 max-w-xs">
               Tap to set your pickup point and destination
             </p>
 
-            {/* Request a Ride Button - Pushed down */}
+            {/* Request a Ride Button (Moved further down, zero overlap with car) */}
             <motion.button
               type="button"
               onClick={handleRequestRideClick}
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.96 }}
               disabled={isDriving}
-              className="w-full max-w-xs py-4 px-8 rounded-2xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-black font-heading font-bold text-base md:text-lg shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
+              className="w-full max-w-xs py-4 px-8 rounded-2xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-black font-heading font-bold text-base md:text-lg shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 z-20"
               data-testid="request-ride-card"
             >
               <span>Request a Ride</span>
