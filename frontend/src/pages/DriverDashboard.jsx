@@ -78,9 +78,10 @@ const DriverDashboard = () => {
     if (!driverProfile?.accepts_shared_rides) return [];
     if (availableSeats <= 0) return [];
     
-    // Return FULL synchronized pool (capacity decides ACCEPTANCE, not VISIBILITY)
-    return masterSharedRidePool;
-  }, [masterSharedRidePool, driverProfile?.accepts_shared_rides, availableSeats]);
+    // Filter out rides that are ALREADY active for this driver so accepted rides never remain on the side panel
+    const activeRideIds = new Set(activeRides.map(r => getRideId(r)));
+    return masterSharedRidePool.filter(r => !activeRideIds.has(getRideId(r)));
+  }, [masterSharedRidePool, activeRides, driverProfile?.accepts_shared_rides, availableSeats]);
   
   const [isSimulating, setIsSimulating] = useState(() => {
     return localStorage.getItem('driver_is_simulating') === 'true';
