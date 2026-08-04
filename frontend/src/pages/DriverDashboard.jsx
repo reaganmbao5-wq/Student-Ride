@@ -296,6 +296,8 @@ const DriverDashboard = () => {
   useEffect(() => {
     if (driverProfile) {
       setIsOnline(driverProfile.is_online);
+      const profileLoc = driverProfile.current_location?.lat ? driverProfile.current_location : { lat: -14.4087, lng: 28.2849, heading: 0 };
+      setCurrentLocation(prev => prev || profileLoc);
     }
   }, [driverProfile]);
 
@@ -715,9 +717,10 @@ const DriverDashboard = () => {
     const mapMarkers = [];
     const bounds = [];
     
-    // 1. Always show driver car
-    const driversArray = currentLocation ? [{ id: 'driver-self', latitude: currentLocation.lat, longitude: currentLocation.lng, heading: 0 }] : [];
-    if (currentLocation) bounds.push([currentLocation.lat, currentLocation.lng]);
+    // 1. Always show driver car (falling back to Mulungushi University if GPS is offline)
+    const activeDriverLoc = currentLocation || driverProfile?.current_location || { lat: -14.4087, lng: 28.2849, heading: 0 };
+    const driversArray = [{ id: 'driver-self', latitude: activeDriverLoc.lat, longitude: activeDriverLoc.lng, heading: activeDriverLoc.heading || 0 }];
+    if (activeDriverLoc?.lat) bounds.push([activeDriverLoc.lat, activeDriverLoc.lng]);
 
     // 2. Loop through routeQueue to show stops in optimized order
     routeQueue.forEach((stop, index) => {
