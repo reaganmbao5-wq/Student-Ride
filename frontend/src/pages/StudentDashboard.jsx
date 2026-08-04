@@ -57,6 +57,24 @@ const StudentDashboard = () => {
   const [expandedRideId, setExpandedRideId] = useState(null);
   const [rideToDelete, setRideToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [isDriving, setIsDriving] = useState(false);
+
+  const handleRequestRideClick = () => {
+    if (isDriving) return;
+    setIsDriving(true);
+
+    if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+      try {
+        navigator.vibrate([30, 40, 30, 40, 50]);
+      } catch (e) {
+        // ignore if not supported
+      }
+    }
+
+    setTimeout(() => {
+      navigate('/ride');
+    }, 850);
+  };
 
   const handleToggleExpand = (id) => {
     setExpandedRideId((prev) => (prev === id ? null : id));
@@ -577,31 +595,53 @@ const StudentDashboard = () => {
   // ==========================================
   return (
     <Layout>
-      <div className="p-4 md:p-8 space-y-6" data-testid="student-dashboard">
-        {/* Header */}
-        <div className="mb-8 font-heading">
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
-            Hello, {(user?.name || '').split(' ')[0] || 'Passenger'} ≡ƒæï
-          </h1>
-          <p className="text-muted-foreground">Where would you like to go today?</p>
-        </div>
-
-        <GlassCard
-          className="p-6 cursor-pointer group"
-          onClick={() => navigate('/ride')}
-          data-testid="request-ride-card"
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gold/10 flex items-center justify-center group-hover:bg-gold/20 transition-colors">
-              <Navigation className="w-7 h-7 text-gold" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-heading font-semibold text-foreground text-lg mb-1">Request a Ride</h3>
-              <p className="text-muted-foreground text-sm">Tap to set your pickup and destination</p>
-            </div>
-            <ChevronRight className="w-6 h-6 text-muted-foreground group-hover:text-gold transition-colors" />
+      <div className="p-4 md:p-8 space-y-8 max-w-4xl mx-auto" data-testid="student-dashboard">
+        {/* Top Greeting & Hero Ride Request Feature matching Mockup */}
+        <div className="flex flex-col items-center text-center space-y-6 pt-2 pb-2">
+          {/* Header Greeting */}
+          <div className="w-full text-left font-heading border-b border-white/10 pb-4">
+            <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight">
+              Hello, {user?.name ? user.name.split(' ')[0] : 'Name'}
+            </h1>
+            <p className="text-neutral-400 text-sm md:text-base font-medium mt-1">
+              Where Would You Like To Go ?
+            </p>
           </div>
-        </GlassCard>
+
+          {/* Hero Top-Down Car with Yellow Circle Background */}
+          <div className="relative flex flex-col items-center justify-center w-full py-4 overflow-hidden">
+            {/* Yellow/Gold Circle Background */}
+            <div className="relative w-64 h-64 md:w-72 md:h-72 rounded-full bg-amber-400 shadow-[0_0_80px_rgba(251,191,36,0.35)] flex items-center justify-center">
+              {/* Top-Down Transparent Car Image with Driving Downward Animation */}
+              <motion.img
+                src="/car_top.png"
+                alt="Ride Car"
+                initial={{ y: 0, scale: 1, opacity: 1 }}
+                animate={isDriving ? { y: 450, scale: 0.85, opacity: [1, 1, 0] } : { y: 0, scale: 1, opacity: 1 }}
+                transition={{ duration: 0.85, ease: [0.45, 0, 0.55, 1] }}
+                className="w-48 md:w-56 h-auto drop-shadow-2xl z-10 select-none pointer-events-none"
+              />
+            </div>
+
+            {/* Subtext Guidance */}
+            <p className="text-xs md:text-sm text-neutral-400 font-medium mt-6 mb-4 max-w-xs">
+              Tap to set your pickup point and destination
+            </p>
+
+            {/* Request a Ride Button */}
+            <motion.button
+              type="button"
+              onClick={handleRequestRideClick}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.96 }}
+              disabled={isDriving}
+              className="w-full max-w-xs py-4 px-8 rounded-2xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-black font-heading font-bold text-base md:text-lg shadow-xl shadow-amber-400/25 transition-all cursor-pointer flex items-center justify-center gap-2"
+              data-testid="request-ride-card"
+            >
+              <span>Request a Ride</span>
+            </motion.button>
+          </div>
+        </div>
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 gap-4">
