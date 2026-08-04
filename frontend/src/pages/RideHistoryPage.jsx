@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
 
-// Individual Collapsible & Swipable Ride Card Component
+// Individual Flat & Collapsible Swipable Ride Item
 const SwipableRideCard = ({ 
   ride, 
   isExpanded, 
@@ -33,44 +33,56 @@ const SwipableRideCard = ({
 
   const fareAmount = isDriver ? ride.driver_earning : ride.fare;
 
+  // Dynamically calculate opacity of red delete panel (0 when resting, 1 when swiped)
+  const deleteOpacity = Math.min(1, Math.abs(swipeOffset) / 35);
+
   return (
-    <div className="relative overflow-hidden rounded-3xl mb-4 group" data-testid={`history-ride-${ride.id}`}>
-      {/* Background Action: Slide Left to Delete */}
-      <div className="absolute inset-y-0 right-0 w-28 bg-red-600/90 backdrop-blur-md rounded-r-3xl flex items-center justify-center p-3 text-white transition-all z-0">
+    <div 
+      className="relative overflow-hidden border-b border-white/10 w-full transition-colors last:border-b-0" 
+      data-testid={`history-ride-${ride.id}`}
+    >
+      {/* Background Action: Revealed ONLY when sliding left */}
+      <motion.div 
+        animate={{ opacity: deleteOpacity }}
+        transition={{ duration: 0.15 }}
+        className={`absolute inset-y-0 right-0 w-24 bg-red-600 flex items-center justify-center z-0 ${
+          swipeOffset < -5 ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+      >
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
             onDeleteClick(ride);
           }}
-          className="flex flex-col items-center justify-center gap-1 w-full h-full text-white font-medium hover:scale-105 active:scale-95 transition-transform cursor-pointer"
+          className="flex flex-col items-center justify-center gap-1 w-full h-full text-white font-medium hover:bg-red-700 transition-colors cursor-pointer"
           title="Delete Ride"
         >
           <Trash2 className="w-5 h-5 text-white" />
-          <span className="text-[11px] font-bold uppercase tracking-wider">Delete</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider">Delete</span>
         </button>
-      </div>
+      </motion.div>
 
-      {/* Foreground Draggable & Collapsible Card */}
+      {/* Foreground Draggable & Flat Collapsible Card */}
       <motion.div
         drag="x"
-        dragConstraints={{ left: -95, right: 0 }}
+        dragConstraints={{ left: -90, right: 0 }}
         dragElastic={0.05}
         dragSnapToOrigin={swipeOffset === 0}
         onDragEnd={(e, info) => {
           if (info.offset.x < -35) {
-            setSwipeOffset(-95);
+            setSwipeOffset(-90);
           } else {
             setSwipeOffset(0);
           }
         }}
         animate={{ x: swipeOffset }}
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-        className={`relative z-10 bg-neutral-900/80 border ${
-          isExpanded ? 'border-gold/40 shadow-gold/5 ring-1 ring-gold/20' : 'border-white/10'
-        } backdrop-blur-xl rounded-3xl transition-all duration-300 hover:border-gold/30`}
+        className={`relative z-10 w-full bg-neutral-950/80 hover:bg-neutral-900/60 transition-colors ${
+          isExpanded ? 'bg-neutral-900/90' : ''
+        }`}
       >
-        {/* Card Header (Collapsed Summary View) */}
+        {/* Collapsed Item Summary View */}
         <div
           onClick={() => {
             if (swipeOffset < 0) {
@@ -79,11 +91,11 @@ const SwipableRideCard = ({
               onToggleExpand(ride.id);
             }
           }}
-          className="p-5 cursor-pointer select-none"
+          className="py-4 px-4 md:px-6 cursor-pointer select-none"
         >
-          <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center justify-between gap-2 mb-2.5">
             <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-gold/80" />
+              <Clock className="w-3.5 h-3.5 text-gold" />
               <span className="text-xs md:text-sm font-medium text-neutral-300">
                 {formattedDate}
               </span>
@@ -92,21 +104,21 @@ const SwipableRideCard = ({
             <div className="flex items-center gap-2">
               <StatusBadge status={ride.status} />
 
-              {/* Direct Delete Button for Desktop / Quick Access */}
+              {/* Direct Delete Trigger Icon for Desktop */}
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   onDeleteClick(ride);
                 }}
-                className="p-1.5 rounded-lg text-neutral-400 hover:text-red-400 hover:bg-red-500/10 transition-colors ml-1 cursor-pointer"
+                className="p-1 rounded text-neutral-400 hover:text-red-400 hover:bg-red-500/10 transition-colors ml-1 cursor-pointer"
                 title="Delete ride record"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
 
-              {/* Chevron Collapse/Expand Indicator */}
-              <div className="p-1 text-neutral-400 hover:text-white transition-colors">
+              {/* Chevron Collapse Indicator */}
+              <div className="p-0.5 text-neutral-400">
                 {isExpanded ? (
                   <ChevronUp className="w-5 h-5 text-gold" />
                 ) : (
@@ -117,38 +129,38 @@ const SwipableRideCard = ({
           </div>
 
           {/* Quick Route Preview */}
-          <div className="flex items-center gap-3 mb-3 text-sm">
+          <div className="flex items-center gap-3 mb-2.5 text-sm">
             <div className="flex items-center gap-1.5 flex-1 min-w-0">
-              <div className="w-2.5 h-2.5 rounded-full bg-gold shrink-0" />
+              <div className="w-2 h-2 rounded-full bg-gold shrink-0" />
               <span className="text-white font-medium truncate">
                 {ride.pickup_location?.address || 'Pickup Location'}
               </span>
             </div>
             <ArrowRight className="w-4 h-4 text-neutral-500 shrink-0" />
             <div className="flex items-center gap-1.5 flex-1 min-w-0">
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
+              <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
               <span className="text-white font-medium truncate">
                 {ride.dropoff_location?.address || 'Dropoff Location'}
               </span>
             </div>
           </div>
 
-          {/* Collapsed Footer (Fare & Driver Info) */}
-          <div className="flex items-center justify-between pt-3 border-t border-white/5">
+          {/* Collapsed Footer (Fare & Driver/Passenger Info) */}
+          <div className="flex items-center justify-between pt-2">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-gold">
-                <Car className="w-3.5 h-3.5" />
+              <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-gold">
+                <Car className="w-3 h-3" />
               </div>
-              <span className="text-xs text-neutral-300 font-medium truncate max-w-[140px] md:max-w-[200px]">
+              <span className="text-xs text-neutral-300 font-medium truncate max-w-[150px] md:max-w-[220px]">
                 {isDriver ? ride.student?.name || 'Passenger' : ride.driver?.user?.name || 'Driver'}
               </span>
             </div>
 
             <div className="flex items-center gap-3">
-              <span className={`text-[10px] uppercase font-bold px-2.5 py-0.5 rounded-full border ${
+              <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${
                 ride.ride_mode === 'shared' 
-                  ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' 
-                  : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                  ? 'bg-blue-500/10 text-blue-400' 
+                  : 'bg-amber-500/10 text-amber-400'
               }`}>
                 {ride.ride_mode === 'shared' ? 'Shared' : 'Private'}
               </span>
@@ -166,26 +178,26 @@ const SwipableRideCard = ({
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
-              className="overflow-hidden border-t border-white/10 bg-black/40"
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
+              className="overflow-hidden bg-black/40 border-t border-white/5"
             >
-              <div className="p-5 space-y-4">
+              <div className="py-4 px-4 md:px-6 space-y-4">
                 {/* Complete Route Timeline */}
-                <div className="bg-white/5 rounded-2xl p-4 border border-white/5 space-y-3">
+                <div className="bg-white/5 p-4 rounded-2xl space-y-3">
                   <h4 className="text-xs uppercase font-bold text-neutral-400 tracking-wider">
                     Full Trip Details
                   </h4>
-                  <div className="space-y-3 relative pl-4 border-l-2 border-dashed border-white/10">
+                  <div className="space-y-3 relative pl-4 border-l border-dashed border-white/20">
                     <div className="relative">
-                      <div className="absolute -left-[21px] top-1 w-3.5 h-3.5 rounded-full bg-gold ring-4 ring-gold/20" />
-                      <p className="text-xs text-neutral-400 font-medium">Pickup Location</p>
+                      <div className="absolute -left-[20px] top-1 w-3 h-3 rounded-full bg-gold" />
+                      <p className="text-[11px] text-neutral-400 font-medium">Pickup Location</p>
                       <p className="text-sm font-semibold text-white mt-0.5">
                         {ride.pickup_location?.address || 'N/A'}
                       </p>
                     </div>
                     <div className="relative pt-1">
-                      <div className="absolute -left-[21px] top-2 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20" />
-                      <p className="text-xs text-neutral-400 font-medium">Dropoff Location</p>
+                      <div className="absolute -left-[20px] top-2 w-3 h-3 rounded-full bg-emerald-500" />
+                      <p className="text-[11px] text-neutral-400 font-medium">Dropoff Location</p>
                       <p className="text-sm font-semibold text-white mt-0.5">
                         {ride.dropoff_location?.address || 'N/A'}
                       </p>
@@ -195,8 +207,8 @@ const SwipableRideCard = ({
 
                 {/* Driver / Ride Specs Grid */}
                 <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="bg-white/5 p-3 rounded-xl border border-white/5">
-                    <p className="text-neutral-400 mb-1">{isDriver ? 'Passenger' : 'Driver'}</p>
+                  <div className="bg-white/5 p-3.5 rounded-2xl">
+                    <p className="text-neutral-400 mb-1 text-[11px]">{isDriver ? 'Passenger' : 'Driver'}</p>
                     <p className="font-semibold text-white text-sm truncate">
                       {isDriver ? ride.student?.name || 'Passenger' : ride.driver?.user?.name || 'N/A'}
                     </p>
@@ -207,8 +219,8 @@ const SwipableRideCard = ({
                     )}
                   </div>
 
-                  <div className="bg-white/5 p-3 rounded-xl border border-white/5">
-                    <p className="text-neutral-400 mb-1">Distance & Fare</p>
+                  <div className="bg-white/5 p-3.5 rounded-2xl">
+                    <p className="text-neutral-400 mb-1 text-[11px]">Distance & Fare</p>
                     <p className="font-semibold text-white text-sm">
                       {ride.distance ? ride.distance.toFixed(1) : '0'} km
                     </p>
@@ -218,15 +230,14 @@ const SwipableRideCard = ({
                   </div>
                 </div>
 
-                {/* Rating & Action Section */}
-                <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                {/* Rating & Actions Bar */}
+                <div className="flex items-center justify-between pt-1">
                   {ride.status === 'completed' ? (
                     <div className="flex items-center gap-2">
                       {ride.rating ? (
-                        <div className="flex items-center gap-1.5 bg-gold/10 px-3 py-1.5 rounded-xl border border-gold/20">
+                        <div className="flex items-center gap-1.5 bg-gold/10 px-3 py-1.5 rounded-xl">
                           <Star className="w-4 h-4 text-gold fill-gold" />
-                          <span className="text-sm font-bold text-gold">{ride.rating}.0</span>
-                          <span className="text-xs text-neutral-400">Rating Given</span>
+                          <span className="text-xs font-bold text-gold">{ride.rating}.0 Rated</span>
                         </div>
                       ) : !isDriver ? (
                         <button
@@ -235,7 +246,7 @@ const SwipableRideCard = ({
                             e.stopPropagation();
                             onRateClick(ride);
                           }}
-                          className="px-4 py-2 rounded-xl bg-gold text-black font-semibold text-xs hover:bg-gold-dark transition-all cursor-pointer shadow-md shadow-gold/20"
+                          className="px-4 py-2 rounded-xl bg-gold text-black font-semibold text-xs hover:bg-gold-dark transition-all cursor-pointer shadow-md"
                         >
                           ★ Rate Driver
                         </button>
@@ -252,7 +263,7 @@ const SwipableRideCard = ({
                       e.stopPropagation();
                       onDeleteClick(ride);
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-colors cursor-pointer ml-auto"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-colors cursor-pointer ml-auto"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     Delete Record
@@ -392,7 +403,7 @@ const RideHistoryPage = () => {
               Tap a ride to expand full details • Slide left to delete
             </p>
           </div>
-          <div className="text-xs bg-white/5 border border-white/10 px-3.5 py-1.5 rounded-full text-neutral-300 self-start md:self-auto">
+          <div className="text-xs bg-white/5 border-0 px-3.5 py-1.5 rounded-full text-neutral-300 self-start md:self-auto">
             {filteredRides.length} {filteredRides.length === 1 ? 'trip' : 'trips'} listed
           </div>
         </div>
@@ -400,21 +411,21 @@ const RideHistoryPage = () => {
         {/* Stats Overview Dashboard Bar */}
         {rides.length > 0 && (
           <div className="grid grid-cols-3 gap-3">
-            <GlassCard className="p-4 flex flex-col justify-center" hover={false}>
+            <GlassCard className="p-4 flex flex-col justify-center border-0" hover={false}>
               <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">Total Trips</p>
               <p className="text-xl md:text-2xl font-bold font-heading text-white mt-1">
                 {stats.totalCount}
               </p>
             </GlassCard>
 
-            <GlassCard className="p-4 flex flex-col justify-center" hover={false}>
+            <GlassCard className="p-4 flex flex-col justify-center border-0" hover={false}>
               <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">Completed</p>
               <p className="text-xl md:text-2xl font-bold font-heading text-emerald-400 mt-1">
                 {stats.completedCount}
               </p>
             </GlassCard>
 
-            <GlassCard className="p-4 flex flex-col justify-center" hover={false}>
+            <GlassCard className="p-4 flex flex-col justify-center border-0" hover={false}>
               <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
                 {isDriver ? 'Earned' : 'Total Spent'}
               </p>
@@ -436,12 +447,12 @@ const RideHistoryPage = () => {
                 placeholder="Search by address or name..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl pl-10 pr-4 py-2.5 text-sm text-white placeholder:text-neutral-500 focus:outline-none focus:border-gold/50 transition-colors"
+                className="w-full bg-white/5 border-0 rounded-2xl pl-10 pr-4 py-2.5 text-sm text-white placeholder:text-neutral-500 focus:outline-none focus:ring-1 focus:ring-gold/50 transition-colors"
               />
             </div>
 
             {/* Filter Tabs */}
-            <div className="flex items-center gap-1 bg-white/5 border border-white/10 p-1 rounded-2xl shrink-0">
+            <div className="flex items-center gap-1 bg-white/5 border-0 p-1 rounded-2xl shrink-0">
               {['all', 'completed', 'cancelled'].map((tab) => (
                 <button
                   key={tab}
@@ -460,9 +471,9 @@ const RideHistoryPage = () => {
           </div>
         )}
 
-        {/* Rides List */}
+        {/* Rides List - Flat, edge-to-edge with line dividers */}
         {filteredRides.length > 0 ? (
-          <div className="space-y-3">
+          <div className="bg-neutral-950/90 rounded-3xl overflow-hidden shadow-2xl border-0">
             {filteredRides.map((ride) => (
               <SwipableRideCard
                 key={ride.id}
@@ -507,10 +518,10 @@ const RideHistoryPage = () => {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.92, y: 15 }}
                 transition={{ duration: 0.2 }}
-                className="w-full max-w-sm bg-neutral-900 border border-white/10 rounded-3xl p-6 shadow-2xl backdrop-blur-2xl relative space-y-4"
+                className="w-full max-w-sm bg-neutral-900 border-0 rounded-3xl p-6 shadow-2xl backdrop-blur-2xl relative space-y-4"
               >
                 <div className="flex flex-col items-center text-center space-y-3">
-                  <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500">
+                  <div className="w-14 h-14 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500">
                     <Trash2 className="w-7 h-7" />
                   </div>
 
@@ -522,7 +533,7 @@ const RideHistoryPage = () => {
                   </div>
 
                   {/* Ride Summary Preview */}
-                  <div className="w-full bg-white/5 border border-white/10 rounded-2xl p-3.5 text-left space-y-1.5 text-xs text-neutral-300">
+                  <div className="w-full bg-white/5 rounded-2xl p-3.5 text-left space-y-1.5 text-xs text-neutral-300">
                     <div className="flex justify-between font-semibold text-white">
                       <span>
                         {new Date(rideToDelete.created_at).toLocaleDateString('en-US', {
@@ -548,7 +559,7 @@ const RideHistoryPage = () => {
                     <button
                       type="button"
                       onClick={() => setRideToDelete(null)}
-                      className="flex-1 py-3 px-4 rounded-xl border border-white/10 text-white text-xs font-semibold hover:bg-white/5 transition-colors cursor-pointer"
+                      className="flex-1 py-3 px-4 rounded-xl border-0 bg-white/5 hover:bg-white/10 text-white text-xs font-semibold transition-colors cursor-pointer"
                     >
                       Cancel
                     </button>
