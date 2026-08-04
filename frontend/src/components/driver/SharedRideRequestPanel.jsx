@@ -1,18 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RideCard } from './RideCard';
+import { GlassCard, GoldButton } from '../common/GlassComponents';
 
-export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) => {
+export const SharedRideRequestPanel = ({ requests, onAccept }) => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [position, setPosition] = useState(0); // Track infinite scrolling position
-  const direction = useRef(0); // 1 for UP, -1 for DOWN
   const timeoutRef = useRef(null);
   
+  // Calculate the real array index from the infinite position
   const activeIndex = requests && requests.length > 0 
     ? ((position % requests.length) + requests.length) % requests.length 
     : 0;
 
+  // Address Truncator Helper
   const formatAddress = (address) => {
     if (!address) return 'Unknown Location';
     const parts = address.split(',');
@@ -20,17 +21,24 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
     return `${parts[0].trim()}, ${parts[1].trim()}`;
   };
 
-  const prevLengthRef = useRef(requests.length);
+  const prevLengthRef = useRef(requests ? requests.length : 0);
 
   useEffect(() => {
-    if (prevLengthRef.current === 0 && requests.length > 0) {
+    const currentLength = requests ? requests.length : 0;
+    // If we receive our very first request (0 -> 1), expand the panel immediately
+    if (prevLengthRef.current === 0 && currentLength > 0) {
       setIsMinimized(false);
       resetTimer();
-    } else if (!isMinimized && requests.length > 0) {
-      resetTimer();
+    } 
+    // If new requests arrive while panel is open or minimized, reset the 10s auto-minimize timer
+    else if (currentLength > 0 && currentLength !== prevLengthRef.current) {
+      if (!isMinimized) {
+        resetTimer();
+      }
     }
-    prevLengthRef.current = requests.length;
-  }, [requests.length, isMinimized]);
+    
+    prevLengthRef.current = currentLength;
+  }, [requests ? requests.length : 0, isMinimized]);
 
   const resetTimer = () => {
     clearTimeout(timeoutRef.current);
@@ -83,28 +91,24 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
     );
   }
 
+  // Handle Carousel Pan (Swipe detection without moving the card physically)
   const handlePanEnd = (e, info) => {
-    const threshold = 40; 
+    const threshold = 40; // Swipe threshold
     
+    // Swipe LEFT -> Minimize
     if (info.offset.x < -threshold) {
       setIsMinimized(true);
       return;
     }
 
-    // Swipe UP or RIGHT -> Next Student (Moves UP)
+    // Swipe UP or RIGHT -> Next Student (Endless)
     if (info.offset.y < -threshold || info.offset.x > threshold) {
-      if (requests.length > 1) {
-        direction.current = 1;
-        setPosition(prev => prev + 1);
-      }
+      if (requests.length > 1) setPosition(prev => prev + 1);
       resetTimer();
     } 
-    // Swipe DOWN -> Previous Student (Moves DOWN)
+    // Swipe DOWN -> Previous Student (Endless)
     else if (info.offset.y > threshold) {
-      if (requests.length > 1) {
-        direction.current = -1;
-        setPosition(prev => prev - 1);
-      }
+      if (requests.length > 1) setPosition(prev => prev - 1);
       resetTimer();
     } else {
       resetTimer();
@@ -114,10 +118,10 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
   return (
     <AnimatePresence>
       <motion.div 
-        initial={{ x: -350 }}
-        animate={{ x: 0 }}
-        exit={{ x: -350 }}
-        transition={{ type: 'spring', stiffness: 250, damping: 30 }}
+        initial={{ x: -150, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        exit={{ x: -150, opacity: 0 }}
+        transition={{ type: 'spring', stiffness: 350, damping: 35 }}
         className="fixed top-24 left-4 z-50 w-full max-w-[280px] pointer-events-auto"
         onMouseEnter={resetTimer}
         onTouchStart={resetTimer}
@@ -125,7 +129,9 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
         <div className="flex flex-col items-center">
           {/* Header / Minimizer */}
           <motion.div 
-            className="relative z-20 bg-white/95 backdrop-blur-2xl border border-black/10 rounded-full px-4 py-2 mb-28 flex items-center gap-2 cursor-pointer shadow-2xl transition-all hover:bg-white hover:border-black/20"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="bg-white/95 backdrop-blur-2xl border border-black/10 rounded-full px-4 py-2 mb-8 flex items-center gap-2 cursor-pointer shadow-2xl transition-all hover:bg-white hover:border-black/20"
             onClick={() => setIsMinimized(true)}
           >
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
@@ -149,75 +155,84 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
             </span>
           </motion.div>
 
-        {/* Circular Queue Carousel */}
-        <div className="relative w-full h-[250px] flex justify-center perspective-[1000px]">
+        {/* Infinite Stacked Card View with Swipe Gestures */}
+        <div className="relative w-full h-[230px] flex justify-center perspective-[1000px]">
           {requests.length > 0 && (() => {
             const len = requests.length;
-            let offsetsToRender = [];
-            
-            if (len === 1) {
-              offsetsToRender = [0]; // Single card
-            } else if (len === 2) {
-              offsetsToRender = [-1, 0]; // Top and Active
-            } else {
-              offsetsToRender = [-1, 0, 1]; // Top, Active, Bottom
-            }
+            const normalizedPos = ((position % len) + len) % len;
 
-            return (
-              <AnimatePresence mode="popLayout">
-                {offsetsToRender.map((offset) => {
-                  const virtualIndex = position + offset;
-                  const dataIndex = ((virtualIndex % len) + len) % len;
-                  const req = requests[dataIndex];
-                  
-                  if (!req) return null;
+            return requests.map((req, i) => {
+              // Calculate logical offset for infinite loop
+              let offset = (i - normalizedPos) % len;
+              if (offset < 0) offset += len;
 
-                  const isActive = offset === 0;
-                  
-                  // Position mapping
-                  let y = 0, scale = 1, zIndex = 10;
-                  if (offset === -1) {
-                    y = -90; scale = 0.85; 
-                    zIndex = direction.current === -1 ? 8 : 9;
-                  } else if (offset === 1) {
-                    y = 200; scale = 0.85; 
-                    zIndex = direction.current === 1 ? 8 : 9;
-                  }
+              // Force the offset to correctly represent Next, Prev, etc.
+              if (offset > 2 || (len === 3 && offset === 2)) {
+                offset -= len;
+              }
 
-                  // Determine entry/exit animations based on swipe direction
-                  const initialY = direction.current === 1 ? 300 : -200;
-                  const exitY = direction.current === 1 ? -200 : 300;
+              let y = 0, scale = 1, opacity = 1, zIndex = 10;
+              
+              if (offset === 0) {
+                 // Active
+                 y = 0; scale = 1; opacity = 1; zIndex = 10;
+              } else if (offset === 1) {
+                 // Behind 1
+                 y = 25; scale = 0.95; opacity = 1; zIndex = 9;
+              } else if (offset === 2) {
+                 // Behind 2
+                 y = 50; scale = 0.9; opacity = 1; zIndex = 8;
+              } else if (offset < 0) {
+                 // Previous (Swiped up, hiding at top)
+                 y = -60; scale = 0.95; opacity = 0; zIndex = 11;
+              } else {
+                 // Far behind
+                 y = 75; scale = 0.85; opacity = 0; zIndex = 7;
+              }
 
-                  const permanentKey = ((virtualIndex % 3) + 3) % 3;
+              const rideId = req.id || req._id;
 
-                  return (
-                    <motion.div
-                      key={permanentKey} // Permanent rotating deck of 3 cards, never destroyed!
-                      initial={{ y: initialY, scale: 0.8 }} // Plays only on very first mount
-                      animate={{ y, scale, opacity: 1 }} // Removed zIndex from animate to prevent delayed step transitions
-                      transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-                      className="absolute w-full top-0 touch-none will-change-transform"
-                      onPanEnd={isActive ? handlePanEnd : undefined}
-                      style={{ 
-                        zIndex, // Applied instantly on render
-                        pointerEvents: isActive ? 'auto' : 'none',
-                        transformOrigin: 'top center'
-                      }}
-                    >
-                      <RideCard 
-                        mode="COMPACT"
-                        request={req}
-                        isActive={isActive}
-                        driverLocation={driverLocation}
-                        onAccept={(id) => {
-                          onAccept(id);
-                        }}
-                      />
-                    </motion.div>
-                  );
-                })}
-              </AnimatePresence>
-            );
+              return (
+                <motion.div
+                  key={rideId || `req-${i}`}
+                  initial={false}
+                  animate={{ y, scale, opacity, zIndex }}
+                  transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                  className="absolute w-full top-0 touch-none will-change-transform"
+                  onPanEnd={offset === 0 ? handlePanEnd : undefined}
+                  style={{ 
+                    pointerEvents: offset === 0 ? 'auto' : 'none',
+                    transformOrigin: 'top center'
+                  }}
+                >
+                  <GlassCard className="p-3.5 shadow-2xl border border-black/5 bg-white/80 backdrop-blur-2xl overflow-hidden relative">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <p className="text-lg font-heading font-extrabold text-black line-clamp-1 drop-shadow-sm">{req.student_name || req.passenger_name || 'Student'}</p>
+                        <p className="text-[14px] text-zinc-900 mt-0.5 font-extrabold">K{req.fare ? Number(req.fare).toFixed(2) : '0.00'}</p>
+                      </div>
+                      <div className="bg-blue-500/10 text-blue-600 text-[10px] uppercase font-black tracking-widest px-2.5 py-1 rounded-full border border-blue-500/20 backdrop-blur-md">
+                        {req.ride_mode === 'shared' ? 'Shared' : 'Private'}
+                      </div>
+                    </div>
+                    <div className="space-y-3.5 mb-5 relative">
+                      <div className="absolute left-[4.5px] top-3 bottom-3 w-[1px] bg-gradient-to-b from-black/20 to-blue-500/30" />
+                      <div className="flex items-start gap-3.5 pointer-events-none">
+                        <div className="w-2.5 h-2.5 rounded-full border-[2.5px] border-zinc-700 mt-1 shrink-0 bg-white z-10" />
+                        <p className="text-[13px] text-zinc-800 font-bold leading-tight drop-shadow-sm pointer-events-auto">{formatAddress(req.pickup_location?.address)}</p>
+                      </div>
+                      <div className="flex items-start gap-3.5 pointer-events-none">
+                        <div className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-1 shrink-0 shadow-[0_0_8px_rgba(59,130,246,0.5)] z-10" />
+                        <p className="text-[13px] text-zinc-800 font-bold leading-tight drop-shadow-sm pointer-events-auto">{formatAddress(req.dropoff_location?.address)}</p>
+                      </div>
+                    </div>
+                    <GoldButton className="w-full py-2.5 text-[13px] font-extrabold shadow-[0_4px_15px_rgba(255,215,0,0.25)] transition-transform active:scale-95" onClick={(e) => { e.stopPropagation(); onAccept(rideId); }}>
+                      Accept
+                    </GoldButton>
+                  </GlassCard>
+                </motion.div>
+              );
+            });
           })()}
         </div>
 
@@ -226,7 +241,7 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex items-center gap-1.5 mt-8 bg-white/90 backdrop-blur-xl px-3 py-1.5 rounded-full border border-black/5 shadow-lg"
+            className="flex items-center gap-1.5 mt-6 bg-white/90 backdrop-blur-xl px-3 py-1.5 rounded-full border border-black/5 shadow-lg"
           >
             {requests.map((_, i) => (
               <div 
@@ -242,3 +257,4 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
     </AnimatePresence>
   );
 };
+
