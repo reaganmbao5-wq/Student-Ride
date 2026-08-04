@@ -149,10 +149,8 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
             
             if (len === 1) {
               offsetsToRender = [0]; // Single card
-            } else if (len === 2) {
-              offsetsToRender = direction.current === -1 ? [0, 1] : [-1, 0]; // Dynamic 2-card reverse animation mapping
             } else {
-              offsetsToRender = [-1, 0, 1]; // Top, Active, Bottom
+              offsetsToRender = [-1, 0, 1]; // Persistent 3-slot rotation for seamless continuous swipes
             }
 
             return (
@@ -179,7 +177,7 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
                   // Determine entry/exit animations based on swipe direction
                   const initialY = direction.current === 1 ? 320 : -100;
 
-                  const permanentKey = ((virtualIndex % 3) + 3) % 3;
+                  const permanentKey = len === 2 ? dataIndex : ((virtualIndex % 3) + 3) % 3;
 
                   return (
                     <motion.div
