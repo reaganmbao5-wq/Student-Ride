@@ -296,7 +296,7 @@ const DriverDashboard = () => {
   useEffect(() => {
     if (driverProfile) {
       setIsOnline(driverProfile.is_online);
-      const profileLoc = driverProfile.current_location?.lat ? driverProfile.current_location : { lat: -14.4087, lng: 28.2849, heading: 0 };
+      const profileLoc = driverProfile.current_location?.lat ? driverProfile.current_location : { lat: -14.294532832852411, lng: 28.54970049702143, heading: 0 };
       setCurrentLocation(prev => prev || profileLoc);
     }
   }, [driverProfile]);
@@ -718,7 +718,7 @@ const DriverDashboard = () => {
     const bounds = [];
     
     // 1. Always show driver car (falling back to Mulungushi University if GPS is offline)
-    const activeDriverLoc = currentLocation || driverProfile?.current_location || { lat: -14.4087, lng: 28.2849, heading: 0 };
+    const activeDriverLoc = currentLocation || driverProfile?.current_location || { lat: -14.294532832852411, lng: 28.54970049702143, heading: 0 };
     const driversArray = [{ id: 'driver-self', latitude: activeDriverLoc.lat, longitude: activeDriverLoc.lng, heading: activeDriverLoc.heading || 0 }];
     if (activeDriverLoc?.lat) bounds.push([activeDriverLoc.lat, activeDriverLoc.lng]);
 
@@ -802,7 +802,7 @@ const DriverDashboard = () => {
           )}
 
           <PlatformMap
-            center={currentLocation || { lat: -14.4087, lng: 28.2849 }}
+            center={currentLocation || { lat: -14.294532832852411, lng: 28.54970049702143 }}
             bounds={bounds.length > 1 ? bounds : null}
             zoom={16}
             markers={mapMarkers}
