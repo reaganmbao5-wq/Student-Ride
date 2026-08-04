@@ -111,7 +111,7 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
         animate={{ x: 0 }}
         exit={{ x: -350 }}
         transition={{ type: 'spring', stiffness: 250, damping: 30 }}
-        className="fixed top-20 left-4 z-50 w-full max-w-[305px] pointer-events-auto"
+        className="fixed top-24 left-4 z-50 w-full max-w-[305px] pointer-events-auto"
         onMouseEnter={resetTimer}
         onTouchStart={resetTimer}
       >
@@ -121,9 +121,8 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
             className="relative z-50 bg-white/95 backdrop-blur-2xl border border-black/10 rounded-full px-4 py-2 mb-12 flex items-center gap-2 cursor-pointer shadow-2xl transition-all hover:bg-white hover:border-black/20"
             onClick={() => setIsMinimized(true)}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
             <span className="text-black text-xs font-bold tracking-wide flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5" />
+              <Users className="w-3.5 h-3.5 text-black" />
               <div className="flex overflow-hidden h-[16px] items-center relative w-[10px] justify-center">
                 <AnimatePresence mode="popLayout">
                   <motion.span 
