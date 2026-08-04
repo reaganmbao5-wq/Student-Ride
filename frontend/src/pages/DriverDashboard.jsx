@@ -312,10 +312,11 @@ const DriverDashboard = () => {
   // Handle new incoming ride requests
   useEffect(() => {
     if (newRideRequest && isOnline) {
+      const reqId = getRideId(newRideRequest);
       // Shared rides also go into the Master Pool
       if (newRideRequest.ride_mode === 'shared') {
         setMasterSharedRidePool(prev => {
-          if (!prev.find(r => r.id === newRideRequest.id)) {
+          if (!prev.some(r => getRideId(r) === reqId)) {
             return [...prev, newRideRequest];
           }
           return prev;
@@ -324,7 +325,7 @@ const DriverDashboard = () => {
       
       // All rides go into the Pending Rides list so they show up on the Idle Home Page
       setPendingRides(prev => {
-        if (!prev.find(r => r.id === newRideRequest.id)) {
+        if (!prev.some(r => getRideId(r) === reqId)) {
           return [newRideRequest, ...prev];
         }
         return prev;
