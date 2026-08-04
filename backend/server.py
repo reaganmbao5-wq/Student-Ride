@@ -1095,23 +1095,41 @@ class ConnectionManager:
         
         eligible_drivers = []
         for driver in online_drivers:
-            active_state = await get_driver_active_state(driver["id"])
+            d_id = driver.get("user_id") or driver.get("id")
+            active_state = await get_driver_active_state(d_id)
             eligibility = is_driver_eligible(driver, active_state, ride_mode, passenger_count)
             if eligibility["eligible"]:
                 eligible_drivers.append(driver)
                 
         logger.info(f"Found {len(eligible_drivers)} eligible nearby drivers for location {location}")
         
+        delivered_count = 0
         for driver in eligible_drivers:
-            driver_id = driver["user_id"]
-            if driver_id in self.active_connections:
-                try:
-                    await self.send_personal_message(message, driver_id)
-                    logger.info(f"Broadcast sent to driver {driver_id}")
-                except Exception as e:
-                    logger.error(f"Failed to send broadcast to driver {driver_id}: {e}")
-            else:
-                logger.info(f"Driver {driver_id} is online in DB but NOT in active_connections")
+            candidate_ids = list(set([driver.get("user_id"), driver.get("id"), driver.get("driver_id")]))
+            candidate_ids = [cid for cid in candidate_ids if cid]
+            
+            for cid in candidate_ids:
+                if cid in self.active_connections:
+                    try:
+                        await self.send_personal_message(message, cid)
+                        logger.info(f"Broadcast sent to driver {cid}")
+                        delivered_count += 1
+                        break
+                    except Exception as e:
+                        logger.error(f"Failed to send broadcast to driver {cid}: {e}")
+
+        # Safety Fallback: If targeted lookup missed or delivered to zero drivers, broadcast to all active connections
+        if delivered_count == 0:
+            logger.info("Targeted lookup delivered to 0 active connections. Executing fallback broadcast to all active WebSockets.")
+            sanitized = sanitize_for_json(message)
+            for user_id, sockets in list(self.active_connections.items()):
+                for ws in sockets:
+                    try:
+                        await ws.send_json(sanitized)
+                        delivered_count += 1
+                    except Exception as ex:
+                        logger.error(f"Failed to send fallback broadcast to {user_id}: {ex}")
+            logger.info(f"Fallback broadcast delivered to {delivered_count} active WebSocket connections.")
 
 manager = ConnectionManager()
 
