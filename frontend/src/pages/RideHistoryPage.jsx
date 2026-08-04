@@ -20,6 +20,7 @@ const SwipableRideCard = ({
   isDriver 
 }) => {
   const [swipeOffset, setSwipeOffset] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
 
   const formattedDate = useMemo(() => {
     return new Date(ride.created_at).toLocaleDateString('en-US', {
@@ -68,9 +69,10 @@ const SwipableRideCard = ({
         drag="x"
         dragConstraints={{ left: -90, right: 0 }}
         dragElastic={0.05}
-        dragSnapToOrigin={swipeOffset === 0}
+        onDragStart={() => setIsDragging(true)}
         onDragEnd={(e, info) => {
-          if (info.offset.x < -35) {
+          setTimeout(() => setIsDragging(false), 150);
+          if (info.offset.x < -30) {
             setSwipeOffset(-90);
           } else {
             setSwipeOffset(0);
@@ -84,7 +86,8 @@ const SwipableRideCard = ({
       >
         {/* Collapsed Item Summary View */}
         <div
-          onClick={() => {
+          onClick={(e) => {
+            if (isDragging) return;
             if (swipeOffset < 0) {
               setSwipeOffset(0);
             } else {
