@@ -311,13 +311,15 @@ const DriverDashboard = () => {
 
   // Handle new incoming ride requests
   useEffect(() => {
-    if (newRideRequest && isOnline) {
+    if (newRideRequest) {
       const reqId = getRideId(newRideRequest);
+      const isShared = !newRideRequest.ride_mode || String(newRideRequest.ride_mode).toLowerCase() === 'shared';
+      
       // Shared rides also go into the Master Pool
-      if (newRideRequest.ride_mode === 'shared') {
+      if (isShared) {
         setMasterSharedRidePool(prev => {
           if (!prev.some(r => getRideId(r) === reqId)) {
-            return [...prev, newRideRequest];
+            return [newRideRequest, ...prev];
           }
           return prev;
         });
@@ -333,7 +335,7 @@ const DriverDashboard = () => {
       
       clearRideRequest();
     }
-  }, [newRideRequest, isOnline, clearRideRequest]);
+  }, [newRideRequest, clearRideRequest]);
 
   const driverLocRef = useRef(null);
   useEffect(() => {
