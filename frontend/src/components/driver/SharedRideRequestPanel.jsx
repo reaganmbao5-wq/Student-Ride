@@ -76,16 +76,25 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
     );
   }
 
-  const handlePanEnd = (e, info) => {
+  const pointerStartRef = useRef({ x: 0, y: 0 });
+
+  const handlePointerDown = (e) => {
+    pointerStartRef.current = { x: e.clientX, y: e.clientY };
+    resetTimer();
+  };
+
+  const handlePointerUp = (e) => {
+    const deltaX = e.clientX - pointerStartRef.current.x;
+    const deltaY = e.clientY - pointerStartRef.current.y;
     const threshold = 40; 
     
-    if (info.offset.x < -threshold) {
+    if (deltaX < -threshold) {
       setIsMinimized(true);
       return;
     }
 
     // Swipe UP or RIGHT -> Next Student (Moves UP)
-    if (info.offset.y < -threshold || info.offset.x > threshold) {
+    if (deltaY < -threshold || deltaX > threshold) {
       if (requests.length > 1) {
         direction.current = 1;
         setPosition(prev => prev + 1);
@@ -93,7 +102,7 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
       resetTimer();
     } 
     // Swipe DOWN -> Previous Student (Moves DOWN)
-    else if (info.offset.y > threshold) {
+    else if (deltaY > threshold) {
       if (requests.length > 1) {
         direction.current = -1;
         setPosition(prev => prev - 1);
@@ -187,7 +196,8 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
                       animate={{ y, scale, opacity: 1 }}
                       transition={{ type: 'spring', stiffness: 120, damping: 20 }}
                       className="absolute w-full top-0 touch-none will-change-transform"
-                      onPanEnd={isActive ? handlePanEnd : undefined}
+                      onPointerDown={isActive ? handlePointerDown : undefined}
+                      onPointerUp={isActive ? handlePointerUp : undefined}
                       style={{ 
                         zIndex,
                         pointerEvents: isActive ? 'auto' : 'none',
