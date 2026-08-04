@@ -111,14 +111,14 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
         animate={{ x: 0 }}
         exit={{ x: -350 }}
         transition={{ type: 'spring', stiffness: 250, damping: 30 }}
-        className="fixed top-28 left-4 z-50 w-full max-w-[320px] pointer-events-auto"
+        className="fixed top-24 left-4 z-50 w-full max-w-[305px] pointer-events-auto"
         onMouseEnter={resetTimer}
         onTouchStart={resetTimer}
       >
         <div className="flex flex-col items-center">
-          {/* Header / Minimizer Banner - Elevated z-50 and generous mb-24 margin to sit cleanly ABOVE top card */}
+          {/* Header / Minimizer Banner - Elevated z-50 and mb-14 margin to float cleanly ABOVE top card */}
           <motion.div 
-            className="relative z-50 bg-white/95 backdrop-blur-2xl border border-black/10 rounded-full px-4 py-2 mb-24 flex items-center gap-2 cursor-pointer shadow-2xl transition-all hover:bg-white hover:border-black/20"
+            className="relative z-50 bg-white/95 backdrop-blur-2xl border border-black/10 rounded-full px-4 py-2 mb-14 flex items-center gap-2 cursor-pointer shadow-2xl transition-all hover:bg-white hover:border-black/20"
             onClick={() => setIsMinimized(true)}
           >
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
@@ -142,8 +142,8 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
             </span>
           </motion.div>
 
-        {/* Circular Queue Carousel Stack */}
-        <div className="relative w-full h-[260px] flex justify-center perspective-[1000px]">
+        {/* Circular Queue Carousel Stack - Compact 210px Container */}
+        <div className="relative w-full h-[210px] flex justify-center perspective-[1000px]">
           {requests.length > 0 && (() => {
             const len = requests.length;
             let offsetsToRender = [];
@@ -167,18 +167,18 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
 
                   const isActive = offset === 0;
                   
-                  // Position mapping
+                  // Position mapping - Compact vertical offsets
                   let y = 0, scale = 1, zIndex = 10;
                   if (offset === -1) {
-                    y = -90; scale = 0.85; 
+                    y = -65; scale = 0.85; 
                     zIndex = direction.current === -1 ? 8 : 9;
                   } else if (offset === 1) {
-                    y = 200; scale = 0.85; 
+                    y = 150; scale = 0.85; 
                     zIndex = direction.current === 1 ? 8 : 9;
                   }
 
                   // Determine entry/exit animations based on swipe direction
-                  const initialY = direction.current === 1 ? 300 : -200;
+                  const initialY = direction.current === 1 ? 260 : -160;
 
                   const permanentKey = ((virtualIndex % 3) + 3) % 3;
 
@@ -213,12 +213,12 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
           })()}
         </div>
 
-        {/* Pagination Indicators - Elevated z-50 and mt-[135px] margin to sit cleanly BELOW bottom card */}
+        {/* Pagination Indicators - Elevated z-50 and mt-12 margin to sit cleanly BELOW bottom card */}
         {requests.length > 1 && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="relative z-50 flex items-center gap-1.5 mt-[135px] bg-white/95 backdrop-blur-2xl px-3.5 py-1.5 rounded-full border border-black/10 shadow-xl"
+            className="relative z-50 flex items-center gap-1.5 mt-12 bg-white/95 backdrop-blur-2xl px-3.5 py-1.5 rounded-full border border-black/10 shadow-xl"
           >
             {requests.map((_, i) => (
               <div 
