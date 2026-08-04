@@ -150,7 +150,7 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
             if (len === 1) {
               offsetsToRender = [0]; // Single card
             } else if (len === 2) {
-              offsetsToRender = [-1, 0]; // Top and Active
+              offsetsToRender = direction.current === -1 ? [0, 1] : [-1, 0]; // Dynamic 2-card reverse animation mapping
             } else {
               offsetsToRender = [-1, 0, 1]; // Top, Active, Bottom
             }
