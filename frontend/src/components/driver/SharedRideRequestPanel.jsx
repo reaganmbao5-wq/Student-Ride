@@ -8,6 +8,7 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
   const [position, setPosition] = useState(0); // Track infinite scrolling position
   const direction = useRef(0); // 1 for UP, -1 for DOWN
   const timeoutRef = useRef(null);
+  const pointerStartRef = useRef({ x: 0, y: 0 });
   
   const activeIndex = requests && requests.length > 0 
     ? ((position % requests.length) + requests.length) % requests.length 
@@ -75,8 +76,6 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
       </motion.div>
     );
   }
-
-  const pointerStartRef = useRef({ x: 0, y: 0 });
 
   const handlePointerDown = (e) => {
     pointerStartRef.current = { x: e.clientX, y: e.clientY };
