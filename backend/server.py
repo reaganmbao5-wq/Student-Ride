@@ -1060,6 +1060,9 @@ class ConnectionManager:
         max_distance_meters = radius_km * 1000
         logger.info(f"Broadcasting ride request to drivers near {location} within {radius_km}km")
         
+        loc_lng = float(location.get("lng", location.get("longitude", 0)))
+        loc_lat = float(location.get("lat", location.get("latitude", 0)))
+
         try:
             online_drivers = await db.drivers.find({
                 "is_online": True,
@@ -1069,7 +1072,7 @@ class ConnectionManager:
                     "$near": {
                         "$geometry": {
                             "type": "Point",
-                            "coordinates": [location["lng"], location["lat"]]
+                            "coordinates": [loc_lng, loc_lat]
                         },
                         "$maxDistance": max_distance_meters
                     }

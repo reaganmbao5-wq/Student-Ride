@@ -75,7 +75,7 @@ const DriverDashboard = () => {
   }, [driverProfile?.vehicle_capacity, occupiedPassengers]);
 
   const incomingSharedRequests = useMemo(() => {
-    if (!driverProfile?.accepts_shared_rides) return [];
+    if (driverProfile?.accepts_shared_rides === false) return [];
     if (availableSeats <= 0) return [];
     
     // Filter out rides that are ALREADY active for this driver so accepted rides never remain on the side panel
