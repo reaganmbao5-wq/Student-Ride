@@ -16,26 +16,26 @@ async def main():
 
     driver_id = driver_user["id"]
 
-    # Starting test coordinates (Kasama)
-    kasama_loc = {"lat": -10.21597, "lng": 31.16959, "heading": 0}
+    # Starting test coordinates (Mulungushi University, Kabwe)
+    mulungushi_loc = {"lat": -14.4087, "lng": 28.2849, "heading": 0}
 
     # Reset driver location in db.drivers and db.driver_locations
     await db.drivers.update_one(
         {"user_id": driver_id},
-        {"$set": {"current_location": kasama_loc, "is_online": True}}
+        {"$set": {"current_location": mulungushi_loc, "is_online": True}}
     )
 
     await db.driver_locations.update_one(
         {"driver_id": driver_id},
         {"$set": {
             "driver_id": driver_id,
-            "location": kasama_loc,
+            "location": mulungushi_loc,
             "updated_at": asyncio.get_event_loop().time()
         }},
         upsert=True
     )
 
-    print(f"Driver binahsmarthome@gmail.com location reset to Kasama ({kasama_loc['lat']}, {kasama_loc['lng']}) and set online!")
+    print(f"Driver binahsmarthome@gmail.com location reset to Mulungushi ({mulungushi_loc['lat']}, {mulungushi_loc['lng']}) and set online!")
 
 if __name__ == "__main__":
     asyncio.run(main())
