@@ -1092,14 +1092,19 @@ class ConnectionManager:
         ride = message.get("ride", {})
         ride_mode = ride.get("ride_mode", "private")
         passenger_count = ride.get("passenger_count", 1)
+        msg_type = message.get("type")
+        is_removal_notice = msg_type in ["shared_ride_accepted_by_other", "shared_ride_cancelled", "ride_cancelled"]
         
         eligible_drivers = []
         for driver in online_drivers:
-            d_id = driver.get("user_id") or driver.get("id")
-            active_state = await get_driver_active_state(d_id)
-            eligibility = is_driver_eligible(driver, active_state, ride_mode, passenger_count)
-            if eligibility["eligible"]:
+            if is_removal_notice:
                 eligible_drivers.append(driver)
+            else:
+                d_id = driver.get("user_id") or driver.get("id")
+                active_state = await get_driver_active_state(d_id)
+                eligibility = is_driver_eligible(driver, active_state, ride_mode, passenger_count)
+                if eligibility["eligible"]:
+                    eligible_drivers.append(driver)
                 
         logger.info(f"Found {len(eligible_drivers)} eligible nearby drivers for location {location}")
         
@@ -2822,6 +2827,10 @@ async def cancel_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
         # Broadcast to pool that ride is back available
         ride["status"] = RideStatus.REQUESTED.value
         ride["driver_id"] = None
+        student_user = await db.users.find_one({"id": ride["student_id"]}, {"_id": 0})
+        if student_user:
+            ride["student"] = student_user
+            ride["student_name"] = student_user.get("name", "Student")
         background_tasks.add_task(manager.broadcast_to_nearby_drivers, {
             "type": "new_ride_request",
             "ride": ride

@@ -270,8 +270,8 @@ const DriverDashboard = () => {
   // Handle real-time synchronization for shared pool
   useEffect(() => {
     if (removedSharedRideId) {
-      setMasterSharedRidePool(prev => prev.filter(r => r.id !== removedSharedRideId));
-      setPendingRides(prev => prev.filter(r => r.id !== removedSharedRideId));
+      setMasterSharedRidePool(prev => prev.filter(r => (r.id !== removedSharedRideId && r._id !== removedSharedRideId && r.ride_id !== removedSharedRideId)));
+      setPendingRides(prev => prev.filter(r => (r.id !== removedSharedRideId && r._id !== removedSharedRideId && r.ride_id !== removedSharedRideId)));
     }
   }, [removedSharedRideId]);
 
