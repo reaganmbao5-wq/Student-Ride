@@ -417,7 +417,7 @@ const StudentDashboard = () => {
       ? passengerBriefing.carousel_messages
       : (isBriefingForThisRide && passengerBriefing?.briefing_text ? [passengerBriefing.briefing_text] : []);
 
-    let activeBriefingText = (activeRide.ride_mode === 'private')
+    let activeBriefingText = (activeRide.ride_mode !== 'shared')
       ? getStatusText()
       : (activeRide.status === 'requested'
           ? getStatusText()
@@ -433,7 +433,7 @@ const StudentDashboard = () => {
       displayRouteGeometry = requestedRouteGeometry || [];
       routeState = displayRouteGeometry.length > 0 ? 'ROUTE AVAILABLE' : 'Loading route...';
     } else if (activeRide && activeRide.status !== 'cancelled') {
-      if ((!passengerBriefing || passengerBriefing.ride_id !== currentRideId) && activeRide.ride_mode !== 'private') {
+      if ((!passengerBriefing || passengerBriefing.ride_id !== currentRideId) && activeRide.ride_mode === 'shared') {
         routeState = 'Loading route...';
         activeBriefingText = 'Loading route...';
       } else if (isBriefingForThisRide && Array.isArray(passengerBriefing?.route_geometry) && passengerBriefing.route_geometry.length > 2) {
