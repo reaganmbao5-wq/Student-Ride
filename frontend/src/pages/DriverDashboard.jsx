@@ -21,7 +21,7 @@ import { RideCard } from '../components/driver/RideCard';
 const DriverDashboard = () => {
   const navigate = useNavigate();
   const { user, api, driverProfile, refreshDriverProfile, logout } = useAuth();
-  const { newRideRequest, removedSharedRideId, clearRideRequest, sendLocationUpdate, requestHardRecalculation, rideUpdate, clearRideUpdate, routeQueueUpdate, clearRouteQueueUpdate, driverLocation, isConnected } = useWebSocket();
+  const { newRideRequest, removedSharedRideId, clearRideRequest, clearRemovedSharedRideId, sendLocationUpdate, requestHardRecalculation, rideUpdate, clearRideUpdate, routeQueueUpdate, clearRouteQueueUpdate, driverLocation, isConnected } = useWebSocket();
 
   const [routeQueue, setRouteQueue] = useState([]);
   const [isRecalculating, setIsRecalculating] = useState(false);
@@ -282,10 +282,11 @@ const DriverDashboard = () => {
   // Handle real-time synchronization for shared pool
   useEffect(() => {
     if (removedSharedRideId) {
-      setMasterSharedRidePool(prev => prev.filter(r => r.id !== removedSharedRideId));
-      setPendingRides(prev => prev.filter(r => r.id !== removedSharedRideId));
+      setMasterSharedRidePool(prev => prev.filter(r => getRideId(r) !== removedSharedRideId));
+      setPendingRides(prev => prev.filter(r => getRideId(r) !== removedSharedRideId));
+      clearRemovedSharedRideId();
     }
-  }, [removedSharedRideId]);
+  }, [removedSharedRideId, clearRemovedSharedRideId]);
 
   // Simulation Mode Logic: Just prevents watchPosition from overriding the python script
   useEffect(() => {

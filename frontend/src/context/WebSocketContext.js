@@ -235,6 +235,10 @@ export const WebSocketProvider = ({ children }) => {
     setNewRideRequest(null);
   }, []);
 
+  const clearRemovedSharedRideId = useCallback(() => {
+    setRemovedSharedRideId(null);
+  }, []);
+
   const clearRideUpdate = useCallback(() => {
     setRideUpdate(null);
   }, []);
@@ -259,6 +263,7 @@ export const WebSocketProvider = ({ children }) => {
     sendLocationUpdate,
     requestHardRecalculation,
     clearRideRequest,
+    clearRemovedSharedRideId,
     clearRideUpdate,
     clearRouteQueueUpdate,
     clearNewMessage,

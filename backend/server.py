@@ -1056,80 +1056,92 @@ class ConnectionManager:
 
     async def broadcast_to_nearby_drivers(self, message: dict, location: dict, radius_km: float = 3.0):
         """Broadcast ride request to nearby online drivers using geospatial query"""
-        # Convert radius to meters
-        max_distance_meters = radius_km * 1000
-        logger.info(f"Broadcasting ride request to drivers near {location} within {radius_km}km")
-        
-        loc_lng = float(location.get("lng", location.get("longitude", 0)))
-        loc_lat = float(location.get("lat", location.get("latitude", 0)))
-
         try:
-            online_drivers = await db.drivers.find({
-                "is_online": True,
-                "is_approved": True,
-                "wallet_status": {"$ne": WalletStatus.RESTRICTED.value},
-                "location": {
-                    "$near": {
-                        "$geometry": {
-                            "type": "Point",
-                            "coordinates": [loc_lng, loc_lat]
-                        },
-                        "$maxDistance": max_distance_meters
-                    }
-                }
-            }, {"_id": 0}).to_list(20)
-        except Exception as geo_err:
-            logger.warning(f"Geospatial $near query failed: {geo_err}. Falling back to all online drivers.")
-            online_drivers = []
+            # Guard: if location is missing or not a dict, skip geo query and go straight to fallback
+            if not location or not isinstance(location, dict):
+                logger.warning(f"broadcast_to_nearby_drivers called with invalid location ({location!r}) for message type '{message.get('type')}'. Using all-online-drivers fallback.")
+                online_drivers = await db.drivers.find({
+                    "is_online": True,
+                    "is_approved": True,
+                    "wallet_status": {"$ne": WalletStatus.RESTRICTED.value}
+                }, {"_id": 0}).to_list(50)
+            else:
+                max_distance_meters = radius_km * 1000
+                logger.info(f"Broadcasting '{message.get('type')}' to drivers near {location} within {radius_km}km")
 
-        if not online_drivers:
-            online_drivers = await db.drivers.find({
-                "is_online": True,
-                "is_approved": True,
-                "wallet_status": {"$ne": WalletStatus.RESTRICTED.value}
-            }, {"_id": 0}).to_list(50)
-        
-        ride = message.get("ride", {})
-        ride_mode = ride.get("ride_mode", "private")
-        passenger_count = ride.get("passenger_count", 1)
-        
-        eligible_drivers = []
-        for driver in online_drivers:
-            d_id = driver.get("user_id") or driver.get("id")
-            active_state = await get_driver_active_state(d_id)
-            eligibility = is_driver_eligible(driver, active_state, ride_mode, passenger_count)
-            if eligibility["eligible"]:
-                eligible_drivers.append(driver)
-                
-        logger.info(f"Found {len(eligible_drivers)} eligible nearby drivers for location {location}")
-        
-        delivered_count = 0
-        for driver in eligible_drivers:
-            candidate_ids = list(set([driver.get("user_id"), driver.get("id"), driver.get("driver_id")]))
-            candidate_ids = [cid for cid in candidate_ids if cid]
+                loc_lng = float(location.get("lng", location.get("longitude", 0)))
+                loc_lat = float(location.get("lat", location.get("latitude", 0)))
+
+                try:
+                    online_drivers = await db.drivers.find({
+                        "is_online": True,
+                        "is_approved": True,
+                        "wallet_status": {"$ne": WalletStatus.RESTRICTED.value},
+                        "location": {
+                            "$near": {
+                                "$geometry": {
+                                    "type": "Point",
+                                    "coordinates": [loc_lng, loc_lat]
+                                },
+                                "$maxDistance": max_distance_meters
+                            }
+                        }
+                    }, {"_id": 0}).to_list(20)
+                except Exception as geo_err:
+                    logger.warning(f"Geospatial $near query failed: {geo_err}. Falling back to all online drivers.")
+                    online_drivers = []
+
+                if not online_drivers:
+                    online_drivers = await db.drivers.find({
+                        "is_online": True,
+                        "is_approved": True,
+                        "wallet_status": {"$ne": WalletStatus.RESTRICTED.value}
+                    }, {"_id": 0}).to_list(50)
+
+            ride = message.get("ride", {})
+            ride_mode = ride.get("ride_mode", "private")
+            passenger_count = ride.get("passenger_count", 1)
             
-            for cid in candidate_ids:
-                if cid in self.active_connections:
-                    try:
-                        await self.send_personal_message(message, cid)
-                        logger.info(f"Broadcast sent to driver {cid}")
-                        delivered_count += 1
-                        break
-                    except Exception as e:
-                        logger.error(f"Failed to send broadcast to driver {cid}: {e}")
+            eligible_drivers = []
+            for driver in online_drivers:
+                d_id = driver.get("user_id") or driver.get("id")
+                active_state = await get_driver_active_state(d_id)
+                eligibility = is_driver_eligible(driver, active_state, ride_mode, passenger_count)
+                if eligibility["eligible"]:
+                    eligible_drivers.append(driver)
+                    
+            logger.info(f"Found {len(eligible_drivers)} eligible nearby drivers for location {location}")
+            
+            delivered_count = 0
+            for driver in eligible_drivers:
+                candidate_ids = list(set([driver.get("user_id"), driver.get("id"), driver.get("driver_id")]))
+                candidate_ids = [cid for cid in candidate_ids if cid]
+                
+                for cid in candidate_ids:
+                    if cid in self.active_connections:
+                        try:
+                            await self.send_personal_message(message, cid)
+                            logger.info(f"Broadcast sent to driver {cid}")
+                            delivered_count += 1
+                            break
+                        except Exception as e:
+                            logger.error(f"Failed to send broadcast to driver {cid}: {e}")
 
-        # Safety Fallback: If targeted lookup missed or delivered to zero drivers, broadcast to all active connections
-        if delivered_count == 0:
-            logger.info("Targeted lookup delivered to 0 active connections. Executing fallback broadcast to all active WebSockets.")
-            sanitized = sanitize_for_json(message)
-            for user_id, sockets in list(self.active_connections.items()):
-                for ws in sockets:
-                    try:
-                        await ws.send_json(sanitized)
-                        delivered_count += 1
-                    except Exception as ex:
-                        logger.error(f"Failed to send fallback broadcast to {user_id}: {ex}")
-            logger.info(f"Fallback broadcast delivered to {delivered_count} active WebSocket connections.")
+            # Safety Fallback: If targeted lookup missed or delivered to zero drivers, broadcast to all active connections
+            if delivered_count == 0:
+                logger.info("Targeted lookup delivered to 0 active connections. Executing fallback broadcast to all active WebSockets.")
+                sanitized = sanitize_for_json(message)
+                for user_id, sockets in list(self.active_connections.items()):
+                    for ws in sockets:
+                        try:
+                            await ws.send_json(sanitized)
+                            delivered_count += 1
+                        except Exception as ex:
+                            logger.error(f"Failed to send fallback broadcast to {user_id}: {ex}")
+                logger.info(f"Fallback broadcast delivered to {delivered_count} active WebSocket connections.")
+
+        except Exception as top_err:
+            logger.error(f"broadcast_to_nearby_drivers FATAL ERROR for message type '{message.get('type')}': {top_err}", exc_info=True)
 
 manager = ConnectionManager()
 
