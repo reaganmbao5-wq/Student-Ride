@@ -942,6 +942,18 @@ class ConnectionManager:
             for ws in dead_sockets:
                 self.disconnect(ws, user_id)
 
+    async def broadcast_to_all_active_connections(self, message: dict):
+        sanitized = sanitize_for_json(message)
+        delivered = 0
+        for user_id, sockets in list(self.active_connections.items()):
+            for ws in sockets:
+                try:
+                    await ws.send_json(sanitized)
+                    delivered += 1
+                except Exception as e:
+                    logger.error(f"Error sending broadcast to {user_id}: {e}")
+        logger.info(f"Broadcasted '{message.get('type')}' to {delivered} active connections.")
+
     async def broadcast_to_ride(self, message: dict, ride_id: str):
         if ride_id in self.ride_connections:
             for user_id in self.ride_connections[ride_id]:
@@ -2357,10 +2369,11 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
     background_tasks.add_task(DriverTripRebuilder.rebuild, driver["id"], db)
     
     # Broadcast to all other drivers that this ride is no longer in the shared pool
-    background_tasks.add_task(manager.broadcast_to_nearby_drivers, {
+    # Bypassing nearby search to ensure ALL drivers instantly remove this ride from their UI
+    background_tasks.add_task(manager.broadcast_to_all_active_connections, {
         "type": "shared_ride_accepted_by_other",
         "ride_id": ride_id
-    }, target_ride.get("pickup_location"))
+    })
     
     # Push notification
     async def send_accept_push(student_id, r_id, user_name):
