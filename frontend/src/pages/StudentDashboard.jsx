@@ -376,12 +376,27 @@ const StudentDashboard = () => {
     }
 
     let getStatusText = () => {
-      switch(activeRide.status) {
-        case 'requested': return 'Finding a driver...';
-        case 'accepted': return 'Driver is on the way';
-        case 'driver_arrived': return 'Driver has arrived!';
-        case 'ongoing': return 'Heading to destination';
-        default: return 'Active Ride';
+      switch(activeRide?.status) {
+        case 'requested': 
+          return 'Finding a driver...';
+        case 'accepted':
+        case 'driver_accepted':
+        case 'driver_en_route_to_pickup': 
+          return 'Driver is approaching your pickup point';
+        case 'driver_arrived':
+        case 'passenger_boarding': 
+          return 'Driver has arrived at your pickup point!';
+        case 'ride_started':
+        case 'ride_in_progress':
+        case 'ongoing': 
+          return 'Driver is heading to your destination';
+        case 'arriving_destination': 
+          return 'Driver has arrived at your destination!';
+        case 'completed':
+        case 'ride_completed': 
+          return 'Ride completed!';
+        default: 
+          return 'Active Ride';
       }
     };
 
@@ -418,7 +433,7 @@ const StudentDashboard = () => {
       displayRouteGeometry = requestedRouteGeometry || [];
       routeState = displayRouteGeometry.length > 0 ? 'ROUTE AVAILABLE' : 'Loading route...';
     } else if (activeRide && activeRide.status !== 'cancelled') {
-      if (!passengerBriefing || passengerBriefing.ride_id !== currentRideId) {
+      if ((!passengerBriefing || passengerBriefing.ride_id !== currentRideId) && activeRide.ride_mode !== 'private') {
         routeState = 'Loading route...';
         activeBriefingText = 'Loading route...';
       } else if (isBriefingForThisRide && Array.isArray(passengerBriefing?.route_geometry) && passengerBriefing.route_geometry.length > 2) {
