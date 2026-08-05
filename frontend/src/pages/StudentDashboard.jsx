@@ -468,7 +468,7 @@ const StudentDashboard = () => {
             {/* Minimized Header Row */}
             <div className="flex items-center justify-between" onClick={() => setIsSheetExpanded(!isSheetExpanded)}>
               <div className="flex-1 min-w-0 pr-4">
-                <div className="h-7 flex items-center overflow-hidden">
+                <div className="min-h-[1.75rem] flex items-center py-0.5">
                   <AnimatePresence mode="wait">
                     <motion.h2 
                       key={`msg-${activeBriefingText}`}
@@ -476,7 +476,7 @@ const StudentDashboard = () => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -8 }}
                       transition={{ duration: 0.35 }}
-                      className="font-heading text-lg font-bold text-gold truncate"
+                      className="font-heading text-lg font-bold text-gold whitespace-normal break-words leading-tight"
                     >
                       {activeBriefingText}
                     </motion.h2>
