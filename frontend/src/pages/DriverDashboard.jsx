@@ -906,15 +906,29 @@ const DriverDashboard = () => {
             {/* EXPANDED CONTENT */}
             <div className="flex flex-col gap-8 overflow-y-auto flex-1 pt-4 pb-12 pr-2">
                   {(() => {
-                    const activeStopRideId = routeQueue && routeQueue.length > 0 ? routeQueue[0].ride_id : null;
-                    const sortedActiveRides = activeStopRideId 
-                      ? [...activeRides].sort((a, b) => (a.id === activeStopRideId ? -1 : b.id === activeStopRideId ? 1 : 0))
-                      : activeRides;
+                    // Extract unique ride_ids in order of their appearance in routeQueue
+                    const routeOrderIds = [];
+                    if (routeQueue && routeQueue.length > 0) {
+                      routeQueue.forEach(stop => {
+                        if (stop.ride_id && !routeOrderIds.includes(stop.ride_id)) {
+                          routeOrderIds.push(stop.ride_id);
+                        }
+                      });
+                    }
 
-                    return sortedActiveRides.map((ride) => {
+                    // Sort activeRides to strictly follow routeQueue operational sequence
+                    const sortedActiveRides = [...activeRides].sort((a, b) => {
+                      const idxA = routeOrderIds.indexOf(a.id);
+                      const idxB = routeOrderIds.indexOf(b.id);
+                      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+                      if (idxA !== -1) return -1;
+                      if (idxB !== -1) return 1;
+                      return 0;
+                    });
+
+                    return sortedActiveRides.map((ride, index) => {
                       const color = getColorForRideId(ride.id);
-                      const originalIndex = activeRides.findIndex(r => r.id === ride.id);
-                      const pIndex = `P${(originalIndex >= 0 ? originalIndex : 0) + 1}`;
+                      const pIndex = `P${index + 1}`;
                     const rideStatusStr = ['accepted', 'driver_accepted'].includes(ride.status) ? 'WAITING' :
                                           ['driver_arrived', 'passenger_boarding'].includes(ride.status) ? 'ARRIVED' :
                                           ['ride_started', 'ride_in_progress', 'ongoing'].includes(ride.status) ? 'ACTIVE' :
