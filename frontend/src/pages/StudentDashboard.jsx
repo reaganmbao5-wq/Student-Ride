@@ -137,10 +137,12 @@ const StudentDashboard = () => {
         setDriverName(activeRide?.driver?.user?.name || 'Driver');
         setShowRatingModal(true);
         setActiveRide(null);
+        setPassengerBriefing(null);
         fetchData();
       } else if (rideUpdate.type === 'cancelled') {
         toast.error('Ride was cancelled');
         setActiveRide(null);
+        setPassengerBriefing(null);
       } else if (rideUpdate.type === 'reassigning') {
         toast.error('Driver cancelled. Finding a new driver...', { duration: 5000 });
         setActiveRide(prev => prev ? { ...prev, status: 'requested', driver_id: null, driver: null } : null);
@@ -189,17 +191,22 @@ const StudentDashboard = () => {
         };
       });
       
-      // Restore Passenger Briefing instantly with ETA preservation
+      // Restore Passenger Briefing instantly with strict ride_id ETA preservation guard
       if (activeRes.data?.passenger_briefing) {
-        setPassengerBriefing(prev => ({
-          ...activeRes.data.passenger_briefing,
-          eta_seconds: (activeRes.data.passenger_briefing.eta_seconds !== undefined && activeRes.data.passenger_briefing.eta_seconds !== null)
-            ? activeRes.data.passenger_briefing.eta_seconds
-            : (prev?.eta_seconds ?? null),
-          eta_text: (activeRes.data.passenger_briefing.eta_text)
-            ? activeRes.data.passenger_briefing.eta_text
-            : (prev?.eta_text || null)
-        }));
+        setPassengerBriefing(prev => {
+          const isSameRide = Boolean(prev && prev.ride_id && prev.ride_id === activeRes.data.passenger_briefing.ride_id);
+          return {
+            ...activeRes.data.passenger_briefing,
+            eta_seconds: (activeRes.data.passenger_briefing.eta_seconds !== undefined && activeRes.data.passenger_briefing.eta_seconds !== null)
+              ? activeRes.data.passenger_briefing.eta_seconds
+              : (isSameRide ? (prev?.eta_seconds ?? null) : null),
+            eta_text: (activeRes.data.passenger_briefing.eta_text)
+              ? activeRes.data.passenger_briefing.eta_text
+              : (isSameRide ? (prev?.eta_text || null) : null)
+          };
+        });
+      } else {
+        setPassengerBriefing(null);
       }
       
       if (activeRes.data?.driver?.current_location) {

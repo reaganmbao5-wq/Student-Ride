@@ -128,11 +128,12 @@ export const WebSocketProvider = ({ children }) => {
             break;
           case 'passenger_briefing_update':
             setPassengerBriefing(prev => {
+              const isSameRide = Boolean(prev && prev.ride_id && prev.ride_id === data.ride_id);
               const incomingSegs = data.route_segments || [];
               const incomingGeo = data.route_geometry || [];
               const isValidGeo = incomingGeo && incomingGeo.length > 2;
               
-              // HARDENING RULE: Preserve last valid route, colors, and segments if update has empty/invalid geometry
+              // HARDENING RULE: Preserve last valid route and ETA ONLY within the SAME active ride
               return {
                 ride_id: data.ride_id,
                 briefing_text: data.briefing_text,
@@ -143,17 +144,20 @@ export const WebSocketProvider = ({ children }) => {
                 is_next_stop: data.is_next_stop,
                 intermediate_stops: (data.intermediate_stops && data.intermediate_stops.length > 0) 
                   ? data.intermediate_stops 
-                  : (prev?.intermediate_stops || []),
+                  : (isSameRide ? (prev?.intermediate_stops || []) : []),
                 route_segments: (incomingSegs.length > 0) 
                   ? incomingSegs 
-                  : (prev?.route_segments || []),
-                // HARDENING RULE: Preserve last valid ETA if incoming update has null/empty ETA
+                  : (isSameRide ? (prev?.route_segments || []) : []),
+                route_geometry: isValidGeo 
+                  ? incomingGeo 
+                  : (isSameRide ? (prev?.route_geometry || []) : []),
+                // HARDENING RULE: Preserve last valid ETA ONLY within the SAME active ride
                 eta_seconds: (data.eta_seconds !== undefined && data.eta_seconds !== null) 
                   ? data.eta_seconds 
-                  : (prev?.eta_seconds ?? null),
+                  : (isSameRide ? (prev?.eta_seconds ?? null) : null),
                 eta_text: (data.eta_text && data.eta_text.trim() !== '') 
                   ? data.eta_text 
-                  : (prev?.eta_text || null)
+                  : (isSameRide ? (prev?.eta_text || null) : null)
               };
             });
             break;
