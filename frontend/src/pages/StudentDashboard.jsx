@@ -490,21 +490,27 @@ const StudentDashboard = () => {
               </div>
               
               {/* Status Badge right side */}
-              <div className="text-right">
-                <div className="text-2xl font-bold font-heading text-gold">
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={passengerBriefing?.eta_text || 'Calculating...'}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="whitespace-nowrap"
-                    >
-                      {passengerBriefing?.eta_text || 'Calculating...'}
-                    </motion.div>
-                  </AnimatePresence>
-                </div>
+              <div className="text-right shrink-0 min-w-[4.5rem] flex flex-col justify-center items-end">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={passengerBriefing?.eta_text || 'Calculating...'}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="whitespace-nowrap"
+                  >
+                    {passengerBriefing?.eta_text ? (
+                      <span className="text-2xl font-bold font-heading text-gold">
+                        {passengerBriefing.eta_text}
+                      </span>
+                    ) : (
+                      <span className="text-xs font-semibold text-gold/80 tracking-wider uppercase animate-pulse">
+                        Calculating...
+                      </span>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
               </div>
             </div>
 
