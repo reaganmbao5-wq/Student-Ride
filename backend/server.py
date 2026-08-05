@@ -2083,6 +2083,28 @@ async def get_admin_analytics(user: dict = Depends(require_admin)):
 
 # ==================== DESTINATION ROUTES ====================
 
+async def populate_ride_student(ride: dict) -> dict:
+    """Centralized helper to rehydrate student object from db.users if missing."""
+    if not ride:
+        return ride
+    if not ride.get("student") and ride.get("student_id"):
+        student_user = await db.users.find_one({"id": ride["student_id"]}, {"_id": 0})
+        if student_user:
+            student_obj = {
+                "id": student_user["id"],
+                "email": student_user["email"],
+                "name": student_user["name"],
+                "phone": student_user.get("phone", ""),
+                "role": str(student_user.get("role", "student")),
+                "created_at": student_user.get("created_at", ""),
+                "is_active": student_user.get("is_active", True)
+            }
+            ride["student"] = student_obj
+            ride["student_name"] = student_user["name"]
+    elif ride.get("student") and isinstance(ride["student"], dict):
+        if not ride.get("student_name"):
+            ride["student_name"] = ride["student"].get("name")
+    return ride
 
 # ==================== RIDE ROUTES ====================
 @api_router.post("/rides/request", response_model=RideResponse)
@@ -2405,6 +2427,7 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
     manager.add_to_ride(ride_id, ride["student_id"])
     manager.add_to_ride(ride_id, user["id"])
     
+    await populate_ride_student(ride)
     ride["driver"] = driver # Include driver details in response if needed, though schema has driver_id
     return RideResponse(**ride)
 
@@ -2859,6 +2882,7 @@ async def cancel_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
         driver_id_to_notify = ride.get("driver_id")
         ride["status"] = RideStatus.REQUESTED.value
         ride["driver_id"] = None
+        await populate_ride_student(ride)
         background_tasks.add_task(manager.broadcast_to_nearby_drivers, {
             "type": "new_ride_request",
             "ride": ride
