@@ -163,7 +163,7 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
             }
 
             return (
-              <AnimatePresence mode="popLayout" initial={false}>
+              <AnimatePresence mode="popLayout">
                 {offsetsToRender.map((offset) => {
                   const virtualIndex = position + offset;
                   const dataIndex = ((virtualIndex % len) + len) % len;
@@ -183,12 +183,15 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
                     zIndex = direction.current === 1 ? 8 : 9;
                   }
 
+                  // Determine entry/exit animations based on swipe direction
+                  const initialY = direction.current === 1 ? 320 : -100;
+
                   const permanentKey = len === 2 ? dataIndex : ((virtualIndex % 3) + 3) % 3;
 
                   return (
                     <motion.div
                       key={permanentKey}
-                      initial={false}
+                      initial={{ y: initialY, scale: 0.8 }}
                       animate={{ y, scale, opacity: 1 }}
                       transition={{ type: 'spring', stiffness: 120, damping: 20 }}
                       className="absolute w-full top-0 touch-none will-change-transform"
@@ -197,7 +200,7 @@ export const SharedRideRequestPanel = ({ requests, onAccept, driverLocation }) =
                       style={{ 
                         zIndex,
                         pointerEvents: isActive ? 'auto' : 'none',
-                        transformOrigin: 'center center'
+                        transformOrigin: 'top center'
                       }}
                     >
                       <RideCard 

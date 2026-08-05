@@ -168,11 +168,23 @@ export const RideCard = ({
             </div>
           </div>
 
-          <div className={`mt-2.5 pt-2.5 border-t border-black/5 dark:border-white/10 transition-opacity duration-200 ${isActive ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-            <GoldButton className="w-full py-2.5 text-[12.5px] font-extrabold shadow-none transition-transform active:scale-95" onClick={handleAcceptClick}>
-              Accept
-            </GoldButton>
-          </div>
+          <AnimatePresence initial={false}>
+            {isActive && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                className="overflow-hidden"
+              >
+                <div className="mt-2.5 pt-2.5 border-t border-black/5 dark:border-white/10">
+                  <GoldButton className="w-full py-2.5 text-[12.5px] font-extrabold shadow-none transition-transform active:scale-95" onClick={handleAcceptClick}>
+                    Accept
+                  </GoldButton>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
     </GlassCard>
