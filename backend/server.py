@@ -2350,6 +2350,12 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
         )
         
     # Phase 3.2.6.X: DTM & Event Bus Wiring
+    # CRITICAL: Broadcast to all active connections MUST be first to prevent UI freezing if other tasks crash
+    background_tasks.add_task(manager.broadcast_to_all_active_connections, {
+        "type": "shared_ride_accepted_by_other",
+        "ride_id": ride_id
+    })
+    
     background_tasks.add_task(DriverTripManager.handle_ride_accepted, driver["id"], ride_id, db)
     background_tasks.add_task(internal_bus.publish, "ride_accepted", {"driver_id": driver["id"], "ride_id": ride_id})
     
@@ -2365,15 +2371,20 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
         target_ride["student_id"]
     )
 
-    background_tasks.add_task(broadcast_route_queue, driver["id"])
-    background_tasks.add_task(DriverTripRebuilder.rebuild, driver["id"], db)
-    
-    # Broadcast to all other drivers that this ride is no longer in the shared pool
-    # Bypassing nearby search to ensure ALL drivers instantly remove this ride from their UI
-    background_tasks.add_task(manager.broadcast_to_all_active_connections, {
-        "type": "shared_ride_accepted_by_other",
-        "ride_id": ride_id
-    })
+    async def safe_broadcast_route(d_id):
+        try:
+            await broadcast_route_queue(d_id)
+        except Exception as e:
+            logger.error(f"Background task broadcast_route_queue failed: {e}")
+
+    async def safe_rebuild(d_id, database):
+        try:
+            await DriverTripRebuilder.rebuild(d_id, database)
+        except Exception as e:
+            logger.error(f"Background task DriverTripRebuilder failed: {e}")
+
+    background_tasks.add_task(safe_broadcast_route, driver["id"])
+    background_tasks.add_task(safe_rebuild, driver["id"], db)
     
     # Push notification
     async def send_accept_push(student_id, r_id, user_name):
