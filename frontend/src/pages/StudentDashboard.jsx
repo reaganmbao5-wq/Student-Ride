@@ -468,7 +468,7 @@ const StudentDashboard = () => {
             {/* Minimized Header Row */}
             <div className="flex items-center justify-between" onClick={() => setIsSheetExpanded(!isSheetExpanded)}>
               <div className="flex-1 min-w-0 pr-4">
-                <div className="min-h-[1.75rem] flex items-center py-0.5">
+                <div className="h-14 flex items-center">
                   <AnimatePresence mode="wait">
                     <motion.h2 
                       key={`msg-${activeBriefingText}`}
