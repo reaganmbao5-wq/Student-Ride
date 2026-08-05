@@ -2820,6 +2820,7 @@ async def cancel_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
         )
         
         # Broadcast to pool that ride is back available
+        driver_id_to_notify = ride.get("driver_id")
         ride["status"] = RideStatus.REQUESTED.value
         ride["driver_id"] = None
         background_tasks.add_task(manager.broadcast_to_nearby_drivers, {
@@ -2827,7 +2828,9 @@ async def cancel_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
             "ride": ride
         }, ride.get("pickup_location"))
         
-        background_tasks.add_task(broadcast_route_queue, ride["driver_id"])
+        if driver_id_to_notify:
+            background_tasks.add_task(DriverTripRebuilder.rebuild, driver_id_to_notify, db)
+            background_tasks.add_task(broadcast_route_queue, driver_id_to_notify)
         return {"status": "reassigned"}
     else:
         # Rider cancelled: terminate the ride completely

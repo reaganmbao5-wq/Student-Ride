@@ -120,10 +120,22 @@ const DriverDashboard = () => {
 
   const refreshActiveRide = useCallback(async () => {
     try {
-      const res = await api.get('/rides/driver/active');
-      const ridesArray = res.data || [];
+      const [activeRes, tripRes] = await Promise.all([
+        api.get('/rides/driver/active'),
+        api.get('/rides/driver/trip').catch(() => ({ data: { route_queue: [] } }))
+      ]);
+      const ridesArray = activeRes.data || [];
       setActiveRides(ridesArray);
       setActiveRide(ridesArray.length > 0 ? ridesArray[0] : null);
+      if (ridesArray.length === 0) {
+        setRouteQueue([]);
+        setRoutesData([]);
+      } else if (tripRes?.data?.route_queue) {
+        setRouteQueue(tripRes.data.route_queue);
+        if (Array.isArray(tripRes.data.full_driver_segments)) {
+          setRoutesData(tripRes.data.full_driver_segments);
+        }
+      }
     } catch (err) {
       console.error("Error refreshing active ride:", err);
     }
@@ -612,6 +624,8 @@ const DriverDashboard = () => {
       }
       return remaining;
     });
+    setRouteQueue(prev => prev.filter(stop => stop.ride_id !== targetId && getRideId(stop) !== targetId));
+    setRoutesData(prev => prev.filter(segment => segment.ride_id !== targetId));
     toast.info('Ride cancelled');
 
     try {
