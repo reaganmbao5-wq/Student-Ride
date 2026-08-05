@@ -2,10 +2,50 @@ import httpx
 import math
 import logging
 import time
+from typing import Optional
+
 # Configure logging
 logger = logging.getLogger(__name__)
 
 OSRM_BASE_URL = "http://router.project-osrm.org/route/v1/driving"
+
+# Shared HTTPX Client Singleton (Connection Reuse & Reduced TCP Overhead)
+_http_client: Optional[httpx.AsyncClient] = None
+
+def get_http_client() -> httpx.AsyncClient:
+    global _http_client
+    if _http_client is None or _http_client.is_closed:
+        _http_client = httpx.AsyncClient(timeout=httpx.Timeout(5.0, connect=2.0))
+    return _http_client
+
+# Performance Metrics Tracker
+_metrics = {
+    "total_calls": 0,
+    "cache_hits": 0,
+    "osrm_requests": 0,
+    "osrm_errors": 0,
+    "total_latency_ms": 0.0
+}
+
+def get_eta_metrics():
+    """Returns current performance metrics for auditing and benchmarking."""
+    m = dict(_metrics)
+    avg_latency = (m["total_latency_ms"] / m["osrm_requests"]) if m["osrm_requests"] > 0 else 0.0
+    hit_rate = (m["cache_hits"] / m["total_calls"] * 100.0) if m["total_calls"] > 0 else 0.0
+    m["avg_latency_ms"] = round(avg_latency, 2)
+    m["cache_hit_rate_pct"] = round(hit_rate, 2)
+    return m
+
+def reset_eta_metrics():
+    """Resets metrics counters."""
+    global _metrics
+    _metrics = {
+        "total_calls": 0,
+        "cache_hits": 0,
+        "osrm_requests": 0,
+        "osrm_errors": 0,
+        "total_latency_ms": 0.0
+    }
 
 async def get_route(pickup_lat: float, pickup_lng: float, drop_lat: float, drop_lng: float):
     """
@@ -24,28 +64,28 @@ async def get_route(pickup_lat: float, pickup_lng: float, drop_lat: float, drop_
             "geometries": "geojson"
         }
         
-        async with httpx.AsyncClient(timeout=httpx.Timeout(3.0, connect=1.5)) as client:
-            response = await client.get(url, params=params)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if data.get("code") == "Ok" and data.get("routes"):
-                    route = data["routes"][0]
-                    distance_meters = route["distance"]
-                    duration_seconds = route["duration"]
-                    # OSRM returns [lng, lat], we need [lat, lng] for frontend mapping (Leaflet/Google)
-                    raw_geometry = route["geometry"]["coordinates"]
-                    geometry = [[coord[1], coord[0]] for coord in raw_geometry]
-                    
-                    return {
-                        "distance_km": distance_meters / 1000.0,
-                        "duration_minutes": duration_seconds / 60.0,
-                        "geometry": geometry,
-                        "source": "osrm"
-                    }
-            
-            logger.warning(f"OSRM request failed: {response.status_code} - {response.text}")
-            
+        client = get_http_client()
+        response = await client.get(url, params=params)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("code") == "Ok" and data.get("routes"):
+                route = data["routes"][0]
+                distance_meters = route["distance"]
+                duration_seconds = route["duration"]
+                # OSRM returns [lng, lat], we need [lat, lng] for frontend mapping (Leaflet/Google)
+                raw_geometry = route["geometry"]["coordinates"]
+                geometry = [[coord[1], coord[0]] for coord in raw_geometry]
+                
+                return {
+                    "distance_km": distance_meters / 1000.0,
+                    "duration_minutes": duration_seconds / 60.0,
+                    "geometry": geometry,
+                    "source": "osrm"
+                }
+        
+        logger.warning(f"OSRM request failed: {response.status_code} - {response.text}")
+        
     except Exception as e:
         logger.error(f"OSRM Error: {e}")
 
@@ -96,15 +136,15 @@ async def get_multi_waypoint_route(waypoints: list):
     }
 
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url, params=params, timeout=5.0)
-            if response.status_code == 200:
-                data = response.json()
-                if data.get("code") == "Ok" and data.get("routes"):
-                    route = data["routes"][0]
-                    raw_geometry = route["geometry"]["coordinates"]
-                    # OSRM returns [lng, lat], convert to [lat, lng]
-                    return [[coord[1], coord[0]] for coord in raw_geometry]
+        client = get_http_client()
+        response = await client.get(url, params=params)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("code") == "Ok" and data.get("routes"):
+                route = data["routes"][0]
+                raw_geometry = route["geometry"]["coordinates"]
+                # OSRM returns [lng, lat], convert to [lat, lng]
+                return [[coord[1], coord[0]] for coord in raw_geometry]
     except Exception as e:
         logger.error(f"OSRM Multi-Waypoint Error: {e}")
 
@@ -123,40 +163,48 @@ def haversine_distance(lat1, lon1, lat2, lon2):
 
 _eta_cache = {}  # key: "drop_lat,drop_lng", value: {"pickup_lat": lat, "pickup_lng": lng, "eta": seconds, "timestamp": time.time()}
 
-async def calculate_eta(pickup_lat: float, pickup_lng: float, drop_lat: float, drop_lng: float) -> int:
+async def calculate_eta(pickup_lat: float, pickup_lng: float, drop_lat: float, drop_lng: float, force_recalculate: bool = False) -> int:
     """
-    Independent ETA calculation (Phase 4). Returns ETA in seconds.
-    Hierarchy: OSRM -> Haversine fallback (30km/h). No Google Maps.
+    Independent ETA calculation (Phase 4 / Phase 2 Optimization). Returns ETA in seconds.
+    Hierarchy: Shared HTTP OSRM -> Movement (50m) & Time (12s) Cache -> Haversine fallback (30km/h).
     """
-    global _eta_cache
-    cache_key = f"{drop_lat},{drop_lng}"
+    global _eta_cache, _metrics
+    _metrics["total_calls"] += 1
+    cache_key = f"{drop_lat:.5f},{drop_lng:.5f}"
     current_time = time.time()
     
-    # 1. Check Movement-Based Cache
-    if cache_key in _eta_cache:
+    # 1. Intelligent Throttled & Movement-Based Cache Check
+    if cache_key in _eta_cache and not force_recalculate:
         cached = _eta_cache[cache_key]
         dist_moved_km = haversine_distance(pickup_lat, pickup_lng, cached["pickup_lat"], cached["pickup_lng"])
-        # If driver moved less than 20 meters (0.02 km), use cache
-        if dist_moved_km < 0.02:
+        time_elapsed = current_time - cached["timestamp"]
+        
+        # Cache Hit: Driver moved < 50m (0.05 km) AND < 12 seconds elapsed since last OSRM call
+        if dist_moved_km < 0.05 and time_elapsed < 12.0:
+            _metrics["cache_hits"] += 1
             return cached["eta"]
 
-    # 2. Try OSRM
+    # 2. Try OSRM using Shared HTTP Client
+    start_time = time.time()
+    _metrics["osrm_requests"] += 1
     try:
+        client = get_http_client()
         url = f"{OSRM_BASE_URL}/{pickup_lng},{pickup_lat};{drop_lng},{drop_lat}"
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url, timeout=5.0)
-            if response.status_code == 200:
-                data = response.json()
-                if data.get("code") == "Ok" and data.get("routes"):
-                    eta = int(data["routes"][0]["duration"])
-                    _eta_cache[cache_key] = {
-                        "pickup_lat": pickup_lat, 
-                        "pickup_lng": pickup_lng, 
-                        "eta": eta, 
-                        "timestamp": current_time
-                    }
-                    return eta
+        response = await client.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("code") == "Ok" and data.get("routes"):
+                eta = int(data["routes"][0]["duration"])
+                _eta_cache[cache_key] = {
+                    "pickup_lat": pickup_lat, 
+                    "pickup_lng": pickup_lng, 
+                    "eta": eta, 
+                    "timestamp": current_time
+                }
+                _metrics["total_latency_ms"] += (time.time() - start_time) * 1000
+                return eta
     except Exception as e:
+        _metrics["osrm_errors"] += 1
         logger.warning(f"OSRM ETA failed, using fallback: {e}")
 
     # 3. Fallback to Last Valid ETA if OSRM fails
@@ -175,3 +223,4 @@ async def calculate_eta(pickup_lat: float, pickup_lng: float, drop_lat: float, d
         "timestamp": current_time
     }
     return eta
+
