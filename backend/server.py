@@ -1060,14 +1060,8 @@ class ConnectionManager:
         max_distance_meters = radius_km * 1000
         logger.info(f"Broadcasting ride request to drivers near {location} within {radius_km}km")
         
-        loc_lng = 0.0
-        loc_lat = 0.0
-        if isinstance(location, dict):
-            try:
-                loc_lng = float(location.get("lng", location.get("longitude", 0)) or 0)
-                loc_lat = float(location.get("lat", location.get("latitude", 0)) or 0)
-            except (ValueError, TypeError):
-                pass
+        loc_lng = float(location.get("lng", location.get("longitude", 0)))
+        loc_lat = float(location.get("lat", location.get("latitude", 0)))
 
         try:
             online_drivers = await db.drivers.find({
@@ -1098,19 +1092,14 @@ class ConnectionManager:
         ride = message.get("ride", {})
         ride_mode = ride.get("ride_mode", "private")
         passenger_count = ride.get("passenger_count", 1)
-        msg_type = message.get("type")
-        is_removal_notice = msg_type in ["shared_ride_accepted_by_other", "shared_ride_cancelled", "ride_cancelled"]
         
         eligible_drivers = []
         for driver in online_drivers:
-            if is_removal_notice:
+            d_id = driver.get("user_id") or driver.get("id")
+            active_state = await get_driver_active_state(d_id)
+            eligibility = is_driver_eligible(driver, active_state, ride_mode, passenger_count)
+            if eligibility["eligible"]:
                 eligible_drivers.append(driver)
-            else:
-                d_id = driver.get("user_id") or driver.get("id")
-                active_state = await get_driver_active_state(d_id)
-                eligibility = is_driver_eligible(driver, active_state, ride_mode, passenger_count)
-                if eligibility["eligible"]:
-                    eligible_drivers.append(driver)
                 
         logger.info(f"Found {len(eligible_drivers)} eligible nearby drivers for location {location}")
         
@@ -1129,9 +1118,9 @@ class ConnectionManager:
                     except Exception as e:
                         logger.error(f"Failed to send broadcast to driver {cid}: {e}")
 
-        # Safety Fallback: For removal notices or if targeted lookup delivered to 0 drivers, broadcast to all active connections
-        if is_removal_notice or delivered_count == 0:
-            logger.info("Executing broadcast to all active WebSockets.")
+        # Safety Fallback: If targeted lookup missed or delivered to zero drivers, broadcast to all active connections
+        if delivered_count == 0:
+            logger.info("Targeted lookup delivered to 0 active connections. Executing fallback broadcast to all active WebSockets.")
             sanitized = sanitize_for_json(message)
             for user_id, sockets in list(self.active_connections.items()):
                 for ws in sockets:
@@ -2356,11 +2345,10 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
     background_tasks.add_task(DriverTripRebuilder.rebuild, driver["id"], db)
     
     # Broadcast to all other drivers that this ride is no longer in the shared pool
-    pickup_loc = target_ride.get("pickup_location") if isinstance(target_ride.get("pickup_location"), dict) else (target_ride.get("pickup_coords") if isinstance(target_ride.get("pickup_coords"), dict) else {})
     background_tasks.add_task(manager.broadcast_to_nearby_drivers, {
         "type": "shared_ride_accepted_by_other",
         "ride_id": ride_id
-    }, pickup_loc)
+    }, target_ride.get("pickup_location"))
     
     # Push notification
     async def send_accept_push(student_id, r_id, user_name):
@@ -2834,10 +2822,6 @@ async def cancel_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
         # Broadcast to pool that ride is back available
         ride["status"] = RideStatus.REQUESTED.value
         ride["driver_id"] = None
-        student_user = await db.users.find_one({"id": ride["student_id"]}, {"_id": 0})
-        if student_user:
-            ride["student"] = student_user
-            ride["student_name"] = student_user.get("name", "Student")
         background_tasks.add_task(manager.broadcast_to_nearby_drivers, {
             "type": "new_ride_request",
             "ride": ride
