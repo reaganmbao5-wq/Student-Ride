@@ -147,11 +147,13 @@ export const WebSocketProvider = ({ children }) => {
                 route_segments: (incomingSegs.length > 0) 
                   ? incomingSegs 
                   : (prev?.route_segments || []),
-                route_geometry: isValidGeo 
-                  ? incomingGeo 
-                  : (prev?.route_geometry || []),
-                eta_seconds: data.eta_seconds !== undefined ? data.eta_seconds : null,
-                eta_text: data.eta_text || null
+                // HARDENING RULE: Preserve last valid ETA if incoming update has null/empty ETA
+                eta_seconds: (data.eta_seconds !== undefined && data.eta_seconds !== null) 
+                  ? data.eta_seconds 
+                  : (prev?.eta_seconds ?? null),
+                eta_text: (data.eta_text && data.eta_text.trim() !== '') 
+                  ? data.eta_text 
+                  : (prev?.eta_text || null)
               };
             });
             break;

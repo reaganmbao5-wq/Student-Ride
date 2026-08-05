@@ -189,9 +189,17 @@ const StudentDashboard = () => {
         };
       });
       
-      // Restore Passenger Briefing instantly (Problem 01)
+      // Restore Passenger Briefing instantly with ETA preservation
       if (activeRes.data?.passenger_briefing) {
-        setPassengerBriefing(activeRes.data.passenger_briefing);
+        setPassengerBriefing(prev => ({
+          ...activeRes.data.passenger_briefing,
+          eta_seconds: (activeRes.data.passenger_briefing.eta_seconds !== undefined && activeRes.data.passenger_briefing.eta_seconds !== null)
+            ? activeRes.data.passenger_briefing.eta_seconds
+            : (prev?.eta_seconds ?? null),
+          eta_text: (activeRes.data.passenger_briefing.eta_text)
+            ? activeRes.data.passenger_briefing.eta_text
+            : (prev?.eta_text || null)
+        }));
       }
       
       if (activeRes.data?.driver?.current_location) {
