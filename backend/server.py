@@ -1060,8 +1060,14 @@ class ConnectionManager:
         max_distance_meters = radius_km * 1000
         logger.info(f"Broadcasting ride request to drivers near {location} within {radius_km}km")
         
-        loc_lng = float(location.get("lng", location.get("longitude", 0)))
-        loc_lat = float(location.get("lat", location.get("latitude", 0)))
+        loc_lng = 0.0
+        loc_lat = 0.0
+        if isinstance(location, dict):
+            try:
+                loc_lng = float(location.get("lng", location.get("longitude", 0)) or 0)
+                loc_lat = float(location.get("lat", location.get("latitude", 0)) or 0)
+            except (ValueError, TypeError):
+                pass
 
         try:
             online_drivers = await db.drivers.find({
@@ -1123,9 +1129,9 @@ class ConnectionManager:
                     except Exception as e:
                         logger.error(f"Failed to send broadcast to driver {cid}: {e}")
 
-        # Safety Fallback: If targeted lookup missed or delivered to zero drivers, broadcast to all active connections
-        if delivered_count == 0:
-            logger.info("Targeted lookup delivered to 0 active connections. Executing fallback broadcast to all active WebSockets.")
+        # Safety Fallback: For removal notices or if targeted lookup delivered to 0 drivers, broadcast to all active connections
+        if is_removal_notice or delivered_count == 0:
+            logger.info("Executing broadcast to all active WebSockets.")
             sanitized = sanitize_for_json(message)
             for user_id, sockets in list(self.active_connections.items()):
                 for ws in sockets:
@@ -2350,10 +2356,11 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
     background_tasks.add_task(DriverTripRebuilder.rebuild, driver["id"], db)
     
     # Broadcast to all other drivers that this ride is no longer in the shared pool
+    pickup_loc = target_ride.get("pickup_location") if isinstance(target_ride.get("pickup_location"), dict) else (target_ride.get("pickup_coords") if isinstance(target_ride.get("pickup_coords"), dict) else {})
     background_tasks.add_task(manager.broadcast_to_nearby_drivers, {
         "type": "shared_ride_accepted_by_other",
         "ride_id": ride_id
-    }, target_ride.get("pickup_location"))
+    }, pickup_loc)
     
     # Push notification
     async def send_accept_push(student_id, r_id, user_name):
