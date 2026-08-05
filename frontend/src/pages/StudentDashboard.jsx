@@ -402,11 +402,13 @@ const StudentDashboard = () => {
       ? passengerBriefing.carousel_messages
       : (isBriefingForThisRide && passengerBriefing?.briefing_text ? [passengerBriefing.briefing_text] : []);
 
-    let activeBriefingText = activeRide.status === 'requested'
+    let activeBriefingText = (activeRide.ride_mode === 'private')
       ? getStatusText()
-      : (isPinnedState
-          ? (passengerBriefing?.briefing_text || getStatusText())
-          : (carouselMessages.length > 0 ? carouselMessages[carouselIndex % carouselMessages.length] : getStatusText()));
+      : (activeRide.status === 'requested'
+          ? getStatusText()
+          : (isPinnedState
+              ? (passengerBriefing?.briefing_text || getStatusText())
+              : (carouselMessages.length > 0 ? carouselMessages[carouselIndex % carouselMessages.length] : getStatusText())));
 
     // Route State Tracking
     let routeState = 'ROUTE UNAVAILABLE';

@@ -774,13 +774,15 @@ const DriverDashboard = () => {
 
     return (
       <div className="fixed inset-0 bg-background overflow-hidden flex flex-col" data-testid="driver-active-ride">
-        {/* Render intelligent shared ride requests here */}
-        <SharedRideRequestPanel 
-          requests={incomingSharedRequests}
-          onAccept={handleAcceptSharedRide}
-          onDecline={handleDeclineSharedRide}
-          driverLocation={currentLocation}
-        />
+        {/* Render intelligent shared ride requests here (ONLY for Shared Rides or when Driver has no active private ride) */}
+        {(!activeRide || activeRide.ride_mode === 'shared') && (
+          <SharedRideRequestPanel 
+            requests={incomingSharedRequests}
+            onAccept={handleAcceptSharedRide}
+            onDecline={handleDeclineSharedRide}
+            driverLocation={currentLocation}
+          />
+        )}
         
         {/* Map Layer */}
         <div className="flex-1 relative z-0">
@@ -850,9 +852,8 @@ const DriverDashboard = () => {
 
         {/* Bottom Sheet Overlay */}
         <motion.div
-          className="absolute bottom-0 left-0 right-0 bg-white dark:bg-zinc-950 rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-20 flex flex-col min-h-[60vh] max-h-[70vh] overflow-hidden"
-          initial={{ y: "calc(100% - 160px)" }}
-          animate={{ y: isSheetExpanded ? 0 : "calc(100% - 160px)" }}
+          className="absolute bottom-0 left-0 right-0 bg-white dark:bg-zinc-950 rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-20 flex flex-col max-h-[85vh]"
+          animate={{ y: isSheetExpanded ? 0 : "calc(100% - 140px)" }}
           transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
           drag="y"
           dragConstraints={{ top: 0, bottom: 0 }}
@@ -883,7 +884,7 @@ const DriverDashboard = () => {
                    <h2 className="font-heading text-2xl font-bold text-foreground">
                      {activeRides.reduce((sum, r) => sum + (r.passenger_count || 1), 0)} PASSENGERS
                    </h2>
-                   {activeRides.filter(r => ['accepted', 'driver_accepted'].includes(r.status)).length > 0 && (
+                   {activeRide?.ride_mode === 'shared' && activeRides.filter(r => ['accepted', 'driver_accepted'].includes(r.status)).length > 0 && (
                      <span className="text-sm font-bold text-gold uppercase tracking-wider">
                        +{activeRides.filter(r => ['accepted', 'driver_accepted'].includes(r.status)).length} WAITING
                      </span>
@@ -894,7 +895,7 @@ const DriverDashboard = () => {
                    <h2 className="font-heading text-2xl font-bold text-foreground">
                      {activeRides[0]?.passenger_count || 1} PASSENGER
                    </h2>
-                   {['accepted', 'driver_accepted'].includes(activeRides[0]?.status) && (
+                   {activeRide?.ride_mode === 'shared' && ['accepted', 'driver_accepted'].includes(activeRides[0]?.status) && (
                      <span className="text-sm font-bold text-gold uppercase tracking-wider">
                        +1 WAITING
                      </span>
