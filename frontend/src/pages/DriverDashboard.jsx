@@ -270,8 +270,9 @@ const DriverDashboard = () => {
   // Handle real-time synchronization for shared pool
   useEffect(() => {
     if (removedSharedRideId) {
-      setMasterSharedRidePool(prev => prev.filter(r => (r.id !== removedSharedRideId && r._id !== removedSharedRideId && r.ride_id !== removedSharedRideId)));
-      setPendingRides(prev => prev.filter(r => (r.id !== removedSharedRideId && r._id !== removedSharedRideId && r.ride_id !== removedSharedRideId)));
+      const targetStrId = String(removedSharedRideId);
+      setMasterSharedRidePool(prev => prev.filter(r => getRideId(r) !== targetStrId));
+      setPendingRides(prev => prev.filter(r => getRideId(r) !== targetStrId));
     }
   }, [removedSharedRideId]);
 
@@ -604,11 +605,14 @@ const DriverDashboard = () => {
     const targetId = getRideId(targetRide);
     if (!targetId) return;
 
-    // Optimistic UI update: filter out cancelled ride immediately
-    setActiveRides(prev => prev.filter(r => getRideId(r) !== targetId));
-    if (activeRide && getRideId(activeRide) === targetId) {
-      setActiveRide(null);
-    }
+    // Optimistic UI update: filter out cancelled ride immediately without dumping driver to home page
+    setActiveRides(prev => {
+      const remaining = prev.filter(r => getRideId(r) !== targetId);
+      if (activeRide && getRideId(activeRide) === targetId) {
+        setActiveRide(remaining.length > 0 ? remaining[0] : null);
+      }
+      return remaining;
+    });
     toast.info('Ride cancelled');
 
     try {
