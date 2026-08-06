@@ -234,7 +234,7 @@ const RideRequestPage = () => {
 
       setTimeout(() => {
         navigate('/dashboard', { state: { initialRide: res.data } });
-      }, 550);
+      }, 1500);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to request ride');
       setRequesting(false);
@@ -368,7 +368,7 @@ const RideRequestPage = () => {
         className="absolute bottom-0 left-0 right-0 z-20 bg-white dark:bg-zinc-950 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden"
         initial={{ y: "100%" }}
         animate={{ y: isCollapsing ? "calc(100% - 115px)" : 0 }}
-        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
       >
         {/* Drag handle pill */}
         <div className="w-full flex justify-center pt-3 pb-1">
@@ -378,7 +378,7 @@ const RideRequestPage = () => {
         <motion.div 
           className="p-5 flex flex-col gap-4"
           animate={{ opacity: isCollapsing ? 0 : 1 }}
-          transition={{ duration: 0.35 }}
+          transition={{ duration: 0.5 }}
         >
           {step === 'pickup' && (
             <>
