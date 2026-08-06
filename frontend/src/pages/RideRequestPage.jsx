@@ -234,7 +234,7 @@ const RideRequestPage = () => {
 
       setTimeout(() => {
         navigate('/dashboard', { state: { initialRide: res.data } });
-      }, 1000);
+      }, 1100);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to request ride');
       setRequesting(false);
@@ -353,11 +353,10 @@ const RideRequestPage = () => {
       {/* Bottom Sheet */}
       <motion.div 
         layoutId="student-bottom-sheet"
-        layout
         className="relative z-20 bg-white dark:bg-zinc-950 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden"
         initial={{ y: "100%" }}
-        animate={{ y: 0 }}
-        transition={{ layout: { duration: 1.0, ease: [0.22, 1, 0.36, 1] }, type: "spring", damping: 25, stiffness: 200 }}
+        animate={{ y: isCollapsing ? "calc(100% - 150px)" : 0 }}
+        transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
       >
         {/* Drag handle pill */}
         <div className="w-full flex justify-center pt-3 pb-1">
