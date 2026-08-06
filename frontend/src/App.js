@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { LayoutGroup } from "framer-motion";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { WebSocketProvider } from "./context/WebSocketContext";
 import { Toaster } from "./components/ui/sonner";
@@ -93,8 +94,9 @@ const AppRoutes = () => {
 
   return (
     <WebSocketProvider>
-      <Routes>
-        {/* Public Routes */}
+      <LayoutGroup id="student-ride-flow">
+        <Routes>
+          {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
         <Route
           path="/auth"
@@ -268,7 +270,8 @@ const AppRoutes = () => {
         {/* Catch all - redirect to landing */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </WebSocketProvider>
+    </LayoutGroup>
+  </WebSocketProvider>
   );
 };
 

@@ -346,7 +346,8 @@ const RideRequestPage = () => {
 
       {/* Bottom Sheet */}
       <motion.div 
-        className="relative z-20 bg-white dark:bg-zinc-950 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col"
+        layoutId="student-bottom-sheet"
+        className="absolute bottom-0 left-0 right-0 z-20 bg-white dark:bg-zinc-950 rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.12)] flex flex-col"
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
@@ -356,7 +357,12 @@ const RideRequestPage = () => {
           <div className="w-12 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full" />
         </div>
 
-        <div className="p-5 flex flex-col gap-4">
+        <motion.div 
+          className="p-5 flex flex-col gap-4"
+          initial={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
           {step === 'pickup' && (
             <>
               <h2 className="text-xl font-bold font-heading">Pickup Location</h2>
@@ -546,8 +552,7 @@ const RideRequestPage = () => {
               </button>
               </>
            )}
-
-        </div>
+        </motion.div>
       </motion.div>
     </div>
   );

@@ -503,6 +503,7 @@ const StudentDashboard = () => {
 
         {/* Bottom Sheet Overlay */}
         <motion.div
+          layoutId="student-bottom-sheet"
           className="absolute bottom-0 left-0 right-0 bg-white dark:bg-zinc-950 rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-20 flex flex-col"
           animate={{ y: isSheetExpanded ? 0 : "calc(max(0px, 100% - 150px))" }}
           transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
@@ -522,7 +523,12 @@ const StudentDashboard = () => {
             <div className="w-12 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full" />
           </div>
 
-          <div className="px-6 pb-6 pt-2 flex flex-col gap-6">
+          <motion.div 
+            className="px-6 pb-6 pt-2 flex flex-col gap-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.35, delay: 0.15 }}
+          >
             
             {/* Minimized Header Row */}
             <div className="flex items-center justify-between" onClick={() => setIsSheetExpanded(!isSheetExpanded)}>
@@ -662,12 +668,11 @@ const StudentDashboard = () => {
                         </button>
                      )}
                    </div>
-
                 </motion.div>
               )}
             </AnimatePresence>
 
-          </div>
+          </motion.div>
         </motion.div>
         
         {/* Rating Modal explicitly mapped to active ride completion */}
