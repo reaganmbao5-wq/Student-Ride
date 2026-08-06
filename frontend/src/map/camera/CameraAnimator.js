@@ -1,4 +1,5 @@
 
+import L from 'leaflet';
 import { CAMERA_CONFIG } from './CameraConfig';
 
 /**
@@ -73,6 +74,23 @@ class CameraAnimator {
             let calculatedZoom = (this.map.getBoundsZoom && typeof this.map.getBoundsZoom === 'function') 
               ? this.map.getBoundsZoom(this.state.targetBounds, false, paddingOpts) 
               : 18;
+
+            // Distance-scaled adaptive zoom lock for close targets (<350m)
+            if (this.state.targetBounds && Array.isArray(this.state.targetBounds) && this.state.targetBounds.length === 2) {
+              try {
+                const p1 = L.latLng(this.state.targetBounds[0]);
+                const p2 = L.latLng(this.state.targetBounds[1]);
+                const distMeters = p1.distanceTo(p2);
+                if (distMeters < 350) {
+                  // Continuous zoom tightening: 350m -> 17.5, 200m -> 18.5, 50m -> 20.0
+                  const adaptiveZoom = Math.min(20, Math.max(17.5, 20 - (distMeters / 350) * 2.5));
+                  calculatedZoom = Math.max(calculatedZoom, adaptiveZoom);
+                }
+              } catch (err) {
+                // Fallback if coordinates missing
+              }
+            }
+
             calculatedZoom = Math.min(calculatedZoom, CAMERA_CONFIG.ZOOM.MAX || 20);
 
             if (!this.lastMaxBoundsZoom || calculatedZoom >= this.lastMaxBoundsZoom - 0.5) {
