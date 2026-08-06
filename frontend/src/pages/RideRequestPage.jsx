@@ -212,13 +212,15 @@ const RideRequestPage = () => {
     }
   };
 
+  const [isTransitioningToDashboard, setIsTransitioningToDashboard] = useState(false);
+
   const handleRequestRide = async () => {
     if (!pickup || !dropoff || !fareEstimate) return;
 
     setRequesting(true);
     try {
       const activeFare = rideMode === 'shared' ? fareEstimate.shared_fare : fareEstimate.private_fare;
-      await api.post('/rides/request', {
+      const res = await api.post('/rides/request', {
         pickup_location: pickup,
         dropoff_location: dropoff,
         ride_mode: rideMode,
@@ -227,11 +229,15 @@ const RideRequestPage = () => {
         estimated_duration: fareEstimate.duration
       });
 
+      const newRide = res.data;
       toast.success('Ride requested! Finding a driver...');
-      navigate('/dashboard');
+      setIsTransitioningToDashboard(true);
+
+      setTimeout(() => {
+        navigate('/dashboard', { state: { initialRide: newRide } });
+      }, 350);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to request ride');
-    } finally {
       setRequesting(false);
     }
   };
@@ -349,8 +355,8 @@ const RideRequestPage = () => {
       <motion.div 
         className="relative z-20 bg-white dark:bg-zinc-950 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col"
         initial={{ y: "100%" }}
-        animate={{ y: 0 }}
-        transition={{ type: "spring", damping: 25, stiffness: 200 }}
+        animate={isTransitioningToDashboard ? { y: "100%", opacity: 0 } : { y: 0, opacity: 1 }}
+        transition={{ duration: 0.35, ease: [0.25, 1, 0.5, 1] }}
       >
         {/* Drag handle pill */}
         <div className="w-full flex justify-center pt-3 pb-1">

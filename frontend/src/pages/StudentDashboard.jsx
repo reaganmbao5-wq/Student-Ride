@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { MapPin, Clock, Car, Star, ChevronRight, Navigation, AlertCircle, MessageCircle, Phone, PhoneCall } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { MapPin, Clock, Car, Star, ChevronRight, Navigation, AlertCircle, MessageCircle, Phone, PhoneCall, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard, GoldButton, StatusBadge, LoadingSpinner, EmptyState } from '../components/common/GlassComponents';
 import { RatingModal } from '../components/common/RatingModal';
@@ -16,11 +16,15 @@ import { routeCache } from '../map/route/RouteCache';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const initialRideState = location.state?.initialRide || null;
+
   const { user, api } = useAuth();
   const { isConnected, rideUpdate, driverLocation, passengerBriefing, clearRideUpdate, setPassengerBriefing } = useWebSocket();
   const { location: userLocation } = useGeolocation();
   
-  const [activeRide, setActiveRide] = useState(null);
+  const [activeRide, setActiveRide] = useState(initialRideState);
+  const [loading, setLoading] = useState(!initialRideState);
   
   // 6-Second Alternating Awareness Message Banner Timer
   const [showBriefingBanner, setShowBriefingBanner] = useState(true);
@@ -257,13 +261,17 @@ const StudentDashboard = () => {
     }
   };
 
-  if (loading) {
+  if (loading && !activeRide) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <LoadingSpinner size="lg" />
+      <div className="relative w-full h-screen bg-background overflow-hidden flex flex-col">
+        <PlatformMap className="w-full h-full" center={userLocation || { lat: -14.4087, lng: 28.2849 }} zoom={15} />
+        <div className="absolute top-12 left-0 right-0 z-20 flex justify-center pointer-events-none">
+          <div className="bg-black/90 text-white px-5 py-2.5 rounded-full shadow-2xl flex items-center gap-3 backdrop-blur-md border border-white/10">
+            <Loader2 className="w-4 h-4 animate-spin text-yellow-400" />
+            <span className="text-xs font-semibold tracking-wide">Loading your ride status...</span>
+          </div>
         </div>
-      </Layout>
+      </div>
     );
   }
 
