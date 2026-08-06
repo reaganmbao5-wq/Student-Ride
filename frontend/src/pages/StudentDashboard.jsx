@@ -40,7 +40,6 @@ const StudentDashboard = () => {
   const { drivers: nearbyDrivers } = useDriverDiscovery(api, searchLocation);
 
   const [recentRides, setRecentRides] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [driverPos, setDriverPos] = useState(null);
   const [isRouteAnimating, setIsRouteAnimating] = useState(false);
   
