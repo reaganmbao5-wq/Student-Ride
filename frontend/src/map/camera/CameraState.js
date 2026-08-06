@@ -42,6 +42,11 @@ class CameraState {
     this.lastInteractionTime = Date.now();
   }
 
+  resetInteraction() {
+    this.isUserInteracting = false;
+    this.lastInteractionTime = 0;
+  }
+
   isIdle(idleTimeoutMs) {
     if (this.isUserInteracting) return false;
     return (Date.now() - this.lastInteractionTime) > idleTimeoutMs;

@@ -261,14 +261,19 @@ const RideRequestPage = () => {
     if (dropoff) markers.push({ lat: dropoff.lat, lng: dropoff.lng, iconType: 'dropoff', key: 'final-dropoff' });
   }
 
-  // Bounds logic for confirm step
-  let bounds = null;
-  if (step === 'confirm' && pickup && dropoff) {
-    bounds = [
-      [pickup.lat, pickup.lng],
-      [dropoff.lat, dropoff.lng]
-    ];
-  }
+  // Memoized bounds logic for confirm step (uses routeGeometry polyline points if available or pickup + dropoff)
+  const bounds = useMemo(() => {
+    if (step === 'confirm' && pickup && dropoff) {
+      if (Array.isArray(routeGeometry) && routeGeometry.length > 1) {
+        return routeGeometry;
+      }
+      return [
+        [pickup.lat, pickup.lng],
+        [dropoff.lat, dropoff.lng]
+      ];
+    }
+    return null;
+  }, [step, pickup, dropoff, routeGeometry]);
 
 
   return (

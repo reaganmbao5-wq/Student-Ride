@@ -13,8 +13,14 @@ class CameraController {
   }
   
   update(mode, driverLocation, routeBounds, selectionLocation, map) {
+    const modeChanged = this.state.mode !== mode;
     // 1. Update Mode
     this.state.setMode(mode);
+
+    // If mode changed (e.g. entering confirm step / FOLLOW_ROUTE), reset interaction block
+    if (modeChanged && (mode === CAMERA_MODES.FOLLOW_ROUTE || mode === CAMERA_MODES.OVERVIEW)) {
+      this.state.resetInteraction();
+    }
 
     // 2. Check for idle timeout (resume auto-follow after user interaction)
     if (this.state.isUserInteracting) {
