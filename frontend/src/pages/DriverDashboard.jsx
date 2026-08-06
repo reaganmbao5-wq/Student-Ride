@@ -308,8 +308,11 @@ const DriverDashboard = () => {
   useEffect(() => {
     if (driverProfile) {
       setIsOnline(driverProfile.is_online);
-      const profileLoc = driverProfile.current_location?.lat ? driverProfile.current_location : { lat: -14.294532832852411, lng: 28.54970049702143, heading: 0 };
-      setCurrentLocation(prev => prev || profileLoc);
+      if (driverProfile.current_location && driverProfile.current_location.lat) {
+        setCurrentLocation(driverProfile.current_location);
+      } else {
+        setCurrentLocation(prev => prev || { lat: -14.294532832852411, lng: 28.54970049702143, heading: 0 });
+      }
     }
   }, [driverProfile]);
 
