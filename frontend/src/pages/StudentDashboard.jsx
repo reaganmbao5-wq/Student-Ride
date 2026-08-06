@@ -344,15 +344,28 @@ const StudentDashboard = () => {
     if (driverPos) bounds.push([driverPos.lat, driverPos.lng]);
     
     if (['accepted', 'driver_accepted', 'driver_en_route_to_pickup'].includes(currentStatus)) {
-      // Driver is on the way to pickup: frame Driver + Pickup ALWAYS
+      // Driver is on the way to pickup: frame Driver + Pickup ALWAYS (adaptive tightening)
       if (activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
     } else if (currentStatus === 'driver_arrived') {
       // Driver arrived at pickup: frame Pickup + Destination
       if (activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
       if (activeRide.dropoff_location) bounds.push([activeRide.dropoff_location.lat, activeRide.dropoff_location.lng]);
     } else if (['ongoing', 'ride_started', 'ride_in_progress', 'arriving_destination'].includes(currentStatus)) {
-      // Driver heading to destination: frame Driver + Destination (mirrors pickup approach, continuously tightening zoom)
-      if (activeRide.dropoff_location) bounds.push([activeRide.dropoff_location.lat, activeRide.dropoff_location.lng]);
+      // Driver heading to destination:
+      // Lock onto driver during main trip. Only begin adaptive arrival framing when driver reaches destination arrival threshold (~800m)
+      if (activeRide.dropoff_location && driverPos) {
+        const dLat = driverPos.lat;
+        const dLng = driverPos.lng;
+        const destLat = activeRide.dropoff_location.lat;
+        const destLng = activeRide.dropoff_location.lng;
+        const distSq = Math.pow(dLat - destLat, 2) + Math.pow(dLng - destLng, 2);
+        
+        // ~0.00008 deg sq corresponds to ~800 meters proximity threshold
+        const DESTINATION_ARRIVAL_THRESHOLD_SQ = 0.00008;
+        if (distSq <= DESTINATION_ARRIVAL_THRESHOLD_SQ) {
+          bounds.push([destLat, destLng]); // Activate adaptive arrival framing (Driver + Destination)
+        }
+      }
     } else if (currentStatus === 'requested') {
       // Searching for driver: frame Pickup + Destination + NEARBY DRIVERS ONLY (within 3.0km radius)
       if (activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);

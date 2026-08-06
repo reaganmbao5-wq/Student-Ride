@@ -30,12 +30,12 @@ export const CAMERA_CONFIG = {
       const containerWidth = mapSize && mapSize.x ? mapSize.x : (typeof window !== 'undefined' ? window.innerWidth : 400);
 
       // Usable visible viewport padding calculation:
-      // Top padding: 80px to clear floating header while keeping top area clear.
-      // Bottom padding: Reserves lower ~42% of container height (matching bottom sheet overlay) + 20px buffer.
-      // Side padding: Dynamic 10% of container width (clamped between 30px and 60px) for marker icons.
-      const topPadding = 80;
-      const bottomPadding = Math.round(containerHeight * 0.42) + 20;
-      const sidePadding = Math.max(30, Math.min(60, Math.round(containerWidth * 0.1)));
+      // Top padding: 40px (clears top overlay while maximizing map area)
+      // Bottom padding: Reserves lower ~28% of container height for sheet handle + 15px buffer
+      // Side padding: Dynamic 6% of container width (clamped 20px–40px)
+      const topPadding = 40;
+      const bottomPadding = Math.round(containerHeight * 0.28) + 15;
+      const sidePadding = Math.max(20, Math.min(40, Math.round(containerWidth * 0.06)));
 
       return {
         paddingTopLeft: [sidePadding, topPadding],
