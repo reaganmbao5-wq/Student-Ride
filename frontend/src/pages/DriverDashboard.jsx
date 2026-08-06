@@ -602,6 +602,7 @@ const DriverDashboard = () => {
       }
       return remaining;
     });
+    setRouteQueue(prev => prev.filter(stop => stop.ride_id !== targetId));
     toast.success('Ride completed!');
 
     try {
@@ -828,6 +829,7 @@ const DriverDashboard = () => {
           )}
 
           <PlatformMap
+            driverLocation={currentLocation}
             center={currentLocation || { lat: -14.294532832852411, lng: 28.54970049702143 }}
             bounds={bounds.length > 1 ? bounds : null}
             zoom={16}
