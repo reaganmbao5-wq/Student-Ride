@@ -31,10 +31,10 @@ export const CAMERA_CONFIG = {
 
       // Usable visible viewport padding calculation:
       // Top padding: 30px (clears top overlay while maximizing map area)
-      // Bottom padding: Reserves lower ~48% of container height (min 240px) for bottom sheet overlays
+      // Bottom padding: Reserves lower ~58% of container height (min 480px) for large bottom sheet overlays (e.g. Confirm Ride)
       // Side padding: Dynamic 4% of container width (clamped 15px–30px)
       const topPadding = 30;
-      const bottomPadding = Math.max(240, Math.round(containerHeight * 0.48));
+      const bottomPadding = Math.max(480, Math.round(containerHeight * 0.58));
       const sidePadding = Math.max(15, Math.min(30, Math.round(containerWidth * 0.04)));
 
       return {
