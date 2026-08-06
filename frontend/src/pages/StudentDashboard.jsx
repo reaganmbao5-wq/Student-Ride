@@ -260,17 +260,13 @@ const StudentDashboard = () => {
     }
   };
 
-  if (loading && !activeRide) {
+  if (loading) {
     return (
-      <div className="relative w-full h-screen bg-background overflow-hidden flex flex-col">
-        <PlatformMap className="w-full h-full" center={userLocation || { lat: -14.4087, lng: 28.2849 }} zoom={15} />
-        <div className="absolute top-12 left-0 right-0 z-20 flex justify-center pointer-events-none">
-          <div className="bg-black/90 text-white px-5 py-2.5 rounded-full shadow-2xl flex items-center gap-3 backdrop-blur-md border border-white/10">
-            <Loader2 className="w-4 h-4 animate-spin text-yellow-400" />
-            <span className="text-xs font-semibold tracking-wide">Loading your ride status...</span>
-          </div>
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <LoadingSpinner size="lg" />
         </div>
-      </div>
+      </Layout>
     );
   }
 
@@ -508,9 +504,8 @@ const StudentDashboard = () => {
         {/* Bottom Sheet Overlay */}
         <motion.div
           className="absolute bottom-0 left-0 right-0 bg-white dark:bg-zinc-950 rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-20 flex flex-col"
-          initial={{ y: "100%", opacity: 0 }}
-          animate={{ y: isSheetExpanded ? 0 : "calc(max(0px, 100% - 150px))", opacity: 1 }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          animate={{ y: isSheetExpanded ? 0 : "calc(max(0px, 100% - 150px))" }}
+          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
           drag="y"
           dragConstraints={{ top: 0, bottom: 0 }}
           dragElastic={0.2}

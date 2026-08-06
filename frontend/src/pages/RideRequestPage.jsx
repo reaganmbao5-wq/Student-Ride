@@ -212,8 +212,6 @@ const RideRequestPage = () => {
     }
   };
 
-  const [isMorphingToSearching, setIsMorphingToSearching] = useState(false);
-
   const handleRequestRide = async () => {
     if (!pickup || !dropoff || !fareEstimate) return;
 
@@ -229,13 +227,8 @@ const RideRequestPage = () => {
         estimated_duration: fareEstimate.duration
       });
 
-      const newRide = res.data;
       toast.success('Ride requested! Finding a driver...');
-      setIsMorphingToSearching(true);
-
-      setTimeout(() => {
-        navigate('/dashboard', { state: { initialRide: newRide } });
-      }, 850);
+      navigate('/dashboard', { state: { initialRide: res.data } });
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to request ride');
       setRequesting(false);
@@ -353,11 +346,10 @@ const RideRequestPage = () => {
 
       {/* Bottom Sheet */}
       <motion.div 
-        layout
-        className="relative z-20 bg-white dark:bg-zinc-950 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden"
+        className="relative z-20 bg-white dark:bg-zinc-950 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col"
         initial={{ y: "100%" }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ layout: { duration: 0.75, ease: [0.22, 1, 0.36, 1] }, duration: 0.5 }}
+        animate={{ y: 0 }}
+        transition={{ type: "spring", damping: 25, stiffness: 200 }}
       >
         {/* Drag handle pill */}
         <div className="w-full flex justify-center pt-3 pb-1">
@@ -365,30 +357,7 @@ const RideRequestPage = () => {
         </div>
 
         <div className="p-5 flex flex-col gap-4">
-          <AnimatePresence mode="wait">
-            {isMorphingToSearching ? (
-              <motion.div
-                key="searching-morph"
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.4 }}
-                className="py-4 flex flex-col items-center justify-center gap-3 text-center"
-              >
-                <div className="relative flex items-center justify-center my-2">
-                  <div className="w-14 h-14 rounded-full bg-yellow-400/20 flex items-center justify-center animate-ping absolute" />
-                  <div className="w-14 h-14 rounded-full bg-black dark:bg-white flex items-center justify-center text-yellow-400 dark:text-black shadow-xl z-10">
-                    <Loader2 className="w-7 h-7 animate-spin" />
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold font-heading text-foreground">Finding a driver...</h3>
-                  <p className="text-xs text-muted-foreground mt-1">Connecting you to nearest available driver</p>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div key="standard-steps" initial={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="flex flex-col gap-4">
-                {step === 'pickup' && (
+          {step === 'pickup' && (
             <>
               <h2 className="text-xl font-bold font-heading">Pickup Location</h2>
               
@@ -577,9 +546,7 @@ const RideRequestPage = () => {
               </button>
               </>
            )}
-          </motion.div>
-        )}
-        </AnimatePresence>
+
         </div>
       </motion.div>
     </div>
