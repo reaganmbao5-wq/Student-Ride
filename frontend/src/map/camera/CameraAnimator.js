@@ -15,6 +15,15 @@ class CameraAnimator {
     this.lastTargetBounds = null;
     this.lastTargetZoom = null;
     this.lastMaxBoundsZoom = 0;
+    this.bottomPadding = null;
+  }
+
+  setBottomPadding(padding) {
+    if (this.bottomPadding !== padding) {
+      this.bottomPadding = padding;
+      // Force bounds re-fit when bottom padding changes
+      this.lastTargetBounds = null;
+    }
   }
 
   attach(mapInstance) {
@@ -62,7 +71,7 @@ class CameraAnimator {
           const size = this.map.getSize();
           // Ensure map has actual dimensions before fitting bounds
           if (size.x > 0 && size.y > 0) {
-            let paddingOpts = CAMERA_CONFIG.BOUNDS.getPaddingOptions(size);
+            let paddingOpts = CAMERA_CONFIG.BOUNDS.getPaddingOptions(size, this.bottomPadding);
             
             // Intelligent safeguard for mini maps (e.g. RideCard)
             if (size.y < 250 || size.x < 250) {

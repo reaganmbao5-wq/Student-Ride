@@ -24,17 +24,19 @@ export const CAMERA_CONFIG = {
     IDLE_TIMEOUT_MS: 5000, // Wait 5s after user drag before resuming auto-follow
   },
   BOUNDS: {
-    getPaddingOptions: (mapSize) => {
+    getPaddingOptions: (mapSize, paddingBottomOverride = null) => {
       // Derive padding strictly from live map container geometry and viewport dimensions (no static device checks)
       const containerHeight = mapSize && mapSize.y ? mapSize.y : (typeof window !== 'undefined' ? window.innerHeight : 600);
       const containerWidth = mapSize && mapSize.x ? mapSize.x : (typeof window !== 'undefined' ? window.innerWidth : 400);
 
       // Usable visible viewport padding calculation:
       // Top padding: 30px (clears top overlay while maximizing map area)
-      // Bottom padding: Reserves lower ~58% of container height (min 480px) for large bottom sheet overlays (e.g. Confirm Ride)
+      // Bottom padding: Custom padding if provided, else ~20% of container height (min 140px)
       // Side padding: Dynamic 4% of container width (clamped 15px–30px)
       const topPadding = 30;
-      const bottomPadding = Math.max(480, Math.round(containerHeight * 0.58));
+      const bottomPadding = paddingBottomOverride !== null 
+        ? paddingBottomOverride 
+        : Math.max(140, Math.round(containerHeight * 0.20));
       const sidePadding = Math.max(15, Math.min(30, Math.round(containerWidth * 0.04)));
 
       return {

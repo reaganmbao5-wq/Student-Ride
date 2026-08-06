@@ -147,6 +147,7 @@ export const PlatformMap = ({
   driverLocation = null,
   routeBounds = null,
   selectionLocation = null,
+  bottomPadding = null,
   rideStatus = null,
   onRouteAnimationChange = null,
 }) => {
@@ -217,6 +218,7 @@ export const PlatformMap = ({
           driverLocation={driverLocation}
           routeBounds={routeBounds || bounds}
           selectionLocation={selectionLocation || center}
+          bottomPadding={bottomPadding}
         />
 
         <MapEvents />

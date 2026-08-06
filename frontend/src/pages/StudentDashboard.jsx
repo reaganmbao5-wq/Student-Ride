@@ -541,7 +541,7 @@ const StudentDashboard = () => {
             className="px-6 pb-6 pt-2 flex flex-col gap-6"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.35, delay: 0 }}
+            transition={{ duration: 0.7, delay: 0.05 }}
           >
             
             {/* Minimized Header Row */}

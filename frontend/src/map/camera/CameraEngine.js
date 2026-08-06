@@ -21,7 +21,8 @@ const CameraEngine = ({
   mode = CAMERA_MODES.FREE, 
   driverLocation = null, 
   routeBounds = null, 
-  selectionLocation = null 
+  selectionLocation = null,
+  bottomPadding = null
 }) => {
   const map = useMap();
 
@@ -40,6 +41,11 @@ const CameraEngine = ({
       cameraAnimator.detach();
     };
   }, [map, cameraAnimator]);
+
+  // Sync bottomPadding override
+  useEffect(() => {
+    cameraAnimator.setBottomPadding(bottomPadding);
+  }, [bottomPadding, cameraAnimator]);
 
   // 2. Intercept User Interactions
   useMapEvents({
