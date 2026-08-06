@@ -13,6 +13,7 @@ class CameraAnimator {
     this.lastTargetCenter = null;
     this.lastTargetBounds = null;
     this.lastTargetZoom = null;
+    this.lastMaxBoundsZoom = 0;
   }
 
   attach(mapInstance) {
@@ -39,13 +40,18 @@ class CameraAnimator {
   }
 
   tick = () => {
-    if (this.map && !this.state.isUserInteracting && this.state.isIdle(CAMERA_CONFIG.INTERACTION.IDLE_TIMEOUT_MS)) {
+    if (this.map && this.state) {
       this.applyTargets();
     }
     this.animationFrameId = requestAnimationFrame(this.tick);
   };
 
   applyTargets() {
+    // Reset monotonic bounds zoom tracker when bounds are cleared
+    if (!this.state.targetBounds) {
+      this.lastMaxBoundsZoom = 0;
+    }
+
     // 1. Handle Bounds (OVERVIEW, FOLLOW_ROUTE)
     if (this.state.targetBounds) {
       // Prevent spamming fitBounds if bounds haven't changed by deep comparing the array
@@ -60,6 +66,20 @@ class CameraAnimator {
             // Intelligent safeguard for mini maps (e.g. RideCard)
             if (size.y < 250 || size.x < 250) {
               paddingOpts = { paddingTopLeft: [15, 15], paddingBottomRight: [15, 15] };
+            }
+
+            // Monotonic Zoom Protection during approach:
+            // Calculate ideal zoom for these bounds to eliminate zoom flickering/back-jumps on GPS pings
+            let calculatedZoom = (this.map.getBoundsZoom && typeof this.map.getBoundsZoom === 'function') 
+              ? this.map.getBoundsZoom(this.state.targetBounds, false, paddingOpts) 
+              : 18;
+            calculatedZoom = Math.min(calculatedZoom, CAMERA_CONFIG.ZOOM.MAX || 20);
+
+            if (!this.lastMaxBoundsZoom || calculatedZoom >= this.lastMaxBoundsZoom - 0.5) {
+              this.lastMaxBoundsZoom = Math.max(this.lastMaxBoundsZoom || 0, calculatedZoom);
+            } else {
+              // Bounds expanded significantly (e.g. driver turned around/rerouted), allow zoom out
+              this.lastMaxBoundsZoom = calculatedZoom;
             }
 
             this.map.fitBounds(this.state.targetBounds, {

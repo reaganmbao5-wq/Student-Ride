@@ -352,7 +352,7 @@ const StudentDashboard = () => {
       if (activeRide.dropoff_location) bounds.push([activeRide.dropoff_location.lat, activeRide.dropoff_location.lng]);
     } else if (['ongoing', 'ride_started', 'ride_in_progress', 'arriving_destination'].includes(currentStatus)) {
       // Driver heading to destination:
-      // Lock onto driver during main trip. Only begin adaptive arrival framing when driver reaches 100 meters threshold
+      // Lock onto driver during main trip. Only begin adaptive arrival framing when driver reaches 350 meters threshold
       if (activeRide.dropoff_location && driverPos) {
         const dLat = driverPos.lat;
         const dLng = driverPos.lng;
@@ -360,8 +360,8 @@ const StudentDashboard = () => {
         const destLng = activeRide.dropoff_location.lng;
         const distSq = Math.pow(dLat - destLat, 2) + Math.pow(dLng - destLng, 2);
         
-        // ~0.000001 deg sq corresponds to ~100 meters proximity threshold
-        const DESTINATION_ARRIVAL_THRESHOLD_SQ = 0.000001;
+        // ~0.00001 deg sq corresponds to ~350 meters proximity threshold
+        const DESTINATION_ARRIVAL_THRESHOLD_SQ = 0.00001;
         if (distSq <= DESTINATION_ARRIVAL_THRESHOLD_SQ) {
           bounds.push([destLat, destLng]); // Activate adaptive arrival framing (Driver + Destination)
         }
