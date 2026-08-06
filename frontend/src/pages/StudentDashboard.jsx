@@ -508,8 +508,9 @@ const StudentDashboard = () => {
         {/* Bottom Sheet Overlay */}
         <motion.div
           className="absolute bottom-0 left-0 right-0 bg-white dark:bg-zinc-950 rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-20 flex flex-col"
-          animate={{ y: isSheetExpanded ? 0 : "calc(max(0px, 100% - 150px))" }}
-          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+          initial={{ y: "100%", opacity: 0 }}
+          animate={{ y: isSheetExpanded ? 0 : "calc(max(0px, 100% - 150px))", opacity: 1 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           drag="y"
           dragConstraints={{ top: 0, bottom: 0 }}
           dragElastic={0.2}

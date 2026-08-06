@@ -235,7 +235,7 @@ const RideRequestPage = () => {
 
       setTimeout(() => {
         navigate('/dashboard', { state: { initialRide: newRide } });
-      }, 350);
+      }, 650);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to request ride');
       setRequesting(false);
@@ -356,7 +356,7 @@ const RideRequestPage = () => {
         className="relative z-20 bg-white dark:bg-zinc-950 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col"
         initial={{ y: "100%" }}
         animate={isTransitioningToDashboard ? { y: "100%", opacity: 0 } : { y: 0, opacity: 1 }}
-        transition={{ duration: 0.35, ease: [0.25, 1, 0.5, 1] }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
       >
         {/* Drag handle pill */}
         <div className="w-full flex justify-center pt-3 pb-1">
