@@ -11,9 +11,9 @@ export const CAMERA_CONFIG = {
   ZOOM: {
     PICKUP_SELECTION: 17,
     DESTINATION_SELECTION: 17,
-    FOLLOW_DRIVER: 18,
+    FOLLOW_DRIVER: 19,
     DEFAULT: 15,
-    MAX: 18,
+    MAX: 20,
     MIN: 5,
   },
   ANIMATION: {
@@ -30,12 +30,12 @@ export const CAMERA_CONFIG = {
       const containerWidth = mapSize && mapSize.x ? mapSize.x : (typeof window !== 'undefined' ? window.innerWidth : 400);
 
       // Usable visible viewport padding calculation:
-      // Top padding: 40px (clears top overlay while maximizing map area)
-      // Bottom padding: Reserves lower ~28% of container height for sheet handle + 15px buffer
-      // Side padding: Dynamic 6% of container width (clamped 20px–40px)
-      const topPadding = 40;
-      const bottomPadding = Math.round(containerHeight * 0.28) + 15;
-      const sidePadding = Math.max(20, Math.min(40, Math.round(containerWidth * 0.06)));
+      // Top padding: 30px (clears top overlay while maximizing map area)
+      // Bottom padding: Reserves lower ~20% of container height for sheet handle + 10px buffer
+      // Side padding: Dynamic 4% of container width (clamped 15px–30px)
+      const topPadding = 30;
+      const bottomPadding = Math.round(containerHeight * 0.20) + 10;
+      const sidePadding = Math.max(15, Math.min(30, Math.round(containerWidth * 0.04)));
 
       return {
         paddingTopLeft: [sidePadding, topPadding],

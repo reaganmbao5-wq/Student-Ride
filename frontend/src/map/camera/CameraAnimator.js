@@ -66,7 +66,7 @@ class CameraAnimator {
               ...paddingOpts,
               animate: true,
               duration: CAMERA_CONFIG.ANIMATION.DURATION_MS / 1000,
-              maxZoom: CAMERA_CONFIG.ZOOM.MAX || 18
+              maxZoom: CAMERA_CONFIG.ZOOM.MAX || 20
             });
             this.lastTargetBounds = currentBoundsStr;
             

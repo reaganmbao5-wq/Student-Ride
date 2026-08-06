@@ -190,6 +190,7 @@ export const PlatformMap = ({
       <MapContainer
         center={center ? [center.lat, center.lng] : [-14.42, 28.45]}
         zoom={zoom}
+        maxZoom={20}
         style={{ height: '100%', width: '100%' }}
         zoomControl={false}
         dragging={interactive}
