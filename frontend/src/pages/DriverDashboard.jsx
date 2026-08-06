@@ -578,6 +578,7 @@ const DriverDashboard = () => {
     if (activeRide && getRideId(activeRide) === targetId) {
       setActiveRide(prev => ({ ...prev, status: 'ongoing' }));
     }
+    setRouteQueue(prev => prev.filter(stop => !(stop.ride_id === targetId && stop.stop_type === 'pickup')));
     toast.success('Ride started');
 
     try {

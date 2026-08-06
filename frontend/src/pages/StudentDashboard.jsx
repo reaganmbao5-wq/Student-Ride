@@ -442,7 +442,7 @@ const StudentDashboard = () => {
       : (isBriefingForThisRide && passengerBriefing?.briefing_text ? [passengerBriefing.briefing_text] : []);
 
     let activeBriefingText = (activeRide.ride_mode !== 'shared')
-      ? getStatusText()
+      ? (isPinnedState && passengerBriefing?.briefing_text ? passengerBriefing.briefing_text : getStatusText())
       : (activeRide.status === 'requested'
           ? getStatusText()
           : (isPinnedState
