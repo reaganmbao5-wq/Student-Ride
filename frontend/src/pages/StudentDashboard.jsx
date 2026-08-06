@@ -46,9 +46,16 @@ const StudentDashboard = () => {
   // Bottom Sheet State
   const [isSheetExpanded, setIsSheetExpanded] = useState(false);
 
+  // Track locally cancelled ride IDs to prevent in-flight fetchData race conditions from restoring cancelled rides
+  const cancelledRideIdsRef = React.useRef(new Set());
+
   useEffect(() => {
     console.log('DASHBOARD_MOUNTED (Student)');
     fetchData();
+    // Clear initialRide from history state so browser refresh (F5) doesn't re-read stale initialRide
+    if (window.history.state && window.history.state.usr?.initialRide) {
+      window.history.replaceState({}, document.title);
+    }
   }, []);
 
   // Automatic 4-Second Resync Loop: Guarantees status & route transitions update automatically without manual refresh
@@ -187,6 +194,9 @@ const StudentDashboard = () => {
 
       setActiveRide(prev => {
         if (!activeRes.data) return null;
+        if (activeRes.data.status === 'cancelled' || cancelledRideIdsRef.current.has(activeRes.data.id)) {
+          return null;
+        }
         // Server status is authoritative — allow transition from requested -> accepted/arrived/ongoing
         return {
           ...activeRes.data,
@@ -195,7 +205,7 @@ const StudentDashboard = () => {
       });
       
       // Restore Passenger Briefing instantly with strict ride_id ETA preservation guard
-      if (activeRes.data?.passenger_briefing) {
+      if (activeRes.data?.passenger_briefing && activeRes.data.status !== 'cancelled' && !cancelledRideIdsRef.current.has(activeRes.data.id)) {
         setPassengerBriefing(prev => {
           const isSameRide = Boolean(prev && prev.ride_id && prev.ride_id === activeRes.data.passenger_briefing.ride_id);
           return {
@@ -230,10 +240,14 @@ const StudentDashboard = () => {
     if (!activeRide) return;
 
     try {
-      await api.post(`/rides/${activeRide.id}/cancel`);
-      toast.success('Ride cancelled');
+      const rideIdToCancel = activeRide.id;
+      cancelledRideIdsRef.current.add(rideIdToCancel);
       setActiveRide(null);
       setDriverPos(null);
+      setPassengerBriefing(null);
+      await api.post(`/rides/${rideIdToCancel}/cancel`);
+      toast.success('Ride cancelled');
+      fetchData();
     } catch (error) {
       toast.error('Failed to cancel ride');
     }
