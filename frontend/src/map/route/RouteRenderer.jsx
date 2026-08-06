@@ -80,20 +80,7 @@ export const RouteRenderer = ({ travelledPath, remainingPath, status, onAnimatio
 
   return (
     <>
-      {/* Travelled Path (behind driver) */}
-      {travelledPath && travelledPath.length > 1 && (
-        <Polyline
-          positions={travelledPath}
-          pathOptions={{ 
-            color: travelledColor, 
-            weight: travelledWeight, 
-            opacity: travelledOpacity, 
-            lineCap: 'round', 
-            lineJoin: 'round',
-            smoothFactor: 0.1 // Higher accuracy rendering
-          }}
-        />
-      )}
+      {/* Travelled Path behind driver is completely erased in real-time */}
 
       {/* Remaining Path (ahead of driver - animated) */}
       {animatedRemainingPath && animatedRemainingPath.length > 1 && (
