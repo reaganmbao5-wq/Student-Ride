@@ -24,12 +24,22 @@ export const CAMERA_CONFIG = {
     IDLE_TIMEOUT_MS: 5000, // Wait 5s after user drag before resuming auto-follow
   },
   BOUNDS: {
-    getPaddingOptions: () => {
-      const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-      const sheetHeight = typeof window !== 'undefined' ? window.innerHeight * (isMobile ? 0.45 : 0.25) : 300;
+    getPaddingOptions: (mapSize) => {
+      // Derive padding strictly from live map container geometry and viewport dimensions (no static device checks)
+      const containerHeight = mapSize && mapSize.y ? mapSize.y : (typeof window !== 'undefined' ? window.innerHeight : 600);
+      const containerWidth = mapSize && mapSize.x ? mapSize.x : (typeof window !== 'undefined' ? window.innerWidth : 400);
+
+      // Usable visible viewport padding calculation:
+      // Top padding: 80px to clear floating header while keeping top area clear.
+      // Bottom padding: Reserves lower ~42% of container height (matching bottom sheet overlay) + 20px buffer.
+      // Side padding: Dynamic 10% of container width (clamped between 30px and 60px) for marker icons.
+      const topPadding = 80;
+      const bottomPadding = Math.round(containerHeight * 0.42) + 20;
+      const sidePadding = Math.max(30, Math.min(60, Math.round(containerWidth * 0.1)));
+
       return {
-        paddingTopLeft: [50, 120], // 50px left, 120px top (avoids back button and top edge)
-        paddingBottomRight: [50, sheetHeight + 20] // 50px right, dynamic bottom padding + extra buffer
+        paddingTopLeft: [sidePadding, topPadding],
+        paddingBottomRight: [sidePadding, bottomPadding]
       };
     }
   }

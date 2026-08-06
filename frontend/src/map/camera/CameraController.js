@@ -43,8 +43,8 @@ class CameraController {
         } else {
           const driverCenter = followController.getTargetCenter(driverLocation);
           if (driverCenter) {
-            const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-            const offset = isMobile ? 0.0008 : 0.0004; // Larger offset for mobile due to taller bottom sheet
+            const containerHeight = map && map.getSize ? map.getSize().y : (typeof window !== 'undefined' ? window.innerHeight : 600);
+            const offset = 0.0006 * (600 / Math.max(containerHeight, 300));
             
             this.state.targetCenter = {
               lat: driverCenter.lat - offset,
