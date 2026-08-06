@@ -266,16 +266,27 @@ const RideRequestPage = () => {
     if (dropoff) markers.push({ lat: dropoff.lat, lng: dropoff.lng, iconType: 'dropoff', key: 'final-dropoff' });
   }
 
-  // Memoized bounds logic for confirm step (uses routeGeometry polyline points if available or pickup + dropoff)
+  // Memoized bounds logic for confirm step (computes exact 2-point bounding box across all route points)
   const bounds = useMemo(() => {
     if (step === 'confirm' && pickup && dropoff) {
-      if (Array.isArray(routeGeometry) && routeGeometry.length > 1) {
-        return routeGeometry;
+      const points = (Array.isArray(routeGeometry) && routeGeometry.length > 1) 
+        ? routeGeometry 
+        : [[pickup.lat, pickup.lng], [dropoff.lat, dropoff.lng]];
+        
+      let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+      points.forEach(p => {
+        const lat = Array.isArray(p) ? p[0] : p.lat;
+        const lng = Array.isArray(p) ? p[1] : p.lng;
+        if (lat !== undefined && lng !== undefined) {
+          if (lat < minLat) minLat = lat;
+          if (lat > maxLat) maxLat = lat;
+          if (lng < minLng) minLng = lng;
+          if (lng > maxLng) maxLng = lng;
+        }
+      });
+      if (minLat !== Infinity && maxLat !== -Infinity) {
+        return [[minLat, minLng], [maxLat, maxLng]];
       }
-      return [
-        [pickup.lat, pickup.lng],
-        [dropoff.lat, dropoff.lng]
-      ];
     }
     return null;
   }, [step, pickup, dropoff, routeGeometry]);
