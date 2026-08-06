@@ -258,7 +258,6 @@ const DriverDashboard = () => {
         } 
         else if (getRideId(activeRide) === rideUpdate.ride_id) {
           setActiveRide(null);
-          setRouteGeometry(null);
           toast.info('Ride was cancelled');
         }
         
