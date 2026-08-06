@@ -347,30 +347,41 @@ const StudentDashboard = () => {
       // Driver is on the way to pickup: frame Driver + Pickup ALWAYS
       if (activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
     } else if (currentStatus === 'driver_arrived') {
-      // Driver arrived at pickup: frame Pickup + Destination to show the full route about to be driven
+      // Driver arrived at pickup: frame Pickup + Destination
       if (activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
       if (activeRide.dropoff_location) bounds.push([activeRide.dropoff_location.lat, activeRide.dropoff_location.lng]);
     } else if (['ongoing', 'ride_started', 'ride_in_progress', 'arriving_destination'].includes(currentStatus)) {
-      // Ride ongoing: frame Driver + Destination IF animating (edge case), else zoom in
-      if (activeRide.dropoff_location && isRouteAnimating) {
-        bounds.push([activeRide.dropoff_location.lat, activeRide.dropoff_location.lng]);
-      }
+      // Driver heading to destination: frame Driver + Destination (mirrors pickup approach, continuously tightening zoom)
+      if (activeRide.dropoff_location) bounds.push([activeRide.dropoff_location.lat, activeRide.dropoff_location.lng]);
     } else if (currentStatus === 'requested') {
-      // Searching for driver: frame Pickup + Destination
-      // We don't frame nearby drivers here because their continuous movement causes the camera to constantly bounce/alternate zoom levels.
-      // Framing pickup and destination is cleaner and more stable.
+      // Searching for driver: frame Pickup + Destination + NEARBY DRIVERS ONLY (within 3.0km radius)
       if (activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
       if (activeRide.dropoff_location) bounds.push([activeRide.dropoff_location.lat, activeRide.dropoff_location.lng]);
+      
+      // Include nearby drivers within 3.0km so distant drivers across town do not force wide zoom
+      if (activeRide.pickup_location && nearbyDrivers && nearbyDrivers.length > 0) {
+        const pLat = activeRide.pickup_location.lat;
+        const pLng = activeRide.pickup_location.lng;
+        nearbyDrivers.forEach(d => {
+          const dLat = d.latitude || d.lat;
+          const dLng = d.longitude || d.lng;
+          if (dLat && dLng) {
+            const distSq = Math.pow(dLat - pLat, 2) + Math.pow(dLng - pLng, 2);
+            if (distSq <= 0.00075) { // ~3.0 km radius threshold
+              bounds.push([dLat, dLng]);
+            }
+          }
+        });
+      }
     }
 
     // Final Bounds Logic
-    // For en-route states (driver accepted / en_route), bound driver + pickup.
-    // For arrived/started/ongoing states, set bounds to null so FOLLOW_DRIVER mode
-    // centers directly on the driver without zooming out to fit all points.
-    if (['accepted', 'driver_accepted', 'driver_en_route_to_pickup'].includes(currentStatus)) {
-      bounds = bounds.length > 1 ? bounds : null; // Frame driver + pickup
-    } else if (['driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination', 'ongoing'].includes(currentStatus)) {
-      bounds = null; // Let FOLLOW_DRIVER lock directly onto the driver marker, no forced zoom-out
+    // For en-route and ongoing destination approach states, frame driver + target (pickup or destination).
+    // For driver_arrived/passenger_boarding, clear bounds so FOLLOW_DRIVER centers directly on driver at Zoom 18.
+    if (['accepted', 'driver_accepted', 'driver_en_route_to_pickup', 'ongoing', 'ride_started', 'ride_in_progress', 'arriving_destination'].includes(currentStatus)) {
+      bounds = bounds.length > 1 ? bounds : null; // Frame driver + target
+    } else if (['driver_arrived', 'passenger_boarding'].includes(currentStatus)) {
+      bounds = null; // Let FOLLOW_DRIVER lock directly onto driver marker at Zoom 18
     } else {
       bounds = bounds.length > 1 ? bounds : null;
     }
