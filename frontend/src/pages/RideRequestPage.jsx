@@ -282,7 +282,7 @@ const RideRequestPage = () => {
 
 
   return (
-    <div className="fixed inset-0 bg-background overflow-hidden flex flex-col" data-testid="ride-request-page">
+    <div className="fixed inset-0 bg-background overflow-hidden" data-testid="ride-request-page">
       
       {/* Top Header overlay */}
       <div className="absolute top-10 md:top-6 left-0 right-0 z-10 p-4 flex items-center justify-between pointer-events-none">
@@ -295,7 +295,7 @@ const RideRequestPage = () => {
       </div>
 
       {/* Map Layer */}
-      <div className="flex-1 relative z-0">
+      <div className="absolute inset-0 z-0">
         <PlatformMap 
           center={mapCenter}
           bounds={bounds}
@@ -353,7 +353,7 @@ const RideRequestPage = () => {
       {/* Bottom Sheet */}
       <motion.div 
         layoutId="student-bottom-sheet"
-        className="relative z-20 bg-white dark:bg-zinc-950 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden"
+        className="absolute bottom-0 left-0 right-0 z-20 bg-white dark:bg-zinc-950 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden"
         initial={{ y: "100%" }}
         animate={{ y: isCollapsing ? "calc(100% - 150px)" : 0 }}
         transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
