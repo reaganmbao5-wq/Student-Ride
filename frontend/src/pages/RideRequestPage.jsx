@@ -309,9 +309,10 @@ const RideRequestPage = () => {
     observer.observe(sheetRef.current);
     return () => observer.disconnect();
   }, [step]);
+  const [isSheetExpanded, setIsSheetExpanded] = useState(false);
 
   return (
-    <div className={`fixed inset-0 bg-background overflow-hidden ${step === 'confirm' ? '' : 'flex flex-col'}`} data-testid="ride-request-page">
+    <div className="fixed inset-0 bg-background overflow-hidden flex flex-col" data-testid="ride-request-page">
       
       {/* Top Header overlay */}
       <div className="absolute top-10 md:top-6 left-0 right-0 z-10 p-4 flex items-center justify-between pointer-events-none">
@@ -324,7 +325,7 @@ const RideRequestPage = () => {
       </div>
 
       {/* Map Layer */}
-      <div className={step === 'confirm' ? "absolute inset-0 z-0" : "flex-1 relative z-0"}>
+      <div className={step === 'confirm' && isCollapsing ? "absolute inset-0 z-0" : "flex-1 relative z-0"}>
         <PlatformMap 
           center={mapCenter}
           bounds={bounds}
@@ -384,18 +385,21 @@ const RideRequestPage = () => {
       <motion.div 
         ref={sheetRef}
         layoutId="student-bottom-sheet"
-        className={`${step === 'confirm' ? 'absolute bottom-0 left-0 right-0' : 'relative'} z-20 bg-white dark:bg-zinc-950 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden`}
+        className={`${step === 'confirm' && isCollapsing ? 'absolute bottom-0 left-0 right-0' : 'relative'} z-20 bg-white dark:bg-zinc-950 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden`}
         initial={{ y: "100%" }}
         animate={{ y: isCollapsing ? "calc(100% - 115px)" : 0 }}
         transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
       >
         {/* Drag handle pill */}
-        <div className="w-full flex justify-center pt-3 pb-1">
+        <div 
+          onClick={() => step === 'confirm' && setIsSheetExpanded(!isSheetExpanded)}
+          className="w-full flex justify-center pt-3 pb-2 cursor-pointer active:opacity-70"
+        >
           <div className="w-12 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full" />
         </div>
 
         <motion.div 
-          className="p-5 flex flex-col gap-4"
+          className="px-5 pb-5 flex flex-col gap-4"
           animate={{ opacity: isCollapsing ? 0 : 1 }}
           transition={{ duration: 0.5 }}
         >
@@ -448,7 +452,7 @@ const RideRequestPage = () => {
               </div>
 
               <button 
-                className="w-full py-4 bg-black text-white rounded-xl font-bold text-lg active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center"
+                className="w-full py-4 bg-black text-white rounded-xl font-bold text-lg active:scale-95 transition-transform disabled:opacity-50"
                 onClick={handleConfirmLocation}
                 disabled={isGeocoding || !currentAddress || currentAddress === 'Unable to fetch address'}
               >
@@ -459,14 +463,14 @@ const RideRequestPage = () => {
 
           {step === 'dropoff' && (
             <>
-              <h2 className="text-xl font-bold font-heading">Destination</h2>
+              <h2 className="text-xl font-bold font-heading">Set Destination</h2>
               
               <div className="flex items-center gap-3 bg-zinc-100 dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800">
                 <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center shrink-0">
                   <Flag className="w-4 h-4 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
-                   <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Current Address</p>
+                   <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Dropoff Address</p>
                    <p className="text-sm font-medium truncate">{currentAddress || 'Fetching address...'}</p>
                 </div>
               </div>
@@ -496,98 +500,106 @@ const RideRequestPage = () => {
 
           {step === 'confirm' && (
              <>
-               <h2 className="text-xl font-bold font-heading">Confirm Ride</h2>
+               <div className="flex items-center justify-between">
+                 <h2 className="text-xl font-bold font-heading">Confirm Ride</h2>
+                 <button 
+                   onClick={() => setIsSheetExpanded(!isSheetExpanded)}
+                   className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                 >
+                   {isSheetExpanded ? "Show Less" : "Details & Options"}
+                 </button>
+               </div>
                
                {/* Locations summary */}
-               <div className="bg-zinc-100 dark:bg-zinc-900 p-4 rounded-2xl flex flex-col gap-4 border border-zinc-200 dark:border-zinc-800">
-                  <div className="flex items-start gap-3 relative">
-                     <div className="absolute left-[11px] top-6 bottom-[-20px] w-0.5 bg-zinc-300 dark:bg-zinc-700 border-dashed" />
-                     <div className="w-6 h-6 rounded-full bg-black flex items-center justify-center shrink-0 z-10 mt-1">
-                       <div className="w-2 h-2 rounded-full bg-white" />
+               <div className="bg-zinc-100 dark:bg-zinc-900 p-3 rounded-2xl flex flex-col gap-2 border border-zinc-200 dark:border-zinc-800">
+                  <div className="flex items-center gap-3">
+                     <div className="w-5 h-5 rounded-full bg-black flex items-center justify-center shrink-0">
+                       <div className="w-1.5 h-1.5 rounded-full bg-white" />
                      </div>
-                     <div className="flex-1">
-                       <p className="text-xs text-muted-foreground">Pickup</p>
-                       <p className="font-medium text-sm line-clamp-1">{pickup?.address}</p>
-                     </div>
+                     <p className="font-medium text-xs truncate flex-1"><span className="text-muted-foreground font-normal">Pickup: </span>{pickup?.address}</p>
                   </div>
                   
-                  <div className="flex items-start gap-3">
-                     <div className="w-6 h-6 rounded-full bg-red-600 flex items-center justify-center shrink-0 z-10 mt-1">
-                       <div className="w-2 h-2 rounded-full bg-white" />
+                  <div className="flex items-center gap-3">
+                     <div className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center shrink-0">
+                       <div className="w-1.5 h-1.5 rounded-full bg-white" />
                      </div>
-                     <div className="flex-1">
-                       <p className="text-xs text-muted-foreground">Dropoff</p>
-                       <p className="font-medium text-sm line-clamp-1">{dropoff?.address}</p>
-                     </div>
+                     <p className="font-medium text-xs truncate flex-1"><span className="text-muted-foreground font-normal">Dropoff: </span>{dropoff?.address}</p>
                   </div>
                </div>
 
                {/* Fare loading or display */}
                {loading ? (
-                 <div className="py-6 flex justify-center">
+                 <div className="py-4 flex justify-center">
                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                  </div>
                ) : fareEstimate ? (
                  <>
-                   {/* Ride Mode Selector */}
-                   <div className="grid grid-cols-2 gap-3 mb-2">
-                     <button
-                       onClick={() => setRideMode('private')}
-                       className={`p-3 rounded-xl border-2 text-left transition-all relative ${rideMode === 'private' ? 'border-black dark:border-white bg-black/5 dark:bg-white/10' : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300'}`}
-                     >
-                       <div className="flex justify-between items-center mb-1">
-                         <span className="font-bold text-sm">Private</span>
-                         <span className="font-bold">K{fareEstimate.private_fare?.toFixed(2)}</span>
-                       </div>
-                       <p className="text-[10px] text-muted-foreground leading-tight">Entire vehicle reserved. No additional platform passengers.</p>
-                     </button>
-                     
-                     <button
-                       onClick={() => setRideMode('shared')}
-                       className={`p-3 rounded-xl border-2 text-left transition-all relative overflow-hidden ${rideMode === 'shared' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300'}`}
-                     >
-                       {fareEstimate.shared_fare < fareEstimate.private_fare && (
-                         <div className="absolute top-0 right-0 bg-blue-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl-lg">
-                           Save {Math.round((1 - fareEstimate.shared_fare / fareEstimate.private_fare) * 100)}%
+                   {/* Full Fare Grid Options (Shown when expanded or on larger screens) */}
+                   {isSheetExpanded && (
+                     <div className="grid grid-cols-2 gap-3 mb-1 animate-fadeIn">
+                       <button
+                         onClick={() => setRideMode('private')}
+                         className={`p-3 rounded-xl border-2 text-left transition-all relative ${rideMode === 'private' ? 'border-black dark:border-white bg-black/5 dark:bg-white/10' : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300'}`}
+                       >
+                         <div className="flex justify-between items-center mb-1">
+                           <span className="font-bold text-sm">Private</span>
+                           <span className="font-bold">K{fareEstimate.private_fare?.toFixed(2)}</span>
                          </div>
-                       )}
-                       <div className="flex justify-between items-center mb-1">
-                         <span className="font-bold text-sm">Shared</span>
-                         <span className="font-bold">K{fareEstimate.shared_fare?.toFixed(2)}</span>
-                       </div>
-                       <p className="text-[10px] text-muted-foreground leading-tight">Lower fare. Ride may include other passengers.</p>
-                     </button>
-                   </div>
+                         <p className="text-[10px] text-muted-foreground leading-tight">Entire vehicle reserved. No additional platform passengers.</p>
+                       </button>
+                       
+                       <button
+                         onClick={() => setRideMode('shared')}
+                         className={`p-3 rounded-xl border-2 text-left transition-all relative overflow-hidden ${rideMode === 'shared' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300'}`}
+                       >
+                         {fareEstimate.shared_fare < fareEstimate.private_fare && (
+                           <div className="absolute top-0 right-0 bg-blue-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl-lg">
+                             Save {Math.round((1 - fareEstimate.shared_fare / fareEstimate.private_fare) * 100)}%
+                           </div>
+                         )}
+                         <div className="flex justify-between items-center mb-1">
+                           <span className="font-bold text-sm">Shared</span>
+                           <span className="font-bold">K{fareEstimate.shared_fare?.toFixed(2)}</span>
+                         </div>
+                         <p className="text-[10px] text-muted-foreground leading-tight">Lower fare. Ride may include other passengers.</p>
+                       </button>
+                     </div>
+                   )}
 
-                   <div className="flex items-center justify-between p-4 bg-black text-white rounded-2xl">
-                      <div>
-                        <p className="text-sm text-zinc-400">Total Fare</p>
-                        <div className="flex items-center gap-2">
-                          <p className="text-2xl font-bold font-heading">
-                             K{rideMode === 'shared' ? fareEstimate.shared_fare?.toFixed(2) : fareEstimate.private_fare?.toFixed(2)}
+                   {/* Main Request Ride Action Bar */}
+                   <div className="flex items-center gap-3">
+                      <div className="flex-1 bg-black text-white p-3.5 rounded-xl flex items-center justify-between">
+                        <div>
+                          <p className="text-[10px] text-zinc-400 uppercase tracking-wider font-bold">{rideMode} Fare</p>
+                          <p className="text-xl font-bold font-heading">
+                            K{rideMode === 'shared' ? fareEstimate.shared_fare?.toFixed(2) : fareEstimate.private_fare?.toFixed(2)}
                           </p>
-                          {(rideMode === 'shared' ? fareEstimate.shared_surge : fareEstimate.private_surge) && (
-                             <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] uppercase font-bold text-yellow-400 tracking-wider">Surge</span>
-                          )}
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-zinc-300 font-semibold">{fareEstimate.duration} min</p>
+                          <p className="text-[10px] text-zinc-400">{fareEstimate.distance?.toFixed(1)} km</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                         <p className="text-sm font-medium">{fareEstimate.duration} min</p>
-                         <p className="text-xs text-zinc-400">{fareEstimate.distance?.toFixed(1)} km</p>
-                      </div>
+
+                      <button
+                        onClick={handleRequestRide}
+                        disabled={requesting}
+                        className="py-4 px-6 bg-black dark:bg-white text-white dark:text-black font-bold text-base rounded-xl active:scale-95 transition-transform disabled:opacity-50 flex items-center gap-2 shrink-0 shadow-lg"
+                      >
+                        {requesting ? (
+                          <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            Requesting...
+                          </>
+                        ) : (
+                          'Request Ride'
+                        )}
+                      </button>
                    </div>
                  </>
                ) : null}
-
-               <button 
-                className="w-full py-4 bg-black text-white rounded-xl font-bold text-lg active:scale-95 transition-transform disabled:opacity-50 flex justify-center"
-                onClick={handleRequestRide}
-                disabled={loading || requesting || !fareEstimate}
-              >
-                {requesting ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Request Ride'}
-              </button>
-              </>
-           )}
+             </>
+          )}
         </motion.div>
       </motion.div>
     </div>
