@@ -46,8 +46,21 @@ const RideRequestPage = () => {
   const [requesting, setRequesting] = useState(false);
   const [rideMode, setRideMode] = useState('private');
 
-  // Debounce ref for reverse geocoding
+  // Debounce ref for reverse geocoding & card touch gestures
   const geocodeTimeoutRef = useRef(null);
+  const touchStartY = useRef(0);
+
+  // Touch gesture handlers for stationary card swipe detection
+  const handleTouchStart = (e) => {
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e) => {
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+    if (Math.abs(deltaY) > 20) {
+      setRideMode(prev => prev === 'shared' ? 'private' : 'shared');
+    }
+  };
 
   // Initialize center with user location once available
   useEffect(() => {
@@ -540,16 +553,10 @@ const RideRequestPage = () => {
                        </div>
                      ) : fareEstimate ? (
                        <div className="flex items-stretch gap-3 min-h-[105px]">
-                          {/* Animated Swipeable & Tap-Toggleable Ride Mode Selector Card */}
-                          <motion.div 
-                            drag="y"
-                            dragConstraints={{ top: 0, bottom: 0 }}
-                            dragElastic={0.2}
-                            onDragEnd={(e, info) => {
-                              if (Math.abs(info.offset.y) > 15 || Math.abs(info.velocity.y) > 50) {
-                                setRideMode(prev => prev === 'shared' ? 'private' : 'shared');
-                              }
-                            }}
+                          {/* Animated Swipeable & Tap-Toggleable Stationary Ride Mode Selector Card */}
+                          <div 
+                            onTouchStart={handleTouchStart}
+                            onTouchEnd={handleTouchEnd}
                             onClick={() => setRideMode(prev => prev === 'shared' ? 'private' : 'shared')}
                             className={`flex-1 p-3.5 rounded-2xl cursor-pointer select-none transition-colors duration-300 relative overflow-hidden flex flex-col justify-between border-2 ${
                               rideMode === 'shared' 
@@ -582,7 +589,8 @@ const RideRequestPage = () => {
                                       K{rideMode === 'shared' ? fareEstimate.shared_fare?.toFixed(2) : fareEstimate.private_fare?.toFixed(2)}
                                     </div>
                                   </div>
-                                  <div className="flex flex-col items-end shrink-0 pt-0.5">
+                                  {/* Shifted ETA & Distance comfortably below Save badge */}
+                                  <div className={`flex flex-col items-end shrink-0 ${rideMode === 'shared' ? 'pt-3.5' : 'pt-0.5'}`}>
                                     <p className="text-xs text-zinc-300 font-semibold">{fareEstimate.duration_min || fareEstimate.duration} min</p>
                                     <p className="text-[10px] text-zinc-400">{fareEstimate.distance_km || fareEstimate.distance?.toFixed(1)} km</p>
                                   </div>
@@ -595,13 +603,13 @@ const RideRequestPage = () => {
                                 </p>
                               </motion.div>
                             </AnimatePresence>
-                          </motion.div>
+                          </div>
 
-                          {/* Request Ride Action Button (Stretched to match card height, centered text) */}
+                          {/* Request Ride Action Button (Cut at purple line, compact height, centered text) */}
                           <button
                             onClick={handleRequestRide}
                             disabled={requesting}
-                            className="w-32 py-4 px-4 bg-black dark:bg-white text-white dark:text-black font-bold text-base rounded-2xl active:scale-95 transition-transform disabled:opacity-50 flex flex-col justify-center items-center shrink-0 shadow-lg text-center leading-tight self-stretch"
+                            className="w-32 py-3 px-3 bg-black dark:bg-white text-white dark:text-black font-bold text-sm rounded-2xl active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center shrink-0 shadow-lg text-center leading-tight self-start mt-0.5 min-h-[52px]"
                           >
                             {requesting ? (
                               <>
