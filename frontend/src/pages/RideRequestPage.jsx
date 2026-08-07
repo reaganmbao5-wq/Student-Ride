@@ -292,6 +292,24 @@ const RideRequestPage = () => {
   }, [step, pickup, dropoff, routeGeometry]);
 
 
+  const sheetRef = useRef(null);
+  const [sheetHeight, setSheetHeight] = useState(380);
+
+  // Measure live bottom sheet rendered height for dynamic visible safe region camera framing
+  useEffect(() => {
+    if (!sheetRef.current) return;
+    const updateHeight = () => {
+      if (sheetRef.current) {
+        const h = sheetRef.current.offsetHeight;
+        if (h > 0) setSheetHeight(h);
+      }
+    };
+    updateHeight();
+    const observer = new ResizeObserver(() => updateHeight());
+    observer.observe(sheetRef.current);
+    return () => observer.disconnect();
+  }, [step]);
+
   return (
     <div className={`fixed inset-0 bg-background overflow-hidden ${step === 'confirm' ? '' : 'flex flex-col'}`} data-testid="ride-request-page">
       
@@ -310,7 +328,7 @@ const RideRequestPage = () => {
         <PlatformMap 
           center={mapCenter}
           bounds={bounds}
-          bottomPadding={step === 'confirm' ? 460 : 0}
+          bottomPadding={step === 'confirm' ? (sheetHeight + 20) : 0}
           cameraMode={
             step === 'pickup' ? CAMERA_MODES.PICKUP_SELECTION :
             step === 'dropoff' ? CAMERA_MODES.DESTINATION_SELECTION :
@@ -364,6 +382,7 @@ const RideRequestPage = () => {
 
       {/* Bottom Sheet */}
       <motion.div 
+        ref={sheetRef}
         layoutId="student-bottom-sheet"
         className={`${step === 'confirm' ? 'absolute bottom-0 left-0 right-0' : 'relative'} z-20 bg-white dark:bg-zinc-950 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden`}
         initial={{ y: "100%" }}
