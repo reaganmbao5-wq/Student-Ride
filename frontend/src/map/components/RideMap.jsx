@@ -42,14 +42,14 @@ const userIcon = L.divIcon({
 const pickupIcon = createCustomIcon('#D4AF37', '<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>');
 const dropoffIcon = createCustomIcon('#10B981', '<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>');
 
-// Section 4: Car Icon with Rotation using real top-down car PNG (/car_top.png 2x: 48px x 88px)
+// Section 4: Car Icon with Rotation using real top-down car PNG (/car_top.png 1.3x: 31px x 57px)
 const driverIcon = L.divIcon({
   className: 'custom-car-marker',
-  html: `<div style="width: 48px; height: 88px; display: flex; items-center; justify-content: center; position: relative;">
-    <img src="/car_top.png" alt="Driver Car" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5)); transform: rotate(180deg);" />
+  html: `<div style="width: 31px; height: 57px; display: flex; items-center; justify-content: center; position: relative;">
+    <img src="/car_top.png" alt="Driver Car" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.5)); transform: rotate(180deg);" />
   </div>`,
-  iconSize: [48, 88],
-  iconAnchor: [24, 44] // center
+  iconSize: [31, 57],
+  iconAnchor: [16, 29] // center
 });
 
 // Component to update map center/zoom when props change

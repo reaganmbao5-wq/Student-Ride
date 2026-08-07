@@ -295,3 +295,16 @@
 [data-debug-wrapper="true"] {
   display: contents !important;
 }
+
+/* Responsive Vehicle Marker Cap Styling */
+.custom-vehicle-icon, .custom-car-marker {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  max-width: 31px !important;
+  max-height: 57px !important;
+}
+
+.leaflet-zoom-animated .custom-vehicle-icon img, 
+.leaflet-zoom-animated .custom-car-marker img {
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
