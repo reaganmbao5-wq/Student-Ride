@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, Navigation, TrendingUp, Search, MapPin, Flag } from 'lucide-react';
+import { ArrowLeft, Loader2, Navigation, TrendingUp, Search, MapPin, Flag, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useGeolocation } from '../map/hooks/useGeolocation';
@@ -285,30 +285,16 @@ const RideRequestPage = () => {
     if (dropoff) markers.push({ lat: dropoff.lat, lng: dropoff.lng, iconType: 'dropoff', key: 'final-dropoff' });
   }
 
-  // Memoized bounds logic for confirm step (computes exact 2-point bounding box across all route points)
+  // Memoized bounds logic for confirm step (strictly pickup and dropoff points, matching StudentDashboard.jsx for perfect framing)
   const bounds = useMemo(() => {
     if (step === 'confirm' && pickup && dropoff) {
-      const points = (Array.isArray(routeGeometry) && routeGeometry.length > 1) 
-        ? routeGeometry 
-        : [[pickup.lat, pickup.lng], [dropoff.lat, dropoff.lng]];
-        
-      let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
-      points.forEach(p => {
-        const lat = Array.isArray(p) ? p[0] : p.lat;
-        const lng = Array.isArray(p) ? p[1] : p.lng;
-        if (lat !== undefined && lng !== undefined) {
-          if (lat < minLat) minLat = lat;
-          if (lat > maxLat) maxLat = lat;
-          if (lng < minLng) minLng = lng;
-          if (lng > maxLng) maxLng = lng;
-        }
-      });
-      if (minLat !== Infinity && maxLat !== -Infinity) {
-        return [[minLat, minLng], [maxLat, maxLng]];
-      }
+      return [
+        [pickup.lat, pickup.lng],
+        [dropoff.lat, dropoff.lng]
+      ];
     }
     return null;
-  }, [step, pickup, dropoff, routeGeometry]);
+  }, [step, pickup, dropoff]);
 
 
   const sheetRef = useRef(null);
@@ -352,7 +338,7 @@ const RideRequestPage = () => {
           cameraMode={
             step === 'pickup' ? CAMERA_MODES.PICKUP_SELECTION :
             step === 'dropoff' ? CAMERA_MODES.DESTINATION_SELECTION :
-            CAMERA_MODES.FOLLOW_ROUTE
+            CAMERA_MODES.OVERVIEW
           }
           onCenterChanged={(c) => {
              if (step !== 'confirm') setMapCenter(c);
@@ -613,21 +599,26 @@ const RideRequestPage = () => {
                             </AnimatePresence>
                           </div>
 
-                          {/* Request Ride Action Button (Placed DOWN at bottom of row, increased by 1%) */}
-                          <button
-                            onClick={handleRequestRide}
-                            disabled={requesting}
-                            className="w-32 py-3.5 px-3 bg-black dark:bg-white text-white dark:text-black font-bold text-sm rounded-2xl active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center shrink-0 shadow-lg text-center leading-tight self-end mb-0.5 min-h-[55px]"
-                          >
-                            {requesting ? (
-                              <>
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                                Requesting...
-                              </>
-                            ) : (
-                              'Request Ride'
-                            )}
-                          </button>
+                          {/* Request Ride Action Button Column (Instant Match Badge + Bottom-Aligned Button) */}
+                          <div className="flex flex-col justify-end items-center shrink-0 w-32 self-end mb-0.5 gap-1.5">
+                            <div className="text-[10px] text-zinc-400 font-extrabold flex items-center justify-center gap-1 uppercase tracking-wider select-none">
+                              <Zap className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0 animate-pulse" /> Instant Match
+                            </div>
+                            <button
+                              onClick={handleRequestRide}
+                              disabled={requesting}
+                              className="w-full py-3.5 px-3 bg-black dark:bg-white text-white dark:text-black font-bold text-sm rounded-2xl active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center shadow-lg text-center leading-tight min-h-[55px]"
+                            >
+                              {requesting ? (
+                                <>
+                                  <Loader2 className="w-5 h-5 animate-spin" />
+                                  Requesting...
+                                </>
+                              ) : (
+                                'Request Ride'
+                              )}
+                            </button>
+                          </div>
                        </div>
                      ) : null}
                    </>

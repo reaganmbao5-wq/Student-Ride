@@ -110,12 +110,11 @@ class CameraAnimator {
               }
             }
 
-            const maxZoomLevel = this.state.mode === CAMERA_MODES.FOLLOW_ROUTE ? 15.8 : (CAMERA_CONFIG.ZOOM.MAX || 20);
             this.map.fitBounds(this.state.targetBounds, {
               ...paddingOpts,
               animate: true,
               duration: CAMERA_CONFIG.ANIMATION.DURATION_MS / 1000,
-              maxZoom: maxZoomLevel
+              maxZoom: CAMERA_CONFIG.ZOOM.MAX || 20
             });
             this.lastTargetBounds = currentBoundsStr;
             
