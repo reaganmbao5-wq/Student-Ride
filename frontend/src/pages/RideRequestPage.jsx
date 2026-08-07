@@ -11,6 +11,7 @@ import { CAMERA_MODES } from '../map/camera/CameraConfig';
 import { useDriverDiscovery } from '../map/discovery/DriverDiscoveryEngine';
 import { routeCache } from '../map/route/RouteCache';
 import { AddressSearch } from '../components/common/AddressSearch';
+import { TilePreloader } from '../map/services/TilePreloader';
 import {
   Select,
   SelectContent,
@@ -72,8 +73,19 @@ const RideRequestPage = () => {
   useEffect(() => {
     if (userLocation && !pickup && step === 'pickup') {
       setMapCenter({ lat: userLocation.lat, lng: userLocation.lng });
+      TilePreloader.preloadArea(userLocation.lat, userLocation.lng, 3);
     }
   }, [userLocation, pickup, step]);
+
+  // Pre-load map tiles around pickup & dropoff locations so transition to finding driver has 0 tile loading delay
+  useEffect(() => {
+    if (pickup?.lat && pickup?.lng) {
+      TilePreloader.preloadArea(pickup.lat, pickup.lng, 3);
+    }
+    if (dropoff?.lat && dropoff?.lng) {
+      TilePreloader.preloadArea(dropoff.lat, dropoff.lng, 3);
+    }
+  }, [pickup, dropoff]);
 
   useEffect(() => {
     console.log('RIDE_REQUEST_PAGE_MOUNTED');

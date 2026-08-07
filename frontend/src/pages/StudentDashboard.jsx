@@ -13,6 +13,7 @@ import { useGeolocation } from '../map/hooks/useGeolocation';
 import { useDriverDiscovery } from '../map/discovery/DriverDiscoveryEngine';
 import { toast } from 'sonner';
 import { routeCache } from '../map/route/RouteCache';
+import { TilePreloader } from '../map/services/TilePreloader';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
@@ -57,6 +58,13 @@ const StudentDashboard = () => {
       window.history.replaceState({}, document.title);
     }
   }, []);
+
+  // Pre-load map tiles in 3km radius around user location in background for zero-delay instant map rendering
+  useEffect(() => {
+    if (userLocation?.lat && userLocation?.lng) {
+      TilePreloader.preloadArea(userLocation.lat, userLocation.lng, 3);
+    }
+  }, [userLocation]);
 
   // Automatic 4-Second Resync Loop: Guarantees status & route transitions update automatically without manual refresh
   useEffect(() => {
