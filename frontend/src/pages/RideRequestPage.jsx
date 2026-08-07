@@ -50,9 +50,15 @@ const RideRequestPage = () => {
   const geocodeTimeoutRef = useRef(null);
   const touchStartY = useRef(0);
 
-  // Touch gesture handlers for stationary card swipe detection
+  // Touch gesture handlers for stationary card swipe detection (isolating gesture from window scroll)
   const handleTouchStart = (e) => {
     touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchMove = (e) => {
+    if (e.cancelable) {
+      e.preventDefault();
+    }
   };
 
   const handleTouchEnd = (e) => {
@@ -556,9 +562,11 @@ const RideRequestPage = () => {
                           {/* Animated Swipeable & Tap-Toggleable Stationary Ride Mode Selector Card */}
                           <div 
                             onTouchStart={handleTouchStart}
+                            onTouchMove={handleTouchMove}
                             onTouchEnd={handleTouchEnd}
                             onClick={() => setRideMode(prev => prev === 'shared' ? 'private' : 'shared')}
-                            className={`flex-1 p-3.5 rounded-2xl cursor-pointer select-none transition-colors duration-300 relative overflow-hidden flex flex-col justify-between border-2 ${
+                            style={{ touchAction: 'none' }}
+                            className={`flex-1 p-3.5 rounded-2xl cursor-pointer select-none transition-colors duration-300 relative overflow-hidden flex flex-col justify-between border-2 touch-none ${
                               rideMode === 'shared' 
                                 ? 'bg-black text-white dark:bg-zinc-900 border-blue-500 shadow-md' 
                                 : 'bg-black text-white dark:bg-zinc-900 border-zinc-700 shadow-md'
@@ -605,11 +613,11 @@ const RideRequestPage = () => {
                             </AnimatePresence>
                           </div>
 
-                          {/* Request Ride Action Button (Cut at purple line, compact height, centered text) */}
+                          {/* Request Ride Action Button (Placed DOWN at bottom of row, increased by 1%) */}
                           <button
                             onClick={handleRequestRide}
                             disabled={requesting}
-                            className="w-32 py-3 px-3 bg-black dark:bg-white text-white dark:text-black font-bold text-sm rounded-2xl active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center shrink-0 shadow-lg text-center leading-tight self-start mt-0.5 min-h-[52px]"
+                            className="w-32 py-3.5 px-3 bg-black dark:bg-white text-white dark:text-black font-bold text-sm rounded-2xl active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center shrink-0 shadow-lg text-center leading-tight self-end mb-0.5 min-h-[55px]"
                           >
                             {requesting ? (
                               <>
