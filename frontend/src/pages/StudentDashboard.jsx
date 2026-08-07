@@ -13,6 +13,7 @@ import { useWebSocket } from '../context/WebSocketContext';
 import { useGeolocation } from '../map/hooks/useGeolocation';
 import { useDriverDiscovery } from '../map/discovery/DriverDiscoveryEngine';
 import { toast } from 'sonner';
+import { routeCache } from '../map/route/RouteCache';
 import { TilePreloader } from '../map/services/TilePreloader';
 import { haptics } from '../utils/haptics';
 
