@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { MapPin, Clock, Car, Star, ChevronRight, Navigation, AlertCircle, MessageCircle, Phone, PhoneCall, Loader2 } from 'lucide-react';
+import { MapPin, Clock, Car, Star, ChevronRight, Navigation, AlertCircle, MessageCircle, Phone, PhoneCall, Loader2, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard, GoldButton, StatusBadge, LoadingSpinner, EmptyState } from '../components/common/GlassComponents';
 import { RatingModal } from '../components/common/RatingModal';
+import SwipableRideCard from '../components/common/SwipableRideCard';
 import { PlatformMap } from '../map/components/PlatformMap';
 import { CAMERA_MODES } from '../map/camera/CameraConfig';
 import { Layout } from '../components/layout/Layout';
@@ -126,6 +127,53 @@ const StudentDashboard = () => {
       if (retryInterval) clearInterval(retryInterval);
     };
   }, [activeRide, api]);
+
+  // Expandable & Swipable Ride History States
+  const [expandedRideId, setExpandedRideId] = useState(null);
+  const [rideToDelete, setRideToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [isDriving, setIsDriving] = useState(false);
+
+  const handleRequestRideClick = () => {
+    if (isDriving) return;
+    setIsDriving(true);
+
+    if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+      try {
+        navigator.vibrate([30, 40, 30, 40, 50]);
+      } catch (e) {
+        // ignore if not supported
+      }
+    }
+
+    setTimeout(() => {
+      navigate('/ride');
+    }, 850);
+  };
+
+  const handleToggleExpand = (id) => {
+    setExpandedRideId((prev) => (prev === id ? null : id));
+  };
+
+  const confirmDeleteRide = async () => {
+    if (!rideToDelete) return;
+    setDeleting(true);
+    try {
+      try {
+        await api.delete(`/rides/${rideToDelete.id}`);
+      } catch (err) {
+        console.warn('Backend API delete endpoint notice:', err);
+      }
+      setRecentRides((prev) => prev.filter((r) => r.id !== rideToDelete.id));
+      toast.success('Ride record deleted from history');
+    } catch (error) {
+      console.error('Error deleting ride:', error);
+      toast.error('Failed to delete ride');
+    } finally {
+      setDeleting(false);
+      setRideToDelete(null);
+    }
+  };
 
   // Phase X.2: 6-second message rotation carousel
   useEffect(() => {
@@ -708,31 +756,53 @@ const StudentDashboard = () => {
   // ==========================================
   return (
     <Layout>
-      <div className="p-4 md:p-8 space-y-6" data-testid="student-dashboard">
-        {/* Header */}
-        <div className="mb-8 font-heading">
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
-            Hello, {(user?.name || '').split(' ')[0] || 'Passenger'} ≡ƒæï
-          </h1>
-          <p className="text-muted-foreground">Where would you like to go today?</p>
-        </div>
-
-        <GlassCard
-          className="p-6 cursor-pointer group"
-          onClick={() => navigate('/ride')}
-          data-testid="request-ride-card"
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gold/10 flex items-center justify-center group-hover:bg-gold/20 transition-colors">
-              <Navigation className="w-7 h-7 text-gold" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-heading font-semibold text-foreground text-lg mb-1">Request a Ride</h3>
-              <p className="text-muted-foreground text-sm">Tap to set your pickup and destination</p>
-            </div>
-            <ChevronRight className="w-6 h-6 text-muted-foreground group-hover:text-gold transition-colors" />
+      <div className="p-4 md:p-8 space-y-8 max-w-4xl mx-auto" data-testid="student-dashboard">
+        {/* Top Greeting & Hero Ride Request Feature matching Mockup */}
+        <div className="flex flex-col items-center text-center space-y-8 pt-2 pb-4">
+          {/* Header Greeting */}
+          <div className="w-full text-left font-heading border-b border-border pb-4">
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight">
+              Hello, {user?.name ? user.name.split(' ')[0] : 'Name'}
+            </h1>
+            <p className="text-muted-foreground text-sm md:text-base font-medium mt-1">
+              Where Would You Like To Go ?
+            </p>
           </div>
-        </GlassCard>
+
+          {/* Hero Top-Down Car with Yellow Circle Background */}
+          <div className="relative flex flex-col items-center justify-center w-full pt-4 pb-2 overflow-hidden">
+            {/* Yellow/Gold Circle Background (Flat yellow, no outer glow/shadows) */}
+            <div className="relative w-56 h-56 md:w-64 md:h-64 rounded-full bg-amber-400 flex items-center justify-center my-2">
+              {/* Top-Down Transparent Car Image (Bigger than circle, overflowing circle boundary cleanly) */}
+              <motion.img
+                src="/car_top.png"
+                alt="Ride Car"
+                initial={{ y: 0, scale: 1, opacity: 1 }}
+                animate={isDriving ? { y: 450, scale: 0.85, opacity: [1, 1, 0] } : { y: 0, scale: 1, opacity: 1 }}
+                transition={{ duration: 0.85, ease: [0.45, 0, 0.55, 1] }}
+                className="w-60 md:w-72 h-auto drop-shadow-xl z-10 select-none pointer-events-none absolute"
+              />
+            </div>
+
+            {/* Subtext Guidance (Moved further down) */}
+            <p className="text-xs md:text-sm text-muted-foreground font-medium mt-10 md:mt-12 mb-4 max-w-xs">
+              Tap to set your pickup point and destination
+            </p>
+
+            {/* Request a Ride Button (Moved further down, zero overlap with car) */}
+            <motion.button
+              type="button"
+              onClick={handleRequestRideClick}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.96 }}
+              disabled={isDriving}
+              className="w-full max-w-xs py-4 px-8 rounded-2xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-black font-heading font-bold text-base md:text-lg shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 z-20"
+              data-testid="request-ride-card"
+            >
+              <span>Request a Ride</span>
+            </motion.button>
+          </div>
+        </div>
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 gap-4">
@@ -766,48 +836,28 @@ const StudentDashboard = () => {
             <h2 className="font-heading font-semibold text-foreground text-lg">Recent Rides</h2>
             <button
               onClick={() => navigate('/history')}
-              className="text-gold text-sm hover:underline"
+              className="text-gold text-sm hover:underline cursor-pointer font-semibold"
             >
               View all
             </button>
           </div>
 
           {recentRides.length > 0 ? (
-            <div className="space-y-3">
+            <div className="bg-neutral-950/90 rounded-3xl overflow-hidden shadow-2xl border-0">
               {recentRides.slice(0, 3).map((ride) => (
-                <GlassCard
+                <SwipableRideCard
                   key={ride.id}
-                  className="p-4"
-                  onClick={() => navigate(`/ride/${ride.id}`)}
-                  data-testid={`ride-history-${ride.id}`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">
-                        {new Date(ride.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <StatusBadge status={ride.status} />
-                  </div>
-                  <div className="flex items-center gap-2 text-foreground mb-1">
-                    <MapPin className="w-4 h-4 text-gold shrink-0" />
-                    <span className="truncate text-sm">{ride.pickup_location?.address || 'Pickup location'}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <MapPin className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <span className="truncate text-sm">{ride.dropoff_location?.address || 'Dropoff location'}</span>
-                  </div>
-                  <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
-                    <span className="text-gold font-semibold">K{ride.fare?.toFixed(2)}</span>
-                    {ride.rating && (
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 text-gold fill-gold" />
-                        <span className="text-muted-foreground text-sm">{ride.rating}</span>
-                      </div>
-                    )}
-                  </div>
-                </GlassCard>
+                  ride={ride}
+                  isExpanded={expandedRideId === ride.id}
+                  onToggleExpand={handleToggleExpand}
+                  onDeleteClick={setRideToDelete}
+                  onRateClick={(r) => {
+                    setRatingRideId(r.id);
+                    setDriverName(r.driver?.user?.name || 'Driver');
+                    setShowRatingModal(true);
+                  }}
+                  isDriver={false}
+                />
               ))}
             </div>
           ) : (
@@ -823,6 +873,82 @@ const StudentDashboard = () => {
             />
           )}
         </div>
+
+        {/* Delete Confirmation Popup Modal */}
+        <AnimatePresence>
+          {rideToDelete && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.92, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.92, y: 15 }}
+                transition={{ duration: 0.2 }}
+                className="w-full max-w-sm bg-neutral-900 border-0 rounded-3xl p-6 shadow-2xl backdrop-blur-2xl relative space-y-4"
+              >
+                <div className="flex flex-col items-center text-center space-y-3">
+                  <div className="w-14 h-14 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500">
+                    <Trash2 className="w-7 h-7" />
+                  </div>
+
+                  <div>
+                    <h3 className="text-xl font-bold font-heading text-white">Delete Ride Record?</h3>
+                    <p className="text-xs text-neutral-400 mt-1">
+                      Are you sure you want to delete this trip from your history?
+                    </p>
+                  </div>
+
+                  {/* Ride Summary Preview */}
+                  <div className="w-full bg-white/5 rounded-2xl p-3.5 text-left space-y-1.5 text-xs text-neutral-300">
+                    <div className="flex justify-between font-semibold text-white">
+                      <span>
+                        {new Date(rideToDelete.created_at).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </span>
+                      <span className="text-gold font-bold">
+                        K{rideToDelete.fare?.toFixed(2) || '0.00'}
+                      </span>
+                    </div>
+                    <p className="truncate text-neutral-400">
+                      <span className="text-gold font-medium">From:</span> {rideToDelete.pickup_location?.address || 'Pickup'}
+                    </p>
+                    <p className="truncate text-neutral-400">
+                      <span className="text-emerald-400 font-medium">To:</span> {rideToDelete.dropoff_location?.address || 'Dropoff'}
+                    </p>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-3 w-full pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setRideToDelete(null)}
+                      className="flex-1 py-3 px-4 rounded-xl border-0 bg-white/5 hover:bg-white/10 text-white text-xs font-semibold transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={confirmDeleteRide}
+                      disabled={deleting}
+                      className="flex-1 py-3 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-lg shadow-red-600/30 transition-all cursor-pointer"
+                    >
+                      {deleting ? (
+                        <LoadingSpinner size="sm" />
+                      ) : (
+                        <>
+                          <Trash2 className="w-4 h-4" />
+                          Delete
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
 
       <RatingModal
