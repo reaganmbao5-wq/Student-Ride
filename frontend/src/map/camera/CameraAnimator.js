@@ -1,6 +1,6 @@
 
 import L from 'leaflet';
-import { CAMERA_CONFIG } from './CameraConfig';
+import { CAMERA_CONFIG, CAMERA_MODES } from './CameraConfig';
 
 /**
  * CameraAnimator translates the 'ideal target' from CameraState 
@@ -62,7 +62,7 @@ class CameraAnimator {
       this.lastMaxBoundsZoom = 0;
     }
 
-    // 1. Handle Bounds (OVERVIEW, FOLLOW_ROUTE)
+    // 1. Handle Bounds (OVERVIEW, FOLLOW_ROUTE, FOLLOW_DRIVER)
     if (this.state.targetBounds) {
       // Prevent spamming fitBounds if bounds haven't changed by deep comparing the array
       const currentBoundsStr = JSON.stringify(this.state.targetBounds);
@@ -78,20 +78,19 @@ class CameraAnimator {
               paddingOpts = { paddingTopLeft: [15, 15], paddingBottomRight: [15, 15] };
             }
 
-            // Monotonic Zoom Protection during approach:
-            // Calculate ideal zoom for these bounds to eliminate zoom flickering/back-jumps on GPS pings
+            // Policy A (Static Route Composition): Leaflet computes exact geometric bounds zoom
             let calculatedZoom = (this.map.getBoundsZoom && typeof this.map.getBoundsZoom === 'function') 
               ? this.map.getBoundsZoom(this.state.targetBounds, false, paddingOpts) 
               : 18;
 
-            // Distance-scaled adaptive zoom lock for close targets (<350m)
-            if (this.state.targetBounds && Array.isArray(this.state.targetBounds) && this.state.targetBounds.length === 2) {
+            // Policy B (Live Driver Tracking ONLY): Distance-scaled adaptive zoom lock for close targets (<350m)
+            if (this.state.mode === CAMERA_MODES.FOLLOW_DRIVER && this.state.targetBounds && Array.isArray(this.state.targetBounds) && this.state.targetBounds.length === 2) {
               try {
                 const p1 = L.latLng(this.state.targetBounds[0]);
                 const p2 = L.latLng(this.state.targetBounds[1]);
                 const distMeters = p1.distanceTo(p2);
                 if (distMeters < 350) {
-                  // Continuous zoom tightening: 350m -> 17.5, 200m -> 18.5, 50m -> 20.0
+                  // Continuous zoom tightening during vehicle approach: 350m -> 17.5, 200m -> 18.5, 50m -> 20.0
                   const adaptiveZoom = Math.min(20, Math.max(17.5, 20 - (distMeters / 350) * 2.5));
                   calculatedZoom = Math.max(calculatedZoom, adaptiveZoom);
                 }
@@ -102,11 +101,13 @@ class CameraAnimator {
 
             calculatedZoom = Math.min(calculatedZoom, CAMERA_CONFIG.ZOOM.MAX || 20);
 
-            if (!this.lastMaxBoundsZoom || calculatedZoom >= this.lastMaxBoundsZoom - 0.5) {
-              this.lastMaxBoundsZoom = Math.max(this.lastMaxBoundsZoom || 0, calculatedZoom);
-            } else {
-              // Bounds expanded significantly (e.g. driver turned around/rerouted), allow zoom out
-              this.lastMaxBoundsZoom = calculatedZoom;
+            if (this.state.mode === CAMERA_MODES.FOLLOW_DRIVER) {
+              if (!this.lastMaxBoundsZoom || calculatedZoom >= this.lastMaxBoundsZoom - 0.5) {
+                this.lastMaxBoundsZoom = Math.max(this.lastMaxBoundsZoom || 0, calculatedZoom);
+              } else {
+                // Bounds expanded significantly (e.g. driver turned around/rerouted), allow zoom out
+                this.lastMaxBoundsZoom = calculatedZoom;
+              }
             }
 
             this.map.fitBounds(this.state.targetBounds, {
