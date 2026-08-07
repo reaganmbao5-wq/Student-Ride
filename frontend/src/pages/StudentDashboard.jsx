@@ -13,8 +13,8 @@ import { useWebSocket } from '../context/WebSocketContext';
 import { useGeolocation } from '../map/hooks/useGeolocation';
 import { useDriverDiscovery } from '../map/discovery/DriverDiscoveryEngine';
 import { toast } from 'sonner';
-import { routeCache } from '../map/route/RouteCache';
 import { TilePreloader } from '../map/services/TilePreloader';
+import { haptics } from '../utils/haptics';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
@@ -67,8 +67,10 @@ const StudentDashboard = () => {
     const deltaY = e.changedTouches[0].clientY - sheetTouchStartY.current;
     if (deltaY < -25) {
       setIsSheetExpanded(true);
+      haptics.tap();
     } else if (deltaY > 25) {
       setIsSheetExpanded(false);
+      haptics.tap();
     }
   };
 
@@ -208,17 +210,21 @@ const StudentDashboard = () => {
     if (rideUpdate) {
       if (rideUpdate.type === 'accepted') {
         setActiveRide(prev => ({ ...prev, ...rideUpdate.ride, driver: rideUpdate.driver }));
+        haptics.driverAccepted();
         toast.success('Driver accepted your ride!');
         fetchData();
       } else if (rideUpdate.type === 'driver_arrived') {
         setActiveRide(prev => prev ? { ...prev, status: 'driver_arrived' } : null);
+        haptics.driverArrived();
         toast.success('Driver has arrived at pickup!');
       } else if (rideUpdate.type === 'state_changed') {
         setActiveRide(prev => prev ? { ...prev, status: rideUpdate.state } : null);
       } else if (rideUpdate.type === 'started') {
         setActiveRide(prev => prev ? { ...prev, status: 'ongoing' } : null);
+        haptics.tap();
         toast.info('Your ride has started');
       } else if (rideUpdate.type === 'completed') {
+        haptics.tripCompleted();
         toast.success('Ride completed!');
         setRatingRideId(activeRide?.id);
         setDriverName(activeRide?.driver?.user?.name || 'Driver');

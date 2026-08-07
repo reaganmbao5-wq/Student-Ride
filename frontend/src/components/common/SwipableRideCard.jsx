@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { StatusBadge } from './GlassComponents';
+import { haptics } from '../../utils/haptics';
 
 export const SwipableRideCard = ({ 
   ride, 
@@ -48,6 +49,7 @@ export const SwipableRideCard = ({
           type="button"
           onClick={(e) => {
             e.stopPropagation();
+            haptics.deleteThreshold();
             if (onDeleteClick) onDeleteClick(ride);
           }}
           className="flex flex-col items-center justify-center gap-1 w-full h-full text-white font-medium hover:bg-red-700 transition-colors cursor-pointer"
@@ -68,6 +70,7 @@ export const SwipableRideCard = ({
           setTimeout(() => setIsDragging(false), 150);
           if (info.offset.x < -30) {
             setSwipeOffset(-90);
+            haptics.deleteThreshold();
           } else {
             setSwipeOffset(0);
           }

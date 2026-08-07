@@ -12,6 +12,7 @@ import { useDriverDiscovery } from '../map/discovery/DriverDiscoveryEngine';
 import { routeCache } from '../map/route/RouteCache';
 import { AddressSearch } from '../components/common/AddressSearch';
 import { TilePreloader } from '../map/services/TilePreloader';
+import { haptics } from '../utils/haptics';
 import {
   Select,
   SelectContent,
@@ -50,6 +51,7 @@ const RideRequestPage = () => {
   // Debounce ref for reverse geocoding & card touch gestures
   const geocodeTimeoutRef = useRef(null);
   const touchStartY = useRef(0);
+  const lastHapticTime = useRef(0);
 
   // Touch gesture handlers for stationary card swipe detection (isolating gesture from window scroll)
   const handleTouchStart = (e) => {
@@ -60,12 +62,19 @@ const RideRequestPage = () => {
     if (e.cancelable) {
       e.preventDefault();
     }
+    // Continuous micro-haptics while dragging
+    const now = Date.now();
+    if (now - lastHapticTime.current > 60) {
+      haptics.swipeProgress();
+      lastHapticTime.current = now;
+    }
   };
 
   const handleTouchEnd = (e) => {
     const deltaY = e.changedTouches[0].clientY - touchStartY.current;
     if (Math.abs(deltaY) > 20) {
       setRideMode(prev => prev === 'shared' ? 'private' : 'shared');
+      haptics.swipeSnap();
     }
   };
 
@@ -209,6 +218,9 @@ const RideRequestPage = () => {
 
 
   const handleConfirmLocation = () => {
+    // Pin landing ground thump haptic feedback
+    haptics.pinDrop();
+
     let loc = {
       lat: mapCenter.lat,
       lng: mapCenter.lng,
@@ -562,7 +574,10 @@ const RideRequestPage = () => {
                             onTouchStart={handleTouchStart}
                             onTouchMove={handleTouchMove}
                             onTouchEnd={handleTouchEnd}
-                            onClick={() => setRideMode(prev => prev === 'shared' ? 'private' : 'shared')}
+                            onClick={() => {
+                              setRideMode(prev => prev === 'shared' ? 'private' : 'shared');
+                              haptics.swipeSnap();
+                            }}
                             style={{ touchAction: 'none' }}
                             className={`flex-1 p-3.5 rounded-2xl cursor-pointer select-none transition-colors duration-300 relative overflow-hidden flex flex-col justify-between border-2 touch-none ${
                               rideMode === 'shared' 

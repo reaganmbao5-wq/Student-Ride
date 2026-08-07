@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '../../lib/utils';
+import { haptics } from '../../utils/haptics';
 
 export const GlassCard = React.forwardRef(({ className, children, hover = true, ...props }, ref) => {
   return (
@@ -50,9 +51,15 @@ export const GoldButton = React.forwardRef(({ className, children, variant = "pr
     icon: "p-3"
   };
 
+  const { onClick, ...otherProps } = props;
+
   return (
     <button
       ref={ref}
+      onClick={(e) => {
+        haptics.primaryButton();
+        if (onClick) onClick(e);
+      }}
       className={cn(
         "rounded-full font-semibold transition-all duration-300",
         "hover:scale-105 active:scale-95",
@@ -61,7 +68,7 @@ export const GoldButton = React.forwardRef(({ className, children, variant = "pr
         sizes[size],
         className
       )}
-      {...props}
+      {...otherProps}
     >
       {children}
     </button>
