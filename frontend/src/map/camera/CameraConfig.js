@@ -29,10 +29,10 @@ export const CAMERA_CONFIG = {
       const containerHeight = mapSize && mapSize.y ? mapSize.y : (typeof window !== 'undefined' ? window.innerHeight : 600);
       const containerWidth = mapSize && mapSize.x ? mapSize.x : (typeof window !== 'undefined' ? window.innerWidth : 400);
 
-      // Top padding: 110px (clears top overlay & back button while framing route in center open map space)
+      // Top padding: 50px (clears top header while maximizing usable map area)
       // Bottom padding: Custom padding if provided, else ~20% of container height (min 140px)
       // Side padding: Dynamic 4% of container width (clamped 15px–30px)
-      const topPadding = 110;
+      const topPadding = 50;
       const bottomPadding = paddingBottomOverride !== null 
         ? paddingBottomOverride 
         : Math.max(140, Math.round(containerHeight * 0.20));

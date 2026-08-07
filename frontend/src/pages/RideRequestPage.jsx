@@ -509,14 +509,11 @@ const RideRequestPage = () => {
                    <>
                      <div className="flex items-center justify-between gap-2">
                        <h2 className="text-xl font-bold font-heading shrink-0">Confirm Ride</h2>
-                       <button 
-                         onClick={() => setRideMode(rideMode === 'shared' ? 'private' : 'shared')}
-                         className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline text-right active:opacity-70 transition-opacity"
-                       >
+                       <span className="text-[11px] font-medium text-zinc-400 text-right select-none">
                          {rideMode === 'shared' 
                            ? 'Tap/Swipe to switch to Private' 
                            : `Tap/Swipe to switch to Shared (Save ${savePercent}%)`}
-                       </button>
+                       </span>
                      </div>
                      
                      {/* Locations summary */}
@@ -543,10 +540,18 @@ const RideRequestPage = () => {
                        </div>
                      ) : fareEstimate ? (
                        <div className="flex items-stretch gap-3">
-                          {/* Animated Swipeable Ride Mode Selector Card */}
-                          <div 
-                            onClick={() => setRideMode(rideMode === 'shared' ? 'private' : 'shared')}
-                            className={`flex-1 p-3.5 rounded-2xl cursor-pointer select-none transition-all duration-300 relative overflow-hidden flex flex-col justify-between border-2 ${
+                          {/* Animated Swipeable & Tap-Toggleable Ride Mode Selector Card */}
+                          <motion.div 
+                            drag="y"
+                            dragConstraints={{ top: 0, bottom: 0 }}
+                            dragElastic={0.2}
+                            onDragEnd={(e, info) => {
+                              if (Math.abs(info.offset.y) > 15 || Math.abs(info.velocity.y) > 50) {
+                                setRideMode(prev => prev === 'shared' ? 'private' : 'shared');
+                              }
+                            }}
+                            onClick={() => setRideMode(prev => prev === 'shared' ? 'private' : 'shared')}
+                            className={`flex-1 p-3.5 rounded-2xl cursor-pointer select-none transition-colors duration-300 relative overflow-hidden flex flex-col justify-between border-2 ${
                               rideMode === 'shared' 
                                 ? 'bg-black text-white dark:bg-zinc-900 border-blue-500 shadow-md' 
                                 : 'bg-black text-white dark:bg-zinc-900 border-zinc-700 shadow-md'
@@ -561,14 +566,7 @@ const RideRequestPage = () => {
                                 transition={{ duration: 0.2, ease: "easeInOut" }}
                                 className="w-full flex flex-col justify-between h-full"
                               >
-                                {/* Save Badge ONLY rendered for Shared Ride */}
-                                {rideMode === 'shared' && fareEstimate.shared_fare < fareEstimate.private_fare && (
-                                  <div className="absolute -top-3.5 -right-3.5 bg-blue-500 text-white text-[9px] font-extrabold px-2.5 py-0.5 rounded-bl-xl shadow">
-                                    Save {savePercent}%
-                                  </div>
-                                )}
-
-                                <div className="flex items-center justify-between gap-2 mb-1">
+                                <div className="flex items-start justify-between gap-2 mb-1">
                                   <div>
                                     <span className={`text-[10px] font-extrabold uppercase tracking-wider ${rideMode === 'shared' ? 'text-blue-400' : 'text-zinc-400'}`}>
                                       {rideMode} FARE
@@ -577,7 +575,13 @@ const RideRequestPage = () => {
                                       K{rideMode === 'shared' ? fareEstimate.shared_fare?.toFixed(2) : fareEstimate.private_fare?.toFixed(2)}
                                     </div>
                                   </div>
-                                  <div className="text-right shrink-0">
+                                  <div className="flex flex-col items-end gap-1 shrink-0">
+                                    {/* Save Badge ONLY rendered INSIDE Shared Ride top-right */}
+                                    {rideMode === 'shared' && fareEstimate.shared_fare < fareEstimate.private_fare && (
+                                      <span className="bg-blue-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow">
+                                        Save {savePercent}%
+                                      </span>
+                                    )}
                                     <p className="text-xs text-zinc-300 font-semibold">{fareEstimate.duration_min || fareEstimate.duration} min</p>
                                     <p className="text-[10px] text-zinc-400">{fareEstimate.distance_km || fareEstimate.distance?.toFixed(1)} km</p>
                                   </div>
@@ -590,13 +594,13 @@ const RideRequestPage = () => {
                                 </p>
                               </motion.div>
                             </AnimatePresence>
-                          </div>
+                          </motion.div>
 
-                          {/* Compact Request Ride Action Button */}
+                          {/* Compact Request Ride Action Button (Restored commit ad67e45 styling) */}
                           <button
                             onClick={handleRequestRide}
                             disabled={requesting}
-                            className="px-6 bg-black dark:bg-white text-white dark:text-black font-bold text-base rounded-2xl active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center shrink-0 shadow-lg"
+                            className="py-3 px-5 bg-black dark:bg-white text-white dark:text-black font-bold text-sm rounded-xl active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center shrink-0 shadow-md self-center"
                           >
                             {requesting ? (
                               <>
