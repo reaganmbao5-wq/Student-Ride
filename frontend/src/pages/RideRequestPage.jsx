@@ -334,7 +334,7 @@ const RideRequestPage = () => {
         <PlatformMap 
           center={mapCenter}
           bounds={bounds}
-          bottomPadding={step === 'confirm' ? (sheetHeight + 20) : 0}
+          bottomPadding={step === 'confirm' ? 140 : 0}
           cameraMode={
             step === 'pickup' ? CAMERA_MODES.PICKUP_SELECTION :
             step === 'dropoff' ? CAMERA_MODES.DESTINATION_SELECTION :
