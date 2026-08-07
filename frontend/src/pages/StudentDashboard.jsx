@@ -50,6 +50,27 @@ const StudentDashboard = () => {
 
   // Track locally cancelled ride IDs to prevent in-flight fetchData race conditions from restoring cancelled rides
   const cancelledRideIdsRef = React.useRef(new Set());
+  const sheetTouchStartY = React.useRef(0);
+
+  // Touch gesture handlers for stationary bottom sheet swipe up/down expand/collapse
+  const handleSheetTouchStart = (e) => {
+    sheetTouchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleSheetTouchMove = (e) => {
+    if (e.cancelable) {
+      e.preventDefault();
+    }
+  };
+
+  const handleSheetTouchEnd = (e) => {
+    const deltaY = e.changedTouches[0].clientY - sheetTouchStartY.current;
+    if (deltaY < -25) {
+      setIsSheetExpanded(true);
+    } else if (deltaY > 25) {
+      setIsSheetExpanded(false);
+    }
+  };
 
   useEffect(() => {
     console.log('DASHBOARD_MOUNTED (Student)');
@@ -571,9 +592,13 @@ const StudentDashboard = () => {
           />
         </div>
 
-        {/* Bottom Sheet Overlay (Fixed flush at bottom-0, zero-flicker rock solid stability) */}
+        {/* Bottom Sheet Overlay (Fixed flush at bottom-0, zero-flicker rock solid stability with swipe up/down) */}
         <div
-          className="fixed bottom-0 left-0 right-0 bg-black text-white dark:bg-zinc-950 rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.4)] z-20 flex flex-col transition-all duration-300 ease-in-out"
+          onTouchStart={handleSheetTouchStart}
+          onTouchMove={handleSheetTouchMove}
+          onTouchEnd={handleSheetTouchEnd}
+          style={{ touchAction: 'none' }}
+          className="fixed bottom-0 left-0 right-0 bg-black text-white dark:bg-zinc-950 rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.4)] z-20 flex flex-col will-change-transform transform-gpu select-none"
         >
           {/* Drag Handle Zone */}
           <div 
@@ -587,20 +612,20 @@ const StudentDashboard = () => {
             className="px-6 pb-6 pt-2 flex flex-col gap-6"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.7, delay: 0.05 }}
+            transition={{ duration: 0.3 }}
           >
             
             {/* Minimized Header Row */}
-            <div className="flex items-center justify-between" onClick={() => setIsSheetExpanded(!isSheetExpanded)}>
+            <div className="flex items-center justify-between cursor-pointer" onClick={() => setIsSheetExpanded(!isSheetExpanded)}>
               <div className="flex-1 min-w-0 pr-4">
                 <div className="h-14 flex items-center">
                   <AnimatePresence mode="wait">
                     <motion.h2 
                       key={`msg-${activeBriefingText}`}
-                      initial={{ opacity: 0, y: 8 }}
+                      initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -8 }}
-                      transition={{ duration: 0.35 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.2 }}
                       className="font-heading text-lg font-bold text-gold whitespace-normal break-words leading-tight"
                     >
                       {activeBriefingText}
@@ -622,7 +647,7 @@ const StudentDashboard = () => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
+                    transition={{ duration: 0.2 }}
                     className="whitespace-nowrap"
                   >
                     {passengerBriefing?.eta_text ? (
@@ -639,13 +664,14 @@ const StudentDashboard = () => {
               </div>
             </div>
 
-            {/* EXPANDED CONTENT */}
+            {/* EXPANDED CONTENT (Butter-smooth 60/120FPS 0.2s expansion) */}
             <AnimatePresence>
               {isSheetExpanded && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
                   className="flex flex-col gap-6 overflow-hidden"
                 >
                    {/* Driver Profile */}
