@@ -268,7 +268,8 @@ const DriverDashboard = () => {
           }
           return remaining;
         });
-        toast.info('Ride was cancelled');
+        toast.error(rideUpdate.message || 'Student cancelled the ride');
+        try { haptics.tripCompleted(); } catch (e) {}
         setPendingRides(prev => prev.filter(r => getRideId(r) !== cancelledId));
         setMasterSharedRidePool(prev => prev.filter(r => getRideId(r) !== cancelledId));
         clearRideUpdate();

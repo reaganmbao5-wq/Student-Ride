@@ -2899,25 +2899,45 @@ async def cancel_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
             {"$set": {"status": RideStatus.CANCELLED.value}}
         )
         
+        cancel_msg = {
+            "type": "ride_cancelled",
+            "ride_id": ride_id,
+            "student_id": ride.get("student_id"),
+            "message": "Student cancelled the ride"
+        }
+
+        # Broadcast to room sockets joined to this ride
+        background_tasks.add_task(manager.broadcast_to_ride, cancel_msg, ride_id)
+        
         if ride.get("driver_id"):
-            # Notify assigned driver
-            background_tasks.add_task(
-                manager.send_personal_message,
-                {
-                    "type": "ride_cancelled",
-                    "ride_id": ride_id
-                },
-                ride["driver_id"]
-            )
+            driver_doc = await db.drivers.find_one({"id": ride["driver_id"]})
+            if driver_doc:
+                # Send personal message to driver's user_id (for instant WebSocket UI update & toast)
+                if driver_doc.get("user_id"):
+                    background_tasks.add_task(
+                        manager.send_personal_message,
+                        cancel_msg,
+                        driver_doc["user_id"]
+                    )
+                # Fallback to driver_doc id
+                background_tasks.add_task(
+                    manager.send_personal_message,
+                    cancel_msg,
+                    driver_doc["id"]
+                )
+                background_tasks.add_task(broadcast_route_queue, driver_doc["id"])
+            else:
+                background_tasks.add_task(
+                    manager.send_personal_message,
+                    cancel_msg,
+                    ride["driver_id"]
+                )
         else:
             # If no driver was assigned, broadcast cancellation to the shared pool
             background_tasks.add_task(manager.broadcast_to_nearby_drivers, {
                 "type": "shared_ride_cancelled",
                 "ride_id": ride_id
             }, ride.get("pickup_location"))
-            
-        if ride.get("driver_id"):
-            background_tasks.add_task(broadcast_route_queue, ride["driver_id"])
             
         return {"status": "cancelled"}
 
