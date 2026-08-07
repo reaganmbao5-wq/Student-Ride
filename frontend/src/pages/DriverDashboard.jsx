@@ -124,7 +124,7 @@ const DriverDashboard = () => {
         api.get('/rides/driver/active'),
         api.get('/rides/driver/trip').catch(() => ({ data: { route_queue: [] } }))
       ]);
-      const ridesArray = activeRes.data || [];
+      const ridesArray = (activeRes.data || []).filter(r => r.status !== 'cancelled' && r.status !== 'completed');
       setActiveRides(ridesArray);
       setActiveRide(ridesArray.length > 0 ? ridesArray[0] : null);
       if (ridesArray.length === 0) {
@@ -149,9 +149,13 @@ const DriverDashboard = () => {
         api.get('/rides/driver/trip').catch(() => ({ data: { route_queue: [] } }))
       ]);
 
-      const ridesArray = activeRes.data || [];
+      const ridesArray = (activeRes.data || []).filter(r => r.status !== 'cancelled' && r.status !== 'completed');
       setActiveRides(ridesArray);
       setActiveRide(ridesArray.length > 0 ? ridesArray[0] : null);
+      if (ridesArray.length === 0) {
+        setRouteQueue([]);
+        setRoutesData([]);
+      }
       setEarnings(earningsRes.data);
       if (tripRes?.data) {
         if (tripRes.data.route_queue) setRouteQueue(tripRes.data.route_queue);
@@ -251,18 +255,22 @@ const DriverDashboard = () => {
       setEarnings(prev => ({ ...prev, rating: rideUpdate.new_average }));
       refreshDriverProfile();
       clearRideUpdate();
-    } else if (rideUpdate.type === 'cancelled' || rideUpdate.type === 'declined') {
-        if (activeRide && activeRide.ride_mode === 'shared' && getRideId(activeRide) === rideUpdate.ride_id && rideUpdate.student_id) {
-          refreshActiveRide();
-          toast.info("A passenger cancelled their shared ride request.");
-        } 
-        else if (getRideId(activeRide) === rideUpdate.ride_id) {
-          setActiveRide(null);
-          toast.info('Ride was cancelled');
-        }
-        
-        setPendingRides(prev => prev.filter(r => getRideId(r) !== rideUpdate.ride_id));
-        setMasterSharedRidePool(prev => prev.filter(r => getRideId(r) !== rideUpdate.ride_id));
+    } else if (rideUpdate.type === 'cancelled' || rideUpdate.type === 'ride_cancelled' || rideUpdate.type === 'declined') {
+        const cancelledId = rideUpdate.ride_id || rideUpdate.ride?.id;
+        setActiveRides(prev => {
+          const remaining = prev.filter(r => getRideId(r) !== cancelledId);
+          if (activeRide && getRideId(activeRide) === cancelledId) {
+            setActiveRide(remaining.length > 0 ? remaining[0] : null);
+          }
+          if (remaining.length === 0) {
+            setRouteQueue([]);
+            setRoutesData([]);
+          }
+          return remaining;
+        });
+        toast.info('Ride was cancelled');
+        setPendingRides(prev => prev.filter(r => getRideId(r) !== cancelledId));
+        setMasterSharedRidePool(prev => prev.filter(r => getRideId(r) !== cancelledId));
         clearRideUpdate();
       } else if (rideUpdate.type === 'accepted') {
         setPendingRides(prev => prev.filter(r => getRideId(r) !== getRideId(rideUpdate.ride)));
