@@ -523,26 +523,16 @@ const StudentDashboard = () => {
           />
         </div>
 
-        {/* Bottom Sheet Overlay */}
-        <motion.div
-          layoutId="student-bottom-sheet"
-          className="absolute bottom-0 left-0 right-0 bg-white dark:bg-zinc-950 rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-20 flex flex-col"
-          animate={{ y: isSheetExpanded ? 0 : "calc(max(0px, 100% - 115px))" }}
-          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-          drag="y"
-          dragConstraints={{ top: 0, bottom: 0 }}
-          dragElastic={0.2}
-          onDragEnd={(e, info) => {
-            if (info.offset.y > 50) setIsSheetExpanded(false);
-            if (info.offset.y < -50) setIsSheetExpanded(true);
-          }}
+        {/* Bottom Sheet Overlay (Fixed flush at bottom-0, zero-flicker rock solid stability) */}
+        <div
+          className="fixed bottom-0 left-0 right-0 bg-black text-white dark:bg-zinc-950 rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.4)] z-20 flex flex-col transition-all duration-300 ease-in-out"
         >
           {/* Drag Handle Zone */}
           <div 
-            className="w-full pt-4 pb-2 flex justify-center cursor-grab active:cursor-grabbing"
+            className="w-full pt-3.5 pb-1 flex justify-center cursor-pointer select-none"
             onClick={() => setIsSheetExpanded(!isSheetExpanded)}
           >
-            <div className="w-12 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full" />
+            <div className="w-12 h-1.5 bg-zinc-600 dark:bg-zinc-700 rounded-full" />
           </div>
 
           <motion.div 
@@ -695,7 +685,7 @@ const StudentDashboard = () => {
             </AnimatePresence>
 
           </motion.div>
-        </motion.div>
+        </div>
         
         {/* Rating Modal explicitly mapped to active ride completion */}
         <RatingModal
