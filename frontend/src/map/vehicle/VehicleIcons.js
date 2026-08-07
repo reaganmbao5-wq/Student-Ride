@@ -1,54 +1,40 @@
 import L from 'leaflet';
 
-// Base styling for the vehicle to look like a modern ride-hailing car
-const createVehicleHtml = (color) => `
+// Real top-down car PNG asset (/car_top.png) styled cleanly to scale with drop shadow
+const createVehicleHtml = (glowColor) => `
   <div style="
-    width: 20px;
-    height: 40px;
-    background-color: ${color};
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    width: 24px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     position: relative;
-    border: 2px solid white;
   ">
-    <!-- Windshield -->
-    <div style="
-      position: absolute;
-      top: 10px;
-      left: 2px;
-      right: 2px;
-      height: 8px;
-      background-color: #333;
-      border-radius: 2px;
-    "></div>
-    <!-- Rear Window -->
-    <div style="
-      position: absolute;
-      bottom: 8px;
-      left: 2px;
-      right: 2px;
-      height: 4px;
-      background-color: #333;
-      border-radius: 1px;
-    "></div>
+    <img src="/car_top.png" alt="Driver Car" style="
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 3px 6px ${glowColor});
+      transform: rotate(180deg);
+    " />
   </div>
 `;
 
 export const VehicleIcons = {
   ONLINE: L.divIcon({
-    html: createVehicleHtml('#2563EB'), // Blue for online/available
+    html: createVehicleHtml('rgba(37,99,235,0.6)'), // Blue glow for available
     className: 'custom-vehicle-icon',
     iconSize: [24, 44],
     iconAnchor: [12, 22],
   }),
   BUSY: L.divIcon({
-    html: createVehicleHtml('#F59E0B'), // Amber/Yellow for busy
+    html: createVehicleHtml('rgba(245,158,11,0.6)'), // Amber/Gold glow for busy
     className: 'custom-vehicle-icon',
     iconSize: [24, 44],
     iconAnchor: [12, 22],
   }),
   OFFLINE: L.divIcon({
-    html: createVehicleHtml('#9CA3AF'), // Gray for offline
+    html: createVehicleHtml('rgba(156,163,175,0.4)'), // Gray glow for offline
     className: 'custom-vehicle-icon',
     iconSize: [24, 44],
     iconAnchor: [12, 22],
