@@ -500,99 +500,118 @@ const RideRequestPage = () => {
 
           {step === 'confirm' && (
              <>
-               <div className="flex items-center justify-between">
-                 <h2 className="text-xl font-bold font-heading">Confirm Ride</h2>
-               </div>
-               
-               {/* Locations summary */}
-               <div className="bg-zinc-100 dark:bg-zinc-900 p-3 rounded-2xl flex flex-col gap-2 border border-zinc-200 dark:border-zinc-800">
-                  <div className="flex items-center gap-3">
-                     <div className="w-5 h-5 rounded-full bg-black flex items-center justify-center shrink-0">
-                       <div className="w-1.5 h-1.5 rounded-full bg-white" />
+               {(() => {
+                 const savePercent = fareEstimate && fareEstimate.private_fare > 0 && fareEstimate.shared_fare < fareEstimate.private_fare
+                   ? Math.round((1 - fareEstimate.shared_fare / fareEstimate.private_fare) * 100)
+                   : 30;
+
+                 return (
+                   <>
+                     <div className="flex items-center justify-between gap-2">
+                       <h2 className="text-xl font-bold font-heading shrink-0">Confirm Ride</h2>
+                       <button 
+                         onClick={() => setRideMode(rideMode === 'shared' ? 'private' : 'shared')}
+                         className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline text-right active:opacity-70 transition-opacity"
+                       >
+                         {rideMode === 'shared' 
+                           ? 'Tap/Swipe to switch to Private' 
+                           : `Tap/Swipe to switch to Shared (Save ${savePercent}%)`}
+                       </button>
                      </div>
-                     <p className="font-medium text-xs truncate flex-1"><span className="text-muted-foreground font-normal">Pickup: </span>{pickup?.address}</p>
-                  </div>
-                  
-                  <div className="flex items-center gap-3">
-                     <div className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center shrink-0">
-                       <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                     
+                     {/* Locations summary */}
+                     <div className="bg-zinc-100 dark:bg-zinc-900 p-3 rounded-2xl flex flex-col gap-2 border border-zinc-200 dark:border-zinc-800">
+                        <div className="flex items-center gap-3">
+                           <div className="w-5 h-5 rounded-full bg-black flex items-center justify-center shrink-0">
+                             <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                           </div>
+                           <p className="font-medium text-xs truncate flex-1"><span className="text-muted-foreground font-normal">Pickup: </span>{pickup?.address}</p>
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                           <div className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center shrink-0">
+                             <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                           </div>
+                           <p className="font-medium text-xs truncate flex-1"><span className="text-muted-foreground font-normal">Dropoff: </span>{dropoff?.address}</p>
+                        </div>
                      </div>
-                     <p className="font-medium text-xs truncate flex-1"><span className="text-muted-foreground font-normal">Dropoff: </span>{dropoff?.address}</p>
-                  </div>
-               </div>
 
-               {/* Fare loading or display */}
-               {loading ? (
-                 <div className="py-4 flex justify-center">
-                   <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                 </div>
-               ) : fareEstimate ? (
-                 <>
-                   {/* Main Request Ride Action Row with Interactive Ride Mode Card */}
-                   <div className="flex items-stretch gap-3">
-                      {/* Swipeable / Interactive Ride Mode Selector Card */}
-                      <div 
-                        onClick={() => setRideMode(rideMode === 'shared' ? 'private' : 'shared')}
-                        className={`flex-1 p-3.5 rounded-2xl cursor-pointer select-none transition-all duration-300 relative overflow-hidden flex flex-col justify-between border-2 ${
-                          rideMode === 'shared' 
-                            ? 'bg-black text-white dark:bg-zinc-900 border-blue-500 shadow-md' 
-                            : 'bg-black text-white dark:bg-zinc-900 border-zinc-700 shadow-md'
-                        }`}
-                      >
-                        {/* Dynamic Save Badge */}
-                        {fareEstimate.shared_fare < fareEstimate.private_fare && (
-                          <div className="absolute top-0 right-0 bg-blue-500 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-bl-xl shadow">
-                            Save {Math.round((1 - fareEstimate.shared_fare / fareEstimate.private_fare) * 100)}%
+                     {/* Fare loading or display */}
+                     {loading ? (
+                       <div className="py-4 flex justify-center">
+                         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                       </div>
+                     ) : fareEstimate ? (
+                       <div className="flex items-stretch gap-3">
+                          {/* Animated Swipeable Ride Mode Selector Card */}
+                          <div 
+                            onClick={() => setRideMode(rideMode === 'shared' ? 'private' : 'shared')}
+                            className={`flex-1 p-3.5 rounded-2xl cursor-pointer select-none transition-all duration-300 relative overflow-hidden flex flex-col justify-between border-2 ${
+                              rideMode === 'shared' 
+                                ? 'bg-black text-white dark:bg-zinc-900 border-blue-500 shadow-md' 
+                                : 'bg-black text-white dark:bg-zinc-900 border-zinc-700 shadow-md'
+                            }`}
+                          >
+                            <AnimatePresence mode="wait">
+                              <motion.div
+                                key={rideMode}
+                                initial={{ y: 15, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                exit={{ y: -15, opacity: 0 }}
+                                transition={{ duration: 0.2, ease: "easeInOut" }}
+                                className="w-full flex flex-col justify-between h-full"
+                              >
+                                {/* Save Badge ONLY rendered for Shared Ride */}
+                                {rideMode === 'shared' && fareEstimate.shared_fare < fareEstimate.private_fare && (
+                                  <div className="absolute -top-3.5 -right-3.5 bg-blue-500 text-white text-[9px] font-extrabold px-2.5 py-0.5 rounded-bl-xl shadow">
+                                    Save {savePercent}%
+                                  </div>
+                                )}
+
+                                <div className="flex items-center justify-between gap-2 mb-1">
+                                  <div>
+                                    <span className={`text-[10px] font-extrabold uppercase tracking-wider ${rideMode === 'shared' ? 'text-blue-400' : 'text-zinc-400'}`}>
+                                      {rideMode} FARE
+                                    </span>
+                                    <div className="text-xl font-bold font-heading">
+                                      K{rideMode === 'shared' ? fareEstimate.shared_fare?.toFixed(2) : fareEstimate.private_fare?.toFixed(2)}
+                                    </div>
+                                  </div>
+                                  <div className="text-right shrink-0">
+                                    <p className="text-xs text-zinc-300 font-semibold">{fareEstimate.duration_min || fareEstimate.duration} min</p>
+                                    <p className="text-[10px] text-zinc-400">{fareEstimate.distance_km || fareEstimate.distance?.toFixed(1)} km</p>
+                                  </div>
+                                </div>
+
+                                <p className="text-[10px] text-zinc-400 leading-tight mt-1">
+                                  {rideMode === 'shared'
+                                    ? 'Lower fare. Ride may include other passengers.'
+                                    : 'Entire vehicle reserved. No additional platform passengers.'}
+                                </p>
+                              </motion.div>
+                            </AnimatePresence>
                           </div>
-                        )}
 
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <div>
-                            <span className={`text-[10px] font-extrabold uppercase tracking-wider ${rideMode === 'shared' ? 'text-blue-400' : 'text-zinc-400'}`}>
-                              {rideMode} FARE
-                            </span>
-                            <div className="text-xl font-bold font-heading">
-                              K{rideMode === 'shared' ? fareEstimate.shared_fare?.toFixed(2) : fareEstimate.private_fare?.toFixed(2)}
-                            </div>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <p className="text-xs text-zinc-300 font-semibold">{fareEstimate.duration_min || fareEstimate.duration} min</p>
-                            <p className="text-[10px] text-zinc-400">{fareEstimate.distance_km || fareEstimate.distance?.toFixed(1)} km</p>
-                          </div>
-                        </div>
-
-                        <p className="text-[10px] text-zinc-400 leading-tight">
-                          {rideMode === 'shared'
-                            ? 'Lower fare. Ride may include other passengers.'
-                            : 'Entire vehicle reserved. No additional platform passengers.'}
-                        </p>
-
-                        <div className="mt-2 pt-1.5 border-t border-white/10 flex items-center justify-between text-[10px] font-bold">
-                          <span className={rideMode === 'shared' ? 'text-blue-400' : 'text-zinc-400'}>
-                            {rideMode === 'shared' ? 'Tap/Swipe to switch to Private' : `Tap/Swipe to switch to Shared (Save ${Math.round((1 - fareEstimate.shared_fare / fareEstimate.private_fare) * 100)}%)`}
-                          </span>
-                          <span className="text-xs">↕</span>
-                        </div>
-                      </div>
-
-                      {/* Request Ride Action Button */}
-                      <button
-                        onClick={handleRequestRide}
-                        disabled={requesting}
-                        className="px-6 bg-black dark:bg-white text-white dark:text-black font-bold text-base rounded-2xl active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center shrink-0 shadow-lg"
-                      >
-                        {requesting ? (
-                          <>
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            Requesting...
-                          </>
-                        ) : (
-                          'Request Ride'
-                        )}
-                      </button>
-                   </div>
-                 </>
-               ) : null}
+                          {/* Compact Request Ride Action Button */}
+                          <button
+                            onClick={handleRequestRide}
+                            disabled={requesting}
+                            className="px-6 bg-black dark:bg-white text-white dark:text-black font-bold text-base rounded-2xl active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center shrink-0 shadow-lg"
+                          >
+                            {requesting ? (
+                              <>
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                Requesting...
+                              </>
+                            ) : (
+                              'Request Ride'
+                            )}
+                          </button>
+                       </div>
+                     ) : null}
+                   </>
+                 );
+               })()}
              </>
           )}
         </motion.div>
