@@ -512,7 +512,7 @@ const RideRequestPage = () => {
                        <span className="text-[11px] font-medium text-zinc-400 text-right select-none">
                          {rideMode === 'shared' 
                            ? 'Tap/Swipe to switch to Private' 
-                           : `Tap/Swipe to switch to Shared (Save ${savePercent}%)`}
+                           : 'Tap/Swipe to switch to Shared'}
                        </span>
                      </div>
                      
@@ -539,7 +539,7 @@ const RideRequestPage = () => {
                          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                        </div>
                      ) : fareEstimate ? (
-                       <div className="flex items-stretch gap-3">
+                       <div className="flex items-stretch gap-3 min-h-[105px]">
                           {/* Animated Swipeable & Tap-Toggleable Ride Mode Selector Card */}
                           <motion.div 
                             drag="y"
@@ -557,6 +557,13 @@ const RideRequestPage = () => {
                                 : 'bg-black text-white dark:bg-zinc-900 border-zinc-700 shadow-md'
                             }`}
                           >
+                            {/* Original embedded Save Badge flush on top-right corner */}
+                            {rideMode === 'shared' && fareEstimate.shared_fare < fareEstimate.private_fare && (
+                              <div className="absolute top-0 right-0 bg-blue-500 text-white text-[9px] font-extrabold px-2.5 py-1 rounded-bl-xl shadow z-10">
+                                Save {savePercent}%
+                              </div>
+                            )}
+
                             <AnimatePresence mode="wait">
                               <motion.div
                                 key={rideMode}
@@ -575,13 +582,7 @@ const RideRequestPage = () => {
                                       K{rideMode === 'shared' ? fareEstimate.shared_fare?.toFixed(2) : fareEstimate.private_fare?.toFixed(2)}
                                     </div>
                                   </div>
-                                  <div className="flex flex-col items-end gap-1 shrink-0">
-                                    {/* Save Badge ONLY rendered INSIDE Shared Ride top-right */}
-                                    {rideMode === 'shared' && fareEstimate.shared_fare < fareEstimate.private_fare && (
-                                      <span className="bg-blue-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow">
-                                        Save {savePercent}%
-                                      </span>
-                                    )}
+                                  <div className="flex flex-col items-end shrink-0 pt-0.5">
                                     <p className="text-xs text-zinc-300 font-semibold">{fareEstimate.duration_min || fareEstimate.duration} min</p>
                                     <p className="text-[10px] text-zinc-400">{fareEstimate.distance_km || fareEstimate.distance?.toFixed(1)} km</p>
                                   </div>
@@ -596,11 +597,11 @@ const RideRequestPage = () => {
                             </AnimatePresence>
                           </motion.div>
 
-                          {/* Compact Request Ride Action Button (Restored commit ad67e45 styling) */}
+                          {/* Request Ride Action Button (Stretched to match card height, centered text) */}
                           <button
                             onClick={handleRequestRide}
                             disabled={requesting}
-                            className="py-3 px-5 bg-black dark:bg-white text-white dark:text-black font-bold text-sm rounded-xl active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center shrink-0 shadow-md self-center"
+                            className="w-32 py-4 px-4 bg-black dark:bg-white text-white dark:text-black font-bold text-base rounded-2xl active:scale-95 transition-transform disabled:opacity-50 flex flex-col justify-center items-center shrink-0 shadow-lg text-center leading-tight self-stretch"
                           >
                             {requesting ? (
                               <>
