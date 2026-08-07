@@ -502,12 +502,6 @@ const RideRequestPage = () => {
              <>
                <div className="flex items-center justify-between">
                  <h2 className="text-xl font-bold font-heading">Confirm Ride</h2>
-                 <button 
-                   onClick={() => setIsSheetExpanded(!isSheetExpanded)}
-                   className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
-                 >
-                   {isSheetExpanded ? "Show Less" : "Details & Options"}
-                 </button>
                </div>
                
                {/* Locations summary */}
@@ -534,57 +528,58 @@ const RideRequestPage = () => {
                  </div>
                ) : fareEstimate ? (
                  <>
-                   {/* Full Fare Grid Options (Shown when expanded or on larger screens) */}
-                   {isSheetExpanded && (
-                     <div className="grid grid-cols-2 gap-3 mb-1 animate-fadeIn">
-                       <button
-                         onClick={() => setRideMode('private')}
-                         className={`p-3 rounded-xl border-2 text-left transition-all relative ${rideMode === 'private' ? 'border-black dark:border-white bg-black/5 dark:bg-white/10' : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300'}`}
-                       >
-                         <div className="flex justify-between items-center mb-1">
-                           <span className="font-bold text-sm">Private</span>
-                           <span className="font-bold">K{fareEstimate.private_fare?.toFixed(2)}</span>
-                         </div>
-                         <p className="text-[10px] text-muted-foreground leading-tight">Entire vehicle reserved. No additional platform passengers.</p>
-                       </button>
-                       
-                       <button
-                         onClick={() => setRideMode('shared')}
-                         className={`p-3 rounded-xl border-2 text-left transition-all relative overflow-hidden ${rideMode === 'shared' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300'}`}
-                       >
-                         {fareEstimate.shared_fare < fareEstimate.private_fare && (
-                           <div className="absolute top-0 right-0 bg-blue-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl-lg">
-                             Save {Math.round((1 - fareEstimate.shared_fare / fareEstimate.private_fare) * 100)}%
-                           </div>
-                         )}
-                         <div className="flex justify-between items-center mb-1">
-                           <span className="font-bold text-sm">Shared</span>
-                           <span className="font-bold">K{fareEstimate.shared_fare?.toFixed(2)}</span>
-                         </div>
-                         <p className="text-[10px] text-muted-foreground leading-tight">Lower fare. Ride may include other passengers.</p>
-                       </button>
-                     </div>
-                   )}
+                   {/* Main Request Ride Action Row with Interactive Ride Mode Card */}
+                   <div className="flex items-stretch gap-3">
+                      {/* Swipeable / Interactive Ride Mode Selector Card */}
+                      <div 
+                        onClick={() => setRideMode(rideMode === 'shared' ? 'private' : 'shared')}
+                        className={`flex-1 p-3.5 rounded-2xl cursor-pointer select-none transition-all duration-300 relative overflow-hidden flex flex-col justify-between border-2 ${
+                          rideMode === 'shared' 
+                            ? 'bg-black text-white dark:bg-zinc-900 border-blue-500 shadow-md' 
+                            : 'bg-black text-white dark:bg-zinc-900 border-zinc-700 shadow-md'
+                        }`}
+                      >
+                        {/* Dynamic Save Badge */}
+                        {fareEstimate.shared_fare < fareEstimate.private_fare && (
+                          <div className="absolute top-0 right-0 bg-blue-500 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-bl-xl shadow">
+                            Save {Math.round((1 - fareEstimate.shared_fare / fareEstimate.private_fare) * 100)}%
+                          </div>
+                        )}
 
-                   {/* Main Request Ride Action Bar */}
-                   <div className="flex items-center gap-3">
-                      <div className="flex-1 bg-black text-white p-3.5 rounded-xl flex items-center justify-between">
-                        <div>
-                          <p className="text-[10px] text-zinc-400 uppercase tracking-wider font-bold">{rideMode} Fare</p>
-                          <p className="text-xl font-bold font-heading">
-                            K{rideMode === 'shared' ? fareEstimate.shared_fare?.toFixed(2) : fareEstimate.private_fare?.toFixed(2)}
-                          </p>
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <div>
+                            <span className={`text-[10px] font-extrabold uppercase tracking-wider ${rideMode === 'shared' ? 'text-blue-400' : 'text-zinc-400'}`}>
+                              {rideMode} FARE
+                            </span>
+                            <div className="text-xl font-bold font-heading">
+                              K{rideMode === 'shared' ? fareEstimate.shared_fare?.toFixed(2) : fareEstimate.private_fare?.toFixed(2)}
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-xs text-zinc-300 font-semibold">{fareEstimate.duration_min || fareEstimate.duration} min</p>
+                            <p className="text-[10px] text-zinc-400">{fareEstimate.distance_km || fareEstimate.distance?.toFixed(1)} km</p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-xs text-zinc-300 font-semibold">{fareEstimate.duration} min</p>
-                          <p className="text-[10px] text-zinc-400">{fareEstimate.distance?.toFixed(1)} km</p>
+
+                        <p className="text-[10px] text-zinc-400 leading-tight">
+                          {rideMode === 'shared'
+                            ? 'Lower fare. Ride may include other passengers.'
+                            : 'Entire vehicle reserved. No additional platform passengers.'}
+                        </p>
+
+                        <div className="mt-2 pt-1.5 border-t border-white/10 flex items-center justify-between text-[10px] font-bold">
+                          <span className={rideMode === 'shared' ? 'text-blue-400' : 'text-zinc-400'}>
+                            {rideMode === 'shared' ? 'Tap/Swipe to switch to Private' : `Tap/Swipe to switch to Shared (Save ${Math.round((1 - fareEstimate.shared_fare / fareEstimate.private_fare) * 100)}%)`}
+                          </span>
+                          <span className="text-xs">↕</span>
                         </div>
                       </div>
 
+                      {/* Request Ride Action Button */}
                       <button
                         onClick={handleRequestRide}
                         disabled={requesting}
-                        className="py-4 px-6 bg-black dark:bg-white text-white dark:text-black font-bold text-base rounded-xl active:scale-95 transition-transform disabled:opacity-50 flex items-center gap-2 shrink-0 shadow-lg"
+                        className="px-6 bg-black dark:bg-white text-white dark:text-black font-bold text-base rounded-2xl active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center shrink-0 shadow-lg"
                       >
                         {requesting ? (
                           <>
