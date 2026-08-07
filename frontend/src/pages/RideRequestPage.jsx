@@ -599,26 +599,21 @@ const RideRequestPage = () => {
                             </AnimatePresence>
                           </div>
 
-                          {/* Request Ride Action Button Column (Instant Match Badge + Bottom-Aligned Button) */}
-                          <div className="flex flex-col justify-end items-center shrink-0 w-32 self-end mb-0.5 gap-1.5">
-                            <div className="text-[10px] text-zinc-400 font-extrabold flex items-center justify-center gap-1 uppercase tracking-wider select-none">
-                              <Zap className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0 animate-pulse" /> Instant Match
-                            </div>
-                            <button
-                              onClick={handleRequestRide}
-                              disabled={requesting}
-                              className="w-full py-3.5 px-3 bg-black dark:bg-white text-white dark:text-black font-bold text-sm rounded-2xl active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center shadow-lg text-center leading-tight min-h-[55px]"
-                            >
-                              {requesting ? (
-                                <>
-                                  <Loader2 className="w-5 h-5 animate-spin" />
-                                  Requesting...
-                                </>
-                              ) : (
-                                'Request Ride'
-                              )}
-                            </button>
-                          </div>
+                          {/* Request Ride Action Button (Placed DOWN at bottom of row) */}
+                          <button
+                            onClick={handleRequestRide}
+                            disabled={requesting}
+                            className="w-32 py-3.5 px-3 bg-black dark:bg-white text-white dark:text-black font-bold text-sm rounded-2xl active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center shrink-0 shadow-lg text-center leading-tight self-end mb-0.5 min-h-[55px]"
+                          >
+                            {requesting ? (
+                              <>
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                Requesting...
+                              </>
+                            ) : (
+                              'Request Ride'
+                            )}
+                          </button>
                        </div>
                      ) : null}
                    </>
