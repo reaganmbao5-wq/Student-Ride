@@ -46,7 +46,7 @@ const DriverDashboard = () => {
     return PASSENGER_COLORS[index % PASSENGER_COLORS.length];
   };
   const [earnings, setEarnings] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [currentLocation, setCurrentLocation] = useState(null);
   
   const getPassengerState = (status) => {

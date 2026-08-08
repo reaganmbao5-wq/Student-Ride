@@ -27,7 +27,7 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
   const [analytics, setAnalytics] = useState(null);
   const [activeRides, setActiveRides] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     console.log('DASHBOARD_MOUNTED (Admin)');

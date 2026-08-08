@@ -3,13 +3,13 @@ import { MapPin, Search, Calendar } from 'lucide-react';
 import { GlassCard, GlassInput, LoadingSpinner, StatusBadge, EmptyState } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
-import { AdminDashboardSkeleton } from '../components/common/PageSkeletons';
+import { AdminRidesSkeleton } from '../components/common/PageSkeletons';
 import { toast } from 'sonner';
 
 const AdminRidesPage = () => {
   const { api } = useAuth();
   const [rides, setRides] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -41,7 +41,7 @@ const AdminRidesPage = () => {
   });
 
   if (loading) {
-    return <AdminDashboardSkeleton />;
+    return <AdminRidesSkeleton />;
   }
 
   return (

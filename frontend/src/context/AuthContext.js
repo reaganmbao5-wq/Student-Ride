@@ -19,10 +19,24 @@ const urlBase64ToUint8Array = (base64String) => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  // Initialize user from localStorage cache for instant 0ms render (no spinner on refresh)
+  const cachedUser = React.useMemo(() => {
+    try {
+      const stored = localStorage.getItem('mulu_user_cache');
+      return stored ? JSON.parse(stored) : null;
+    } catch { return null; }
+  }, []);
+  const cachedDriverProfile = React.useMemo(() => {
+    try {
+      const stored = localStorage.getItem('mulu_driver_cache');
+      return stored ? JSON.parse(stored) : null;
+    } catch { return null; }
+  }, []);
+  const [user, setUser] = useState(cachedUser);
   const [token, setToken] = useState(localStorage.getItem('token'));
-  const [loading, setLoading] = useState(true);
-  const [driverProfile, setDriverProfile] = useState(null);
+  // loading = false immediately when we have a cached user — no spinner ever shown on refresh
+  const [loading, setLoading] = useState(!cachedUser && !!localStorage.getItem('token'));
+  const [driverProfile, setDriverProfile] = useState(cachedDriverProfile);
 
   const api = React.useMemo(() => {
     const instance = axios.create({
@@ -50,6 +64,8 @@ export const AuthProvider = ({ children }) => {
       const response = await api.get('/auth/me');
       console.log('PROFILE_LOADED', response.data);
       setUser(response.data);
+      // Persist to localStorage so next refresh is instant (0ms)
+      try { localStorage.setItem('mulu_user_cache', JSON.stringify(response.data)); } catch {}
 
       // Trigger background pre-download of key assets & data for zero-delay instant tab switching
       AppCache.preloadAll(api);
@@ -59,6 +75,7 @@ export const AuthProvider = ({ children }) => {
         try {
           const driverRes = await api.get('/drivers/me');
           setDriverProfile(driverRes.data);
+          try { localStorage.setItem('mulu_driver_cache', JSON.stringify(driverRes.data)); } catch {}
         } catch (e) {
           console.log('No driver profile found');
         }
@@ -207,6 +224,8 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('mulu_user_cache');
+    localStorage.removeItem('mulu_driver_cache');
     setToken(null);
     setUser(null);
     setDriverProfile(null);

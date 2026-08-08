@@ -126,7 +126,7 @@ export const ProfilePageSkeleton = () => (
 );
 
 /**
- * 4. DRIVER DASHBOARD SKELETON (Driver Screen Loading State)
+ * 4. DRIVER DASHBOARD SKELETON (Driver Home Screen Loading State)
  * Matches status toggle bar, live map frame & trip stats.
  */
 export const DriverDashboardSkeleton = () => (
@@ -156,7 +156,30 @@ export const DriverDashboardSkeleton = () => (
 );
 
 /**
- * 5. ADMIN SKELETON (Admin Overview & Management Pages)
+ * 5. DRIVER EARNINGS SKELETON
+ * Matches header, 3 stat cards, earnings breakdown list.
+ */
+export const DriverEarningsSkeleton = () => (
+  <Layout>
+    <div className="p-4 md:p-8 space-y-6 max-w-3xl mx-auto" data-testid="driver-earnings-skeleton">
+      <ShimmerBlock className="h-9 w-44 rounded-xl" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <ShimmerBlock className="h-28 w-full rounded-2xl" />
+        <ShimmerBlock className="h-28 w-full rounded-2xl" />
+        <ShimmerBlock className="h-28 w-full rounded-2xl" />
+      </div>
+      <div className="space-y-4">
+        <ShimmerBlock className="h-5 w-36 rounded-lg" />
+        <ShimmerBlock className="h-20 w-full rounded-2xl" />
+        <ShimmerBlock className="h-20 w-full rounded-2xl" />
+        <ShimmerBlock className="h-20 w-full rounded-2xl" />
+      </div>
+    </div>
+  </Layout>
+);
+
+/**
+ * 6. ADMIN OVERVIEW DASHBOARD SKELETON (Main Admin Home Page)
  */
 export const AdminDashboardSkeleton = () => (
   <Layout>
@@ -169,6 +192,104 @@ export const AdminDashboardSkeleton = () => (
         <ShimmerBlock className="h-28 w-full rounded-2xl" />
       </div>
       <ShimmerBlock className="h-80 w-full rounded-2xl" />
+    </div>
+  </Layout>
+);
+
+/**
+ * 7. ADMIN DRIVERS PAGE SKELETON
+ */
+export const AdminDriversSkeleton = () => (
+  <Layout>
+    <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto" data-testid="admin-drivers-skeleton">
+      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+        <ShimmerBlock className="h-9 w-44 rounded-xl" />
+        <ShimmerBlock className="h-10 w-36 rounded-xl" />
+      </div>
+      <div className="flex gap-3">
+        <ShimmerBlock className="h-12 flex-1 rounded-2xl" />
+        <ShimmerBlock className="h-12 w-28 rounded-2xl" />
+      </div>
+      <div className="space-y-3">
+        {[...Array(5)].map((_, i) => (
+          <ShimmerBlock key={i} className="h-24 w-full rounded-2xl" />
+        ))}
+      </div>
+    </div>
+  </Layout>
+);
+
+/**
+ * 8. ADMIN RIDES PAGE SKELETON
+ */
+export const AdminRidesSkeleton = () => (
+  <Layout>
+    <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto" data-testid="admin-rides-skeleton">
+      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+        <ShimmerBlock className="h-9 w-40 rounded-xl" />
+      </div>
+      <div className="flex gap-3">
+        <ShimmerBlock className="h-12 flex-1 rounded-2xl" />
+        <ShimmerBlock className="h-12 w-36 rounded-2xl" />
+      </div>
+      <div className="space-y-3">
+        {[...Array(5)].map((_, i) => (
+          <ShimmerBlock key={i} className="h-20 w-full rounded-2xl" />
+        ))}
+      </div>
+    </div>
+  </Layout>
+);
+
+/**
+ * 9. ADMIN USERS PAGE SKELETON
+ */
+export const AdminUsersSkeleton = () => (
+  <Layout>
+    <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto" data-testid="admin-users-skeleton">
+      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+        <ShimmerBlock className="h-9 w-36 rounded-xl" />
+        <ShimmerBlock className="h-10 w-32 rounded-xl" />
+      </div>
+      <ShimmerBlock className="h-12 w-full rounded-2xl" />
+      <div className="space-y-3">
+        {[...Array(6)].map((_, i) => (
+          <ShimmerBlock key={i} className="h-20 w-full rounded-2xl" />
+        ))}
+      </div>
+    </div>
+  </Layout>
+);
+
+/**
+ * 10. ADMIN SETTINGS PAGE SKELETON
+ */
+export const AdminSettingsSkeleton = () => (
+  <Layout>
+    <div className="p-4 md:p-8 space-y-6 max-w-3xl mx-auto" data-testid="admin-settings-skeleton">
+      <ShimmerBlock className="h-9 w-44 rounded-xl" />
+      <ShimmerBlock className="h-64 w-full rounded-2xl" />
+      <ShimmerBlock className="h-48 w-full rounded-2xl" />
+      <ShimmerBlock className="h-12 w-36 rounded-2xl" />
+    </div>
+  </Layout>
+);
+
+/**
+ * 11. CHAT PAGE SKELETON
+ */
+export const ChatPageSkeleton = () => (
+  <Layout>
+    <div className="p-4 md:p-8 flex flex-col space-y-4 max-w-2xl mx-auto h-[80vh]" data-testid="chat-skeleton">
+      <ShimmerBlock className="h-16 w-full rounded-2xl" />
+      <div className="flex-1 space-y-3">
+        <div className="flex justify-end"><ShimmerBlock className="h-12 w-3/4 rounded-2xl" /></div>
+        <div className="flex justify-start"><ShimmerBlock className="h-12 w-2/3 rounded-2xl" /></div>
+        <div className="flex justify-end"><ShimmerBlock className="h-10 w-1/2 rounded-2xl" /></div>
+        <div className="flex justify-start"><ShimmerBlock className="h-14 w-3/4 rounded-2xl" /></div>
+        <div className="flex justify-end"><ShimmerBlock className="h-12 w-2/3 rounded-2xl" /></div>
+      </div>
+      <ShimmerBlock className="h-14 w-full rounded-2xl" />
     </div>
   </Layout>
 );

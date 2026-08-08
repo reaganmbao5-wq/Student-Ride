@@ -29,7 +29,8 @@ const StudentDashboard = () => {
   const { location: userLocation } = useGeolocation();
   
   const [activeRide, setActiveRide] = useState(() => initialRideState || AppCache.get('active_ride') || null);
-  const [loading, setLoading] = useState(() => !initialRideState && !AppCache.get('active_ride') && !AppCache.get('history'));
+  // Always start with loading=false — render from cache immediately, fetch happens silently in background
+  const [loading, setLoading] = useState(false);
   
   // 6-Second Alternating Awareness Message Banner Timer
   const [showBriefingBanner, setShowBriefingBanner] = useState(true);

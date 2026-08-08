@@ -3,7 +3,7 @@ import { Settings, DollarSign, Percent, Clock, Save, Loader2, AlertCircle } from
 import { GlassCard, GlassInput, GoldButton, LoadingSpinner } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
-import { AdminDashboardSkeleton } from '../components/common/PageSkeletons';
+import { AdminSettingsSkeleton } from '../components/common/PageSkeletons';
 import { toast } from 'sonner';
 
 const AdminSettingsPage = () => {
@@ -17,7 +17,7 @@ const AdminSettingsPage = () => {
     shared_per_km_rate: 3,
     shared_per_minute_rate: 1
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -55,7 +55,7 @@ const AdminSettingsPage = () => {
   };
 
   if (loading) {
-    return <AdminDashboardSkeleton />;
+    return <AdminSettingsSkeleton />;
   }
 
   return (

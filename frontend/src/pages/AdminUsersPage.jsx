@@ -3,7 +3,7 @@ import { Users, Search, Shield, Ban, Check, UserPlus, Trash2, Loader2 } from 'lu
 import { GlassCard, GlassInput, GoldButton, LoadingSpinner, EmptyState } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
-import { AdminDashboardSkeleton } from '../components/common/PageSkeletons';
+import { AdminUsersSkeleton } from '../components/common/PageSkeletons';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -16,7 +16,7 @@ import {
 const AdminUsersPage = () => {
   const { api, isSuperAdmin } = useAuth();
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddAdmin, setShowAddAdmin] = useState(false);
   const [addingAdmin, setAddingAdmin] = useState(false);
@@ -121,7 +121,7 @@ const AdminUsersPage = () => {
   };
 
   if (loading) {
-    return <AdminDashboardSkeleton />;
+    return <AdminUsersSkeleton />;
   }
 
   return (

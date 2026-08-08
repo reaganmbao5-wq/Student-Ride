@@ -9,6 +9,7 @@ import { ThemeProvider } from "./context/ThemeContext";
 import PushNotificationManager from "./components/common/PushNotificationManager";
 import SWUpdateManager from "./components/common/SWUpdateManager";
 import NetworkMonitor from "./components/common/NetworkMonitor";
+import { StudentDashboardSkeleton, DriverDashboardSkeleton, AdminDashboardSkeleton, ProfilePageSkeleton } from "./components/common/PageSkeletons";
 
 // Pages
 import LandingPage from "./pages/LandingPage";
@@ -37,11 +38,12 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const { isAuthenticated, user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0B0B0B] flex items-center justify-center">
-        <div className="w-12 h-12 rounded-full border-2 border-gold border-t-transparent animate-spin" />
-      </div>
-    );
+    // Show role-appropriate skeleton while auth validates in background
+    const role = user?.role || '';
+    if (role === 'driver') return <DriverDashboardSkeleton />;
+    if (role === 'admin' || role === 'super_admin') return <AdminDashboardSkeleton />;
+    // Default: student skeleton (covers brand new sessions too)
+    return <StudentDashboardSkeleton />;
   }
 
   if (!isAuthenticated) {
@@ -67,11 +69,7 @@ const PublicRoute = ({ children }) => {
   const { isAuthenticated, user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0B0B0B] flex items-center justify-center">
-        <div className="w-12 h-12 rounded-full border-2 border-gold border-t-transparent animate-spin" />
-      </div>
-    );
+    return <StudentDashboardSkeleton />;
   }
 
   if (isAuthenticated) {

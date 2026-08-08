@@ -5,6 +5,7 @@ import { GlassCard, GlassInput, GoldButton, LoadingSpinner } from '../components
 import { useAuth } from '../context/AuthContext';
 import { useWebSocket } from '../context/WebSocketContext';
 import { toast } from 'sonner';
+import { ChatPageSkeleton } from '../components/common/PageSkeletons';
 
 const ChatPage = () => {
   const { rideId } = useParams();
@@ -14,7 +15,7 @@ const ChatPage = () => {
   
   const [messages, setMessages] = useState([]);
   const [newMessageText, setNewMessageText] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [ride, setRide] = useState(null);
   const messagesEndRef = useRef(null);
@@ -93,11 +94,7 @@ const ChatPage = () => {
   const otherParty = getOtherParty();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0B0B0B] flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
+    return <ChatPageSkeleton />;
   }
 
   return (

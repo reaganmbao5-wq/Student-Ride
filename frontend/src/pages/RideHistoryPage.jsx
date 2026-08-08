@@ -16,7 +16,7 @@ import { RideHistorySkeleton } from '../components/common/PageSkeletons';
 const RideHistoryPage = () => {
   const { api, isDriver } = useAuth();
   const [rides, setRides] = useState(() => AppCache.get('history') || []);
-  const [loading, setLoading] = useState(() => !AppCache.get('history'));
+  const [loading, setLoading] = useState(false);
   
   // UI Interactive States
   const [expandedRideId, setExpandedRideId] = useState(null);

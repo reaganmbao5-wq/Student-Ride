@@ -3,12 +3,12 @@ import { DollarSign, TrendingUp, Clock, Star, Calendar } from 'lucide-react';
 import { GlassCard, LoadingSpinner } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
-import { DriverDashboardSkeleton } from '../components/common/PageSkeletons';
+import { DriverEarningsSkeleton } from '../components/common/PageSkeletons';
 
 const DriverEarningsPage = () => {
   const { api } = useAuth();
   const [earnings, setEarnings] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchEarnings();
@@ -26,7 +26,7 @@ const DriverEarningsPage = () => {
   };
 
   if (loading) {
-    return <DriverDashboardSkeleton />;
+    return <DriverEarningsSkeleton />;
   }
 
   return (
