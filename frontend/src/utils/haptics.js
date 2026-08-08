@@ -4,7 +4,16 @@
  * Custom tailored for immediate user awareness (e.g. intense Driver Arrived pocket alert).
  */
 
+const isEnabledInStorage = () => {
+  if (typeof localStorage !== 'undefined') {
+    return localStorage.getItem('mulu_vibrations_enabled') !== 'false';
+  }
+  return true;
+};
+
 const safeVibrate = (pattern) => {
+  if (!isEnabledInStorage()) return;
+
   if (typeof window !== 'undefined' && 'vibrate' in navigator) {
     try {
       navigator.vibrate(pattern);
@@ -15,6 +24,14 @@ const safeVibrate = (pattern) => {
 };
 
 export const haptics = {
+  // Master Vibration Toggle Controllers
+  isVibrationEnabled: () => isEnabledInStorage(),
+  setVibrationEnabled: (enabled) => {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('mulu_vibrations_enabled', enabled ? 'true' : 'false');
+    }
+  },
+
   // Ultra-light crisp tick (general navigation, subtle taps)
   tap: () => safeVibrate(8),
 

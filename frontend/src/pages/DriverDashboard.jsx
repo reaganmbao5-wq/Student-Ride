@@ -1043,9 +1043,6 @@ const DriverDashboard = () => {
     return (
       <Layout>
         <div className="p-4 md:p-8 space-y-6 max-w-4xl mx-auto" data-testid="driver-dashboard">
-        {/* Notification Permission Card Banner */}
-        <NotificationPermissionCard />
-
         {/* Header with Online Toggle */}
         <div className="flex items-center justify-between">
           <div>
