@@ -427,6 +427,7 @@ class UserResponse(BaseModel):
     email: Optional[str] = None
     name: Optional[str] = None
     phone: Optional[str] = None
+    avatar_url: Optional[str] = None
     role: Optional[UserRole] = None
     created_at: Optional[str] = None
     is_active: bool = True
@@ -437,6 +438,7 @@ class DriverProfile(BaseModel):
     vehicle_model: str
     vehicle_color: str
     vehicle_capacity: int = 4
+    avatar_url: Optional[str] = None
     verification_docs: Optional[Dict[str, str]] = None
 
 class DriverResponse(BaseModel):
@@ -705,25 +707,34 @@ async def get_current_user_profile(user: dict = Depends(get_current_user)):
 
 class UpdateProfileRequest(BaseModel):
     phone: Optional[str] = None
+    name: Optional[str] = None
+    avatar_url: Optional[str] = None
     role: Optional[str] = None
 
 @api_router.patch("/users/me")
 async def update_my_profile(updates: UpdateProfileRequest, user: dict = Depends(get_current_user)):
-    """Let a user update their own phone number and optionally their role (student → driver)."""
+    """Let a user update their own phone number, name, profile picture, and optionally role."""
     update_fields = {}
     if updates.phone is not None:
         update_fields["phone"] = updates.phone.strip()
+    if updates.name is not None:
+        update_fields["name"] = updates.name.strip()
+    if updates.avatar_url is not None:
+        update_fields["avatar_url"] = updates.avatar_url.strip()
     if updates.role in [UserRole.STUDENT.value, UserRole.DRIVER.value]:
         update_fields["role"] = updates.role
     if not update_fields:
         raise HTTPException(status_code=400, detail="No valid fields to update")
     await db.users.update_one({"id": user["id"]}, {"$set": update_fields})
+    if "avatar_url" in update_fields:
+        await db.drivers.update_one({"user_id": user["id"]}, {"$set": {"avatar_url": update_fields["avatar_url"]}})
     updated = await db.users.find_one({"id": user["id"]}, {"_id": 0})
     return UserResponse(
         id=updated["id"],
         email=updated["email"],
         name=updated["name"],
         phone=updated.get("phone", ""),
+        avatar_url=updated.get("avatar_url"),
         role=UserRole(updated["role"]),
         created_at=updated["created_at"],
         is_active=updated.get("is_active", True)
@@ -1544,6 +1555,10 @@ async def register_driver(profile: DriverProfile, user: dict = Depends(get_curre
     if existing:
         raise HTTPException(status_code=400, detail="Already registered as driver")
     
+    avatar_url = profile.avatar_url or (profile.verification_docs.get("profile_photo") if profile.verification_docs else None)
+    if avatar_url:
+        await db.users.update_one({"id": user["id"]}, {"$set": {"avatar_url": avatar_url}})
+
     driver_id = str(uuid.uuid4())
     driver = {
         "id": driver_id,
@@ -1553,6 +1568,7 @@ async def register_driver(profile: DriverProfile, user: dict = Depends(get_curre
         "vehicle_model": profile.vehicle_model,
         "vehicle_color": profile.vehicle_color,
         "vehicle_capacity": profile.vehicle_capacity,
+        "avatar_url": avatar_url,
         "rating": 5.0,
         "total_rides": 0,
         "total_earnings": 0.0,
@@ -1568,6 +1584,7 @@ async def register_driver(profile: DriverProfile, user: dict = Depends(get_curre
         "total_commission_due": 0.0,
         "total_commission_paid": 0.0,
         "verification_docs": profile.verification_docs or {},
+        "verification_status": "pending",
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     try:
@@ -3113,6 +3130,7 @@ async def get_active_ride(user: dict = Depends(get_current_user)):
                 email=student["email"],
                 name=student["name"],
                 phone=student.get("phone", ""),
+                avatar_url=student.get("avatar_url"),
                 role=UserRole(student["role"]),
                 created_at=student.get("created_at", ""),
                 is_active=student.get("is_active", True)
@@ -3129,6 +3147,7 @@ async def get_active_ride(user: dict = Depends(get_current_user)):
                         email=driver_user["email"],
                         name=driver_user["name"],
                         phone=driver_user.get("phone", ""),
+                        avatar_url=driver_user.get("avatar_url"),
                         role=UserRole(driver_user["role"]),
                         created_at=driver_user.get("created_at", datetime.now().isoformat()),
                         is_active=driver_user.get("is_active", True)

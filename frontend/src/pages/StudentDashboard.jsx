@@ -634,28 +634,45 @@ const StudentDashboard = () => {
             transition={{ duration: 0.3 }}
           >
             
-            {/* Minimized Header Row */}
-            <div className="flex items-center justify-between cursor-pointer" onClick={() => setIsSheetExpanded(!isSheetExpanded)}>
-              <div className="flex-1 min-w-0 pr-4">
-                <div className="h-14 flex items-center">
-                  <AnimatePresence mode="wait">
-                    <motion.h2 
-                      key={`msg-${activeBriefingText}`}
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      transition={{ duration: 0.2 }}
-                      className="font-heading text-lg font-bold text-gold whitespace-normal break-words leading-tight"
-                    >
-                      {activeBriefingText}
-                    </motion.h2>
-                  </AnimatePresence>
-                </div>
+            {/* Collapsed Briefing Title & Status */}
+            <div className="flex items-center justify-between gap-4">
+              {/* Driver Face Photo & Briefing Text */}
+              <div className="flex items-center gap-3 flex-1 min-w-0">
                 {activeRide.driver && (
-                  <p className="text-sm text-muted-foreground font-medium truncate">
-                    {activeRide.driver.vehicle_color} {activeRide.driver.vehicle_model} • <span className="text-foreground uppercase bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">{activeRide.driver.plate_number}</span>
-                  </p>
+                  activeRide.driver.user?.avatar_url || activeRide.driver.avatar_url ? (
+                    <img 
+                      src={activeRide.driver.user?.avatar_url || activeRide.driver.avatar_url} 
+                      alt={activeRide.driver.user?.name || 'Driver'} 
+                      className="w-12 h-12 rounded-full object-cover border-2 border-gold shadow-md shrink-0" 
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-gold/20 border-2 border-gold flex items-center justify-center shrink-0">
+                      <User className="w-6 h-6 text-gold" />
+                    </div>
+                  )
                 )}
+                
+                <div className="flex-1 min-w-0">
+                  <div className="h-14 flex items-center">
+                    <AnimatePresence mode="wait">
+                      <motion.h2 
+                        key={`msg-${activeBriefingText}`}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.2 }}
+                        className="font-heading text-base md:text-lg font-bold text-gold whitespace-normal break-words leading-tight"
+                      >
+                        {activeBriefingText}
+                      </motion.h2>
+                    </AnimatePresence>
+                  </div>
+                  {activeRide.driver && (
+                    <p className="text-xs md:text-sm text-muted-foreground font-medium truncate">
+                      {activeRide.driver.vehicle_color} {activeRide.driver.vehicle_model} • <span className="text-foreground uppercase bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">{activeRide.driver.plate_number}</span>
+                    </p>
+                  )}
+                </div>
               </div>
               
               {/* Status Badge right side */}
@@ -694,9 +711,19 @@ const StudentDashboard = () => {
                    {/* Driver Profile */}
                    {activeRide.driver && (
                      <div className="flex items-center gap-4 bg-zinc-50 dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800">
-                        <div className="w-14 h-14 rounded-full bg-gold/20 flex items-center justify-center shrink-0">
-                          <Car className="w-7 h-7 text-gold" />
-                        </div>
+                        {/* Prominent Large Round Driver Face Image */}
+                        {activeRide.driver.user?.avatar_url || activeRide.driver.avatar_url ? (
+                          <img 
+                            src={activeRide.driver.user?.avatar_url || activeRide.driver.avatar_url} 
+                            alt={activeRide.driver.user?.name || 'Driver'} 
+                            className="w-16 h-16 rounded-full object-cover border-2 border-gold shadow-lg shrink-0" 
+                          />
+                        ) : (
+                          <div className="w-16 h-16 rounded-full bg-gold/20 border-2 border-gold flex items-center justify-center shrink-0">
+                            <User className="w-8 h-8 text-gold" />
+                          </div>
+                        )}
+
                         <div className="flex-1">
                           <p className="font-bold text-lg text-foreground">{activeRide.driver.user?.name}</p>
                           <div className="flex items-center gap-1 text-muted-foreground">

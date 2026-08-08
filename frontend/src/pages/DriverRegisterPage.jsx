@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Car, ArrowLeft, Loader2, UploadCloud, FileText, CheckCircle2 } from 'lucide-react';
+import { Car, ArrowLeft, Loader2, UploadCloud, FileText, CheckCircle2, Camera } from 'lucide-react';
 import { GlassCard, GlassInput, GoldButton } from '../components/common/GlassComponents';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -11,9 +11,11 @@ const DriverRegisterPage = () => {
   const [loading, setLoading] = useState(false);
   
   const [docs, setDocs] = useState({
+    profile_photo: null,
     license: null,
     registration: null
   });
+  const [profilePhotoPreview, setProfilePhotoPreview] = useState(null);
   
   const [uploadingDocs, setUploadingDocs] = useState(false);
 
@@ -21,7 +23,8 @@ const DriverRegisterPage = () => {
     vehicle_type: 'car',
     plate_number: '',
     vehicle_model: '',
-    vehicle_color: ''
+    vehicle_color: '',
+    vehicle_capacity: 4
   });
 
   const handleChange = (e) => {
@@ -31,7 +34,10 @@ const DriverRegisterPage = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setDocs({ ...docs, [e.target.name]: file });
+      setDocs(prev => ({ ...prev, [e.target.name]: file }));
+      if (e.target.name === 'profile_photo') {
+        setProfilePhotoPreview(URL.createObjectURL(file));
+      }
     }
   };
 
@@ -46,14 +52,24 @@ const DriverRegisterPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!docs.profile_photo) {
+      toast.error('Please upload your driver profile photo');
+      return;
+    }
+
     setLoading(true);
     setUploadingDocs(true);
 
     try {
-      // 1. Upload the documents first
+      // 1. Upload the documents & profile photo
+      let profilePhotoUrl = "";
       let licenseUrl = "";
       let registrationUrl = "";
       
+      if (docs.profile_photo) {
+        profilePhotoUrl = await uploadFile(docs.profile_photo);
+      }
       if (docs.license) {
         licenseUrl = await uploadFile(docs.license);
       }
@@ -61,10 +77,13 @@ const DriverRegisterPage = () => {
         registrationUrl = await uploadFile(docs.registration);
       }
       
-      // 2. Add URLs to the form payload
+      // 2. Add URLs & capacity to the form payload
       const payload = {
         ...formData,
+        vehicle_capacity: parseInt(formData.vehicle_capacity) || 4,
+        avatar_url: profilePhotoUrl,
         verification_docs: {
+          profile_photo: profilePhotoUrl,
           license: licenseUrl,
           registration: registrationUrl
         }
@@ -73,7 +92,6 @@ const DriverRegisterPage = () => {
       await registerDriver(payload);
       setUploadingDocs(false);
       toast.success('Driver profile created! You are now a driver.');
-      // Small delay to ensure state propagation
       setTimeout(() => {
         navigate('/driver', { replace: true });
       }, 500);
@@ -121,22 +139,77 @@ const DriverRegisterPage = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Vehicle Type */}
+            {/* Mandatory Driver Profile Photo Upload */}
+            <div className="flex flex-col items-center justify-center pt-2 pb-2">
+              <label className="block text-xs text-muted-foreground/80 font-semibold uppercase tracking-wider mb-2">Driver Profile Photo *</label>
+              <div className="relative group cursor-pointer">
+                <input
+                  type="file"
+                  name="profile_photo"
+                  id="reg_profile_photo_upload"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <label htmlFor="reg_profile_photo_upload" className="block relative cursor-pointer">
+                  <div className={`w-24 h-24 rounded-full border-2 overflow-hidden flex items-center justify-center transition-all ${profilePhotoPreview ? 'border-gold shadow-lg shadow-gold/20' : 'border-dashed border-zinc-700 bg-zinc-900 hover:border-gold'}`}>
+                    {profilePhotoPreview ? (
+                      <img src={profilePhotoPreview} alt="Driver Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="flex flex-col items-center gap-1 text-zinc-500 hover:text-gold transition-colors">
+                        <Camera className="w-7 h-7" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Upload</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-gold text-black flex items-center justify-center shadow-md">
+                    <Camera className="w-4 h-4" />
+                  </div>
+                </label>
+              </div>
+              <p className="text-[11px] text-muted-foreground/60 mt-1">Clear facial photo for passenger verification</p>
+            </div>
+
+            {/* Vehicle Type (Bicycle removed!) */}
             <div>
-              <label className="block text-sm text-muted-foreground/60 mb-2">Vehicle Type</label>
-              <div className="grid grid-cols-3 gap-2">
-                {['car', 'motorcycle', 'bicycle'].map((type) => (
+              <label className="block text-sm text-muted-foreground/60 mb-2">Vehicle Type *</label>
+              <div className="grid grid-cols-2 gap-2">
+                {['car', 'motorcycle'].map((type) => (
                   <button
                     key={type}
                     type="button"
-                    onClick={() => setFormData({ ...formData, vehicle_type: type })}
+                    onClick={() => setFormData({ 
+                      ...formData, 
+                      vehicle_type: type,
+                      vehicle_capacity: type === 'motorcycle' ? 1 : 4 
+                    })}
                     className={`p-3 rounded-xl text-sm capitalize transition-all ${formData.vehicle_type === type
-                      ? 'bg-gold text-black font-medium'
+                      ? 'bg-gold text-black font-bold shadow-md'
                       : 'bg-muted text-muted-foreground/60 hover:bg-muted/10'
                       }`}
                     data-testid={`vehicle-type-${type}`}
                   >
                     {type}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Mandatory Passenger Capacity Selector */}
+            <div>
+              <label className="block text-sm text-muted-foreground/60 mb-2">Passenger Capacity *</label>
+              <div className="grid grid-cols-6 gap-1.5">
+                {[1, 2, 3, 4, 5, 6].map((cap) => (
+                  <button
+                    key={cap}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, vehicle_capacity: cap })}
+                    className={`py-2.5 rounded-xl text-xs font-bold transition-all ${formData.vehicle_capacity === cap
+                      ? 'bg-gold text-black shadow-md'
+                      : 'bg-muted text-muted-foreground/60 hover:bg-muted/10'
+                    }`}
+                  >
+                    {cap} {cap === 1 ? 'Seat' : 'Seats'}
                   </button>
                 ))}
               </div>

@@ -49,9 +49,11 @@ const AuthPage = () => {
   }, []);
   
   const [docs, setDocs] = useState({
+    profile_photo: null,
     license: null,
     registration: null
   });
+  const [profilePhotoPreview, setProfilePhotoPreview] = useState(null);
   const [uploadingDocs, setUploadingDocs] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -63,7 +65,8 @@ const AuthPage = () => {
     vehicle_type: 'car',
     vehicle_model: '',
     vehicle_color: '',
-    plate_number: ''
+    plate_number: '',
+    vehicle_capacity: 4
   });
 
   const handleChange = (e) => {
@@ -73,7 +76,10 @@ const AuthPage = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setDocs({ ...docs, [e.target.name]: file });
+      setDocs(prev => ({ ...prev, [e.target.name]: file }));
+      if (e.target.name === 'profile_photo') {
+        setProfilePhotoPreview(URL.createObjectURL(file));
+      }
     }
   };
 
@@ -86,17 +92,19 @@ const AuthPage = () => {
         quality: 90,
         allowEditing: false,
         resultType: CameraResultType.Uri,
-        source: CameraSource.Prompt // Prompts user to choose Camera or Gallery
+        source: CameraSource.Prompt
       });
       
-      // Convert URI to Blob to mock a File object for the existing uploadFile API
       const response = await fetch(image.webPath);
       const blob = await response.blob();
       const file = new File([blob], `${docId}_capture.${image.format}`, { type: `image/${image.format}` });
       
-      setDocs({ ...docs, [docId]: file });
-    } catch (e) {
-      console.warn("Camera cancelled or failed:", e);
+      setDocs(prev => ({ ...prev, [docId]: file }));
+      if (docId === 'profile_photo') {
+        setProfilePhotoPreview(URL.createObjectURL(file));
+      }
+    } catch (error) {
+      console.error('Camera capture cancelled or failed:', error);
     }
   };
 
@@ -123,10 +131,20 @@ const AuthPage = () => {
 
         let user;
         if (isDriver) {
+          if (!docs.profile_photo) {
+            toast.error('Please upload your driver profile photo');
+            setLoading(false);
+            return;
+          }
+
           setUploadingDocs(true);
+          let profilePhotoUrl = "";
           let licenseUrl = "";
           let registrationUrl = "";
           
+          if (docs.profile_photo) {
+            profilePhotoUrl = await uploadFile(docs.profile_photo);
+          }
           if (docs.license) {
             licenseUrl = await uploadFile(docs.license);
           }
@@ -139,7 +157,10 @@ const AuthPage = () => {
             vehicle_model: formData.vehicle_model,
             vehicle_color: formData.vehicle_color,
             plate_number: formData.plate_number,
+            vehicle_capacity: parseInt(formData.vehicle_capacity) || 4,
+            avatar_url: profilePhotoUrl,
             verification_docs: {
+              profile_photo: profilePhotoUrl,
               license: licenseUrl,
               registration: registrationUrl
             }
@@ -438,16 +459,52 @@ const AuthPage = () => {
 
             {mode === 'register' && isDriver && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="space-y-4 pt-4">
+                {/* Mandatory Driver Profile Photo Upload */}
+                <div className="flex flex-col items-center justify-center pt-2 pb-2">
+                  <label className="block text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-2">Driver Profile Photo *</label>
+                  <div className="relative group cursor-pointer">
+                    <input
+                      type="file"
+                      name="profile_photo"
+                      id="auth_profile_photo_upload"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                    <label htmlFor="auth_profile_photo_upload" className="block relative cursor-pointer">
+                      <div className={`w-24 h-24 rounded-full border-2 overflow-hidden flex items-center justify-center transition-all ${profilePhotoPreview ? 'border-gold shadow-lg shadow-gold/20' : 'border-dashed border-zinc-700 bg-zinc-900 hover:border-gold'}`}>
+                        {profilePhotoPreview ? (
+                          <img src={profilePhotoPreview} alt="Driver Preview" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="flex flex-col items-center gap-1 text-zinc-500 hover:text-gold transition-colors">
+                            <Camera className="w-7 h-7" />
+                            <span className="text-[10px] font-bold uppercase tracking-wider">Upload</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-gold text-zinc-950 flex items-center justify-center shadow-md">
+                        <Camera className="w-4 h-4" />
+                      </div>
+                    </label>
+                  </div>
+                  <p className="text-[11px] text-zinc-500 mt-1">Clear facial photo for passenger verification</p>
+                </div>
+
                 <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider">Vehicle Details</p>
 
-                <div className="grid grid-cols-3 gap-2">
-                  {['car', 'motorcycle', 'bicycle'].map((type) => (
+                {/* Vehicle Type Selection (Bicycle removed!) */}
+                <div className="grid grid-cols-2 gap-2">
+                  {['car', 'motorcycle'].map((type) => (
                     <button
                       key={type}
                       type="button"
-                      onClick={() => setFormData({ ...formData, vehicle_type: type })}
-                      className={`p-2.5 rounded-xl text-xs font-semibold capitalize transition-all ${formData.vehicle_type === type
-                        ? 'bg-gold text-zinc-950 shadow-md shadow-gold/10'
+                      onClick={() => setFormData({ 
+                        ...formData, 
+                        vehicle_type: type,
+                        vehicle_capacity: type === 'motorcycle' ? 1 : 4
+                      })}
+                      className={`p-3 rounded-xl text-xs font-semibold capitalize transition-all ${formData.vehicle_type === type
+                        ? 'bg-gold text-zinc-950 shadow-md shadow-gold/10 font-bold'
                         : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:bg-zinc-800'
                         }`}
                     >
@@ -456,11 +513,31 @@ const AuthPage = () => {
                   ))}
                 </div>
 
+                {/* Mandatory Vehicle Passenger Capacity Selector */}
+                <div className="space-y-1">
+                  <label className="block text-xs text-zinc-400 font-semibold uppercase tracking-wider">Passenger Capacity *</label>
+                  <div className="grid grid-cols-6 gap-1.5">
+                    {[1, 2, 3, 4, 5, 6].map((cap) => (
+                      <button
+                        key={cap}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, vehicle_capacity: cap })}
+                        className={`py-2 rounded-xl text-xs font-bold transition-all ${formData.vehicle_capacity === cap
+                          ? 'bg-gold text-zinc-950 shadow-md shadow-gold/10'
+                          : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:bg-zinc-800'
+                        }`}
+                      >
+                        {cap} {cap === 1 ? 'Seat' : 'Seats'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <GlassInput
                     type="text"
                     name="vehicle_model"
-                    placeholder="Model"
+                    placeholder="Model (e.g. Vitz)"
                     value={formData.vehicle_model}
                     onChange={handleChange}
                     required
@@ -468,7 +545,7 @@ const AuthPage = () => {
                   <GlassInput
                     type="text"
                     name="vehicle_color"
-                    placeholder="Color"
+                    placeholder="Color (e.g. White)"
                     value={formData.vehicle_color}
                     onChange={handleChange}
                     required
@@ -478,7 +555,7 @@ const AuthPage = () => {
                 <GlassInput
                   type="text"
                   name="plate_number"
-                  placeholder="Plate Number"
+                  placeholder="Plate Number (e.g. ABA 1234)"
                   value={formData.plate_number}
                   onChange={handleChange}
                   required
