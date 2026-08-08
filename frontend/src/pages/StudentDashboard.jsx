@@ -19,6 +19,7 @@ import { haptics } from '../utils/haptics';
 import { AppCache } from '../utils/AppCache';
 import { StudentDashboardSkeleton } from '../components/common/PageSkeletons';
 import { systemNotification } from '../services/SystemNotificationService';
+import { DriverPhotoModal } from '../components/common/DriverPhotoModal';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
@@ -60,6 +61,7 @@ const StudentDashboard = () => {
   
   // Bottom Sheet State
   const [isSheetExpanded, setIsSheetExpanded] = useState(false);
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
 
   // Track locally cancelled ride IDs to prevent in-flight fetchData race conditions from restoring cancelled rides
   const cancelledRideIdsRef = React.useRef(new Set());
@@ -636,44 +638,27 @@ const StudentDashboard = () => {
             
             {/* Collapsed Briefing Title & Status */}
             <div className="flex items-center justify-between gap-4">
-              {/* Driver Face Photo & Briefing Text */}
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                {activeRide.driver && (
-                  (typeof activeRide.driver.user?.avatar_url === 'string' && activeRide.driver.user.avatar_url.trim()) ||
-                  (typeof activeRide.driver.avatar_url === 'string' && activeRide.driver.avatar_url.trim()) ? (
-                    <img 
-                      src={activeRide.driver.user?.avatar_url || activeRide.driver.avatar_url} 
-                      alt={activeRide.driver.user?.name || 'Driver'} 
-                      className="w-12 h-12 rounded-full object-cover border-2 border-gold shadow-md shrink-0" 
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-gold/20 border-2 border-gold flex items-center justify-center shrink-0">
-                      <UserIcon className="w-6 h-6 text-gold" />
-                    </div>
-                  )
-                )}
-                
-                <div className="flex-1 min-w-0">
-                  <div className="h-14 flex items-center">
-                    <AnimatePresence mode="wait">
-                      <motion.h2 
-                        key={`msg-${activeBriefingText}`}
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
-                        transition={{ duration: 0.2 }}
-                        className="font-heading text-base md:text-lg font-bold text-gold whitespace-normal break-words leading-tight"
-                      >
-                        {activeBriefingText}
-                      </motion.h2>
-                    </AnimatePresence>
-                  </div>
-                  {activeRide.driver && (
-                    <p className="text-xs md:text-sm text-muted-foreground font-medium truncate">
-                      {activeRide.driver.vehicle_color} {activeRide.driver.vehicle_model} • <span className="text-foreground uppercase bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">{activeRide.driver.plate_number}</span>
-                    </p>
-                  )}
+              {/* Briefing Text (Restored to full width without avatar truncation) */}
+              <div className="flex-1 min-w-0">
+                <div className="h-14 flex items-center">
+                  <AnimatePresence mode="wait">
+                    <motion.h2 
+                      key={`msg-${activeBriefingText}`}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.2 }}
+                      className="font-heading text-base md:text-lg font-bold text-gold whitespace-normal break-words leading-tight"
+                    >
+                      {activeBriefingText}
+                    </motion.h2>
+                  </AnimatePresence>
                 </div>
+                {activeRide.driver && (
+                  <p className="text-xs md:text-sm text-muted-foreground font-medium truncate">
+                    {activeRide.driver.vehicle_color} {activeRide.driver.vehicle_model} • <span className="text-foreground uppercase bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">{activeRide.driver.plate_number}</span>
+                  </p>
+                )}
               </div>
               
               {/* Status Badge right side */}
@@ -709,22 +694,39 @@ const StudentDashboard = () => {
                   : 'max-h-0 opacity-0 pointer-events-none'
               }`}
             >
-                   {/* Driver Profile */}
+                   {/* Driver Profile Card */}
                    {activeRide.driver && (
                      <div className="flex items-center gap-4 bg-zinc-50 dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800">
-                        {/* Prominent Large Round Driver Face Image */}
-                        {(typeof activeRide.driver.user?.avatar_url === 'string' && activeRide.driver.user.avatar_url.trim()) ||
-                         (typeof activeRide.driver.avatar_url === 'string' && activeRide.driver.avatar_url.trim()) ? (
-                          <img 
-                            src={activeRide.driver.user?.avatar_url || activeRide.driver.avatar_url} 
-                            alt={activeRide.driver.user?.name || 'Driver'} 
-                            className="w-16 h-16 rounded-full object-cover border-2 border-gold shadow-lg shrink-0" 
-                          />
-                        ) : (
-                          <div className="w-16 h-16 rounded-full bg-gold/20 border-2 border-gold flex items-center justify-center shrink-0">
-                            <UserIcon className="w-8 h-8 text-gold" />
+                        {/* Expandable Prominent Round Driver Face Image */}
+                        <motion.button
+                          type="button"
+                          whileHover={{ scale: 1.08 }}
+                          whileTap={{ scale: 0.92 }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            haptics.pinDrop();
+                            haptics.primaryButton();
+                            setIsPhotoModalOpen(true);
+                          }}
+                          className="relative group shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-gold/50 cursor-pointer"
+                          title="Tap to view full driver photo"
+                        >
+                          {(typeof activeRide.driver.user?.avatar_url === 'string' && activeRide.driver.user.avatar_url.trim()) ||
+                           (typeof activeRide.driver.avatar_url === 'string' && activeRide.driver.avatar_url.trim()) ? (
+                            <img 
+                              src={activeRide.driver.user?.avatar_url || activeRide.driver.avatar_url} 
+                              alt={activeRide.driver.user?.name || 'Driver'} 
+                              className="w-16 h-16 rounded-full object-cover border-2 border-gold shadow-lg shadow-gold/20 group-hover:border-white transition-all" 
+                            />
+                          ) : (
+                            <div className="w-16 h-16 rounded-full bg-gold/20 border-2 border-gold flex items-center justify-center">
+                              <UserIcon className="w-8 h-8 text-gold" />
+                            </div>
+                          )}
+                          <div className="absolute -bottom-1 -right-1 bg-gold text-zinc-950 text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow border border-black uppercase tracking-wider">
+                            Expand
                           </div>
-                        )}
+                        </motion.button>
 
                         <div className="flex-1">
                           <p className="font-bold text-lg text-foreground">{activeRide.driver.user?.name}</p>
@@ -1040,7 +1042,16 @@ const StudentDashboard = () => {
           fetchData(); 
         }}
       />
-    </Layout >
+
+      {activeRide?.driver && (
+        <DriverPhotoModal
+          isOpen={isPhotoModalOpen}
+          photoUrl={activeRide.driver.user?.avatar_url || activeRide.driver.avatar_url}
+          driver={activeRide.driver}
+          onClose={() => setIsPhotoModalOpen(false)}
+        />
+      )}
+    </Layout>
   );
 };
 
