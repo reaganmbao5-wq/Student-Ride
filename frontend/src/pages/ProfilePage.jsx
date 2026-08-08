@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard, GoldButton } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
 import { MultiPlatformInstallSection } from '../components/common/MultiPlatformInstallSection';
+import { compressImageToDataUrl } from '../utils/imageCompressor';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -50,19 +51,19 @@ const ProfilePage = () => {
     navigate('/');
   };
 
-  const handleAvatarChange = (e) => {
+  const handleAvatarChange = async (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image size must be less than 5MB');
-        return;
+      try {
+        const compressedDataUrl = await compressImageToDataUrl(file, 800, 0.8);
+        setEditAvatar(compressedDataUrl);
+        toast.success('Profile picture updated');
+      } catch (err) {
+        console.error('Error compressing avatar:', err);
+        const reader = new FileReader();
+        reader.onloadend = () => setEditAvatar(reader.result);
+        reader.readAsDataURL(file);
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setEditAvatar(reader.result);
-        toast.success('Profile picture selected');
-      };
-      reader.readAsDataURL(file);
     }
   };
 

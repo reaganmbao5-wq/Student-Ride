@@ -4138,18 +4138,46 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
 @api_router.post("/upload")
 async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
-    """Handles image uploads for KYC documents using GridFS."""
+    """Handles image uploads with automatic WebP compression, EXIF auto-rotation, and dimension optimization."""
     try:
         if not file.filename:
             raise HTTPException(status_code=400, detail="No file selected")
             
         content = await file.read()
-        fs = AsyncIOMotorGridFSBucket(db)
+        content_type = file.content_type or "image/jpeg"
+        upload_filename = file.filename
         
+        # Automatic Image Compression Engine (Instagram/Uber industry standard)
+        try:
+            from PIL import Image, ImageOps
+            import io
+            
+            img = Image.open(io.BytesIO(content))
+            img = ImageOps.exif_transpose(img) # Correct smartphone camera rotation
+            
+            # Convert palette/RGBA modes to RGB for WebP/JPEG saving
+            if img.mode in ("RGBA", "P"):
+                img = img.convert("RGB")
+                
+            # Downscale large dimension to max 1600px while maintaining aspect ratio
+            max_dim = 1600
+            if img.width > max_dim or img.height > max_dim:
+                img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
+                
+            output_buffer = io.BytesIO()
+            img.save(output_buffer, format="WEBP", quality=80, optimize=True)
+            content = output_buffer.getvalue()
+            content_type = "image/webp"
+            upload_filename = os.path.splitext(file.filename)[0] + ".webp"
+            logger.info(f"PIL Compressed uploaded image '{file.filename}' -> '{upload_filename}' ({len(content)} bytes)")
+        except Exception as img_err:
+            logger.warning(f"PIL Compression fallback for {file.filename}: {img_err}")
+
+        fs = AsyncIOMotorGridFSBucket(db)
         file_id = await fs.upload_from_stream(
-            file.filename,
+            upload_filename,
             content,
-            metadata={"user_id": user["id"], "content_type": file.content_type}
+            metadata={"user_id": user["id"], "content_type": content_type}
         )
         
         backend_url = os.environ.get('BACKEND_URL', 'https://student-ride-backend-manual.onrender.com').rstrip('/')

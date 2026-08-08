@@ -9,6 +9,7 @@ import { Capacitor } from '@capacitor/core';
 import { Camera as CapacitorCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PermissionsService } from '../services/PermissionsService';
+import { compressImage } from '../utils/imageCompressor';
 
 const GlassInput = React.forwardRef(({ className, ...props }, ref) => (
   <input
@@ -109,8 +110,9 @@ const AuthPage = () => {
   };
 
   const uploadFile = async (file) => {
+    const compressed = await compressImage(file, 1200, 0.8);
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", compressed);
     const response = await api.post('/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });

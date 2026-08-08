@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Car, ArrowLeft, Loader2, UploadCloud, FileText, CheckCircle2, Camera } from 'lucide-react';
 import { GlassCard, GlassInput, GoldButton } from '../components/common/GlassComponents';
 import { useAuth } from '../context/AuthContext';
+import { compressImage } from '../utils/imageCompressor';
 import { toast } from 'sonner';
 
 const DriverRegisterPage = () => {
@@ -42,8 +43,9 @@ const DriverRegisterPage = () => {
   };
 
   const uploadFile = async (file) => {
+    const compressed = await compressImage(file, 1200, 0.8);
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", compressed);
     const response = await api.post('/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
