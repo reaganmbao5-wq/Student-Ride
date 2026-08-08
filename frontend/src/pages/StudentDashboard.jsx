@@ -17,6 +17,7 @@ import { routeCache } from '../map/route/RouteCache';
 import { TilePreloader } from '../map/services/TilePreloader';
 import { haptics } from '../utils/haptics';
 import { AppCache } from '../utils/AppCache';
+import { StudentDashboardSkeleton } from '../components/common/PageSkeletons';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
@@ -375,13 +376,7 @@ const StudentDashboard = () => {
   };
 
   if (loading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <LoadingSpinner size="lg" />
-        </div>
-      </Layout>
-    );
+    return <StudentDashboardSkeleton />;
   }
 
   // ==========================================

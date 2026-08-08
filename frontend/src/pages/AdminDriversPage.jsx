@@ -3,6 +3,7 @@ import { Car, Search, Check, X, Star, AlertCircle, Wallet, Plus, Loader2, FileTe
 import { GlassCard, GlassInput, GoldButton, LoadingSpinner, EmptyState } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
+import { AdminDashboardSkeleton } from '../components/common/PageSkeletons';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -143,13 +144,7 @@ const AdminDriversPage = () => {
   const restrictedCount = drivers.filter(d => d.wallet_status === 'restricted').length;
 
   if (loading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <LoadingSpinner size="lg" />
-        </div>
-      </Layout>
-    );
+    return <AdminDashboardSkeleton />;
   }
 
   return (

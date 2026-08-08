@@ -6,6 +6,7 @@ import { GlassCard, GoldButton, StatusBadge, LoadingSpinner, EmptyState } from '
 import { PlatformMap } from '../map/components/PlatformMap';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
+import { DriverDashboardSkeleton } from '../components/common/PageSkeletons';
 import { useWebSocket } from '../context/WebSocketContext';
 import { useWatchPosition } from '../map/hooks/useGeolocation';
 import { routeCache } from '../map/route/RouteCache';
@@ -684,13 +685,7 @@ const DriverDashboard = () => {
   };
 
   if (loading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <LoadingSpinner size="lg" />
-        </div>
-      </Layout>
-    );
+    return <DriverDashboardSkeleton />;
   }
 
   // Not approved state

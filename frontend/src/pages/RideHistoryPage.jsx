@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
 import { AppCache } from '../utils/AppCache';
+import { RideHistorySkeleton } from '../components/common/PageSkeletons';
 
 const RideHistoryPage = () => {
   const { api, isDriver } = useAuth();
@@ -121,13 +122,7 @@ const RideHistoryPage = () => {
   }, [rides, isDriver]);
 
   if (loading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <LoadingSpinner size="lg" />
-        </div>
-      </Layout>
-    );
+    return <RideHistorySkeleton />;
   }
 
   return (

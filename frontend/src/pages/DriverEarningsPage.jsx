@@ -3,6 +3,7 @@ import { DollarSign, TrendingUp, Clock, Star, Calendar } from 'lucide-react';
 import { GlassCard, LoadingSpinner } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
+import { DriverDashboardSkeleton } from '../components/common/PageSkeletons';
 
 const DriverEarningsPage = () => {
   const { api } = useAuth();
@@ -25,13 +26,7 @@ const DriverEarningsPage = () => {
   };
 
   if (loading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <LoadingSpinner size="lg" />
-        </div>
-      </Layout>
-    );
+    return <DriverDashboardSkeleton />;
   }
 
   return (

@@ -4,6 +4,7 @@ import { GlassCard, LoadingSpinner, StatusBadge } from '../components/common/Gla
 import { RideMap } from '../map/components/RideMap';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
+import { AdminDashboardSkeleton } from '../components/common/PageSkeletons';
 import { AdminPushNotifications } from '../components/admin/AdminPushNotifications';
 import {
   ResponsiveContainer,
@@ -55,13 +56,7 @@ const AdminDashboard = () => {
   };
 
   if (loading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <LoadingSpinner size="lg" />
-        </div>
-      </Layout>
-    );
+    return <AdminDashboardSkeleton />;
   }
 
   return (

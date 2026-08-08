@@ -3,6 +3,7 @@ import { Users, Search, Shield, Ban, Check, UserPlus, Trash2, Loader2 } from 'lu
 import { GlassCard, GlassInput, GoldButton, LoadingSpinner, EmptyState } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
+import { AdminDashboardSkeleton } from '../components/common/PageSkeletons';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -120,13 +121,7 @@ const AdminUsersPage = () => {
   };
 
   if (loading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <LoadingSpinner size="lg" />
-        </div>
-      </Layout>
-    );
+    return <AdminDashboardSkeleton />;
   }
 
   return (
