@@ -791,7 +791,7 @@ const StudentDashboard = () => {
           {/* Header Greeting */}
           <div className="w-full text-left font-heading border-b border-border pb-4">
             <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight">
-              Hello, {user?.name ? user.name.split(' ')[0] : 'Name'}
+              Hello, {user?.name ? user.name.split(' ')[0] : 'Student'}
             </h1>
             <p className="text-muted-foreground text-sm md:text-base font-medium mt-1">
               Where Would You Like To Go ?
@@ -799,10 +799,16 @@ const StudentDashboard = () => {
           </div>
 
           {/* Hero Top-Down Car with Yellow Circle Background */}
-          <div className="relative flex flex-col items-center justify-center w-full pt-4 pb-2 overflow-hidden">
-            {/* Yellow/Gold Circle Background (Flat yellow, no outer glow/shadows) */}
-            <div className="relative w-56 h-56 md:w-64 md:h-64 rounded-full bg-amber-400 flex items-center justify-center my-2">
-              {/* Top-Down Transparent Car Image (Bigger than circle, overflowing circle boundary cleanly) */}
+          <div className="relative flex flex-col items-center justify-center w-full pt-1 pb-2">
+            {/* Yellow/Gold Circle Background */}
+            <div className="relative w-56 h-56 md:w-64 md:h-64 rounded-full bg-amber-400 flex items-center justify-center mt-6 mb-2">
+              {/* Solid Opaque White Car Backing Mask (Prevents yellow background from bleeding through semi-transparent hood & windshield) */}
+              <div 
+                className="absolute bg-white rounded-[45px] pointer-events-none z-[5]" 
+                style={{ width: '70%', height: '88%', top: '6%' }}
+              />
+
+              {/* Top-Down Car Image (Aligned so rear roof lands right at top boundary) */}
               <motion.img
                 src="/car_top.png"
                 alt="Ride Car"
@@ -810,6 +816,7 @@ const StudentDashboard = () => {
                 animate={isDriving ? { y: 450, scale: 0.85, opacity: [1, 1, 0] } : { y: 0, scale: 1, opacity: 1 }}
                 transition={{ duration: 0.85, ease: [0.45, 0, 0.55, 1] }}
                 className="w-60 md:w-72 h-auto drop-shadow-xl z-10 select-none pointer-events-none absolute"
+                style={{ top: '-10%' }}
               />
             </div>
 

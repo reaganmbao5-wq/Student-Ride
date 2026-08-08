@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Home, MapPin, Clock, User, Settings, Car, DollarSign, Users, BarChart3, Shield, LogOut, Menu, X, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { cn } from '../../lib/utils';
+import { haptics } from '../../utils/haptics';
 
 export const Layout = ({ children }) => {
   const { user, isDriver, isAdmin, logout } = useAuth();
@@ -183,6 +184,7 @@ export const Layout = ({ children }) => {
                 key={item.to}
                 to={item.to}
                 end={item.to === '/dashboard' || item.to === '/driver' || item.to === '/admin'}
+                onClick={() => haptics.tap()}
                 className={({ isActive }) => cn(
                   "flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all duration-300 relative min-w-[64px]",
                   isActive ? "liquid-item-active text-gold scale-105" : "text-muted-foreground hover:text-foreground"

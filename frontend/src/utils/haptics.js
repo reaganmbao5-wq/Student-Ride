@@ -31,10 +31,10 @@ export const haptics = {
     }
   },
 
-  // Pin Landing / Ground Thump (When pin lands on landmark/ground when setting pickup or destination)
+  // Pin Landing / Ground Thump (Single heavy, high-frequency "BOOM" pulse when pin lands on landmark/ground)
   pinDrop: () => {
     if (typeof window !== 'undefined' && 'vibrate' in navigator) {
-      try { navigator.vibrate([20, 30, 45]); } catch (e) {}
+      try { navigator.vibrate(55); } catch (e) {}
     }
   },
 
