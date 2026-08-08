@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { MapPin, Clock, Car, Star, ChevronRight, Navigation, AlertCircle, MessageCircle, Phone, PhoneCall, Loader2, Trash2 } from 'lucide-react';
+import { MapPin, Clock, Car, Star, ChevronRight, Navigation, AlertCircle, MessageCircle, Phone, PhoneCall, Loader2, Trash2, User as UserIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard, GoldButton, StatusBadge, LoadingSpinner, EmptyState } from '../components/common/GlassComponents';
 import { RatingModal } from '../components/common/RatingModal';
@@ -639,7 +639,8 @@ const StudentDashboard = () => {
               {/* Driver Face Photo & Briefing Text */}
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 {activeRide.driver && (
-                  activeRide.driver.user?.avatar_url || activeRide.driver.avatar_url ? (
+                  (typeof activeRide.driver.user?.avatar_url === 'string' && activeRide.driver.user.avatar_url.trim()) ||
+                  (typeof activeRide.driver.avatar_url === 'string' && activeRide.driver.avatar_url.trim()) ? (
                     <img 
                       src={activeRide.driver.user?.avatar_url || activeRide.driver.avatar_url} 
                       alt={activeRide.driver.user?.name || 'Driver'} 
@@ -647,7 +648,7 @@ const StudentDashboard = () => {
                     />
                   ) : (
                     <div className="w-12 h-12 rounded-full bg-gold/20 border-2 border-gold flex items-center justify-center shrink-0">
-                      <User className="w-6 h-6 text-gold" />
+                      <UserIcon className="w-6 h-6 text-gold" />
                     </div>
                   )
                 )}
@@ -712,7 +713,8 @@ const StudentDashboard = () => {
                    {activeRide.driver && (
                      <div className="flex items-center gap-4 bg-zinc-50 dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800">
                         {/* Prominent Large Round Driver Face Image */}
-                        {activeRide.driver.user?.avatar_url || activeRide.driver.avatar_url ? (
+                        {(typeof activeRide.driver.user?.avatar_url === 'string' && activeRide.driver.user.avatar_url.trim()) ||
+                         (typeof activeRide.driver.avatar_url === 'string' && activeRide.driver.avatar_url.trim()) ? (
                           <img 
                             src={activeRide.driver.user?.avatar_url || activeRide.driver.avatar_url} 
                             alt={activeRide.driver.user?.name || 'Driver'} 
@@ -720,7 +722,7 @@ const StudentDashboard = () => {
                           />
                         ) : (
                           <div className="w-16 h-16 rounded-full bg-gold/20 border-2 border-gold flex items-center justify-center shrink-0">
-                            <User className="w-8 h-8 text-gold" />
+                            <UserIcon className="w-8 h-8 text-gold" />
                           </div>
                         )}
 
