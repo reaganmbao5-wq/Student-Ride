@@ -802,12 +802,6 @@ const StudentDashboard = () => {
           <div className="relative flex flex-col items-center justify-center w-full pt-1 pb-2">
             {/* Yellow/Gold Circle Background */}
             <div className="relative w-56 h-56 md:w-64 md:h-64 rounded-full bg-amber-400 flex items-center justify-center mt-6 mb-2">
-              {/* Solid Opaque White Car Backing Mask (Prevents yellow background from bleeding through semi-transparent hood & windshield) */}
-              <div 
-                className="absolute bg-white rounded-[45px] pointer-events-none z-[5]" 
-                style={{ width: '70%', height: '88%', top: '6%' }}
-              />
-
               {/* Top-Down Car Image (Aligned so rear roof lands right at top boundary) */}
               <motion.img
                 src="/car_top.png"
