@@ -19,7 +19,7 @@ import {
 } from '../components/ui/dialog';
 
 const ProfilePage = () => {
-  const { user, driverProfile, logout, isDriver, isAdmin, isSuperAdmin, api } = useAuth();
+  const { user, driverProfile, logout, isDriver, isAdmin, isSuperAdmin, api, fetchUser } = useAuth();
   const navigate = useNavigate();
   
   // Expandable Edit Profile State
@@ -97,12 +97,9 @@ const ProfilePage = () => {
         }
       }
 
-      // Update local storage / user object in memory
-      if (user) {
-        user.name = editName.trim();
-        user.phone = editPhone.trim();
-        user.email = editEmail.trim();
-        user.avatar_url = editAvatar;
+      // Refresh user state & local cache
+      if (fetchUser) {
+        await fetchUser();
       }
 
       toast.success('Profile updated successfully!');

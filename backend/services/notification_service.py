@@ -100,7 +100,7 @@ class NotificationService:
                             notification=messaging.AndroidNotification(
                                 sound='default',
                                 default_vibrate_timings=False,
-                                vibrate_timingsMillis=vibe_pattern,
+                                vibrate_timings_millis=vibe_pattern,
                                 channel_id='mulu_rides_high_priority'
                             )
                         ),

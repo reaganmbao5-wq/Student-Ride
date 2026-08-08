@@ -1242,6 +1242,7 @@ async def get_me(user: dict = Depends(get_current_user)):
         email=user["email"],
         name=user["name"],
         phone=user["phone"],
+        avatar_url=user.get("avatar_url"),
         role=UserRole(user["role"]),
         created_at=user["created_at"],
         is_active=user.get("is_active", True)

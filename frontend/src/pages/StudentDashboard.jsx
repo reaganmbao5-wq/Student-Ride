@@ -723,9 +723,6 @@ const StudentDashboard = () => {
                               <UserIcon className="w-8 h-8 text-gold" />
                             </div>
                           )}
-                          <div className="absolute -bottom-1 -right-1 bg-gold text-zinc-950 text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow border border-black uppercase tracking-wider">
-                            Expand
-                          </div>
                         </motion.button>
 
                         <div className="flex-1">
@@ -735,7 +732,7 @@ const StudentDashboard = () => {
                             <span className="font-medium text-sm">{activeRide.driver.rating?.toFixed(1)}</span>
                           </div>
                         </div>
-                        
+
                         {/* Quick Contact Icons */}
                         <div className="flex gap-2">
                            <button 
@@ -753,6 +750,10 @@ const StudentDashboard = () => {
                         </div>
                      </div>
                    )}
+
+                   <p className="text-[11px] text-gold/80 font-medium text-center tracking-wide -mt-4">
+                     Tap profile picture to expand
+                   </p>
 
                    {/* Ride Details (Locations + Fare) */}
                    <div className="bg-zinc-50 dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 flex flex-col gap-4">
