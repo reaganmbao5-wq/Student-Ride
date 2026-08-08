@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { AppCache } from '../utils/AppCache';
 
 const AuthContext = createContext(null);
 
@@ -49,6 +50,9 @@ export const AuthProvider = ({ children }) => {
       const response = await api.get('/auth/me');
       console.log('PROFILE_LOADED', response.data);
       setUser(response.data);
+
+      // Trigger background pre-download of key assets & data for zero-delay instant tab switching
+      AppCache.preloadAll(api);
 
       // Fetch driver profile if user is a driver
       if (response.data.role === 'driver') {

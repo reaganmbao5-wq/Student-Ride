@@ -10,11 +10,12 @@ import SwipableRideCard from '../components/common/SwipableRideCard';
 import { toast } from 'sonner';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
+import { AppCache } from '../utils/AppCache';
 
 const RideHistoryPage = () => {
   const { api, isDriver } = useAuth();
-  const [rides, setRides] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [rides, setRides] = useState(() => AppCache.get('history') || []);
+  const [loading, setLoading] = useState(() => !AppCache.get('history'));
   
   // UI Interactive States
   const [expandedRideId, setExpandedRideId] = useState(null);
@@ -32,7 +33,9 @@ const RideHistoryPage = () => {
   const fetchHistory = React.useCallback(async () => {
     try {
       const response = await api.get('/rides/history?limit=50');
-      setRides(response.data || []);
+      const data = response.data || [];
+      setRides(data);
+      AppCache.set('history', data);
     } catch (error) {
       console.error('Error fetching history:', error);
     } finally {
@@ -74,7 +77,11 @@ const RideHistoryPage = () => {
       } catch (err) {
         console.warn('Backend API delete endpoint notice (fallback to local cleanup):', err);
       }
-      setRides((prev) => prev.filter((r) => r.id !== rideToDelete.id));
+      setRides((prev) => {
+        const updated = prev.filter((r) => r.id !== rideToDelete.id);
+        AppCache.set('history', updated);
+        return updated;
+      });
       toast.success('Ride record deleted from history');
     } catch (error) {
       console.error('Error deleting ride:', error);

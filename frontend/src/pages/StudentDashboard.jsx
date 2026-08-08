@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { routeCache } from '../map/route/RouteCache';
 import { TilePreloader } from '../map/services/TilePreloader';
 import { haptics } from '../utils/haptics';
+import { AppCache } from '../utils/AppCache';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
@@ -26,8 +27,8 @@ const StudentDashboard = () => {
   const { isConnected, rideUpdate, driverLocation, passengerBriefing, clearRideUpdate, setPassengerBriefing } = useWebSocket();
   const { location: userLocation } = useGeolocation();
   
-  const [activeRide, setActiveRide] = useState(initialRideState);
-  const [loading, setLoading] = useState(!initialRideState);
+  const [activeRide, setActiveRide] = useState(() => initialRideState || AppCache.get('active_ride') || null);
+  const [loading, setLoading] = useState(() => !initialRideState && !AppCache.get('active_ride') && !AppCache.get('history'));
   
   // 6-Second Alternating Awareness Message Banner Timer
   const [showBriefingBanner, setShowBriefingBanner] = useState(true);
@@ -311,7 +312,9 @@ const StudentDashboard = () => {
       } else {
         setDriverPos(null);
       }
-      setRecentRides(historyRes.data);
+      setRecentRides(historyRes.data || []);
+      AppCache.set('active_ride', activeRes.data);
+      AppCache.set('history', historyRes.data || []);
       console.log('DASHBOARD_RENDER_COMPLETE (Student)');
     } catch (error) {
       console.error('Error fetching data:', error);
