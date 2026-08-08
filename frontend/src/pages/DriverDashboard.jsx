@@ -9,6 +9,8 @@ import { useAuth } from '../context/AuthContext';
 import { DriverDashboardSkeleton } from '../components/common/PageSkeletons';
 import { useWebSocket } from '../context/WebSocketContext';
 import { useWatchPosition } from '../map/hooks/useGeolocation';
+import { haptics } from '../utils/haptics';
+import { systemNotification } from '../services/SystemNotificationService';
 import { routeCache } from '../map/route/RouteCache';
 import { RouteProgress } from '../map/route/RouteProgress';
 import { toast } from 'sonner';
@@ -357,6 +359,8 @@ const DriverDashboard = () => {
         }
         return prev;
       });
+
+      systemNotification.notifyNewRideRequest(newRideRequest.pickup_name || newRideRequest.pickup_address);
       
       clearRideRequest();
     }

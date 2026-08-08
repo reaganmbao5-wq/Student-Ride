@@ -2532,13 +2532,14 @@ async def driver_arrived(ride_id: str, background_tasks: BackgroundTasks, user: 
     async def send_arrived_push(student_id, r_id):
         await notification_service.send(
             user_id=student_id,
-            type="ride_arrived",
+            type="driver_arrived",
             payload={
-                "title": "Driver Arrived",
-                "body": "Your driver has arrived at the pickup location.",
+                "title": "🚨 DRIVER HAS ARRIVED!",
+                "body": "Your driver is waiting at your pickup location!",
                 "url": f"/ride/{r_id}",
                 "icon": "/logo192.png",
-                "badge": "/favicon-32x32.png"
+                "badge": "/favicon-32x32.png",
+                "tag": "driver_arrived"
             }
         )
     background_tasks.add_task(send_arrived_push, ride["student_id"], ride_id)

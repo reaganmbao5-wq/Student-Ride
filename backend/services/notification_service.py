@@ -76,10 +76,34 @@ class NotificationService:
                     # Handle Native FCM Push Notification
                     fcm_token = endpoint.replace("FCM_TOKEN:", "")
                     
-                    # For advanced "Live Tracking" we use data payloads.
-                    # This allows the frontend Capacitor app to intercept it silently and
-                    # update an ongoing persistent notification (Live Activity).
+                    title = payload.get("title") or "Mulu Rides Update"
+                    body = payload.get("body") or payload.get("message") or "You have a new update."
+
+                    # Custom vibration timings for FCM Android Notification Channel
+                    vibe_pattern = [0, 200, 100, 200]
+                    if type == 'driver_arrived':
+                        vibe_pattern = [0, 600, 150, 600, 150, 900] # Most intense triple-burst!
+                    elif type == 'driver_accepted':
+                        vibe_pattern = [0, 300, 150, 300]
+                    elif type == 'new_ride_request':
+                        vibe_pattern = [0, 500, 150, 500, 150, 800]
+                    elif type == 'ride_completed':
+                        vibe_pattern = [0, 150, 100, 150, 100, 400]
+
                     message_obj = messaging.Message(
+                        notification=messaging.Notification(
+                            title=title,
+                            body=body,
+                        ),
+                        android=messaging.AndroidConfig(
+                            priority='high',
+                            notification=messaging.AndroidNotification(
+                                sound='default',
+                                default_vibrate_timings=False,
+                                vibrate_timingsMillis=vibe_pattern,
+                                channel_id='mulu_rides_high_priority'
+                            )
+                        ),
                         data={
                             "type": type,
                             "payload": json.dumps(payload),
@@ -89,7 +113,7 @@ class NotificationService:
                     )
                     
                     response = messaging.send(message_obj)
-                    logger.info(f"FCM Notification sent successfully to {user_id}: {response}")
+                    logger.info(f"FCM System Notification sent successfully to {user_id}: {response}")
                     success_count += 1
                 else:
                     # Handle standard Web Push (VAPID)

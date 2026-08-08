@@ -18,6 +18,7 @@ import { TilePreloader } from '../map/services/TilePreloader';
 import { haptics } from '../utils/haptics';
 import { AppCache } from '../utils/AppCache';
 import { StudentDashboardSkeleton } from '../components/common/PageSkeletons';
+import { systemNotification } from '../services/SystemNotificationService';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
@@ -222,22 +223,21 @@ const StudentDashboard = () => {
     if (rideUpdate) {
       if (rideUpdate.type === 'accepted') {
         setActiveRide(prev => ({ ...prev, ...rideUpdate.ride, driver: rideUpdate.driver }));
-        haptics.driverAccepted();
-        toast.success('Driver accepted your ride!');
+        systemNotification.notifyDriverAccepted(
+          rideUpdate.driver?.user?.name,
+          `${rideUpdate.driver?.vehicle_color || ''} ${rideUpdate.driver?.vehicle_model || ''}`
+        );
         fetchData();
       } else if (rideUpdate.type === 'driver_arrived') {
         setActiveRide(prev => prev ? { ...prev, status: 'driver_arrived' } : null);
-        haptics.driverArrived();
-        toast.success('Driver has arrived at pickup!');
+        systemNotification.notifyDriverArrived(activeRide?.driver?.user?.name);
       } else if (rideUpdate.type === 'state_changed') {
         setActiveRide(prev => prev ? { ...prev, status: rideUpdate.state } : null);
       } else if (rideUpdate.type === 'started') {
         setActiveRide(prev => prev ? { ...prev, status: 'ongoing' } : null);
-        haptics.tap();
-        toast.info('Your ride has started');
+        systemNotification.notifyRideStarted();
       } else if (rideUpdate.type === 'completed') {
-        haptics.tripCompleted();
-        toast.success('Ride completed!');
+        systemNotification.notifyRideCompleted();
         setRatingRideId(activeRide?.id || rideUpdate.ride_id);
         setDriverName(activeRide?.driver?.user?.name || rideUpdate.driver_name || 'your driver');
         setShowRatingModal(true);
@@ -245,11 +245,11 @@ const StudentDashboard = () => {
         setPassengerBriefing(null);
         fetchData();
       } else if (rideUpdate.type === 'cancelled') {
-        toast.error('Ride was cancelled');
+        systemNotification.notifyRideCancelled('The ride was cancelled');
         setActiveRide(null);
         setPassengerBriefing(null);
       } else if (rideUpdate.type === 'reassigning') {
-        toast.error('Driver cancelled. Finding a new driver...', { duration: 5000 });
+        systemNotification.notifyRideCancelled('Driver cancelled. Finding a new driver...');
         setActiveRide(prev => prev ? { ...prev, status: 'requested', driver_id: null, driver: null } : null);
       }
       clearRideUpdate();

@@ -38,15 +38,32 @@ self.addEventListener('push', function (event) {
         }
 
         const payload = data.payload || {};
+        let title = payload.title || 'Mulu Rides';
+        let eventType = data.type || payload.eventType || 'default';
 
-        let title = payload.title || 'MuluRides';
+        // Custom Vibration Signatures for Maximum User Awareness
+        let vibePattern = [0, 200, 100, 200];
+        if (eventType === 'driver_arrived') {
+            vibePattern = [0, 600, 150, 600, 150, 900]; // Most intense triple-buzz pocket alert!
+        } else if (eventType === 'driver_accepted') {
+            vibePattern = [0, 300, 150, 300];
+        } else if (eventType === 'new_ride_request') {
+            vibePattern = [0, 500, 150, 500, 150, 800];
+        } else if (eventType === 'ride_completed') {
+            vibePattern = [0, 150, 100, 150, 100, 400];
+        } else if (eventType === 'ride_cancelled') {
+            vibePattern = [0, 400, 100, 400];
+        }
 
         const options = {
             body: payload.body || payload.message || 'New notification',
             icon: payload.icon || '/logo192.png',
             badge: payload.badge || '/favicon-32x32.png',
             data: payload,
-            vibrate: [100, 50, 100],
+            vibrate: vibePattern,
+            tag: payload.tag || 'mulu_push_event',
+            renotify: true,
+            actions: payload.actions || []
         };
 
         event.waitUntil(
