@@ -64,7 +64,9 @@ export const AppCache = {
       ]);
 
       if (historyRes.status === 'fulfilled' && historyRes.value?.data) {
-        AppCache.set('history', historyRes.value.data);
+        const historyData = historyRes.value.data;
+        AppCache.set('history', historyData);
+        AppCache.set('recent_rides', historyData.slice(0, 5));
       }
       if (activeRes.status === 'fulfilled' && activeRes.value?.data) {
         AppCache.set('active_ride', activeRes.value.data);

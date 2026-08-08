@@ -43,7 +43,15 @@ const StudentDashboard = () => {
   const searchLocation = activeRide?.pickup_location || userLocation;
   const { drivers: nearbyDrivers } = useDriverDiscovery(api, searchLocation);
 
-  const [recentRides, setRecentRides] = useState([]);
+  const getInitialRecentRides = () => {
+    const recent = AppCache.get('recent_rides');
+    if (Array.isArray(recent) && recent.length > 0) return recent;
+    const fullHistory = AppCache.get('history');
+    if (Array.isArray(fullHistory) && fullHistory.length > 0) return fullHistory.slice(0, 5);
+    return [];
+  };
+
+  const [recentRides, setRecentRides] = useState(getInitialRecentRides);
   const [driverPos, setDriverPos] = useState(null);
   const [isRouteAnimating, setIsRouteAnimating] = useState(false);
   
@@ -312,9 +320,14 @@ const StudentDashboard = () => {
       } else {
         setDriverPos(null);
       }
-      setRecentRides(historyRes.data || []);
+      const ridesList = historyRes.data || [];
+      setRecentRides(ridesList);
+      AppCache.set('recent_rides', ridesList);
       AppCache.set('active_ride', activeRes.data);
-      AppCache.set('history', historyRes.data || []);
+      const existingHistory = AppCache.get('history');
+      if (!existingHistory || existingHistory.length < ridesList.length) {
+        AppCache.set('history', ridesList);
+      }
       console.log('DASHBOARD_RENDER_COMPLETE (Student)');
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -845,7 +858,9 @@ const StudentDashboard = () => {
                 <Car className="w-5 h-5 text-blue-400" />
               </div>
               <div>
-                <p className="text-2xl font-heading font-bold text-foreground">{recentRides.length}</p>
+                <p className="text-2xl font-heading font-bold text-foreground">
+                  {AppCache.get('history')?.length || recentRides.length}
+                </p>
                 <p className="text-xs text-muted-foreground">Total Rides</p>
               </div>
             </div>
