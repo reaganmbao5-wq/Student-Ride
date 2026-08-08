@@ -9,6 +9,7 @@ import VehicleEngine from '../vehicle/VehicleEngine';
 import CameraEngine from '../camera/CameraEngine';
 import { CAMERA_MODES } from '../camera/CameraConfig';
 import { RouteEngine } from '../route/RouteEngine';
+import { haptics } from '../../utils/haptics';
 
 // Standardize default icons
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -173,6 +174,7 @@ export const PlatformMap = ({
         if (onDragStart) onDragStart();
       },
       dragend: (e) => {
+        haptics.pinDrop();
         if (onDragEnd) onDragEnd();
         const c = e.target.getCenter();
         if (onCenterChanged) {

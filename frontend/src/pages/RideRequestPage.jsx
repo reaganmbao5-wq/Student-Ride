@@ -371,7 +371,10 @@ const RideRequestPage = () => {
             setIsDragging(true);
             setSelectedDestination(null);
           }}
-          onDragEnd={() => setIsDragging(false)}
+          onDragEnd={() => {
+            haptics.pinDrop();
+            setIsDragging(false);
+          }}
           markers={markers}
           drivers={nearbyDrivers}
           routeGeometry={routeGeometry}
