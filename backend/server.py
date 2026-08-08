@@ -2994,13 +2994,19 @@ async def trigger_sos(request: EmergencyRequest, user: dict = Depends(get_curren
     }
 
 @api_router.post("/rides/{ride_id}/rate")
-async def rate_ride(ride_id: str, rating_data: RatingCreate, user: dict = Depends(get_current_user)):
+async def rate_ride(ride_id: str, rating_data: RatingCreate, background_tasks: BackgroundTasks, user: dict = Depends(get_current_user)):
     ride = await db.rides.find_one({"id": ride_id}, {"_id": 0})
     
     if not ride or ride["student_id"] != user["id"]:
         raise HTTPException(status_code=404, detail="Ride not found")
     
-    if ride["status"] not in [RideStatus.COMPLETED.value, RideStatus.RIDE_ARCHIVED.value]:
+    valid_completed_statuses = [
+        RideStatus.COMPLETED.value,
+        RideStatus.RIDE_COMPLETED.value,
+        RideStatus.RIDE_ARCHIVED.value,
+        "completed_ride"
+    ]
+    if ride["status"] not in valid_completed_statuses:
         raise HTTPException(status_code=400, detail="Can only rate completed rides")
     
     if rating_data.rating < 1 or rating_data.rating > 5:
@@ -3012,30 +3018,32 @@ async def rate_ride(ride_id: str, rating_data: RatingCreate, user: dict = Depend
     )
     
     # Update driver rating
-    if ride["driver_id"]:
+    if ride.get("driver_id"):
         driver_rides = await db.rides.find({
             "driver_id": ride["driver_id"],
             "rating": {"$ne": None}
         }, {"_id": 0}).to_list(1000)
         
         if driver_rides:
-            avg_rating = sum(r["rating"] for r in driver_rides) / len(driver_rides)
-            new_rating = round(avg_rating, 1)
-            await db.drivers.update_one(
-                {"id": ride["driver_id"]},
-                {"$set": {"rating": new_rating}}
-            )
-            
-            # Notify driver via WebSocket
-            driver = await db.drivers.find_one({"id": ride["driver_id"]}, {"_id": 0})
-            if driver and "user_id" in driver:
-                background_tasks.add_task(manager.send_personal_message, {
-        "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
-                    "type": "rating_received",
-                    "rating": rating_data.rating,
-                    "new_average": new_rating,
-                    "ride_id": ride_id
-                }, driver["user_id"])
+            valid_ratings = [r["rating"] for r in driver_rides if isinstance(r.get("rating"), (int, float)) and r["rating"] > 0]
+            if valid_ratings:
+                avg_rating = sum(valid_ratings) / len(valid_ratings)
+                new_rating = round(avg_rating, 1)
+                await db.drivers.update_one(
+                    {"id": ride["driver_id"]},
+                    {"$set": {"rating": new_rating}}
+                )
+                
+                # Notify driver via WebSocket
+                driver = await db.drivers.find_one({"id": ride["driver_id"]}, {"_id": 0})
+                if driver and "user_id" in driver:
+                    background_tasks.add_task(manager.send_personal_message, {
+                        "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value),
+                        "type": "rating_received",
+                        "rating": rating_data.rating,
+                        "new_average": new_rating,
+                        "ride_id": ride_id
+                    }, driver["user_id"])
     
     return {"status": "rated"}
 

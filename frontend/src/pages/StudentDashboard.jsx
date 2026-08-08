@@ -227,8 +227,8 @@ const StudentDashboard = () => {
       } else if (rideUpdate.type === 'completed') {
         haptics.tripCompleted();
         toast.success('Ride completed!');
-        setRatingRideId(activeRide?.id);
-        setDriverName(activeRide?.driver?.user?.name || 'Driver');
+        setRatingRideId(activeRide?.id || rideUpdate.ride_id);
+        setDriverName(activeRide?.driver?.user?.name || rideUpdate.driver_name || 'your driver');
         setShowRatingModal(true);
         setActiveRide(null);
         setPassengerBriefing(null);
