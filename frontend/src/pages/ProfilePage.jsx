@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { 
   User, Mail, Phone, Shield, Car, LogOut, Trash2, Loader2, 
-  Camera, ChevronRight, Check, Edit3, Sparkles, Bell, Vibrate, CheckCircle2, ShieldAlert, Smartphone
+  Camera, ChevronRight, Check, Edit3, Bell, Vibrate, CheckCircle2, ShieldAlert, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
@@ -36,7 +37,7 @@ const ProfilePage = () => {
   const { user, driverProfile, logout, isDriver, isAdmin, isSuperAdmin, api, fetchUser } = useAuth();
   const navigate = useNavigate();
   
-  // Expandable Edit Profile State
+  // Bottom Sheet Edit Profile Modal State
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(user?.name || '');
   const [editPhone, setEditPhone] = useState(user?.phone || '');
@@ -153,7 +154,7 @@ const ProfilePage = () => {
     haptics.tap();
 
     if (permissionState === 'granted') {
-      toast.info('Notifications are already active on this device!');
+      toast.info('Notifications are active on this device.');
       return;
     }
 
@@ -265,6 +266,141 @@ const ProfilePage = () => {
     }
   };
 
+  // Render Bottom Sheet Edit Modal via Portal (Slides UP from bottom)
+  const renderEditBottomSheet = () => {
+    if (!isEditing) return null;
+
+    const modalJSX = (
+      <AnimatePresence>
+        <div className="fixed inset-0 z-[999999] flex flex-col justify-end pointer-events-auto">
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsEditing(false)}
+            className="absolute inset-0 bg-black/80 backdrop-blur-md cursor-pointer"
+          />
+
+          {/* Bottom Sheet Drawer */}
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", stiffness: 380, damping: 28 }}
+            className="relative z-10 w-full max-w-xl mx-auto bg-zinc-950 border-t border-zinc-800 rounded-t-[32px] p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+          >
+            {/* Top Drag Handle Bar */}
+            <div className="w-full flex justify-center pb-2">
+              <div className="w-12 h-1.5 bg-zinc-700 rounded-full" />
+            </div>
+
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <User className="w-5 h-5 text-gold" /> Edit Profile
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveProfile} className="space-y-4">
+              {/* Profile Photo Row */}
+              <div className="flex items-center gap-4 p-3 rounded-2xl bg-zinc-900 border border-zinc-800">
+                <div className="w-14 h-14 rounded-full bg-zinc-800 overflow-hidden border border-gold/30 shrink-0">
+                  {editAvatar || user?.avatar_url ? (
+                    <img src={editAvatar || user?.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-7 h-7 text-zinc-400 m-3" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-semibold text-white">Profile Photo</p>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="text-xs text-gold font-bold hover:underline mt-0.5 cursor-pointer"
+                  >
+                    Change Picture
+                  </button>
+                </div>
+              </div>
+
+              {/* Full Name */}
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1 font-medium">Full Name</label>
+                <div className="relative">
+                  <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full bg-zinc-900 text-white rounded-2xl pl-10 pr-4 py-3 text-sm border border-zinc-800 focus:outline-none focus:border-gold"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Phone Number */}
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1 font-medium">Phone Number</label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+                  <input
+                    type="tel"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    className="w-full bg-zinc-900 text-white rounded-2xl pl-10 pr-4 py-3 text-sm border border-zinc-800 focus:outline-none focus:border-gold"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Email Address */}
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1 font-medium">Email Address</label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+                  <input
+                    type="email"
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    className="w-full bg-zinc-900 text-white rounded-2xl pl-10 pr-4 py-3 text-sm border border-zinc-800 focus:outline-none focus:border-gold"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="flex-1 py-3.5 rounded-2xl bg-zinc-900 text-zinc-300 text-xs font-bold border border-zinc-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="flex-1 py-3.5 rounded-2xl bg-gold text-zinc-950 text-xs font-bold shadow-lg cursor-pointer"
+                >
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      </AnimatePresence>
+    );
+
+    return ReactDOM.createPortal(modalJSX, document.body);
+  };
+
   return (
     <Layout>
       <div className="p-4 md:p-8 space-y-6 max-w-xl mx-auto pb-24" data-testid="profile-page">
@@ -294,8 +430,8 @@ const ProfilePage = () => {
             <button
               type="button"
               onClick={() => {
-                if (!isEditing) setIsEditing(true);
-                setTimeout(() => fileInputRef.current?.click(), 100);
+                haptics.tap();
+                setIsEditing(true);
               }}
               className="absolute bottom-0 right-0 p-2 rounded-full bg-zinc-800 border border-zinc-700 text-white hover:bg-gold hover:text-black transition-all shadow-xl cursor-pointer"
               title="Change profile picture"
@@ -322,92 +458,8 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        {/* ==================================================== */}
-        {/* EDIT PROFILE FORM MODAL / COLLAPSIBLE PANEL         */}
-        {/* ==================================================== */}
-        <AnimatePresence>
-          {isEditing && (
-            <motion.form
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              onSubmit={handleSaveProfile}
-              className="bg-zinc-900 border border-gold/40 rounded-3xl p-5 space-y-4 shadow-2xl overflow-hidden"
-            >
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-gold" /> Edit Account Profile
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(false)}
-                  className="text-xs text-zinc-400 hover:text-white"
-                >
-                  Cancel
-                </button>
-              </div>
-
-              <div>
-                <label className="block text-xs text-zinc-400 mb-1 font-medium">Full Name</label>
-                <div className="relative">
-                  <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
-                  <input
-                    type="text"
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    className="w-full bg-zinc-950 text-white rounded-2xl pl-10 pr-4 py-3 text-sm border border-zinc-800 focus:outline-none focus:border-gold"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs text-zinc-400 mb-1 font-medium">Phone Number</label>
-                <div className="relative">
-                  <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
-                  <input
-                    type="tel"
-                    value={editPhone}
-                    onChange={(e) => setEditPhone(e.target.value)}
-                    className="w-full bg-zinc-950 text-white rounded-2xl pl-10 pr-4 py-3 text-sm border border-zinc-800 focus:outline-none focus:border-gold"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs text-zinc-400 mb-1 font-medium">Email Address</label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
-                  <input
-                    type="email"
-                    value={editEmail}
-                    onChange={(e) => setEditEmail(e.target.value)}
-                    className="w-full bg-zinc-950 text-white rounded-2xl pl-10 pr-4 py-3 text-sm border border-zinc-800 focus:outline-none focus:border-gold"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(false)}
-                  className="flex-1 py-3 rounded-2xl bg-zinc-800 text-zinc-300 text-xs font-bold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="flex-1 py-3 rounded-2xl bg-gold text-zinc-950 text-xs font-bold shadow-lg"
-                >
-                  {isSaving ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
-            </motion.form>
-          )}
-        </AnimatePresence>
+        {/* Bottom Sheet Modal Portal */}
+        {renderEditBottomSheet()}
 
         {/* ==================================================== */}
         {/* GROUP 1: ACCOUNT CATEGORY (ChatGPT Style Group Card) */}
@@ -417,7 +469,10 @@ const ProfilePage = () => {
           <div className="bg-zinc-900 border border-zinc-800/90 rounded-3xl overflow-hidden divide-y divide-zinc-800/70">
             {/* Edit Profile Row */}
             <div 
-              onClick={() => setIsEditing(!isEditing)}
+              onClick={() => {
+                haptics.tap();
+                setIsEditing(true);
+              }}
               className="flex items-center justify-between p-4 hover:bg-zinc-800/50 transition-colors cursor-pointer"
             >
               <div className="flex items-center gap-3.5">
@@ -460,11 +515,9 @@ const ProfilePage = () => {
         <div className="space-y-2">
           <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-2">Preferences & Notifications</p>
           <div className="bg-zinc-900 border border-zinc-800/90 rounded-3xl overflow-hidden divide-y divide-zinc-800/70">
-            {/* Push Notifications Row */}
-            <div 
-              onClick={handleTogglePushNotifications}
-              className="flex items-center justify-between p-4 hover:bg-zinc-800/50 transition-colors cursor-pointer"
-            >
+            
+            {/* Push Notifications Row with Standard Native Toggle Switch */}
+            <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3.5">
                 <Bell className={`w-5 h-5 ${permissionState === 'granted' ? 'text-emerald-400' : 'text-zinc-400'}`} />
                 <div>
@@ -473,16 +526,25 @@ const ProfilePage = () => {
                 </div>
               </div>
 
-              <span className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border ${
-                permissionState === 'granted' 
-                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' 
-                  : 'bg-gold/10 text-gold border-gold/30'
-              }`}>
-                {isSubscribing ? 'Enabling...' : permissionState === 'granted' ? 'Active 🟢' : 'Tap to Turn On'}
-              </span>
+              {/* Authentic Mobile Toggle Switch */}
+              <button
+                type="button"
+                onClick={handleTogglePushNotifications}
+                disabled={isSubscribing}
+                className={`relative w-12 h-7 rounded-full p-1 transition-colors duration-200 focus:outline-none cursor-pointer ${
+                  permissionState === 'granted' ? 'bg-emerald-500' : 'bg-zinc-700'
+                }`}
+                title={permissionState === 'granted' ? 'Notifications active' : 'Click to enable notifications'}
+              >
+                <div
+                  className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-200 ${
+                    permissionState === 'granted' ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
             </div>
 
-            {/* App Vibrations Row (Master Switch) */}
+            {/* App Vibrations Row with Standard Native Toggle Switch (ON by Default) */}
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3.5">
                 <Vibrate className="w-5 h-5 text-gold" />
@@ -492,18 +554,18 @@ const ProfilePage = () => {
                 </div>
               </div>
 
+              {/* Authentic Mobile Toggle Switch */}
               <button
                 type="button"
                 onClick={handleToggleVibrations}
-                className={`relative w-12 h-7 rounded-full p-1 transition-colors duration-300 focus:outline-none cursor-pointer ${
-                  vibrationsEnabled ? 'bg-gold' : 'bg-zinc-700'
+                className={`relative w-12 h-7 rounded-full p-1 transition-colors duration-200 focus:outline-none cursor-pointer ${
+                  vibrationsEnabled ? 'bg-emerald-500' : 'bg-zinc-700'
                 }`}
+                title={vibrationsEnabled ? 'App vibrations ON' : 'App vibrations OFF'}
               >
-                <motion.div
-                  animate={{ x: vibrationsEnabled ? 20 : 0 }}
-                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  className={`w-5 h-5 rounded-full shadow-md ${
-                    vibrationsEnabled ? 'bg-zinc-950' : 'bg-zinc-400'
+                <div
+                  className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-200 ${
+                    vibrationsEnabled ? 'translate-x-5' : 'translate-x-0'
                   }`}
                 />
               </button>
