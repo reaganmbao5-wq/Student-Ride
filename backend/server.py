@@ -1885,27 +1885,67 @@ async def get_driver_earnings(user: dict = Depends(require_driver)):
     if not driver:
         raise HTTPException(status_code=404, detail="Driver profile not found")
     
-    # Get rides
+    # Get all completed/archived rides for driver
     rides = await db.rides.find({
         "driver_id": driver["id"],
-        "status": {"$in": [RideStatus.COMPLETED.value, RideStatus.RIDE_COMPLETED.value]}
+        "status": {"$in": [
+            RideStatus.COMPLETED.value,
+            RideStatus.RIDE_COMPLETED.value,
+            RideStatus.RIDE_ARCHIVED.value,
+            "completed",
+            "ride_completed",
+            "ride_archived",
+            "archived"
+        ]}
     }, {"_id": 0}).to_list(1000)
     
-    today = datetime.now(timezone.utc).date()
+    now_utc = datetime.now(timezone.utc)
+    today = now_utc.date()
     week_start = today - timedelta(days=today.weekday())
     month_start = today.replace(day=1)
     
-    today_earnings = sum(r["driver_earning"] for r in rides if datetime.fromisoformat(r["created_at"]).date() == today)
-    week_earnings = sum(r["driver_earning"] for r in rides if datetime.fromisoformat(r["created_at"]).date() >= week_start)
-    month_earnings = sum(r["driver_earning"] for r in rides if datetime.fromisoformat(r["created_at"]).date() >= month_start)
+    today_earnings = 0.0
+    week_earnings = 0.0
+    month_earnings = 0.0
     
+    settings = await get_platform_settings()
+    comm_rate = float(settings.get("commission_rate", 0.15))
+    
+    for r in rides:
+        date_str = r.get("completed_at") or r.get("created_at")
+        if not date_str:
+            continue
+        try:
+            if isinstance(date_str, str):
+                if date_str.endswith('Z'):
+                    date_str = date_str[:-1] + '+00:00'
+                r_date = datetime.fromisoformat(date_str).date()
+            elif isinstance(date_str, datetime):
+                r_date = date_str.date()
+            else:
+                continue
+        except Exception as e:
+            logger.warning(f"Error parsing date '{date_str}': {e}")
+            continue
+
+        earning = float(r.get("driver_earning", 0.0))
+        if earning == 0.0 and r.get("fare"):
+            earning = float(r.get("fare", 0.0)) * (1.0 - comm_rate)
+        
+        if r_date == today:
+            today_earnings += earning
+        if r_date >= week_start:
+            week_earnings += earning
+        if r_date >= month_start:
+            month_earnings += earning
+            
     return {
-        "total_earnings": driver["total_earnings"],
-        "today_earnings": today_earnings,
-        "week_earnings": week_earnings,
-        "month_earnings": month_earnings,
-        "total_rides": driver["total_rides"],
-        "rating": driver["rating"]
+        "total_earnings": round(float(driver.get("total_earnings", 0.0)), 2),
+        "today_earnings": round(today_earnings, 2),
+        "week_earnings": round(week_earnings, 2),
+        "month_earnings": round(month_earnings, 2),
+        "total_rides": int(driver.get("total_rides", 0)),
+        "rating": round(float(driver.get("rating", 5.0)), 1)
     }
 
 @api_router.get("/drivers/available", response_model=List[DriverResponse])
