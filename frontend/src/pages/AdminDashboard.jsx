@@ -6,6 +6,7 @@ import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
 import { AdminDashboardSkeleton } from '../components/common/PageSkeletons';
 import { AdminPushNotifications } from '../components/admin/AdminPushNotifications';
+import { NotificationPermissionCard } from '../components/common/NotificationPermissionCard';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -62,6 +63,7 @@ const AdminDashboard = () => {
   return (
     <Layout>
       <div className="p-4 md:p-8 space-y-6" data-testid="admin-dashboard">
+        <NotificationPermissionCard />
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>

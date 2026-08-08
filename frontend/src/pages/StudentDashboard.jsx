@@ -20,6 +20,7 @@ import { AppCache } from '../utils/AppCache';
 import { StudentDashboardSkeleton } from '../components/common/PageSkeletons';
 import { systemNotification } from '../services/SystemNotificationService';
 import { DriverPhotoModal } from '../components/common/DriverPhotoModal';
+import { NotificationPermissionCard } from '../components/common/NotificationPermissionCard';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
@@ -832,6 +833,9 @@ const StudentDashboard = () => {
       <div className="p-4 md:p-8 space-y-8 max-w-4xl mx-auto" data-testid="student-dashboard">
         {/* Top Greeting & Hero Ride Request Feature matching Mockup */}
         <div className="flex flex-col items-center text-center space-y-8 pt-2 pb-4">
+          {/* Notification Permission Card Banner */}
+          <NotificationPermissionCard />
+
           {/* Header Greeting */}
           <div className="w-full text-left font-heading border-b border-border pb-4">
             <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight">

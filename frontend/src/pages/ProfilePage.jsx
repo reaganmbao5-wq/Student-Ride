@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard, GoldButton } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
 import { MultiPlatformInstallSection } from '../components/common/MultiPlatformInstallSection';
+import { NotificationPermissionCard } from '../components/common/NotificationPermissionCard';
 import { compressImageToDataUrl } from '../utils/imageCompressor';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -225,6 +226,11 @@ const ProfilePage = () => {
               </div>
             </div>
           )}
+
+          {/* Notification Permission Settings Tile */}
+          <div className="mt-4">
+            <NotificationPermissionCard variant="profile" />
+          </div>
 
           {/* Expanded Edit Form Section */}
           <AnimatePresence>
