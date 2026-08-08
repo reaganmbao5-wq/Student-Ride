@@ -20,7 +20,6 @@ import { AppCache } from '../utils/AppCache';
 import { StudentDashboardSkeleton } from '../components/common/PageSkeletons';
 import { systemNotification } from '../services/SystemNotificationService';
 import { DriverPhotoModal } from '../components/common/DriverPhotoModal';
-import { NotificationPermissionCard } from '../components/common/NotificationPermissionCard';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();

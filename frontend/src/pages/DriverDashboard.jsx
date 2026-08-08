@@ -20,7 +20,6 @@ import { useRef } from 'react';
 import { ActiveTripQueue } from '../components/driver/ActiveTripQueue';
 import { SharedRideRequestPanel } from '../components/driver/SharedRideRequestPanel';
 import { RideCard } from '../components/driver/RideCard';
-import { NotificationPermissionCard } from '../components/common/NotificationPermissionCard';
 
 const DriverDashboard = () => {
   const navigate = useNavigate();

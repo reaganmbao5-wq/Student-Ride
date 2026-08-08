@@ -6,7 +6,6 @@ import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
 import { AdminDashboardSkeleton } from '../components/common/PageSkeletons';
 import { AdminPushNotifications } from '../components/admin/AdminPushNotifications';
-import { NotificationPermissionCard } from '../components/common/NotificationPermissionCard';
 import {
   ResponsiveContainer,
   AreaChart,
