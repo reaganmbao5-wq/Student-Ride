@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Car, Eye, EyeOff, ArrowLeft, Mail, Phone, User, Lock, UploadCloud, FileText, CheckCircle2 } from 'lucide-react';
+import { Car, Eye, EyeOff, ArrowLeft, Mail, Phone, User as UserIcon, Lock, UploadCloud, FileText, CheckCircle2, Camera as CameraIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { GoogleLogin } from '@react-oauth/google';
 import { GoogleAuth } from '@daniele-rolli/capacitor-google-auth';
 import { Capacitor } from '@capacitor/core';
-import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { Camera as CapacitorCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PermissionsService } from '../services/PermissionsService';
 
@@ -88,7 +88,7 @@ const AuthPage = () => {
     if (!hasPermission) return;
 
     try {
-      const image = await Camera.getPhoto({
+      const image = await CapacitorCamera.getPhoto({
         quality: 90,
         allowEditing: false,
         resultType: CameraResultType.Uri,
@@ -369,7 +369,7 @@ const AuthPage = () => {
 
                 <div className="space-y-4 mb-4">
                   <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                    <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                     <GlassInput
                       type="text"
                       name="name"
@@ -477,13 +477,13 @@ const AuthPage = () => {
                           <img src={profilePhotoPreview} alt="Driver Preview" className="w-full h-full object-cover" />
                         ) : (
                           <div className="flex flex-col items-center gap-1 text-zinc-500 hover:text-gold transition-colors">
-                            <Camera className="w-7 h-7" />
+                            <CameraIcon className="w-7 h-7" />
                             <span className="text-[10px] font-bold uppercase tracking-wider">Upload</span>
                           </div>
                         )}
                       </div>
                       <div className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-gold text-zinc-950 flex items-center justify-center shadow-md">
-                        <Camera className="w-4 h-4" />
+                        <CameraIcon className="w-4 h-4" />
                       </div>
                     </label>
                   </div>
