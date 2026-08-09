@@ -32,13 +32,23 @@ export const searchAddress = async (query) => {
         if (localRes.ok) {
             const dbData = await localRes.json();
             if (Array.isArray(dbData) && dbData.length > 0) {
-                const formatted = dbData.map(item => ({
-                    lat: String(item.lat),
-                    lon: String(item.lon),
-                    display_name: item.display_name + (item.category ? ` (${item.category})` : '')
-                }));
-                cache.set(cacheKey, { timestamp: Date.now(), data: formatted });
-                return formatted;
+                const seen = new Set();
+                const formatted = [];
+                for (const item of dbData) {
+                    const cleanName = item.display_name ? item.display_name.trim() : '';
+                    const key = cleanName.toLowerCase();
+                    if (!key || seen.has(key)) continue;
+                    seen.add(key);
+                    formatted.push({
+                        lat: String(item.lat),
+                        lon: String(item.lon),
+                        display_name: cleanName
+                    });
+                }
+                if (formatted.length > 0) {
+                    cache.set(cacheKey, { timestamp: Date.now(), data: formatted });
+                    return formatted;
+                }
             }
         }
     } catch (dbErr) {

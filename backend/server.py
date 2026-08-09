@@ -3735,7 +3735,7 @@ async def get_admin_logs(
 # ==================== PLACES SEARCH ROUTE ====================
 @api_router.get("/places/search")
 async def search_places(q: str = Query(..., min_length=1)):
-    """Search offline places database (places.db) by name or category"""
+    """Search offline places database (places.db) by name or category with strict deduplication"""
     search_term = q.strip()
     if not search_term:
         return []
@@ -3763,27 +3763,35 @@ async def search_places(q: str = Query(..., min_length=1)):
         like_query = f"%{search_term}%"
         cur.execute(
             """
-            SELECT id, name, category, latitude, longitude, source 
+            SELECT MIN(id) as id, name, category, latitude, longitude, source 
             FROM places 
             WHERE name LIKE ? OR category LIKE ? 
+            GROUP BY LOWER(TRIM(name))
             ORDER BY 
-              CASE WHEN name LIKE ? THEN 1 ELSE 2 END,
+              CASE WHEN LOWER(name) LIKE ? THEN 1 ELSE 2 END,
               name ASC
             LIMIT 15
             """,
-            (like_query, like_query, f"{search_term}%")
+            (like_query, like_query, f"{search_term.lower()}%")
         )
         rows = cur.fetchall()
         conn.close()
 
         results = []
+        seen_names = set()
         for r in rows:
+            clean_name = r["name"].strip()
+            name_key = clean_name.lower()
+            if name_key in seen_names:
+                continue
+            seen_names.add(name_key)
+
             results.append({
                 "id": r["id"],
-                "display_name": r["name"],
+                "display_name": clean_name,
                 "category": r["category"],
-                "lat": float(r["latitude"]),
-                "lon": float(r["longitude"]),
+                "lat": round(float(r["latitude"]), 7),
+                "lon": round(float(r["longitude"]), 7),
                 "source": r["source"]
             })
         return results

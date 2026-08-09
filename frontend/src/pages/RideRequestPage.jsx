@@ -493,38 +493,16 @@ const RideRequestPage = () => {
                 </div>
               </div>
 
-              <div className="w-full flex items-center gap-2">
-                <div className="flex-1">
-                  <AddressSearch
-                    placeholder="Search for a destination..."
-                    onLocationSelect={(loc) => {
-                      setMapCenter({ lat: loc.lat, lng: loc.lng });
-                      setCurrentAddress(loc.address);
-                      setSelectedDestination(null);
-                    }}
-                  />
-                </div>
-                <button
-                  onClick={() => refreshLocation()}
-                  disabled={geoLoading}
-                  className="w-12 h-12 flex-shrink-0 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl flex items-center justify-center active:scale-95 transition-transform"
-                >
-                  <Navigation className={`w-5 h-5 text-black dark:text-white ${geoLoading ? 'animate-pulse' : ''}`} />
-                </button>
+              <div className="w-full">
+                <AddressSearch
+                  placeholder="Search for a destination..."
+                  onLocationSelect={(loc) => {
+                    setMapCenter({ lat: loc.lat, lng: loc.lng });
+                    setCurrentAddress(loc.address);
+                    setSelectedDestination(null);
+                  }}
+                />
               </div>
-
-              {destinations.length > 0 && (
-                <Select onValueChange={handleDestinationDropdownSelect}>
-                  <SelectTrigger className="w-full h-12 bg-zinc-100 dark:bg-zinc-900 border-none rounded-xl">
-                    <SelectValue placeholder="Quick select popular destination" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {destinations.map((dest) => (
-                      <SelectItem key={dest.id} value={dest.id}>{dest.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
 
               <button 
                 className="w-full py-4 bg-black text-white rounded-xl font-bold text-lg active:scale-95 transition-transform disabled:opacity-50"
