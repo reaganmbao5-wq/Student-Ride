@@ -34,7 +34,7 @@ export const AddressSearch = ({ onLocationSelect, placeholder = "Search for a lo
     const handleSelect = (result) => {
         const location = {
             lat: parseFloat(result.lat),
-            lng: parseFloat(result.lon),
+            lng: parseFloat(result.lon || result.lng),
             address: result.display_name
         };
         onLocationSelect(location);

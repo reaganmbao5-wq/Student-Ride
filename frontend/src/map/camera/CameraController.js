@@ -17,19 +17,27 @@ class CameraController {
     // 1. Update Mode
     this.state.setMode(mode);
 
-    // If mode changed (e.g. entering confirm step / FOLLOW_ROUTE), reset interaction block
-    if (modeChanged && (mode === CAMERA_MODES.FOLLOW_ROUTE || mode === CAMERA_MODES.OVERVIEW)) {
+    // Reset interaction block whenever mode changes OR when a new selectionLocation is chosen from search
+    const selectionChanged = selectionLocation && 
+      (!this.lastSelectionLoc || 
+       this.lastSelectionLoc.lat !== selectionLocation.lat || 
+       this.lastSelectionLoc.lng !== selectionLocation.lng);
+
+    if (modeChanged || selectionChanged) {
+      if (selectionChanged) {
+        this.lastSelectionLoc = selectionLocation;
+      }
       this.state.resetInteraction();
     }
 
     // 2. Check for idle timeout (resume auto-follow after user interaction)
     if (this.state.isUserInteracting) {
-      // Do not fight the user
+      // Do not fight the user during active drag/touch
       return;
     }
 
-    if (!this.state.isIdle(CAMERA_CONFIG.INTERACTION.IDLE_TIMEOUT_MS)) {
-      // Still in timeout period, wait for it to elapse before taking over again
+    if (!selectionChanged && !this.state.isIdle(CAMERA_CONFIG.INTERACTION.IDLE_TIMEOUT_MS)) {
+      // Still in timeout period for passive follow modes, wait for it to elapse
       return;
     }
 
