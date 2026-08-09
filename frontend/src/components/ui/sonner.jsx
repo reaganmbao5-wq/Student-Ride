@@ -8,12 +8,13 @@ const Toaster = ({
   return (
     <Sonner
       theme="dark"
+      position="top-center"
       className="toaster group"
       toastOptions={{
         classNames: {
           toast:
-            "group toast group-[.toaster]:bg-black group-[.toaster]:text-white group-[.toaster]:border-zinc-800 rounded-full px-3.5 py-2 text-xs font-semibold tracking-wide flex items-center gap-2.5 max-w-fit mx-auto shadow-none",
-          description: "group-[.toast]:text-zinc-400 text-[11px]",
+            "group toast group-[.toaster]:bg-black group-[.toaster]:text-white group-[.toaster]:border-zinc-800 rounded-full px-4 py-2 text.xs font-semibold tracking-wide flex items-center justify-center text-center max-w-[calc(100vw-32px)] mx-auto shadow-none",
+          description: "group-[.toast]:text-zinc-400 text-[11px] text-center",
           actionButton:
             "group-[.toast]:bg-white group-[.toast]:text-black font-bold rounded-lg text-[11px]",
           cancelButton:
