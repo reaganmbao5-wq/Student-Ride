@@ -66,8 +66,16 @@ export const AddressSearch = ({ onLocationSelect, placeholder = "Search for a lo
                     {results.map((result, index) => (
                         <button
                             key={index}
+                            onMouseDown={(e) => {
+                                e.preventDefault();
+                                handleSelect(result);
+                            }}
+                            onTouchStart={(e) => {
+                                e.preventDefault();
+                                handleSelect(result);
+                            }}
                             onClick={() => handleSelect(result)}
-                            className="w-full px-4 py-3 text-left hover:bg-white/10 transition-colors border-b border-white/5 last:border-0 flex items-start gap-3"
+                            className="w-full px-4 py-3 text-left hover:bg-white/10 transition-colors border-b border-white/5 last:border-0 flex items-start gap-3 cursor-pointer"
                         >
                             <MapPin className="w-4 h-4 text-gold mt-1 flex-shrink-0" />
                             <div className="flex-1 min-w-0">

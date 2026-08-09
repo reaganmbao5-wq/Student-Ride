@@ -110,9 +110,12 @@ const RideRequestPage = () => {
     }
   };
 
+  // Ref to track if user explicitly picked a place from search (prevents reverseGeocode from overwriting chosen landmark address)
+  const isExplicitSelectionRef = useRef(false);
+
   // Reverse Geocode whenever map stops moving (debounced)
   useEffect(() => {
-    if (isDragging) return;
+    if (isDragging || isExplicitSelectionRef.current) return;
     
     // Only geocode in pickup or dropoff steps
     if (step !== 'pickup' && step !== 'dropoff') return;
@@ -369,6 +372,7 @@ const RideRequestPage = () => {
           }}
           onDragStart={() => {
             setIsDragging(true);
+            isExplicitSelectionRef.current = false;
             setSelectedDestination(null);
           }}
           onDragEnd={() => {
@@ -454,6 +458,7 @@ const RideRequestPage = () => {
                   <AddressSearch
                     placeholder="Search for a pickup..."
                     onLocationSelect={(loc) => {
+                      isExplicitSelectionRef.current = true;
                       setMapCenter({ lat: loc.lat, lng: loc.lng });
                       setCurrentAddress(loc.address);
                       setSelectedDestination(null);
@@ -497,6 +502,7 @@ const RideRequestPage = () => {
                 <AddressSearch
                   placeholder="Search for a destination..."
                   onLocationSelect={(loc) => {
+                    isExplicitSelectionRef.current = true;
                     setMapCenter({ lat: loc.lat, lng: loc.lng });
                     setCurrentAddress(loc.address);
                     setSelectedDestination(null);
