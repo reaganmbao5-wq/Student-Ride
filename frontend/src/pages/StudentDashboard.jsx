@@ -847,19 +847,14 @@ const StudentDashboard = () => {
             {/* Yellow/Gold Circle Background */}
             <div className="relative w-56 h-56 md:w-64 md:h-64 rounded-full bg-amber-400 flex items-center justify-center mt-6 mb-2">
               {/* Top-Down Car Image (Aligned so rear roof lands right at top boundary) */}
-              <img
+              <motion.img
                 src="/car_top.png"
                 alt="Ride Car"
-                loading="eager"
-                fetchPriority="high"
-                decoding="sync"
+                initial={{ y: 0, scale: 1, opacity: 1 }}
+                animate={isDriving ? { y: 450, scale: 0.85, opacity: [1, 1, 0] } : { y: 0, scale: 1, opacity: 1 }}
+                transition={{ duration: 0.85, ease: [0.45, 0, 0.55, 1] }}
                 className="w-60 md:w-72 h-auto drop-shadow-xl z-10 select-none pointer-events-none absolute"
-                style={{
-                  top: '-10%',
-                  transform: isDriving ? 'translateY(450px) scale(0.85)' : 'translateY(0) scale(1)',
-                  opacity: isDriving ? 0 : 1,
-                  transition: isDriving ? 'transform 0.85s cubic-bezier(0.45,0,0.55,1), opacity 0.85s cubic-bezier(0.45,0,0.55,1)' : 'none',
-                }}
+                style={{ top: '-10%' }}
               />
             </div>
 
