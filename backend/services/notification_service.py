@@ -115,6 +115,21 @@ class NotificationService:
                     response = messaging.send(message_obj)
                     logger.info(f"FCM System Notification sent successfully to {user_id}: {response}")
                     success_count += 1
+                    
+                    # Record log entry
+                    try:
+                        await self.db.notification_logs.insert_one({
+                            "user_id": user_id,
+                            "role": sub.get("role", "user"),
+                            "type": type,
+                            "title": title,
+                            "body": body,
+                            "sent_via": "FCM",
+                            "created_at": datetime.now(timezone.utc).isoformat()
+                        })
+                    except Exception as log_err:
+                        logger.warn(f"Failed to log notification: {log_err}")
+
                 else:
                     # Handle standard Web Push (VAPID)
                     if not self.vapid_private_key:
@@ -131,9 +146,24 @@ class NotificationService:
                     )
                     success_count += 1
                     
+                    # Record log entry
+                    try:
+                        title = payload.get("title") or "Mulu Rides Update"
+                        body = payload.get("body") or payload.get("message") or "You have a new update."
+                        await self.db.notification_logs.insert_one({
+                            "user_id": user_id,
+                            "role": sub.get("role", "user"),
+                            "type": type,
+                            "title": title,
+                            "body": body,
+                            "sent_via": "WebPush",
+                            "created_at": datetime.now(timezone.utc).isoformat()
+                        })
+                    except Exception as log_err:
+                        logger.warn(f"Failed to log notification: {log_err}")
+
             except WebPushException as ex:
                 logger.error(f"WebPush error sending to {user_id}: {repr(ex)}")
-                # If subscription is expired/invalid (410, 404), remove it
                 if ex.response is not None and ex.response.status_code in [404, 410]:
                     await self.db.push_subscriptions.delete_one({"_id": sub["_id"]})
                     logger.info(f"Removed invalid push subscription for user {user_id}")

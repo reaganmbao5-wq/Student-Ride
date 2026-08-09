@@ -4040,6 +4040,57 @@ async def subscribe_push_notifications(
         logger.error(f"Error saving subscription for {user.get('id')}: {e}")
         raise HTTPException(status_code=500, detail="Failed to save push subscription")
 
+@api_router.post("/notifications/unsubscribe")
+async def unsubscribe_push_notifications(
+    user: dict = Depends(get_current_user)
+):
+    try:
+        user_id = user["id"]
+        result = await db.push_subscriptions.delete_many({"user_id": user_id})
+        return {"status": "success", "message": f"Removed {result.deleted_count} subscriptions"}
+    except Exception as e:
+        logger.error(f"Error unsubscribing for {user.get('id')}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to unsubscribe")
+
+@api_router.get("/notifications/stats")
+async def get_notification_stats(
+    user: dict = Depends(get_current_user)
+):
+    try:
+        user_id = user["id"]
+        # User notification count & recent logs
+        user_count = await db.notification_logs.count_documents({"user_id": user_id})
+        recent_cursor = db.notification_logs.find({"user_id": user_id}).sort("created_at", -1).limit(10)
+        recent_logs = await recent_cursor.to_list(length=10)
+        
+        # Clean Mongo _id
+        for log in recent_logs:
+            if "_id" in log:
+                log["id"] = str(log.pop("_id"))
+
+        # Admin global counts breakdown
+        student_count = await db.notification_logs.count_documents({"role": "student"})
+        driver_count = await db.notification_logs.count_documents({"role": "driver"})
+        admin_count = await db.notification_logs.count_documents({"role": "admin"})
+
+        return {
+            "user_delivered_count": user_count,
+            "recent_logs": recent_logs,
+            "role_breakdown": {
+                "student": student_count,
+                "driver": driver_count,
+                "admin": admin_count,
+                "total_pushed": student_count + driver_count + admin_count
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error getting notification stats: {e}")
+        return {
+            "user_delivered_count": 0,
+            "recent_logs": [],
+            "role_breakdown": {"student": 0, "driver": 0, "admin": 0, "total_pushed": 0}
+        }
+
 @api_router.post("/admin/notifications/broadcast")
 async def broadcast_notification(
     request: AdminBroadcastRequest,

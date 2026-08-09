@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { 
   User, Mail, Phone, Shield, Car, LogOut, Trash2, Loader2, 
-  Camera, ChevronRight, Check, Edit3, Bell, Vibrate, CheckCircle2, ShieldAlert, X
+  Camera, ChevronRight, Check, Edit3, Bell, Vibrate, CheckCircle2, ShieldAlert, X, Activity, Radio
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
@@ -46,9 +46,17 @@ const ProfilePage = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   // Push & Vibration Settings State
+  const [isPushEnabled, setIsPushEnabled] = useState(() => localStorage.getItem('mulu_push_enabled') !== 'false');
   const [permissionState, setPermissionState] = useState('default');
   const [isSubscribing, setIsSubscribing] = useState(false);
   const [vibrationsEnabled, setVibrationsEnabled] = useState(() => haptics.isVibrationEnabled());
+
+  // Notification Stats State
+  const [notificationStats, setNotificationStats] = useState({
+    user_delivered_count: 0,
+    recent_logs: [],
+    role_breakdown: { student: 0, driver: 0, admin: 0, total_pushed: 0 }
+  });
 
   // Delete Account State
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -66,9 +74,10 @@ const ProfilePage = () => {
     }
   }, [user]);
 
-  // Check Push Notification status
+  // Fetch Notification Stats & Status
   useEffect(() => {
-    const checkPush = async () => {
+    const checkPushAndFetchStats = async () => {
+      // 1. Check permission status
       if (Capacitor.isNativePlatform()) {
         try {
           const perm = await PushNotifications.checkPermissions();
@@ -79,9 +88,19 @@ const ProfilePage = () => {
       } else if ('Notification' in window) {
         setPermissionState(Notification.permission);
       }
+
+      // 2. Fetch notification count & stats from backend
+      try {
+        const res = await api.get('/notifications/stats');
+        if (res.data) {
+          setNotificationStats(res.data);
+        }
+      } catch (err) {
+        console.warn('Could not fetch notification stats:', err);
+      }
     };
-    checkPush();
-  }, []);
+    checkPushAndFetchStats();
+  }, [api]);
 
   const handleLogout = () => {
     haptics.tap();
@@ -150,17 +169,28 @@ const ProfilePage = () => {
     }
   };
 
+  // Toggle Push Notifications ON or OFF
   const handleTogglePushNotifications = async () => {
     haptics.tap();
-
-    if (permissionState === 'granted') {
-      toast.info('Notifications are active on this device.');
-      return;
-    }
-
     setIsSubscribing(true);
 
     try {
+      // If currently enabled, TURN IT OFF
+      if (isPushEnabled && permissionState === 'granted') {
+        try {
+          await api.post('/notifications/unsubscribe');
+        } catch (e) {
+          console.warn('Unsubscribe API notice:', e);
+        }
+        localStorage.setItem('mulu_push_enabled', 'false');
+        setIsPushEnabled(false);
+        setPermissionState('disabled');
+        toast.info('Live Push Notifications Turned OFF');
+        setIsSubscribing(false);
+        return;
+      }
+
+      // Turn IT ON
       if (Capacitor.isNativePlatform()) {
         const hasPermission = await PermissionsService.requestPushPermission();
         if (!hasPermission) {
@@ -179,8 +209,10 @@ const ProfilePage = () => {
               keys: { p256dh: "native", auth: "native" }
             });
             haptics.pinDrop();
-            toast.success('Live Push Notifications Enabled!');
+            localStorage.setItem('mulu_push_enabled', 'true');
+            setIsPushEnabled(true);
             setPermissionState('granted');
+            toast.success('Live Push Notifications Enabled!');
           } catch (err) {
             console.error('Failed backend subscribe:', err);
           }
@@ -227,8 +259,10 @@ const ProfilePage = () => {
         await api.post('/notifications/subscribe', subscription);
 
         haptics.pinDrop();
-        toast.success('Live Push Notifications Enabled!');
+        localStorage.setItem('mulu_push_enabled', 'true');
+        setIsPushEnabled(true);
         setPermissionState('granted');
+        toast.success('Live Push Notifications Enabled!');
       }
     } catch (error) {
       console.error('Push activation error:', error);
@@ -401,6 +435,8 @@ const ProfilePage = () => {
     return ReactDOM.createPortal(modalJSX, document.body);
   };
 
+  const isPushActive = isPushEnabled && permissionState === 'granted';
+
   return (
     <Layout>
       <div className="p-4 md:p-8 space-y-6 max-w-xl mx-auto pb-24" data-testid="profile-page">
@@ -519,26 +555,26 @@ const ProfilePage = () => {
             {/* Push Notifications Row with Standard Native Toggle Switch */}
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3.5">
-                <Bell className={`w-5 h-5 ${permissionState === 'granted' ? 'text-emerald-400' : 'text-zinc-400'}`} />
+                <Bell className={`w-5 h-5 ${isPushActive ? 'text-emerald-400' : 'text-zinc-400'}`} />
                 <div>
                   <p className="text-sm font-semibold text-white">Live Push Notifications</p>
                   <p className="text-xs text-zinc-400">Driver arrival alerts & ride updates</p>
                 </div>
               </div>
 
-              {/* Authentic Mobile Toggle Switch */}
+              {/* Authentic Mobile Toggle Switch (Identical to Vibrations toggle) */}
               <button
                 type="button"
                 onClick={handleTogglePushNotifications}
                 disabled={isSubscribing}
                 className={`relative w-12 h-7 rounded-full p-1 transition-colors duration-200 focus:outline-none cursor-pointer ${
-                  permissionState === 'granted' ? 'bg-emerald-500' : 'bg-zinc-700'
+                  isPushActive ? 'bg-emerald-500' : 'bg-zinc-700'
                 }`}
-                title={permissionState === 'granted' ? 'Notifications active' : 'Click to enable notifications'}
+                title={isPushActive ? 'Push notifications ON (Click to turn off)' : 'Push notifications OFF (Click to turn on)'}
               >
                 <div
                   className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-200 ${
-                    permissionState === 'granted' ? 'translate-x-5' : 'translate-x-0'
+                    isPushActive ? 'translate-x-5' : 'translate-x-0'
                   }`}
                 />
               </button>
@@ -554,7 +590,7 @@ const ProfilePage = () => {
                 </div>
               </div>
 
-              {/* Authentic Mobile Toggle Switch */}
+              {/* Authentic Mobile Toggle Switch (Identical to Push toggle) */}
               <button
                 type="button"
                 onClick={handleToggleVibrations}
@@ -570,8 +606,48 @@ const ProfilePage = () => {
                 />
               </button>
             </div>
+
+            {/* Notification History & Metrics Row */}
+            <div className="p-4 flex items-center justify-between bg-zinc-950/40">
+              <div className="flex items-center gap-3.5">
+                <Activity className="w-5 h-5 text-emerald-400" />
+                <div>
+                  <p className="text-sm font-semibold text-white">Notifications Delivered to You</p>
+                  <p className="text-xs text-zinc-400">
+                    {notificationStats.user_delivered_count > 0 
+                      ? `${notificationStats.user_delivered_count} Pushed Live Alerts Received`
+                      : 'Listening for live notifications...'}
+                  </p>
+                </div>
+              </div>
+
+              <span className="text-xs font-mono font-extrabold bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/20">
+                {notificationStats.user_delivered_count} Delivered
+              </span>
+            </div>
           </div>
         </div>
+
+        {/* Global Platform Push Metrics Breakdown (For Admins & Drivers) */}
+        {(isAdmin || isSuperAdmin || isDriver) && (
+          <div className="space-y-2">
+            <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-2">Platform Push Delivery Metrics</p>
+            <div className="bg-zinc-900 border border-zinc-800/90 rounded-3xl p-4 grid grid-cols-3 gap-3 text-center">
+              <div className="p-3 bg-zinc-950 rounded-2xl border border-zinc-800">
+                <p className="text-[10px] font-bold text-zinc-400 uppercase">Student Alerts</p>
+                <p className="text-lg font-bold text-gold mt-1">{notificationStats.role_breakdown.student}</p>
+              </div>
+              <div className="p-3 bg-zinc-950 rounded-2xl border border-zinc-800">
+                <p className="text-[10px] font-bold text-zinc-400 uppercase">Driver Alerts</p>
+                <p className="text-lg font-bold text-emerald-400 mt-1">{notificationStats.role_breakdown.driver}</p>
+              </div>
+              <div className="p-3 bg-zinc-950 rounded-2xl border border-zinc-800">
+                <p className="text-[10px] font-bold text-zinc-400 uppercase">Total Pushed</p>
+                <p className="text-lg font-bold text-white mt-1">{notificationStats.role_breakdown.total_pushed}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Blocked Permission Warning Notice */}
         {permissionState === 'denied' && (
