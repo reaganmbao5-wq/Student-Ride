@@ -89,6 +89,18 @@ export const haptics = {
   // Ride Completed celebration
   rideCompleted: () => safeVibrate(VIBRATION_PATTERNS.ride_completed),
 
+  // New ride request incoming (Driver Dashboard alert)
+  newRideRequest: () => safeVibrate(VIBRATION_PATTERNS.new_ride_request || [30, 50, 30, 50, 30]),
+
+  // Trip started
+  tripStarted: () => safeVibrate(VIBRATION_PATTERNS.ride_started || [20, 30, 20]),
+
+  // Trip completed celebration
+  tripCompleted: () => safeVibrate(VIBRATION_PATTERNS.ride_completed || [40, 60, 40]),
+
+  // Ride cancelled
+  rideCancelled: () => safeVibrate(VIBRATION_PATTERNS.ride_cancelled || [80, 40, 80]),
+
   // Warning / Danger / SOS
   warning: () => safeVibrate(VIBRATION_PATTERNS.emergency_sos),
 };
