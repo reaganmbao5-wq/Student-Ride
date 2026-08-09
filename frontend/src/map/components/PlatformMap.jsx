@@ -219,7 +219,7 @@ export const PlatformMap = ({
           mode={cameraMode}
           driverLocation={driverLocation}
           routeBounds={routeBounds || bounds}
-          selectionLocation={selectionLocation || center}
+          selectionLocation={selectionLocation}
           bottomPadding={bottomPadding}
         />
 

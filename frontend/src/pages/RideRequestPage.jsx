@@ -41,6 +41,7 @@ const RideRequestPage = () => {
   
   const [destinations, setDestinations] = useState([]);
   const [selectedDestination, setSelectedDestination] = useState(null);
+  const [selectionTarget, setSelectionTarget] = useState(null);
   const [fareEstimate, setFareEstimate] = useState(null);
   const [routeGeometry, setRouteGeometry] = useState(null);
   
@@ -235,6 +236,8 @@ const RideRequestPage = () => {
     if (step === 'pickup') {
       setPickup(loc);
       setStep('dropoff');
+      isExplicitSelectionRef.current = false;
+      setCurrentAddress('');
     } else if (step === 'dropoff') {
       setDropoff(loc);
       setStep('confirm');
@@ -354,6 +357,7 @@ const RideRequestPage = () => {
       <div className={step === 'confirm' && isCollapsing ? "absolute inset-0 z-0" : "flex-1 relative z-0"}>
         <PlatformMap 
           center={mapCenter}
+          selectionLocation={selectionTarget}
           bounds={bounds}
           bottomPadding={step === 'confirm' ? 140 : 0}
           cameraMode={
@@ -367,6 +371,7 @@ const RideRequestPage = () => {
           onDragStart={() => {
             setIsDragging(true);
             isExplicitSelectionRef.current = false;
+            setSelectionTarget(null);
             setSelectedDestination(null);
           }}
           onDragEnd={() => {
@@ -454,6 +459,7 @@ const RideRequestPage = () => {
                     onLocationSelect={(loc) => {
                       suppressConfirmUntilRef.current = Date.now() + 600;
                       isExplicitSelectionRef.current = true;
+                      setSelectionTarget({ lat: loc.lat, lng: loc.lng, ts: Date.now() });
                       setMapCenter({ lat: loc.lat, lng: loc.lng });
                       setCurrentAddress(loc.address);
                       setSelectedDestination(null);
@@ -499,8 +505,10 @@ const RideRequestPage = () => {
                   onLocationSelect={(loc) => {
                     suppressConfirmUntilRef.current = Date.now() + 600;
                     isExplicitSelectionRef.current = true;
+                    setSelectionTarget({ lat: loc.lat, lng: loc.lng, ts: Date.now() });
                     setMapCenter({ lat: loc.lat, lng: loc.lng });
                     setCurrentAddress(loc.address);
+                    setDropoff({ lat: loc.lat, lng: loc.lng, address: loc.address });
                     setSelectedDestination(null);
                   }}
                 />
