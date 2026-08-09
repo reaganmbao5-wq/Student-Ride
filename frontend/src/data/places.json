@@ -1,950 +1,14 @@
 [
   {
-    "id": 603,
-    "display_name": "19 Station - Kabwe",
-    "category": "transportation service",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 606,
-    "display_name": "2wo Creative Digital",
+    "id": 1,
+    "display_name": "Estadio Pitch 2",
     "category": "university",
-    "lat": -14.2923121,
-    "lon": 28.5470054,
+    "lat": -14.2965992,
+    "lon": 28.5651307,
     "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 523,
-    "display_name": "ALL STREET",
-    "category": "shop",
-    "lat": -14.442697,
-    "lon": 28.445551,
-    "source": "gm"
-  },
-  {
-    "id": 20,
-    "display_name": "Abbsa",
-    "category": "bank",
-    "lat": -14.441184,
-    "lon": 28.442637,
-    "source": "osm"
-  },
-  {
-    "id": 21,
-    "display_name": "Absa | Bank | Kabwe",
-    "category": "bank",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 119,
-    "display_name": "Accounts",
-    "category": "educational_institution",
-    "lat": -14.445286,
-    "lon": 28.467186,
-    "source": "osm"
-  },
-  {
-    "id": 126,
-    "display_name": "Agora microfinance Zambia",
-    "category": "financial institution",
-    "lat": -14.449621,
-    "lon": 28.426299,
-    "source": "gm"
-  },
-  {
-    "id": 597,
-    "display_name": "Airtel Office Kabwe",
-    "category": "telecommunication",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 446,
-    "display_name": "Angeles Park School",
-    "category": "school",
-    "lat": -13.948025,
-    "lon": 28.663835,
-    "source": "osm"
-  },
-  {
-    "id": 599,
-    "display_name": "Apple Truck Parking",
-    "category": "transport",
-    "lat": -14.2848299,
-    "lon": 28.5503766,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 22,
-    "display_name": "Atlas mara",
-    "category": "bank",
-    "lat": -14.441931,
-    "lon": 28.443235,
-    "source": "gm"
-  },
-  {
-    "id": 447,
-    "display_name": "Aunty Getrude Community School",
-    "category": "school",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 60,
-    "display_name": "Autoworld",
-    "category": "car_repair",
-    "lat": -13.973173,
-    "lon": 28.679833,
-    "source": "osm"
-  },
-  {
-    "id": 283,
-    "display_name": "B M Kalulu",
-    "category": "hotel",
-    "lat": -13.994071,
-    "lon": 28.686027,
-    "source": "gm"
-  },
-  {
-    "id": 563,
-    "display_name": "BLESSINGS SHOP// RUBESAM ENTREPRISES",
-    "category": "supermarket",
-    "lat": -14.443629,
-    "lon": 28.440283,
-    "source": "gm"
-  },
-  {
-    "id": 564,
-    "display_name": "BM Distributors Ltd",
-    "category": "supermarket",
-    "lat": -14.44296,
-    "lon": 28.445932,
-    "source": "osm"
-  },
-  {
-    "id": 361,
-    "display_name": "BROKEN HILL CHEMIST LTD",
-    "category": "pharmacy",
-    "lat": -14.442743,
-    "lon": 28.443342,
-    "source": "gm"
-  },
-  {
-    "id": 407,
-    "display_name": "Bamboo Garden",
-    "category": "restaurant",
-    "lat": -14.388301,
-    "lon": 28.497557,
-    "source": "osm"
-  },
-  {
-    "id": 204,
-    "display_name": "Bangweulu hostel",
-    "category": "hostel",
-    "lat": -14.296907,
-    "lon": 28.561007,
-    "source": "gm"
-  },
-  {
-    "id": 36,
-    "display_name": "Bankers Nest",
-    "category": "bar",
-    "lat": -14.44644,
-    "lon": 28.457746,
-    "source": "osm"
-  },
-  {
-    "id": 339,
-    "display_name": "Bankers Shopping Centre",
-    "category": "mall",
-    "lat": -14.446278,
-    "lon": 28.458069,
-    "source": "gm"
-  },
-  {
-    "id": 23,
-    "display_name": "Barclays",
-    "category": "bank",
-    "lat": -14.441158,
-    "lon": 28.442665,
-    "source": "gm"
-  },
-  {
-    "id": 8,
-    "display_name": "Barclays Bank",
-    "category": "atm",
-    "lat": -13.977868,
-    "lon": 28.684811,
-    "source": "gm"
-  },
-  {
-    "id": 9,
-    "display_name": "Barclays Bank ATM",
-    "category": "atm",
-    "lat": -13.971961,
-    "lon": 28.678518,
-    "source": "gm"
-  },
-  {
-    "id": 24,
-    "display_name": "Barclays Bank Kapiri",
-    "category": "bank",
-    "lat": -13.971896,
-    "lon": 28.678485,
-    "source": "gm"
-  },
-  {
-    "id": 522,
-    "display_name": "Bata",
-    "category": "shoes",
-    "lat": -14.443964,
-    "lon": 28.443116,
-    "source": "osm"
-  },
-  {
-    "id": 25,
-    "display_name": "Bayport Financial Services",
-    "category": "bank",
-    "lat": -13.969655,
-    "lon": 28.677849,
-    "source": "gm"
-  },
-  {
-    "id": 350,
-    "display_name": "Be wize Finn services",
-    "category": "money order service",
-    "lat": -13.964418,
-    "lon": 28.675057,
-    "source": "gm"
-  },
-  {
-    "id": 607,
-    "display_name": "Big daddy 🧔",
-    "category": "university",
-    "lat": -14.2916474,
-    "lon": 28.5624921,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 408,
-    "display_name": "Bikers Pub",
-    "category": "restaurant",
-    "lat": -14.446555,
-    "lon": 28.457357,
-    "source": "gm"
-  },
-  {
-    "id": 192,
-    "display_name": "Blood Bank - Kabwe Central Hospital",
-    "category": "hospital",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 62,
-    "display_name": "Blossom surgery and clinic",
-    "category": "clinic",
-    "lat": -14.460182,
-    "lon": 28.45485,
-    "source": "gm"
-  },
-  {
-    "id": 205,
-    "display_name": "Boarding house (the Silungwe's)",
-    "category": "hostel",
-    "lat": -14.2950237,
-    "lon": 28.5490499,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 52,
-    "display_name": "Bolvic Cement Sales",
-    "category": "building_materials",
-    "lat": -14.443161,
-    "lon": 28.439083,
-    "source": "osm"
-  },
-  {
-    "id": 409,
-    "display_name": "Booze Cafe",
-    "category": "restaurant",
-    "lat": -14.447143,
-    "lon": 28.457366,
-    "source": "gm"
-  },
-  {
-    "id": 662,
-    "display_name": "Bossan Pub & Grill",
-    "category": "location",
-    "lat": -14.2851087,
-    "lon": 28.5518553,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 410,
-    "display_name": "Braiq Cafe",
-    "category": "restaurant",
-    "lat": -13.977868,
-    "lon": 28.684811,
-    "source": "gm"
-  },
-  {
-    "id": 19,
-    "display_name": "Bravo",
-    "category": "bakery",
-    "lat": -13.926173,
-    "lon": 28.666714,
-    "source": "osm"
-  },
-  {
-    "id": 123,
-    "display_name": "Bremus",
-    "category": "fast_food",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 448,
-    "display_name": "Broadway Basic School",
-    "category": "school",
-    "lat": -14.443455,
-    "lon": 28.45137,
-    "source": "osm"
-  },
-  {
-    "id": 111,
-    "display_name": "Broadway School",
-    "category": "educational institution",
-    "lat": -14.442988,
-    "lon": 28.451185,
-    "source": "gm"
-  },
-  {
-    "id": 360,
-    "display_name": "Broken Hill Chemist",
-    "category": "pharmacy",
-    "lat": -14.442123,
-    "lon": 28.44523,
-    "source": "gm"
-  },
-  {
-    "id": 94,
-    "display_name": "Broken Hill College of Applied Sciences and Education",
-    "category": "college",
-    "lat": -14.450165,
-    "lon": 28.431337,
-    "source": "gm"
-  },
-  {
-    "id": 449,
-    "display_name": "Buyantanshi Primary School",
-    "category": "school",
-    "lat": -14.441911,
-    "lon": 28.465305,
-    "source": "osm"
-  },
-  {
-    "id": 450,
-    "display_name": "Bwacha Secondary School",
-    "category": "school",
-    "lat": -14.389759,
-    "lon": 28.438678,
-    "source": "gm"
-  },
-  {
-    "id": 565,
-    "display_name": "CAFE BONJOUR",
-    "category": "supermarket",
-    "lat": -13.97189,
-    "lon": 28.679192,
-    "source": "gm"
-  },
-  {
-    "id": 567,
-    "display_name": "CHEAP CHOICE GROCERIES",
-    "category": "supermarket",
-    "lat": -14.457975,
-    "lon": 28.448425,
-    "source": "gm"
-  },
-  {
-    "id": 214,
-    "display_name": "CKAT BH",
-    "category": "hostel",
-    "lat": -14.2810934,
-    "lon": 28.5572293,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 379,
-    "display_name": "CMML Chindwin",
-    "category": "place_of_worship",
-    "lat": -14.403094,
-    "lon": 28.482179,
-    "source": "osm"
-  },
-  {
-    "id": 411,
-    "display_name": "Cafe Choconella",
-    "category": "restaurant",
-    "lat": -14.428506,
-    "lon": 28.451357,
-    "source": "gm"
-  },
-  {
-    "id": 412,
-    "display_name": "Cafeteria",
-    "category": "restaurant",
-    "lat": -14.297131,
-    "lon": 28.5569282,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 99,
-    "display_name": "Camco",
-    "category": "company",
-    "lat": -13.952582,
-    "lon": 28.667464,
-    "source": "osm"
-  },
-  {
-    "id": 171,
-    "display_name": "Caracas lodge",
-    "category": "guest_house",
-    "lat": -13.929739,
-    "lon": 28.667048,
-    "source": "osm"
-  },
-  {
-    "id": 284,
-    "display_name": "Caracus Lodge",
-    "category": "hotel",
-    "lat": -13.929536,
-    "lon": 28.666445,
-    "source": "gm"
-  },
-  {
-    "id": 451,
-    "display_name": "Caritas Convent Secondary School",
-    "category": "school",
-    "lat": -14.438562,
-    "lon": 28.446842,
-    "source": "gm"
-  },
-  {
-    "id": 452,
-    "display_name": "Carritas Girls Convent School",
-    "category": "school",
-    "lat": -14.438348,
-    "lon": 28.447593,
-    "source": "osm"
-  },
-  {
-    "id": 37,
-    "display_name": "Cashill Park",
-    "category": "bar",
-    "lat": -14.445802,
-    "lon": 28.457891,
-    "source": "osm"
-  },
-  {
-    "id": 63,
-    "display_name": "Central Division Police Clinic",
-    "category": "clinic",
-    "lat": -14.435713,
-    "lon": 28.444342,
-    "source": "osm"
-  },
-  {
-    "id": 395,
-    "display_name": "Central Police Head Quarters",
-    "category": "police",
-    "lat": -14.436287,
-    "lon": 28.446499,
-    "source": "osm"
-  },
-  {
-    "id": 193,
-    "display_name": "Central Provincial Health Office - Pharmacy store",
-    "category": "hospital",
-    "lat": -14.431304,
-    "lon": 28.429441,
-    "source": "gm"
-  },
-  {
-    "id": 566,
-    "display_name": "Central agro business services ltd",
-    "category": "supermarket",
-    "lat": -14.445865,
-    "lon": 28.457427,
-    "source": "gm"
-  },
-  {
-    "id": 362,
-    "display_name": "Centralmed Pharmacy Kabwe",
-    "category": "pharmacy",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 103,
-    "display_name": "Chabby's Store",
-    "category": "convenience",
-    "lat": -14.441423,
-    "lon": 28.466307,
-    "source": "osm"
-  },
-  {
-    "id": 206,
-    "display_name": "Chambeshi Hostel",
-    "category": "hostel",
-    "lat": -14.2980485,
-    "lon": 28.5601737,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 285,
-    "display_name": "Chanika Lodge",
-    "category": "hotel",
-    "lat": -13.968096,
-    "lon": 28.677114,
-    "source": "osm"
-  },
-  {
-    "id": 453,
-    "display_name": "Charitable Christian School",
-    "category": "school",
-    "lat": -13.976491,
-    "lon": 28.669539,
-    "source": "osm"
-  },
-  {
-    "id": 207,
-    "display_name": "Chavuma Hostel",
-    "category": "hostel",
-    "lat": -14.2943096,
-    "lon": 28.5538316,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 64,
-    "display_name": "Chawama Clinic",
-    "category": "clinic",
-    "lat": -13.940839,
-    "lon": 28.667259,
-    "source": "osm"
-  },
-  {
-    "id": 454,
-    "display_name": "Chawanangwa academy school",
-    "category": "school",
-    "lat": -13.970231,
-    "lon": 28.672071,
-    "source": "gm"
-  },
-  {
-    "id": 455,
-    "display_name": "Chawanga Academy",
-    "category": "school",
-    "lat": -13.970315,
-    "lon": 28.67211,
-    "source": "osm"
-  },
-  {
-    "id": 208,
-    "display_name": "Chibombo",
-    "category": "hostel",
-    "lat": -14.2967832,
-    "lon": 28.5554353,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 286,
-    "display_name": "Chibombo hostel",
-    "category": "hotel",
-    "lat": -14.2967832,
-    "lon": 28.5554353,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 631,
-    "display_name": "Chika High School",
-    "category": "unknown",
-    "lat": -13.972839,
-    "lon": 28.690188,
-    "source": "gm"
-  },
-  {
-    "id": 456,
-    "display_name": "Chilekwa School",
-    "category": "school",
-    "lat": -13.985826,
-    "lon": 28.676344,
-    "source": "osm"
-  },
-  {
-    "id": 65,
-    "display_name": "Chililalila Clinic",
-    "category": "clinic",
-    "lat": -14.443453,
-    "lon": 28.35484,
-    "source": "osm"
-  },
-  {
-    "id": 396,
-    "display_name": "Chililalila Police Post",
-    "category": "police",
-    "lat": -14.448362,
-    "lon": 28.401737,
-    "source": "osm"
-  },
-  {
-    "id": 43,
-    "display_name": "Chimz Vista Lodge",
-    "category": "bed & breakfast",
-    "lat": -14.41791,
-    "lon": 28.474987,
-    "source": "gm"
-  },
-  {
-    "id": 210,
-    "display_name": "Chipata",
-    "category": "hostel",
-    "lat": -14.2939133,
-    "lon": 28.5553192,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 211,
-    "display_name": "Chisambo Hostel",
-    "category": "hostel",
-    "lat": -14.2950297,
-    "lon": 28.5561634,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 457,
-    "display_name": "Chisekela Balanda A Child In Distress School",
-    "category": "school",
-    "lat": -13.975641,
-    "lon": 28.678042,
-    "source": "osm"
-  },
-  {
-    "id": 212,
-    "display_name": "Choma",
-    "category": "hostel",
-    "lat": -14.2938142,
-    "lon": 28.5554355,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 213,
-    "display_name": "Chongwe Hostel",
-    "category": "hostel",
-    "lat": -14.2957051,
-    "lon": 28.5548368,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 340,
-    "display_name": "Choppies",
-    "category": "supermarket",
-    "lat": -14.442391,
-    "lon": 28.45327,
-    "source": "gm"
-  },
-  {
-    "id": 66,
-    "display_name": "Chowa Health centre",
-    "category": "clinic",
-    "lat": -14.459491,
-    "lon": 28.443445,
-    "source": "gm"
-  },
-  {
-    "id": 397,
-    "display_name": "Chowa Police Station",
-    "category": "police",
-    "lat": -14.452744,
-    "lon": 28.449109,
-    "source": "osm"
-  },
-  {
-    "id": 378,
-    "display_name": "Christ Embassy Kabwe",
-    "category": "place_of_worship",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 598,
-    "display_name": "Civic Centre",
-    "category": "townhall",
-    "lat": -14.44426,
-    "lon": 28.446448,
-    "source": "osm"
-  },
-  {
-    "id": 358,
-    "display_name": "Clayton Park",
-    "category": "park",
-    "lat": -14.437651,
-    "lon": 28.44336,
-    "source": "osm"
-  },
-  {
-    "id": 458,
-    "display_name": "Clayton School",
-    "category": "school",
-    "lat": -13.979366,
-    "lon": 28.664904,
-    "source": "osm"
-  },
-  {
-    "id": 524,
-    "display_name": "Cliff Cuts and stationery",
-    "category": "shop",
-    "lat": -13.966506,
-    "lon": 28.675761,
-    "source": "gm"
-  },
-  {
-    "id": 187,
-    "display_name": "Clinic-24 Medical Centre",
-    "category": "health consultant",
-    "lat": -13.97681,
-    "lon": 28.688205,
-    "source": "gm"
-  },
-  {
-    "id": 413,
-    "display_name": "Coffee Mug Café",
-    "category": "restaurant",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 608,
-    "display_name": "Computer Lab",
-    "category": "university",
-    "lat": -14.2948358,
-    "lon": 28.5603023,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 134,
-    "display_name": "Continental Oils Gas station",
-    "category": "fuel",
-    "lat": -13.925925,
-    "lon": 28.666723,
-    "source": "gm"
-  },
-  {
-    "id": 525,
-    "display_name": "Copykat prosper",
-    "category": "shop",
-    "lat": -14.443184,
-    "lon": 28.439879,
-    "source": "gm"
-  },
-  {
-    "id": 526,
-    "display_name": "Couple Store Kabwe",
-    "category": "shop",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 609,
-    "display_name": "Crocscity by c4kt",
-    "category": "university",
-    "lat": -14.2803106,
-    "lon": 28.5511154,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 663,
-    "display_name": "Crosscity by c4kld",
-    "category": "location",
-    "lat": -14.2778,
-    "lon": 28.551,
-    "source": "geojson_verified"
-  },
-  {
-    "id": 569,
-    "display_name": "D mark",
-    "category": "supermarket",
-    "lat": -13.972819,
-    "lon": 28.690176,
-    "source": "gm"
-  },
-  {
-    "id": 527,
-    "display_name": "DAPP",
-    "category": "shop",
-    "lat": -13.966891,
-    "lon": 28.676602,
-    "source": "gm"
-  },
-  {
-    "id": 528,
-    "display_name": "DAPP Kabwe",
-    "category": "shop",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 460,
-    "display_name": "DOLPHIN SECONDARY SCHOOL",
-    "category": "school",
-    "lat": -13.968916,
-    "lon": 28.682874,
-    "source": "gm"
-  },
-  {
-    "id": 216,
-    "display_name": "DOSA",
-    "category": "hostel",
-    "lat": -14.445093,
-    "lon": 28.46904,
-    "source": "osm"
-  },
-  {
-    "id": 459,
-    "display_name": "Daknam School",
-    "category": "school",
-    "lat": -13.963164,
-    "lon": 28.683859,
-    "source": "osm"
-  },
-  {
-    "id": 646,
-    "display_name": "Damson",
-    "category": "veterinary",
-    "lat": -13.927416,
-    "lon": 28.667597,
-    "source": "osm"
-  },
-  {
-    "id": 414,
-    "display_name": "Debonairs Pizza Total Kapiri",
-    "category": "restaurant",
-    "lat": -13.925905,
-    "lon": 28.666718,
-    "source": "gm"
-  },
-  {
-    "id": 415,
-    "display_name": "Diggers Inn Restaurant and Pub",
-    "category": "restaurant",
-    "lat": -14.429653,
-    "lon": 28.435521,
-    "source": "gm"
-  },
-  {
-    "id": 357,
-    "display_name": "Disney",
-    "category": "nightclub",
-    "lat": -14.441197,
-    "lon": 28.448584,
-    "source": "osm"
-  },
-  {
-    "id": 334,
-    "display_name": "Dolphin Nursery School",
-    "category": "kindergarten",
-    "lat": -13.974213,
-    "lon": 28.685974,
-    "source": "gm"
-  },
-  {
-    "id": 215,
-    "display_name": "Dongwe Hostel",
-    "category": "hostel",
-    "lat": -14.2956125,
-    "lon": 28.5555469,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 345,
-    "display_name": "Dreadlocking",
-    "category": "market",
-    "lat": -13.967546,
-    "lon": 28.680313,
-    "source": "gm"
   },
   {
     "id": 2,
-    "display_name": "EJEMBI'S BOARDING HOUSES",
-    "category": "apartment",
-    "lat": -14.289055,
-    "lon": 28.546598,
-    "source": "gm"
-  },
-  {
-    "id": 529,
-    "display_name": "EMPYREAN HEALTH CHEMIST",
-    "category": "shop",
-    "lat": -14.452196,
-    "lon": 28.470661,
-    "source": "gm"
-  },
-  {
-    "id": 461,
-    "display_name": "Ebenezer Pre & Primary School",
-    "category": "school",
-    "lat": -13.925089,
-    "lon": 28.678495,
-    "source": "osm"
-  },
-  {
-    "id": 58,
-    "display_name": "Elyada Farm",
-    "category": "campground",
-    "lat": -14.494085,
-    "lon": 28.38731,
-    "source": "gm"
-  },
-  {
-    "id": 93,
-    "display_name": "Emmy's Drip Collection",
-    "category": "clothing wholesale market place",
-    "lat": -14.2929845,
-    "lon": 28.5485397,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 356,
-    "display_name": "Empire Kapiri",
-    "category": "night club",
-    "lat": -13.987304,
-    "lon": 28.684439,
-    "source": "gm"
-  },
-  {
-    "id": 135,
-    "display_name": "Engen",
-    "category": "fuel",
-    "lat": -14.441652,
-    "lon": 28.446184,
-    "source": "gm"
-  },
-  {
-    "id": 610,
     "display_name": "Engineering Department",
     "category": "university",
     "lat": -14.2977678,
@@ -952,1063 +16,15 @@
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 549,
-    "display_name": "Estadio Pitch 2",
-    "category": "sports",
-    "lat": -14.2965992,
-    "lon": 28.5651307,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 611,
-    "display_name": "Euaggelion Outreach Christain Center International",
+    "id": 3,
+    "display_name": "Mulungushi University Sports Grounds",
     "category": "university",
-    "lat": -14.2868902,
-    "lon": 28.5500648,
+    "lat": -14.2969474,
+    "lon": 28.5621773,
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 632,
-    "display_name": "Euaggelion Outreach Christian Center",
-    "category": "unknown",
-    "lat": -14.28689,
-    "lon": 28.550065,
-    "source": "gm"
-  },
-  {
-    "id": 633,
-    "display_name": "Evangelical Church Zambia Mulungushi",
-    "category": "unknown",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 380,
-    "display_name": "Evangelical Church in Zambia, Mulungushi",
-    "category": "place_of_worship",
-    "lat": -14.2878154,
-    "lon": 28.5453165,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 127,
-    "display_name": "ExpressCredit Kabwe Branch",
-    "category": "financial institution",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 288,
-    "display_name": "FARMERS REST LODGE & RESORT",
-    "category": "hotel",
-    "lat": -14.43694,
-    "lon": 28.440906,
-    "source": "gm"
-  },
-  {
-    "id": 27,
-    "display_name": "FINCA Branch",
-    "category": "bank",
-    "lat": -13.970903,
-    "lon": 28.678444,
-    "source": "gm"
-  },
-  {
-    "id": 28,
-    "display_name": "FNB",
-    "category": "bank",
-    "lat": -14.44154,
-    "lon": 28.445052,
-    "source": "osm"
-  },
-  {
-    "id": 10,
-    "display_name": "FNB ATM",
-    "category": "atm",
-    "lat": -13.971657,
-    "lon": 28.679285,
-    "source": "gm"
-  },
-  {
-    "id": 48,
-    "display_name": "Faith outfits",
-    "category": "boutique",
-    "lat": -13.968481,
-    "lon": 28.678501,
-    "source": "gm"
-  },
-  {
-    "id": 26,
-    "display_name": "Finance Bank",
-    "category": "bank",
-    "lat": -14.441937,
-    "lon": 28.443243,
-    "source": "gm"
-  },
-  {
-    "id": 462,
-    "display_name": "Flamingo Private School",
-    "category": "school",
-    "lat": -14.44235,
-    "lon": 28.457736,
-    "source": "osm"
-  },
-  {
-    "id": 531,
-    "display_name": "Forte The Butcher Shop Kapiri",
-    "category": "shop",
-    "lat": -13.965747,
-    "lon": 28.675722,
-    "source": "gm"
-  },
-  {
-    "id": 101,
-    "display_name": "Founders Apartments",
-    "category": "condominium complex",
-    "lat": -14.439332,
-    "lon": 28.443599,
-    "source": "gm"
-  },
-  {
-    "id": 172,
-    "display_name": "Fred's Guest House",
-    "category": "guest_house",
-    "lat": -14.451432,
-    "lon": 28.424347,
-    "source": "gm"
-  },
-  {
-    "id": 289,
-    "display_name": "Future Hotel",
-    "category": "hotel",
-    "lat": -14.428506,
-    "lon": 28.451357,
-    "source": "gm"
-  },
-  {
-    "id": 463,
-    "display_name": "Fyabana Early Childhood And Primary School",
-    "category": "school",
-    "lat": -13.921642,
-    "lon": 28.65966,
-    "source": "osm"
-  },
-  {
-    "id": 464,
-    "display_name": "Gilgal Christian Academy",
-    "category": "school",
-    "lat": -13.993757,
-    "lon": 28.687705,
-    "source": "osm"
-  },
-  {
-    "id": 217,
-    "display_name": "Glamorous Lodge",
-    "category": "hostel",
-    "lat": -14.452288,
-    "lon": 28.418024,
-    "source": "gm"
-  },
-  {
-    "id": 551,
-    "display_name": "Godfrey Ucar Chitalu Stadium",
-    "category": "sports",
-    "lat": -14.449781,
-    "lon": 28.44208,
-    "source": "osm"
-  },
-  {
-    "id": 290,
-    "display_name": "Golden Sonnets Hotel Limited",
-    "category": "hotel",
-    "lat": -14.442513,
-    "lon": 28.455894,
-    "source": "gm"
-  },
-  {
-    "id": 532,
-    "display_name": "Golden York Farms",
-    "category": "shop",
-    "lat": -14.2921817,
-    "lon": 28.5480831,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 291,
-    "display_name": "Gonde Lodge",
-    "category": "hotel",
-    "lat": -14.409484,
-    "lon": 28.473596,
-    "source": "osm"
-  },
-  {
-    "id": 292,
-    "display_name": "Gonde Lodge Kabwe",
-    "category": "hotel",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 465,
-    "display_name": "Grace Academy",
-    "category": "school",
-    "lat": -13.927097,
-    "lon": 28.669026,
-    "source": "osm"
-  },
-  {
-    "id": 112,
-    "display_name": "Graduation Square",
-    "category": "educational institution",
-    "lat": -14.2983256,
-    "lon": 28.5572266,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 570,
-    "display_name": "Grand Mart",
-    "category": "supermarket",
-    "lat": -14.442156,
-    "lon": 28.439605,
-    "source": "gm"
-  },
-  {
-    "id": 634,
-    "display_name": "Great North Road",
-    "category": "unknown",
-    "lat": -14.380037,
-    "lon": 28.498042,
-    "source": "osm"
-  },
-  {
-    "id": 293,
-    "display_name": "Green Grass Lodge",
-    "category": "hotel",
-    "lat": -14.446897,
-    "lon": 28.448104,
-    "source": "gm"
-  },
-  {
-    "id": 189,
-    "display_name": "Green World Health Post",
-    "category": "health_post",
-    "lat": -14.448078,
-    "lon": 28.411855,
-    "source": "osm"
-  },
-  {
-    "id": 517,
-    "display_name": "Guard room-Main Campus",
-    "category": "security",
-    "lat": -14.44591,
-    "lon": 28.467548,
-    "source": "osm"
-  },
-  {
-    "id": 363,
-    "display_name": "HEALTH HUB PAHRMACY",
-    "category": "pharmacy",
-    "lat": -14.443055,
-    "lon": 28.443539,
-    "source": "gm"
-  },
-  {
-    "id": 194,
-    "display_name": "HEALTHY LIVING MEDICAL CONSULTANCY PRIVATE CLINIC",
-    "category": "hospital",
-    "lat": -13.971942,
-    "lon": 28.681306,
-    "source": "gm"
-  },
-  {
-    "id": 612,
-    "display_name": "HK Kharngu Base",
-    "category": "university",
-    "lat": -14.2935604,
-    "lon": 28.5627913,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 382,
-    "display_name": "HOLY EUCHARIST PARISH",
-    "category": "place_of_worship",
-    "lat": -14.2909078,
-    "lon": 28.5502927,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 218,
-    "display_name": "Handima Boarding House",
-    "category": "hostel",
-    "lat": -14.2839009,
-    "lon": 28.5433754,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 46,
-    "display_name": "Harvesters Liquor Store",
-    "category": "beverages",
-    "lat": -14.442173,
-    "lon": 28.449787,
-    "source": "osm"
-  },
-  {
-    "id": 219,
-    "display_name": "Haven Boarding Houses",
-    "category": "hostel",
-    "lat": -14.2840287,
-    "lon": 28.5489785,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 364,
-    "display_name": "Healthcure pharmacy ltd",
-    "category": "pharmacy",
-    "lat": -14.442221,
-    "lon": 28.453328,
-    "source": "gm"
-  },
-  {
-    "id": 67,
-    "display_name": "Healthy Living medical consultancy",
-    "category": "clinic",
-    "lat": -13.977868,
-    "lon": 28.684811,
-    "source": "gm"
-  },
-  {
-    "id": 133,
-    "display_name": "Herspace",
-    "category": "fitness_centre",
-    "lat": -14.448558,
-    "lon": 28.449339,
-    "source": "osm"
-  },
-  {
-    "id": 466,
-    "display_name": "Highridge Secondary School",
-    "category": "school",
-    "lat": -14.44782,
-    "lon": 28.468219,
-    "source": "osm"
-  },
-  {
-    "id": 600,
-    "display_name": "Highway Truck Stop",
-    "category": "transport",
-    "lat": -14.2832577,
-    "lon": 28.5532629,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 381,
-    "display_name": "Hindu Hall",
-    "category": "place_of_worship",
-    "lat": -14.440562,
-    "lon": 28.452969,
-    "source": "osm"
-  },
-  {
-    "id": 637,
-    "display_name": "Holy Eucharist Parish Mulungushi",
-    "category": "unknown",
-    "lat": -14.2909078,
-    "lon": 28.5502927,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 336,
-    "display_name": "Homeland Executive Lodge",
-    "category": "lodging",
-    "lat": -14.445007,
-    "lon": 28.437901,
-    "source": "gm"
-  },
-  {
-    "id": 359,
-    "display_name": "Hoodcare Pharmacy Limited",
-    "category": "pharmaceutical company",
-    "lat": -13.965747,
-    "lon": 28.675722,
-    "source": "gm"
-  },
-  {
-    "id": 294,
-    "display_name": "Horizon",
-    "category": "hotel",
-    "lat": -14.441035,
-    "lon": 28.44433,
-    "source": "gm"
-  },
-  {
-    "id": 220,
-    "display_name": "Hostels",
-    "category": "hostel",
-    "lat": -14.443971,
-    "lon": 28.469275,
-    "source": "osm"
-  },
-  {
-    "id": 124,
-    "display_name": "Hungry Lion",
-    "category": "fast_food",
-    "lat": -14.441526,
-    "lon": 28.446808,
-    "source": "osm"
-  },
-  {
-    "id": 416,
-    "display_name": "Hungry Lion Kabwe",
-    "category": "restaurant",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 417,
-    "display_name": "Hungry Lion Kabwe Handymans",
-    "category": "restaurant",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 571,
-    "display_name": "IMDASS Enterpise",
-    "category": "supermarket",
-    "lat": -14.443075,
-    "lon": 28.444443,
-    "source": "gm"
-  },
-  {
-    "id": 29,
-    "display_name": "Indo-Zambia",
-    "category": "bank",
-    "lat": -14.442051,
-    "lon": 28.442626,
-    "source": "gm"
-  },
-  {
-    "id": 30,
-    "display_name": "Investrust Bank Plc, Kabwe Branch",
-    "category": "bank",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 572,
-    "display_name": "Iron laimu",
-    "category": "supermarket",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 128,
-    "display_name": "Izwe Kabwe",
-    "category": "financial institution",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 295,
-    "display_name": "JARIBU GUEST HOUSE",
-    "category": "hotel",
-    "lat": -13.923992,
-    "lon": 28.672841,
-    "source": "gm"
-  },
-  {
-    "id": 419,
-    "display_name": "JARIBU RESTUARANT & TAKE AWAY",
-    "category": "restaurant",
-    "lat": -13.923966,
-    "lon": 28.672898,
-    "source": "gm"
-  },
-  {
-    "id": 533,
-    "display_name": "JUST OVERSEAS LTD",
-    "category": "shop",
-    "lat": -13.965985,
-    "lon": 28.678356,
-    "source": "gm"
-  },
-  {
-    "id": 467,
-    "display_name": "Jacaranda Trust School",
-    "category": "school",
-    "lat": -14.435528,
-    "lon": 28.456201,
-    "source": "gm"
-  },
-  {
-    "id": 665,
-    "display_name": "Jack's home",
-    "category": "university",
-    "lat": -14.2915753,
-    "lon": 28.546085,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 418,
-    "display_name": "Jaqis restaurant",
-    "category": "restaurant",
-    "lat": -14.442891,
-    "lon": 28.444666,
-    "source": "gm"
-  },
-  {
-    "id": 468,
-    "display_name": "Jesus Care Ministries School",
-    "category": "school",
-    "lat": -13.988069,
-    "lon": 28.682902,
-    "source": "osm"
-  },
-  {
-    "id": 469,
-    "display_name": "John Paul II Secondary",
-    "category": "school",
-    "lat": -13.969958,
-    "lon": 28.679647,
-    "source": "osm"
-  },
-  {
-    "id": 470,
-    "display_name": "John Paul ll SrimarySschool",
-    "category": "school",
-    "lat": -13.969286,
-    "lon": 28.6795,
-    "source": "gm"
-  },
-  {
-    "id": 613,
-    "display_name": "Junkies square",
-    "category": "university",
-    "lat": -14.295899,
-    "lon": 28.554933,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 638,
-    "display_name": "Junkies square Mulungushi",
-    "category": "unknown",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 366,
-    "display_name": "KABWE PHARMACY (KAPIRI )",
-    "category": "pharmacy",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 299,
-    "display_name": "KAPIRI COUNCIL LODGE",
-    "category": "hotel",
-    "lat": -13.971062,
-    "lon": 28.680862,
-    "source": "gm"
-  },
-  {
-    "id": 75,
-    "display_name": "KNU Clinic",
-    "category": "clinic",
-    "lat": -14.446403,
-    "lon": 28.466689,
-    "source": "gm"
-  },
-  {
-    "id": 232,
-    "display_name": "KNU Mulungushi Hostel",
-    "category": "hostel",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 233,
-    "display_name": "KNU New Hostels",
-    "category": "hostel",
-    "lat": -14.443565,
-    "lon": 28.469274,
-    "source": "gm"
-  },
-  {
-    "id": 234,
-    "display_name": "KNU Zambezi Hostel",
-    "category": "hostel",
-    "lat": -14.2971638,
-    "lon": 28.555914,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 420,
-    "display_name": "Ka Café",
-    "category": "restaurant",
-    "lat": -14.452164,
-    "lon": 28.47135,
-    "source": "gm"
-  },
-  {
-    "id": 421,
-    "display_name": "Kabacho Restaurant & Sports Shop",
-    "category": "restaurant",
-    "lat": -14.441778,
-    "lon": 28.445185,
-    "source": "gm"
-  },
-  {
-    "id": 221,
-    "display_name": "Kabompo hostel",
-    "category": "hostel",
-    "lat": -14.2971352,
-    "lon": 28.5560628,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 222,
-    "display_name": "Kabwata BH",
-    "category": "hostel",
-    "lat": -14.2918587,
-    "lon": 28.5474302,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 223,
-    "display_name": "Kabwe",
-    "category": "station",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 471,
-    "display_name": "Kabwe Adventist School",
-    "category": "school",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 195,
-    "display_name": "Kabwe Central Hospital",
-    "category": "hospital",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 398,
-    "display_name": "Kabwe Central Police",
-    "category": "police",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 383,
-    "display_name": "Kabwe Central SDA Church",
-    "category": "place_of_worship",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 384,
-    "display_name": "Kabwe Chapel",
-    "category": "place_of_worship",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 385,
-    "display_name": "Kabwe Christian Centre",
-    "category": "place_of_worship",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 555,
-    "display_name": "Kabwe Fire Station",
-    "category": "station",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 196,
-    "display_name": "Kabwe General Hospital",
-    "category": "hospital",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 105,
-    "display_name": "Kabwe High Court",
-    "category": "courthouse",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 472,
-    "display_name": "Kabwe High School",
-    "category": "school",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 296,
-    "display_name": "Kabwe Hotel",
-    "category": "hotel",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 297,
-    "display_name": "Kabwe Lodge",
-    "category": "hotel",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 341,
-    "display_name": "Kabwe Mall",
-    "category": "mall",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 342,
-    "display_name": "Kabwe Mall . Kabwe Shoprite",
-    "category": "mall",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 346,
-    "display_name": "Kabwe New Market",
-    "category": "market",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 556,
-    "display_name": "Kabwe North",
-    "category": "station",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 365,
-    "display_name": "Kabwe Pharmacy",
-    "category": "pharmacy",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 404,
-    "display_name": "Kabwe Post Office",
-    "category": "post_office",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 298,
-    "display_name": "Kabwe Safari Lodge",
-    "category": "hotel",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 473,
-    "display_name": "Kabwe School of Nursing",
-    "category": "school",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 474,
-    "display_name": "Kabwe Secondary School",
-    "category": "school",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 475,
-    "display_name": "Kabwe Skills",
-    "category": "school",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 68,
-    "display_name": "Kabwe Trust Clinic",
-    "category": "clinic",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 476,
-    "display_name": "Kabwe Trust School",
-    "category": "school",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 614,
-    "display_name": "Kafubu1",
-    "category": "university",
-    "lat": -14.2959451,
-    "lon": 28.5555667,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 224,
-    "display_name": "Kafue Hostel",
-    "category": "hostel",
-    "lat": -14.445221,
-    "lon": 28.468803,
-    "source": "osm"
-  },
-  {
-    "id": 225,
-    "display_name": "Kafulafuta hostel",
-    "category": "hostel",
-    "lat": -14.2961777,
-    "lon": 28.5560977,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 69,
-    "display_name": "Kafulamase Health Post",
-    "category": "clinic",
-    "lat": -14.484411,
-    "lon": 28.512846,
-    "source": "osm"
-  },
-  {
-    "id": 226,
-    "display_name": "Kalambo hostel",
-    "category": "hostel",
-    "lat": -14.2954676,
-    "lon": 28.5548364,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 477,
-    "display_name": "Kalonga Secondary School",
-    "category": "school",
-    "lat": -14.433729,
-    "lon": 28.463946,
-    "source": "gm"
-  },
-  {
-    "id": 478,
-    "display_name": "Kalulu School",
-    "category": "school",
-    "lat": -13.969474,
-    "lon": 28.679383,
-    "source": "osm"
-  },
-  {
-    "id": 227,
-    "display_name": "Kalungwishi Hostel",
-    "category": "hostel",
-    "lat": -14.2948915,
-    "lon": 28.5547533,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 228,
-    "display_name": "Kanchibiya",
-    "category": "hostel",
-    "lat": -14.2962023,
-    "lon": 28.5553245,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 70,
-    "display_name": "Kapandwe Health Post",
-    "category": "clinic",
-    "lat": -13.977868,
-    "lon": 28.684811,
-    "source": "gm"
-  },
-  {
-    "id": 399,
-    "display_name": "Kaphiri Mposhi Police Station",
-    "category": "police",
-    "lat": -13.978279,
-    "lon": 28.683261,
-    "source": "osm"
-  },
-  {
-    "id": 479,
-    "display_name": "Kapiri Basic School",
-    "category": "school",
-    "lat": -13.966954,
-    "lon": 28.676132,
-    "source": "gm"
-  },
-  {
-    "id": 480,
-    "display_name": "Kapiri College",
-    "category": "school",
-    "lat": -13.972755,
-    "lon": 28.687994,
-    "source": "osm"
-  },
-  {
-    "id": 481,
-    "display_name": "Kapiri Combined School",
-    "category": "school",
-    "lat": -13.96543,
-    "lon": 28.681249,
-    "source": "gm"
-  },
-  {
-    "id": 482,
-    "display_name": "Kapiri Day Secondary School",
-    "category": "school",
-    "lat": -13.993078,
-    "lon": 28.679828,
-    "source": "gm"
-  },
-  {
-    "id": 113,
-    "display_name": "Kapiri Institute",
-    "category": "educational institution",
-    "lat": -13.977868,
-    "lon": 28.684811,
-    "source": "gm"
-  },
-  {
-    "id": 423,
-    "display_name": "Kapiri Lodge",
-    "category": "restaurant",
-    "lat": -13.903459,
-    "lon": 28.664863,
-    "source": "gm"
-  },
-  {
-    "id": 483,
-    "display_name": "Kapiri Modern School",
-    "category": "school",
-    "lat": -13.913038,
-    "lon": 28.666431,
-    "source": "osm"
-  },
-  {
-    "id": 197,
-    "display_name": "Kapiri Mposhi District Hospital",
-    "category": "hospital",
-    "lat": -13.896559,
-    "lon": 28.670372,
-    "source": "gm"
-  },
-  {
-    "id": 229,
-    "display_name": "Kapiri Mposhi Hostel",
-    "category": "hostel",
-    "lat": -14.2948242,
-    "lon": 28.5558066,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 558,
-    "display_name": "Kapiri Mposhi Main Bus Station",
-    "category": "station",
-    "lat": -13.967843,
-    "lon": 28.676103,
-    "source": "osm"
-  },
-  {
-    "id": 198,
-    "display_name": "Kapiri Mposhi Urban Clinic",
-    "category": "hospital",
-    "lat": -13.966316,
-    "lon": 28.677704,
-    "source": "gm"
-  },
-  {
-    "id": 168,
-    "display_name": "Kapiri Mposhi Weighbridge",
-    "category": "government",
-    "lat": -13.924892,
-    "lon": 28.665347,
-    "source": "osm"
-  },
-  {
-    "id": 422,
-    "display_name": "Kapiri bites",
-    "category": "restaurant",
-    "lat": -13.974239,
-    "lon": 28.680433,
-    "source": "gm"
-  },
-  {
-    "id": 56,
-    "display_name": "Kapiri mposhi",
-    "category": "cafe",
-    "lat": -13.963033,
-    "lon": 28.674463,
-    "source": "gm"
-  },
-  {
-    "id": 96,
-    "display_name": "Kapiri mposhi north side",
-    "category": "community center",
-    "lat": -13.963233,
-    "lon": 28.674439,
-    "source": "gm"
-  },
-  {
-    "id": 230,
-    "display_name": "Kapoche Hostel",
-    "category": "hostel",
-    "lat": -14.2950564,
-    "lon": 28.5554353,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 400,
-    "display_name": "Kaputula Police Post",
-    "category": "police",
-    "lat": -14.405959,
-    "lon": 28.461886,
-    "source": "osm"
-  },
-  {
-    "id": 231,
+    "id": 4,
     "display_name": "Kariba Hostel",
     "category": "hostel",
     "lat": -14.2972166,
@@ -2016,423 +32,63 @@
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 300,
-    "display_name": "Karopc Guest House",
-    "category": "hotel",
-    "lat": -13.964418,
-    "lon": 28.675057,
-    "source": "gm"
-  },
-  {
-    "id": 71,
-    "display_name": "Kasanda Clinic",
-    "category": "clinic",
-    "lat": -14.455327,
-    "lon": 28.426303,
-    "source": "gm"
-  },
-  {
-    "id": 401,
-    "display_name": "Kasanda Police Station",
-    "category": "police",
-    "lat": -14.446607,
-    "lon": 28.431788,
-    "source": "osm"
-  },
-  {
-    "id": 72,
-    "display_name": "Katondo Clinic",
-    "category": "clinic",
-    "lat": -14.45665,
-    "lon": 28.471726,
-    "source": "osm"
-  },
-  {
-    "id": 73,
-    "display_name": "Katukwe health post",
-    "category": "clinic",
-    "lat": -13.966247,
-    "lon": 28.677272,
-    "source": "gm"
-  },
-  {
-    "id": 97,
-    "display_name": "Kawama Rural Health Centre",
-    "category": "community health center",
-    "lat": -13.987763,
-    "lon": 28.689478,
-    "source": "gm"
-  },
-  {
-    "id": 74,
-    "display_name": "Kawama Urban Health Centre",
-    "category": "clinic",
-    "lat": -13.98788,
-    "lon": 28.689411,
-    "source": "osm"
-  },
-  {
-    "id": 534,
-    "display_name": "Kawama market place",
-    "category": "shop",
-    "lat": -13.987766,
-    "lon": 28.68862,
-    "source": "gm"
-  },
-  {
-    "id": 38,
-    "display_name": "Kifco Sports Club",
-    "category": "bar",
-    "lat": -14.43333,
-    "lon": 28.440436,
-    "source": "osm"
-  },
-  {
-    "id": 386,
-    "display_name": "Kingdom hall",
-    "category": "place_of_worship",
-    "lat": -14.2894205,
-    "lon": 28.5425086,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 639,
-    "display_name": "Kingdom hall Mulungushi",
-    "category": "unknown",
-    "lat": -14.2894205,
-    "lon": 28.5425086,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 424,
-    "display_name": "Kitchens",
-    "category": "restaurant",
-    "lat": -14.2967099,
-    "lon": 28.5542421,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 39,
-    "display_name": "Kitwe",
-    "category": "bar",
-    "lat": -13.96161,
-    "lon": 28.673458,
-    "source": "gm"
-  },
-  {
-    "id": 367,
-    "display_name": "Kizito Aid pharmacy",
-    "category": "pharmacy",
-    "lat": -14.443528,
-    "lon": 28.437795,
-    "source": "gm"
-  },
-  {
-    "id": 573,
-    "display_name": "Kmc",
-    "category": "supermarket",
-    "lat": -13.977868,
-    "lon": 28.684811,
-    "source": "gm"
-  },
-  {
-    "id": 137,
-    "display_name": "Kobil (Kabwe)",
-    "category": "fuel",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 368,
-    "display_name": "Komonic Trading",
-    "category": "pharmacy",
-    "lat": -14.442452,
-    "lon": 28.449463,
-    "source": "gm"
-  },
-  {
-    "id": 138,
-    "display_name": "Korridor Kapiri Mposhi Truck Stop",
-    "category": "fuel",
-    "lat": -13.922515,
-    "lon": 28.667634,
-    "source": "gm"
-  },
-  {
-    "id": 143,
-    "display_name": "LAKE PETROLEUM-Kabwe",
-    "category": "fuel",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 484,
-    "display_name": "Lady Academy",
-    "category": "school",
-    "lat": -13.972301,
-    "lon": 28.675304,
-    "source": "osm"
-  },
-  {
-    "id": 139,
-    "display_name": "Lake Petroieum",
-    "category": "fuel",
-    "lat": -13.96588,
-    "lon": 28.676118,
-    "source": "gm"
-  },
-  {
-    "id": 140,
-    "display_name": "Lake Petroleum",
-    "category": "fuel",
-    "lat": -14.38835,
-    "lon": 28.496011,
-    "source": "gm"
-  },
-  {
-    "id": 235,
-    "display_name": "Lalafuta Hostel",
-    "category": "hostel",
-    "lat": -14.2957486,
-    "lon": 28.5554384,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 615,
-    "display_name": "Lecturers compound SBA 1",
+    "id": 5,
+    "display_name": "Main Stores",
     "category": "university",
-    "lat": -14.2936815,
-    "lon": 28.5635382,
+    "lat": -14.2982873,
+    "lon": 28.5612281,
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 425,
-    "display_name": "Lembas Pub & Grill",
-    "category": "restaurant",
-    "lat": -13.963289,
-    "lon": 28.67471,
-    "source": "gm"
-  },
-  {
-    "id": 120,
-    "display_name": "Life Trust Empowerment",
-    "category": "educational_institution",
-    "lat": -14.47387,
-    "lon": 28.461867,
-    "source": "osm"
-  },
-  {
-    "id": 485,
-    "display_name": "Life Trust Empowerment Campus",
-    "category": "school",
-    "lat": -14.47369,
-    "lon": 28.461921,
-    "source": "osm"
-  },
-  {
-    "id": 355,
-    "display_name": "Life Trust Office",
-    "category": "ngo",
-    "lat": -14.438185,
-    "lon": 28.451924,
-    "source": "osm"
-  },
-  {
-    "id": 486,
-    "display_name": "Life Trust School Waya",
-    "category": "school",
-    "lat": -14.474658,
-    "lon": 28.461493,
-    "source": "osm"
-  },
-  {
-    "id": 487,
-    "display_name": "Little Angels School",
-    "category": "school",
-    "lat": -13.949154,
-    "lon": 28.689431,
-    "source": "osm"
-  },
-  {
-    "id": 664,
-    "display_name": "Luaggelion Outreach Christian Center",
-    "category": "location",
-    "lat": -14.2875,
-    "lon": 28.5502,
-    "source": "geojson_verified"
-  },
-  {
-    "id": 237,
-    "display_name": "Luaginga Hostel",
-    "category": "hostel",
-    "lat": -14.2967317,
-    "lon": 28.5560102,
+    "id": 6,
+    "display_name": "Transport yard",
+    "category": "university",
+    "lat": -14.2989209,
+    "lon": 28.5611498,
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 238,
-    "display_name": "Luampa Hostel",
-    "category": "hostel",
-    "lat": -14.293382,
-    "lon": 28.5533659,
+    "id": 7,
+    "display_name": "Munlungushi University Fish farm",
+    "category": "university",
+    "lat": -14.2998125,
+    "lon": 28.5613125,
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 239,
-    "display_name": "Luano Hostel",
-    "category": "hostel",
-    "lat": -14.2944989,
-    "lon": 28.555791,
+    "id": 8,
+    "display_name": "Mulungushi University School of Engineering labs",
+    "category": "university",
+    "lat": -14.2991239,
+    "lon": 28.5593006,
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 173,
-    "display_name": "Luapula Guest House",
-    "category": "hotel",
-    "lat": -14.429429,
-    "lon": 28.450747,
-    "source": "gm"
-  },
-  {
-    "id": 240,
-    "display_name": "Luapula Hostel",
+    "id": 9,
+    "display_name": "Mweru Hostel",
     "category": "hostel",
-    "lat": -14.444944,
-    "lon": 28.468808,
-    "source": "osm"
-  },
-  {
-    "id": 241,
-    "display_name": "Luapula Hostel Fiero",
-    "category": "hostel",
-    "lat": -14.2968875,
-    "lon": 28.5561719,
+    "lat": -14.2983417,
+    "lon": 28.5601437,
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 302,
-    "display_name": "Luchi Lodge",
-    "category": "hotel",
-    "lat": -14.435068,
-    "lon": 28.440954,
-    "source": "gm"
-  },
-  {
-    "id": 242,
-    "display_name": "Luena down hostel",
+    "id": 10,
+    "display_name": "Chambeshi Hostel",
     "category": "hostel",
-    "lat": -14.448494,
-    "lon": 28.445583,
-    "source": "gm"
-  },
-  {
-    "id": 243,
-    "display_name": "Lueti Hostel",
-    "category": "hostel",
-    "lat": -14.295557,
-    "lon": 28.5558241,
+    "lat": -14.2980485,
+    "lon": 28.5601737,
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 488,
-    "display_name": "Lukanda School",
-    "category": "school",
-    "lat": -13.975131,
-    "lon": 28.686523,
-    "source": "gm"
-  },
-  {
-    "id": 489,
-    "display_name": "Lukanga Basic School",
-    "category": "school",
-    "lat": -14.443987,
-    "lon": 28.44921,
-    "source": "osm"
-  },
-  {
-    "id": 535,
-    "display_name": "Lukanga Store",
-    "category": "shop",
-    "lat": -14.443003,
-    "lon": 28.445171,
-    "source": "gm"
-  },
-  {
-    "id": 244,
-    "display_name": "Lukulu Hostel",
+    "id": 11,
+    "display_name": "Tanganika Hostel",
     "category": "hostel",
-    "lat": -14.2947189,
-    "lon": 28.5548161,
+    "lat": -14.2970936,
+    "lon": 28.5601433,
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 303,
-    "display_name": "Lumuno guest house",
-    "category": "hotel",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 245,
-    "display_name": "Lundazi Hostel",
-    "category": "hostel",
-    "lat": -14.2953797,
-    "lon": 28.5557127,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 246,
-    "display_name": "Lungwe Bungwe Hostel",
-    "category": "hostel",
-    "lat": -14.2962777,
-    "lon": 28.5556844,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 247,
-    "display_name": "Luombwa Hostel",
-    "category": "hostel",
-    "lat": -14.2966008,
-    "lon": 28.5538938,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 248,
-    "display_name": "Lupande Hostel",
-    "category": "hostel",
-    "lat": -14.2948506,
-    "lon": 28.5555412,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 574,
-    "display_name": "Lusaka Matero",
-    "category": "supermarket",
-    "lat": -14.456674,
-    "lon": 28.451591,
-    "source": "gm"
-  },
-  {
-    "id": 249,
-    "display_name": "Lusaka hostel",
-    "category": "hostel",
-    "lat": -14.2944508,
-    "lon": 28.5561118,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 250,
-    "display_name": "Lusenfa Hostel",
-    "category": "hostel",
-    "lat": -14.296874,
-    "lon": 28.560147,
-    "source": "gm"
-  },
-  {
-    "id": 251,
+    "id": 12,
     "display_name": "Lusenfwa Hostel",
     "category": "hostel",
     "lat": -14.2968603,
@@ -2440,375 +96,167 @@
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 252,
-    "display_name": "Lusisi Hostel",
-    "category": "hostel",
-    "lat": -14.2952993,
-    "lon": 28.5562334,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 253,
-    "display_name": "Lwela Hostel",
-    "category": "hostel",
-    "lat": -14.2962359,
-    "lon": 28.5539667,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 428,
-    "display_name": "MEATOPIA",
-    "category": "restaurant",
-    "lat": -13.987311,
-    "lon": 28.684718,
-    "source": "gm"
-  },
-  {
-    "id": 188,
-    "display_name": "MEN'S CLINIC",
-    "category": "health consultant",
-    "lat": -13.97691,
-    "lon": 28.673643,
-    "source": "gm"
-  },
-  {
-    "id": 310,
-    "display_name": "MOONLIGHT EXECUTIVE LODGE",
-    "category": "hotel",
-    "lat": -13.918997,
-    "lon": 28.683665,
-    "source": "gm"
-  },
-  {
-    "id": 616,
-    "display_name": "MOOT COURT",
+    "id": 13,
+    "display_name": "Mulungushi University Library",
     "category": "university",
-    "lat": -14.2983162,
-    "lon": 28.5557361,
+    "lat": -14.2963302,
+    "lon": 28.5604995,
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 148,
-    "display_name": "MT. MERU-Kapiri Mposhi Weighbridge",
-    "category": "fuel",
-    "lat": -13.923687,
-    "lon": 28.666812,
-    "source": "gm"
-  },
-  {
-    "id": 493,
+    "id": 14,
     "display_name": "MU Upschool Market",
-    "category": "school",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
+    "category": "university",
+    "lat": -14.2956137,
+    "lon": 28.5610696,
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 304,
-    "display_name": "Ma 22 Lodge",
-    "category": "hotel",
-    "lat": -13.928883,
-    "lon": 28.665874,
-    "source": "osm"
-  },
-  {
-    "id": 174,
-    "display_name": "Ma22 Annex",
-    "category": "guest_house",
-    "lat": -13.928919,
-    "lon": 28.667052,
-    "source": "osm"
-  },
-  {
-    "id": 175,
-    "display_name": "Ma22 Lodge",
-    "category": "guest_house",
-    "lat": -14.488013,
-    "lon": 28.406709,
-    "source": "osm"
-  },
-  {
-    "id": 305,
-    "display_name": "Ma22 Lodge Kapiri",
-    "category": "hotel",
-    "lat": -13.928499,
-    "lon": 28.666011,
-    "source": "gm"
-  },
-  {
-    "id": 254,
-    "display_name": "Machili Hostel",
-    "category": "hostel",
-    "lat": -14.2960427,
-    "lon": 28.5560535,
+    "id": 15,
+    "display_name": "Mulungushi university main cafeteria",
+    "category": "university",
+    "lat": -14.2954375,
+    "lon": 28.5604202,
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 129,
-    "display_name": "Madison Financial Services",
-    "category": "financial institution",
-    "lat": -14.441727,
-    "lon": 28.445105,
-    "source": "gm"
-  },
-  {
-    "id": 402,
-    "display_name": "Maganda Police Post",
-    "category": "police",
-    "lat": -14.459037,
-    "lon": 28.413054,
-    "source": "osm"
-  },
-  {
-    "id": 76,
-    "display_name": "Magandanyama Health post",
-    "category": "clinic",
-    "lat": -14.457877,
-    "lon": 28.406268,
-    "source": "gm"
-  },
-  {
-    "id": 306,
-    "display_name": "Magogo Transit Lodge",
-    "category": "hotel",
-    "lat": -13.991054,
-    "lon": 28.685497,
-    "source": "gm"
-  },
-  {
-    "id": 255,
-    "display_name": "Magoye Hostel",
-    "category": "hostel",
-    "lat": -14.2965134,
-    "lon": 28.55608,
+    "id": 16,
+    "display_name": "Computer Lab",
+    "category": "university",
+    "lat": -14.2948358,
+    "lon": 28.5603023,
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 426,
-    "display_name": "Mahak Indian Restaurant",
-    "category": "restaurant",
-    "lat": -14.42434,
-    "lon": 28.463059,
-    "source": "gm"
-  },
-  {
-    "id": 186,
-    "display_name": "Mahatma Gandhi Memorial Clinic",
-    "category": "health",
-    "lat": -14.43547,
-    "lon": 28.461628,
-    "source": "gm"
-  },
-  {
-    "id": 199,
-    "display_name": "Mahatma Ghandi",
-    "category": "hospital",
-    "lat": -14.435515,
-    "lon": 28.461599,
-    "source": "osm"
-  },
-  {
-    "id": 575,
-    "display_name": "Main stores",
-    "category": "supermarket",
-    "lat": -14.2982873,
-    "lon": 28.5612281,
+    "id": 17,
+    "display_name": "Mulungushi University Great North Road Campus",
+    "category": "university",
+    "lat": -14.2950491,
+    "lon": 28.5597445,
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 77,
-    "display_name": "Makululu Health Center",
-    "category": "clinic",
-    "lat": -14.445307,
-    "lon": 28.4137,
-    "source": "osm"
-  },
-  {
-    "id": 369,
-    "display_name": "Makululu pharmacy",
-    "category": "pharmacy",
-    "lat": -14.440009,
-    "lon": 28.398439,
-    "source": "gm"
-  },
-  {
-    "id": 256,
-    "display_name": "Mansa Hostel",
-    "category": "hostel",
-    "lat": -14.2943416,
-    "lon": 28.5562827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 257,
-    "display_name": "Manyinga hostel",
-    "category": "hostel",
-    "lat": -14.2963379,
-    "lon": 28.5554201,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 490,
-    "display_name": "Mastridge Boarding and Day School",
-    "category": "school",
-    "lat": -14.456283,
-    "lon": 28.475506,
-    "source": "gm"
-  },
-  {
-    "id": 427,
-    "display_name": "Matanda's take away",
-    "category": "restaurant",
-    "lat": -13.961436,
-    "lon": 28.704692,
-    "source": "gm"
-  },
-  {
-    "id": 53,
-    "display_name": "Matilyo",
-    "category": "business broker",
-    "lat": -13.977503,
-    "lon": 28.68062,
-    "source": "gm"
-  },
-  {
-    "id": 78,
-    "display_name": "Matilyo Health Centre",
-    "category": "clinic",
-    "lat": -13.976965,
-    "lon": 28.673473,
-    "source": "osm"
-  },
-  {
-    "id": 491,
-    "display_name": "Matilyo Secondary School",
-    "category": "school",
-    "lat": -13.977527,
-    "lon": 28.669878,
-    "source": "gm"
-  },
-  {
-    "id": 307,
-    "display_name": "Mbereshi Hostel",
-    "category": "hotel",
-    "lat": -14.296279,
-    "lon": 28.556233,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 1,
-    "display_name": "Medpharm Limited",
-    "category": "agricultural product wholesaler",
-    "lat": -14.443932,
-    "lon": 28.443498,
-    "source": "gm"
-  },
-  {
-    "id": 79,
-    "display_name": "Mela Medical Centre",
-    "category": "clinic",
-    "lat": -14.438309,
-    "lon": 28.45695,
-    "source": "gm"
-  },
-  {
-    "id": 144,
-    "display_name": "Meru",
-    "category": "fuel",
-    "lat": -14.442023,
-    "lon": 28.441519,
-    "source": "osm"
-  },
-  {
-    "id": 349,
-    "display_name": "Metropolis Healthcare - Medical Laboratory & Blood Test in Kabwe",
-    "category": "medical laboratory",
+    "id": 18,
+    "display_name": "Kabwe (Main Campus)",
+    "category": "university",
     "lat": -14.2952292,
     "lon": 28.5594111,
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 536,
-    "display_name": "Mh&m supermarket",
-    "category": "shop",
-    "lat": -14.443615,
-    "lon": 28.444187,
-    "source": "gm"
-  },
-  {
-    "id": 200,
-    "display_name": "Mine Hospital 1B",
-    "category": "hospital",
-    "lat": -14.44861,
-    "lon": 28.43903,
+    "id": 19,
+    "display_name": "Kabwe (Kabwe Town)",
+    "category": "station",
+    "lat": -14.44781,
+    "lon": 28.440744,
     "source": "osm"
   },
   {
-    "id": 347,
-    "display_name": "Mine Market",
-    "category": "market",
-    "lat": -14.443615,
-    "lon": 28.442105,
-    "source": "gm"
-  },
-  {
-    "id": 114,
-    "display_name": "Mine Secondary School",
-    "category": "educational institution",
-    "lat": -14.4454,
-    "lon": 28.428948,
-    "source": "gm"
-  },
-  {
-    "id": 107,
-    "display_name": "Mine secondary school 17310",
-    "category": "education center",
-    "lat": -14.428506,
-    "lon": 28.451357,
-    "source": "gm"
-  },
-  {
-    "id": 308,
-    "display_name": "Misuku Lodge",
-    "category": "hotel",
-    "lat": -14.440359,
-    "lon": 28.449148,
-    "source": "gm"
-  },
-  {
-    "id": 258,
-    "display_name": "Mkushi",
-    "category": "hostel",
-    "lat": -14.2944981,
-    "lon": 28.5555924,
+    "id": 20,
+    "display_name": "Mulungushi University",
+    "category": "university",
+    "lat": -14.2958675,
+    "lon": 28.5591632,
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 661,
-    "display_name": "Mkushi Hostel",
-    "category": "location",
-    "lat": -14.2944981,
-    "lon": 28.5555924,
+    "id": 21,
+    "display_name": "Multipurpose Hall",
+    "category": "university",
+    "lat": -14.2977416,
+    "lon": 28.5593928,
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 309,
-    "display_name": "Moldies Lodge",
-    "category": "hotel",
-    "lat": -14.451072,
-    "lon": 28.439841,
-    "source": "gm"
+    "id": 22,
+    "display_name": "Mulungushi University Science Labs",
+    "category": "university",
+    "lat": -14.2987443,
+    "lon": 28.5590378,
+    "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 351,
-    "display_name": "MoneyGram",
-    "category": "money transfer service",
-    "lat": -14.444128,
-    "lon": 28.444743,
-    "source": "gm"
+    "id": 23,
+    "display_name": "Munlungushi University Fishpond",
+    "category": "university",
+    "lat": -14.2989458,
+    "lon": 28.5578566,
+    "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 259,
+    "id": 24,
+    "display_name": "New Lecture Theatre (NLT)",
+    "category": "university",
+    "lat": -14.2969998,
+    "lon": 28.559478,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 25,
+    "display_name": "Munlungushi University Stream",
+    "category": "university",
+    "lat": -14.296952,
+    "lon": 28.5579149,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 26,
+    "display_name": "Munlungushi University Guest House",
+    "category": "university",
+    "lat": -14.2939375,
+    "lon": 28.5610625,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 27,
+    "display_name": "HK Kharngu Base",
+    "category": "university",
+    "lat": -14.2935604,
+    "lon": 28.5627913,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 28,
+    "display_name": "Lecturers compound SBA 1",
+    "category": "university",
+    "lat": -14.2936815,
+    "lon": 28.5635382,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 29,
+    "display_name": "SBA-4",
+    "category": "university",
+    "lat": -14.2931366,
+    "lon": 28.5630272,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 30,
+    "display_name": "Muteteshi school",
+    "category": "university",
+    "lat": -14.2925706,
+    "lon": 28.5618904,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 31,
+    "display_name": "Big daddy 🧔",
+    "category": "university",
+    "lat": -14.2916474,
+    "lon": 28.5624921,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 32,
+    "display_name": "Pond of Hope",
+    "category": "university",
+    "lat": -14.2948493,
+    "lon": 28.5584785,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 33,
     "display_name": "Mongu Hostel",
     "category": "hostel",
     "lat": -14.2946124,
@@ -2816,575 +264,31 @@
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 537,
-    "display_name": "Moowa enterprise",
-    "category": "shop",
-    "lat": -14.2917529,
-    "lon": 28.5461998,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 115,
-    "display_name": "Mount Camel School",
-    "category": "educational institution",
-    "lat": -13.966064,
-    "lon": 28.669882,
-    "source": "gm"
-  },
-  {
-    "id": 145,
-    "display_name": "Mount Meru Filling Station",
-    "category": "fuel",
-    "lat": -14.44219,
-    "lon": 28.441526,
-    "source": "gm"
-  },
-  {
-    "id": 146,
-    "display_name": "Mount Meru Filling Station (Kapiri Mposhi)",
-    "category": "fuel",
-    "lat": -13.922274,
-    "lon": 28.675355,
-    "source": "gm"
-  },
-  {
-    "id": 260,
-    "display_name": "Mpamadzi Hostel",
+    "id": 34,
+    "display_name": "Lusisi Hostel",
     "category": "hostel",
-    "lat": -14.296232,
-    "lon": 28.5549806,
+    "lat": -14.2952993,
+    "lon": 28.5562334,
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 492,
-    "display_name": "Mpima Major Seminary",
-    "category": "school",
-    "lat": -14.399786,
-    "lon": 28.524135,
-    "source": "osm"
-  },
-  {
-    "id": 80,
-    "display_name": "Mr Banda'S Clinic",
-    "category": "clinic",
-    "lat": -14.286467,
-    "lon": 28.548801,
-    "source": "osm"
-  },
-  {
-    "id": 576,
-    "display_name": "Mr Banda's shop",
-    "category": "supermarket",
-    "lat": -13.97603,
-    "lon": 28.669758,
-    "source": "gm"
-  },
-  {
-    "id": 261,
-    "display_name": "Mr Halubanza's Boarding house",
+    "id": 35,
+    "display_name": "Mansa Hostel",
     "category": "hostel",
-    "lat": -14.2913401,
-    "lon": 28.5491733,
+    "lat": -14.2943416,
+    "lon": 28.5562827,
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 147,
-    "display_name": "Mr Morgan Mumba's House",
-    "category": "fuel",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 666,
-    "display_name": "Mr chisha's house",
-    "category": "university",
-    "lat": -14.2897474,
-    "lon": 28.547873,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 262,
-    "display_name": "Mu",
+    "id": 36,
+    "display_name": "Lusaka hostel",
     "category": "hostel",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
+    "lat": -14.2944508,
+    "lon": 28.5561118,
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 405,
-    "display_name": "Mukobeko Maximum Security Prison",
-    "category": "prison",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 263,
-    "display_name": "Mukonchi",
-    "category": "hostel",
-    "lat": -14.2846486,
-    "lon": 28.5567218,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 370,
-    "display_name": "Mukowa Pharmacy",
-    "category": "pharmacy",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 190,
-    "display_name": "Mukuni Insurance Clinic",
-    "category": "hospital",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 81,
-    "display_name": "Mukuni Insurance Clinic Limited",
-    "category": "clinic",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 352,
-    "display_name": "Mukuru",
-    "category": "money transfer service",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 343,
-    "display_name": "Mukuyu Mall",
-    "category": "mall",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 311,
-    "display_name": "Mukuyu lodge",
-    "category": "hotel",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 191,
-    "display_name": "Multi-Resistance Tuberculosis Centre",
-    "category": "health_post",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 116,
-    "display_name": "Multipurpose Hall",
-    "category": "educational institution",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 176,
-    "display_name": "Mulubila Lodge",
-    "category": "guest_house",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 640,
-    "display_name": "Mulungushi",
-    "category": "veterinary",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 644,
-    "display_name": "Mulungushi Rock of Authority",
-    "category": "unknown",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 617,
-    "display_name": "Mulungushi University",
-    "category": "university",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 82,
-    "display_name": "Mulungushi University Community Health Center",
-    "category": "clinic",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 620,
-    "display_name": "Mulungushi University Great North Road Campus",
-    "category": "university",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 108,
-    "display_name": "Mulungushi University ICT Centre",
-    "category": "education center",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 621,
-    "display_name": "Mulungushi University Library",
-    "category": "university",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 660,
-    "display_name": "Mulungushi University Main Gate",
-    "category": "location",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 622,
-    "display_name": "Mulungushi University School of Engineering labs",
-    "category": "university",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 623,
-    "display_name": "Mulungushi University Science Labs",
-    "category": "university",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 394,
-    "display_name": "Mulungushi University Sports Grounds",
-    "category": "playground",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 624,
-    "display_name": "Mulungushi University, Town Campus",
-    "category": "university",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 619,
-    "display_name": "Mulungushi university campus area",
-    "category": "university",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 106,
-    "display_name": "Mulungushi university main cafeteria",
-    "category": "diner",
-    "lat": -14.297131,
-    "lon": 28.5569282,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 265,
-    "display_name": "Mumbwa",
-    "category": "hostel",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 494,
-    "display_name": "Mummy's Daycare School",
-    "category": "school",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 406,
-    "display_name": "Mummys School",
-    "category": "private educational institution",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 50,
-    "display_name": "Munlungushi University Back Dam",
-    "category": "bridge",
-    "lat": -14.2950625,
-    "lon": 28.5584375,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 83,
-    "display_name": "Munlungushi University Clinic",
-    "category": "clinic",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 131,
-    "display_name": "Munlungushi University Fish farm",
-    "category": "fish farm",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 132,
-    "display_name": "Munlungushi University Fishpond",
-    "category": "fish farm",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 266,
-    "display_name": "Munlungushi University Ghost Hostels",
-    "category": "hostel",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 170,
-    "display_name": "Munlungushi University Greenhouse",
-    "category": "greenhouse",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 312,
-    "display_name": "Munlungushi University Guest House",
-    "category": "hotel",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 625,
-    "display_name": "Munlungushi University Main Gate",
-    "category": "university",
-    "lat": -14.2912445,
-    "lon": 28.5515747,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 13,
-    "display_name": "Munlungushi University Stream",
-    "category": "attraction",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 371,
-    "display_name": "Musasi pharmacy",
-    "category": "pharmacy",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 267,
-    "display_name": "Musondwenji Hostel",
-    "category": "hostel",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 84,
-    "display_name": "Mutaba Clinic",
-    "category": "clinic",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 85,
-    "display_name": "Mutaba Health Clinic",
-    "category": "clinic",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 102,
-    "display_name": "Mutepa RARE Conference Centre",
-    "category": "conference center",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 495,
-    "display_name": "Muteteshi school",
-    "category": "school",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 54,
-    "display_name": "Mwabombeni Multi-Purpose",
-    "category": "business broker",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 55,
-    "display_name": "Mwamba Ng'ombe Meat Cutting Centre",
-    "category": "butcher",
-    "lat": -14.460006,
-    "lon": 28.451666,
-    "source": "osm"
-  },
-  {
-    "id": 59,
-    "display_name": "Mweru Hostel",
-    "category": "camping cabin",
-    "lat": -14.2983417,
-    "lon": 28.5601437,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 268,
-    "display_name": "Mwinilunga Hostel",
-    "category": "hostel",
-    "lat": -14.2944373,
-    "lon": 28.554022,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 313,
-    "display_name": "Mwizu Lodge",
-    "category": "hotel",
-    "lat": -14.445978,
-    "lon": 28.445832,
-    "source": "gm"
-  },
-  {
-    "id": 130,
-    "display_name": "MyFund Zambia LTD",
-    "category": "financial institution",
-    "lat": -14.445964,
-    "lon": 28.464526,
-    "source": "gm"
-  },
-  {
-    "id": 372,
-    "display_name": "Nags cure pharmacy, kapiri mposhi",
-    "category": "pharmacy",
-    "lat": -13.968917,
-    "lon": 28.677594,
-    "source": "gm"
-  },
-  {
-    "id": 86,
-    "display_name": "Nakoli Clinic",
-    "category": "clinic",
-    "lat": -14.407734,
-    "lon": 28.449768,
-    "source": "osm"
-  },
-  {
-    "id": 177,
-    "display_name": "Nalikwanda Guest House",
-    "category": "guest_house",
-    "lat": -14.444862,
-    "lon": 28.460721,
-    "source": "gm"
-  },
-  {
-    "id": 429,
-    "display_name": "Nalochi river park (The White House)",
-    "category": "restaurant",
-    "lat": -14.427331,
-    "lon": 28.461943,
-    "source": "gm"
-  },
-  {
-    "id": 269,
-    "display_name": "Nalolo hostel",
-    "category": "hostel",
-    "lat": -14.2938769,
-    "lon": 28.5538951,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 31,
-    "display_name": "National Commercial Bank",
-    "category": "bank",
-    "lat": -14.438338,
-    "lon": 28.442549,
-    "source": "gm"
-  },
-  {
-    "id": 496,
-    "display_name": "Natuseko Basic School",
-    "category": "school",
-    "lat": -14.406868,
-    "lon": 28.460028,
-    "source": "osm"
-  },
-  {
-    "id": 497,
-    "display_name": "Natuseko S Sec",
-    "category": "school",
-    "lat": -14.40701,
-    "lon": 28.464205,
-    "source": "osm"
-  },
-  {
-    "id": 202,
-    "display_name": "Ndeke clinic",
-    "category": "hospital",
-    "lat": -13.977868,
-    "lon": 28.684811,
-    "source": "gm"
-  },
-  {
-    "id": 578,
-    "display_name": "Ndeke market",
-    "category": "supermarket",
-    "lat": -13.965569,
-    "lon": 28.68864,
-    "source": "gm"
-  },
-  {
-    "id": 270,
+    "id": 37,
     "display_name": "Ndola hostel",
     "category": "hostel",
     "lat": -14.2942357,
@@ -3392,103 +296,167 @@
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 314,
-    "display_name": "Neem Park Courtyard",
-    "category": "hotel",
-    "lat": -14.438109,
-    "lon": 28.452397,
-    "source": "gm"
-  },
-  {
-    "id": 498,
-    "display_name": "Neemtree Secondary School",
-    "category": "school",
-    "lat": -14.439481,
-    "lon": 28.453084,
-    "source": "osm"
-  },
-  {
-    "id": 387,
-    "display_name": "New Apostolic -Kohima Congregation",
-    "category": "place_of_worship",
-    "lat": -14.403607,
-    "lon": 28.481704,
-    "source": "osm"
-  },
-  {
-    "id": 389,
-    "display_name": "New Apostolic Church Kabwe Central Congregation",
-    "category": "place_of_worship",
-    "lat": -14.2899495,
-    "lon": 28.5502354,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 559,
-    "display_name": "New Kapiri Mposhi",
-    "category": "station",
-    "lat": -13.954915,
-    "lon": 28.681182,
-    "source": "osm"
-  },
-  {
-    "id": 18,
-    "display_name": "New Lecture Theatre (NLT)",
-    "category": "auditorium",
-    "lat": -14.2969998,
-    "lon": 28.559478,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 388,
-    "display_name": "New apostolic church",
-    "category": "place_of_worship",
-    "lat": -14.2899495,
-    "lon": 28.5502354,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 626,
-    "display_name": "New conference",
-    "category": "university",
-    "lat": -14.2990713,
-    "lon": 28.5566201,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 271,
-    "display_name": "Ngabwe",
+    "id": 38,
+    "display_name": "Luano Hostel",
     "category": "hostel",
-    "lat": -14.2936871,
-    "lon": 28.5554919,
+    "lat": -14.2944989,
+    "lon": 28.555791,
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 315,
-    "display_name": "Ngocho Lodge Kabwe",
-    "category": "hotel",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
+    "id": 39,
+    "display_name": "Mkushi",
+    "category": "university",
+    "lat": -14.2944981,
+    "lon": 28.5555924,
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 178,
-    "display_name": "Ngocho lodge",
-    "category": "guest_house",
-    "lat": -14.483059,
-    "lon": 28.411969,
-    "source": "osm"
+    "id": 40,
+    "display_name": "Kapiri Mposhi Hostel",
+    "category": "hostel",
+    "lat": -14.2948242,
+    "lon": 28.5558066,
+    "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 87,
-    "display_name": "Ngungu Health Center",
-    "category": "clinic",
-    "lat": -14.39278,
-    "lon": 28.444078,
-    "source": "osm"
+    "id": 41,
+    "display_name": "Chisambo Hostel",
+    "category": "hostel",
+    "lat": -14.2950297,
+    "lon": 28.5561634,
+    "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 272,
+    "id": 42,
+    "display_name": "SOLWEZI HOSTEL",
+    "category": "hostel",
+    "lat": -14.2945613,
+    "lon": 28.5568688,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 43,
+    "display_name": "Lueti Hostel",
+    "category": "hostel",
+    "lat": -14.295557,
+    "lon": 28.5558241,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 44,
+    "display_name": "Lundazi Hostel",
+    "category": "hostel",
+    "lat": -14.2953797,
+    "lon": 28.5557127,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 45,
+    "display_name": "Dongwe Hostel",
+    "category": "hostel",
+    "lat": -14.2956125,
+    "lon": 28.5555469,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 46,
+    "display_name": "Lalafuta Hostel",
+    "category": "hostel",
+    "lat": -14.2957486,
+    "lon": 28.5554384,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 47,
+    "display_name": "Musondwenji Hostel",
+    "category": "hostel",
+    "lat": -14.2958369,
+    "lon": 28.556136,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 48,
+    "display_name": "Machili Hostel",
+    "category": "hostel",
+    "lat": -14.2960427,
+    "lon": 28.5560535,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 49,
+    "display_name": "Kafulafuta hostel",
+    "category": "hostel",
+    "lat": -14.2961777,
+    "lon": 28.5560977,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 50,
+    "display_name": "Mbereshi Hostel",
+    "category": "hostel",
+    "lat": -14.296279,
+    "lon": 28.556233,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 51,
+    "display_name": "Magoye Hostel",
+    "category": "hostel",
+    "lat": -14.2965134,
+    "lon": 28.55608,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 52,
+    "display_name": "Luaginga Hostel",
+    "category": "hostel",
+    "lat": -14.2967317,
+    "lon": 28.5560102,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 53,
+    "display_name": "Luapula Hostel Fiero",
+    "category": "hostel",
+    "lat": -14.2968875,
+    "lon": 28.5561719,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 54,
+    "display_name": "Kabompo hostel",
+    "category": "hostel",
+    "lat": -14.2971352,
+    "lon": 28.5560628,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 55,
+    "display_name": "Zambezi hostel",
+    "category": "hostel",
+    "lat": -14.2971638,
+    "lon": 28.555914,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 56,
+    "display_name": "Chibombo",
+    "category": "university",
+    "lat": -14.2967832,
+    "lon": 28.5554353,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 57,
+    "display_name": "School of Agriculture Laboratory",
+    "category": "university",
+    "lat": -14.2973562,
+    "lon": 28.555166,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 58,
     "display_name": "Ngwezi hostel",
     "category": "hostel",
     "lat": -14.2967255,
@@ -3496,183 +464,855 @@
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 659,
-    "display_name": "Nkrumah Clinic",
-    "category": "yes",
-    "lat": -14.44663,
-    "lon": 28.466445,
-    "source": "osm"
+    "id": 59,
+    "display_name": "KITCHENS",
+    "category": "university",
+    "lat": -14.2967099,
+    "lon": 28.5542421,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 60,
+    "display_name": "Luombwa Hostel",
+    "category": "hostel",
+    "lat": -14.2966008,
+    "lon": 28.5538938,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 61,
+    "display_name": "Lungwe Bungwe Hostel",
+    "category": "hostel",
+    "lat": -14.2962777,
+    "lon": 28.5556844,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 62,
+    "display_name": "Manyinga hostel",
+    "category": "hostel",
+    "lat": -14.2963379,
+    "lon": 28.5554201,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 63,
+    "display_name": "Kanchibiya",
+    "category": "university",
+    "lat": -14.2962023,
+    "lon": 28.5553245,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 64,
+    "display_name": "Mpamadzi Hostel",
+    "category": "hostel",
+    "lat": -14.296232,
+    "lon": 28.5549806,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 65,
+    "display_name": "Mulungushi university campus area",
+    "category": "university",
+    "lat": -14.296,
+    "lon": 28.555332,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 66,
+    "display_name": "Kafubu1",
+    "category": "university",
+    "lat": -14.2959451,
+    "lon": 28.5555667,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 67,
+    "display_name": "Junkies square",
+    "category": "university",
+    "lat": -14.295899,
+    "lon": 28.554933,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 68,
+    "display_name": "Rufunsa hostel",
+    "category": "hostel",
+    "lat": -14.2960142,
+    "lon": 28.5548727,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 69,
+    "display_name": "Sakeji Hostel",
+    "category": "hostel",
+    "lat": -14.2959815,
+    "lon": 28.5546792,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 70,
+    "display_name": "Chongwe Hostel",
+    "category": "hostel",
+    "lat": -14.2957051,
+    "lon": 28.5548368,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 71,
+    "display_name": "Kalambo hostel",
+    "category": "hostel",
+    "lat": -14.2954676,
+    "lon": 28.5548364,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 72,
+    "display_name": "Kalungwishi Hostel",
+    "category": "hostel",
+    "lat": -14.2948915,
+    "lon": 28.5547533,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 73,
+    "display_name": "Lukulu Hostel",
+    "category": "hostel",
+    "lat": -14.2947189,
+    "lon": 28.5548161,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 74,
+    "display_name": "Serenje Hostel",
+    "category": "hostel",
+    "lat": -14.2942385,
+    "lon": 28.5550979,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 75,
+    "display_name": "Chipata",
+    "category": "university",
+    "lat": -14.2939133,
+    "lon": 28.5553192,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 76,
+    "display_name": "Choma",
+    "category": "university",
+    "lat": -14.2938142,
+    "lon": 28.5554355,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 77,
+    "display_name": "Ngabwe",
+    "category": "university",
+    "lat": -14.2936871,
+    "lon": 28.5554919,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 78,
+    "display_name": "Lupande Hostel",
+    "category": "hostel",
+    "lat": -14.2948506,
+    "lon": 28.5555412,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 79,
+    "display_name": "Kapoche Hostel",
+    "category": "hostel",
+    "lat": -14.2950564,
+    "lon": 28.5554353,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 80,
+    "display_name": "Mumbwa",
+    "category": "university",
+    "lat": -14.2946371,
+    "lon": 28.5552464,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 81,
+    "display_name": "SSS-Block F",
+    "category": "university",
+    "lat": -14.2978955,
+    "lon": 28.5538091,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 82,
+    "display_name": "SSS-Block E",
+    "category": "university",
+    "lat": -14.2977922,
+    "lon": 28.5539424,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 83,
+    "display_name": "School of Social Sciences",
+    "category": "university",
+    "lat": -14.2974806,
+    "lon": 28.5538906,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 84,
+    "display_name": "SSS-Block C",
+    "category": "university",
+    "lat": -14.2972844,
+    "lon": 28.553841,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 85,
+    "display_name": "School of Agriculture and Natural Resources (SANR)",
+    "category": "university",
+    "lat": -14.2981297,
+    "lon": 28.5546295,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 86,
+    "display_name": "School of Business Studies (SBS)",
+    "category": "university",
+    "lat": -14.298299,
+    "lon": 28.5552119,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 87,
+    "display_name": "MOOT COURT",
+    "category": "university",
+    "lat": -14.2983162,
+    "lon": 28.5557361,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 88,
+    "display_name": "New conference",
+    "category": "university",
+    "lat": -14.2990713,
+    "lon": 28.5566201,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 89,
+    "display_name": "Munlungushi University Greenhouse",
+    "category": "university",
+    "lat": -14.2993493,
+    "lon": 28.555795,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 90,
+    "display_name": "Munlungushi University Clinic",
+    "category": "university",
+    "lat": -14.2936448,
+    "lon": 28.5595733,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 91,
+    "display_name": "Mulungushi University ICT Centre",
+    "category": "university",
+    "lat": -14.2924449,
+    "lon": 28.5554539,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 92,
+    "display_name": "Lwela hostel",
+    "category": "hostel",
+    "lat": -14.2962359,
+    "lon": 28.5539667,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 93,
+    "display_name": "Mwinilunga Hostel",
+    "category": "hostel",
+    "lat": -14.2944373,
+    "lon": 28.554022,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 94,
+    "display_name": "Chavuma Hostel",
+    "category": "hostel",
+    "lat": -14.2943096,
+    "lon": 28.5538316,
+    "source": "jaeycod_kmz_razor_sharp"
   },
   {
     "id": 95,
-    "display_name": "Nkrumah University",
-    "category": "college",
-    "lat": -14.444716,
-    "lon": 28.469844,
-    "source": "osm"
-  },
-  {
-    "id": 203,
-    "display_name": "Nkumbu Clinic - Kabwe",
-    "category": "hospital",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
+    "display_name": "Mu",
+    "category": "university",
+    "lat": -14.2938264,
+    "lon": 28.5538827,
     "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 499,
-    "display_name": "Nkwashi Primary School",
-    "category": "school",
-    "lat": -14.414855,
-    "lon": 28.433655,
-    "source": "osm"
-  },
-  {
-    "id": 656,
-    "display_name": "North park",
-    "category": "veterinary",
-    "lat": -13.954333,
-    "lon": 28.680812,
-    "source": "osm"
-  },
-  {
-    "id": 179,
-    "display_name": "Novotel Guest Rooms",
-    "category": "guest_house",
-    "lat": -13.971914,
-    "lon": 28.68292,
-    "source": "gm"
-  },
-  {
-    "id": 180,
-    "display_name": "Nyaka Guest House",
-    "category": "guest_house",
-    "lat": -14.450536,
-    "lon": 28.439223,
-    "source": "gm"
-  },
-  {
-    "id": 121,
-    "display_name": "ODL",
-    "category": "educational_institution",
-    "lat": -14.444536,
-    "lon": 28.466517,
-    "source": "osm"
-  },
-  {
-    "id": 579,
-    "display_name": "Ollo",
-    "category": "supermarket",
-    "lat": -13.977868,
-    "lon": 28.684811,
-    "source": "gm"
-  },
-  {
-    "id": 580,
-    "display_name": "Omnia Cash And Carry Fertiliser",
-    "category": "supermarket",
-    "lat": -13.97196,
-    "lon": 28.678546,
-    "source": "gm"
-  },
-  {
-    "id": 316,
-    "display_name": "Orchard Mist Lodges",
-    "category": "hotel",
-    "lat": -14.455931,
-    "lon": 28.428239,
-    "source": "gm"
-  },
-  {
-    "id": 318,
-    "display_name": "PENIEL EXECUTIVE LODGE",
-    "category": "hotel",
-    "lat": -13.97338,
-    "lon": 28.682141,
-    "source": "gm"
-  },
-  {
-    "id": 538,
-    "display_name": "PEP Zambia Kabwe 2",
-    "category": "shop",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 539,
-    "display_name": "PEP Zambia Kapiri Mposhi",
-    "category": "shop",
-    "lat": -13.972384,
-    "lon": 28.679214,
-    "source": "gm"
-  },
-  {
-    "id": 317,
-    "display_name": "Pa N'gwena Lodge",
-    "category": "hotel",
-    "lat": -13.973947,
-    "lon": 28.683194,
-    "source": "gm"
-  },
-  {
-    "id": 273,
-    "display_name": "Paidesa Hostel",
+    "id": 96,
+    "display_name": "Senanga Hostel",
     "category": "hostel",
-    "lat": -14.445128,
-    "lon": 28.474086,
-    "source": "gm"
+    "lat": -14.2933197,
+    "lon": 28.5531349,
+    "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 57,
-    "display_name": "Palm Farm cottages and campsite",
-    "category": "camp_site",
-    "lat": -14.49769,
-    "lon": 28.388826,
-    "source": "osm"
+    "id": 97,
+    "display_name": "Luampa Hostel",
+    "category": "hostel",
+    "lat": -14.293382,
+    "lon": 28.5533659,
+    "source": "jaeycod_kmz_razor_sharp"
   },
   {
-    "id": 373,
-    "display_name": "Peak Healthcare Pharmacy",
-    "category": "pharmacy",
-    "lat": -14.427331,
-    "lon": 28.461943,
-    "source": "gm"
+    "id": 98,
+    "display_name": "Munlungushi University Ghost Hostels",
+    "category": "hostel",
+    "lat": -14.295067,
+    "lon": 28.5529072,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 99,
+    "display_name": "Nalolo hostel",
+    "category": "hostel",
+    "lat": -14.2938769,
+    "lon": 28.5538951,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 100,
+    "display_name": "Munlungushi University Back Dam",
+    "category": "university",
+    "lat": -14.2950625,
+    "lon": 28.5584375,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 101,
+    "display_name": "Graduation Square",
+    "category": "university",
+    "lat": -14.2983256,
+    "lon": 28.5572266,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 102,
+    "display_name": "School of Engineering and Technology",
+    "category": "university",
+    "lat": -14.2971123,
+    "lon": 28.5532378,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 103,
+    "display_name": "School of Natural and Applied Science (SNAS)",
+    "category": "university",
+    "lat": -14.2969306,
+    "lon": 28.553101,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 104,
+    "display_name": "School of Education (SOE)",
+    "category": "university",
+    "lat": -14.2970644,
+    "lon": 28.5533072,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 105,
+    "display_name": "Cafeteria",
+    "category": "university",
+    "lat": -14.297131,
+    "lon": 28.5569282,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 106,
+    "display_name": "Boarding house (the Silungwe's)",
+    "category": "hostel",
+    "lat": -14.2950237,
+    "lon": 28.5490499,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 107,
+    "display_name": "Wallace Supermarket",
+    "category": "university",
+    "lat": -14.2949046,
+    "lon": 28.5491145,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 108,
+    "display_name": "VK motel",
+    "category": "university",
+    "lat": -14.2938327,
+    "lon": 28.5492755,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 109,
+    "display_name": "Success foods",
+    "category": "university",
+    "lat": -14.2936689,
+    "lon": 28.5491449,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 110,
+    "display_name": "Emmy's Drip Collection",
+    "category": "university",
+    "lat": -14.2929845,
+    "lon": 28.5485397,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 111,
+    "display_name": "Taxi rank and bus stop",
+    "category": "university",
+    "lat": -14.2946378,
+    "lon": 28.5496993,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 112,
+    "display_name": "Munlungushi University Main Gate",
+    "category": "university",
+    "lat": -14.2912445,
+    "lon": 28.5515747,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 113,
+    "display_name": "HOLY EUCHARIST PARISH",
+    "category": "university",
+    "lat": -14.2909078,
+    "lon": 28.5502927,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 114,
+    "display_name": "New apostolic church",
+    "category": "university",
+    "lat": -14.2899495,
+    "lon": 28.5502354,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 115,
+    "display_name": "Mr Halubanza's Boarding house",
+    "category": "hostel",
+    "lat": -14.2913401,
+    "lon": 28.5491733,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 116,
+    "display_name": "United church of Zambia St Pauls congregation. Kabwe North consitory",
+    "category": "university",
+    "lat": -14.2921917,
+    "lon": 28.5486719,
+    "source": "jaeycod_kmz_razor_sharp"
   },
   {
     "id": 117,
-    "display_name": "Pemeka Academy",
-    "category": "educational institution",
-    "lat": -13.980359,
-    "lon": 28.691113,
+    "display_name": "Wallace enterprise",
+    "category": "university",
+    "lat": -14.2919512,
+    "lon": 28.5481148,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 118,
+    "display_name": "Kabwata BH",
+    "category": "hostel",
+    "lat": -14.2918587,
+    "lon": 28.5474302,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 119,
+    "display_name": "Sim one shopping centre",
+    "category": "university",
+    "lat": -14.2918852,
+    "lon": 28.5472516,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 120,
+    "display_name": "GOLDEN YORK FARMS",
+    "category": "university",
+    "lat": -14.2921817,
+    "lon": 28.5480831,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 121,
+    "display_name": "Royalty apartments",
+    "category": "university",
+    "lat": -14.2924325,
+    "lon": 28.5464327,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 122,
+    "display_name": "2wo Creative Digital",
+    "category": "university",
+    "lat": -14.2923121,
+    "lon": 28.5470054,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 123,
+    "display_name": "Moowa enterprise",
+    "category": "university",
+    "lat": -14.2917529,
+    "lon": 28.5461998,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 124,
+    "display_name": "Jack's home",
+    "category": "university",
+    "lat": -14.2915753,
+    "lon": 28.546085,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 125,
+    "display_name": "Soul cafe",
+    "category": "university",
+    "lat": -14.2906258,
+    "lon": 28.5450428,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 126,
+    "display_name": "Mr chisha's house",
+    "category": "university",
+    "lat": -14.2897474,
+    "lon": 28.547873,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 127,
+    "display_name": "Kingdom hall",
+    "category": "university",
+    "lat": -14.2894205,
+    "lon": 28.5425086,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 128,
+    "display_name": "Evangelical Church in Zambia, Mulungushi",
+    "category": "university",
+    "lat": -14.2878154,
+    "lon": 28.5453165,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 129,
+    "display_name": "Euaggelion Outreach Christain Center International",
+    "category": "university",
+    "lat": -14.2868902,
+    "lon": 28.5500648,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 130,
+    "display_name": "Apple Truck Parking",
+    "category": "university",
+    "lat": -14.2848299,
+    "lon": 28.5503766,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 131,
+    "display_name": "Haven Boarding Houses",
+    "category": "hostel",
+    "lat": -14.2840287,
+    "lon": 28.5489785,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 132,
+    "display_name": "Handima Boarding House",
+    "category": "hostel",
+    "lat": -14.2839009,
+    "lon": 28.5433754,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 133,
+    "display_name": "Bossan Pub & Grill",
+    "category": "university",
+    "lat": -14.2851087,
+    "lon": 28.5518553,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 134,
+    "display_name": "Mukonchi",
+    "category": "university",
+    "lat": -14.2846486,
+    "lon": 28.5567218,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 135,
+    "display_name": "Highway Truck Stop",
+    "category": "university",
+    "lat": -14.2832577,
+    "lon": 28.5532629,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 136,
+    "display_name": "CKAT BH",
+    "category": "hostel",
+    "lat": -14.2810934,
+    "lon": 28.5572293,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 137,
+    "display_name": "Sutam Boarding house",
+    "category": "hostel",
+    "lat": -14.2834033,
+    "lon": 28.5589853,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 138,
+    "display_name": "Crocscity by c4kt",
+    "category": "university",
+    "lat": -14.2803106,
+    "lon": 28.5511154,
+    "source": "jaeycod_kmz_razor_sharp"
+  },
+  {
+    "id": 139,
+    "display_name": "Medpharm Limited",
+    "category": "agricultural product wholesaler",
+    "lat": -14.443932,
+    "lon": 28.443498,
     "source": "gm"
   },
   {
-    "id": 344,
-    "display_name": "Pick & pay",
-    "category": "mall",
+    "id": 140,
+    "display_name": "EJEMBI'S BOARDING HOUSES",
+    "category": "apartment",
+    "lat": -14.289055,
+    "lon": 28.546598,
+    "source": "gm"
+  },
+  {
+    "id": 141,
+    "display_name": "kwame nkrumah university statue",
+    "category": "artwork",
+    "lat": -14.445795,
+    "lon": 28.467324,
+    "source": "osm"
+  },
+  {
+    "id": 142,
+    "display_name": "Barclays Bank",
+    "category": "atm",
     "lat": -13.977868,
     "lon": 28.684811,
     "source": "gm"
   },
   {
-    "id": 430,
-    "display_name": "Pilgrims Motel",
-    "category": "restaurant",
-    "lat": -14.449721,
-    "lon": 28.44377,
+    "id": 143,
+    "display_name": "Barclays Bank ATM",
+    "category": "atm",
+    "lat": -13.971961,
+    "lon": 28.678518,
     "source": "gm"
   },
   {
-    "id": 181,
-    "display_name": "Pillar lodge",
-    "category": "guest_house",
-    "lat": -13.930229,
-    "lon": 28.666733,
+    "id": 144,
+    "display_name": "FNB ATM",
+    "category": "atm",
+    "lat": -13.971657,
+    "lon": 28.679285,
+    "source": "gm"
+  },
+  {
+    "id": 145,
+    "display_name": "ZANACO ATM",
+    "category": "atm",
+    "lat": -13.969951,
+    "lon": 28.678805,
+    "source": "gm"
+  },
+  {
+    "id": 146,
+    "display_name": "steam locomotive",
+    "category": "attraction",
+    "lat": -14.446361,
+    "lon": 28.443085,
     "source": "osm"
   },
   {
-    "id": 40,
+    "id": 147,
+    "display_name": "steam locomotive 113",
+    "category": "attraction",
+    "lat": -14.447596,
+    "lon": 28.441251,
+    "source": "osm"
+  },
+  {
+    "id": 148,
+    "display_name": "William Cousin",
+    "category": "attraction",
+    "lat": -14.413587,
+    "lon": 28.434649,
+    "source": "osm"
+  },
+  {
+    "id": 149,
+    "display_name": "Bravo",
+    "category": "bakery",
+    "lat": -13.926173,
+    "lon": 28.666714,
+    "source": "osm"
+  },
+  {
+    "id": 150,
+    "display_name": "Abbsa",
+    "category": "bank",
+    "lat": -14.441184,
+    "lon": 28.442637,
+    "source": "osm"
+  },
+  {
+    "id": 151,
+    "display_name": "Atlas mara",
+    "category": "bank",
+    "lat": -14.441931,
+    "lon": 28.443235,
+    "source": "gm"
+  },
+  {
+    "id": 152,
+    "display_name": "Bayport Financial Services",
+    "category": "bank",
+    "lat": -13.969655,
+    "lon": 28.677849,
+    "source": "gm"
+  },
+  {
+    "id": 153,
+    "display_name": "FINCA Branch",
+    "category": "bank",
+    "lat": -13.970903,
+    "lon": 28.678444,
+    "source": "gm"
+  },
+  {
+    "id": 154,
+    "display_name": "FNB",
+    "category": "bank",
+    "lat": -14.44154,
+    "lon": 28.445052,
+    "source": "osm"
+  },
+  {
+    "id": 155,
+    "display_name": "Indo-Zambia",
+    "category": "bank",
+    "lat": -14.442051,
+    "lon": 28.442626,
+    "source": "gm"
+  },
+  {
+    "id": 156,
+    "display_name": "Investrust Bank Plc, Kabwe Branch",
+    "category": "bank",
+    "lat": -14.444366,
+    "lon": 28.446545,
+    "source": "gm"
+  },
+  {
+    "id": 157,
+    "display_name": "National Commercial Bank",
+    "category": "bank",
+    "lat": -14.438338,
+    "lon": 28.442549,
+    "source": "gm"
+  },
+  {
+    "id": 158,
+    "display_name": "Stanbic Bank",
+    "category": "bank",
+    "lat": -14.441851,
+    "lon": 28.444122,
+    "source": "osm"
+  },
+  {
+    "id": 159,
+    "display_name": "Zambia National Building Society Bank(ZNBS Kapiri)",
+    "category": "bank",
+    "lat": -13.972701,
+    "lon": 28.678663,
+    "source": "gm"
+  },
+  {
+    "id": 160,
+    "display_name": "Zanaco Kabwe Head Office",
+    "category": "bank",
+    "lat": -14.440569,
+    "lon": 28.443114,
+    "source": "osm"
+  },
+  {
+    "id": 161,
+    "display_name": "Bankers Nest",
+    "category": "bar",
+    "lat": -14.44644,
+    "lon": 28.457746,
+    "source": "osm"
+  },
+  {
+    "id": 162,
+    "display_name": "Cashill Park",
+    "category": "bar",
+    "lat": -14.445802,
+    "lon": 28.457891,
+    "source": "osm"
+  },
+  {
+    "id": 163,
+    "display_name": "Kifco Sports Club",
+    "category": "bar",
+    "lat": -14.43333,
+    "lon": 28.440436,
+    "source": "osm"
+  },
+  {
+    "id": 164,
+    "display_name": "Kitwe",
+    "category": "bar",
+    "lat": -13.96161,
+    "lon": 28.673458,
+    "source": "gm"
+  },
+  {
+    "id": 165,
     "display_name": "Piluchi liquor shop",
     "category": "bar",
     "lat": -14.443528,
@@ -3680,15 +1320,335 @@
     "source": "gm"
   },
   {
-    "id": 319,
-    "display_name": "Pizo Lodge",
-    "category": "hotel",
-    "lat": -14.427902,
-    "lon": 28.432406,
+    "id": 166,
+    "display_name": "Zoz Are Zoz",
+    "category": "bar",
+    "lat": -14.438023,
+    "lon": 28.438136,
+    "source": "osm"
+  },
+  {
+    "id": 167,
+    "display_name": "Chimz Vista Lodge",
+    "category": "bed & breakfast",
+    "lat": -14.41791,
+    "lon": 28.474987,
     "source": "gm"
   },
   {
-    "id": 88,
+    "id": 168,
+    "display_name": "The House",
+    "category": "bed & breakfast",
+    "lat": -13.97176,
+    "lon": 28.684238,
+    "source": "gm"
+  },
+  {
+    "id": 169,
+    "display_name": "TWIZANINGO LODGE",
+    "category": "bed & breakfast",
+    "lat": -13.969621,
+    "lon": 28.680464,
+    "source": "gm"
+  },
+  {
+    "id": 170,
+    "display_name": "Harvesters Liquor Store",
+    "category": "beverages",
+    "lat": -14.442173,
+    "lon": 28.449787,
+    "source": "osm"
+  },
+  {
+    "id": 171,
+    "display_name": "Zaf Mess",
+    "category": "beverages",
+    "lat": -14.441979,
+    "lon": 28.451837,
+    "source": "osm"
+  },
+  {
+    "id": 172,
+    "display_name": "Faith outfits",
+    "category": "boutique",
+    "lat": -13.968481,
+    "lon": 28.678501,
+    "source": "gm"
+  },
+  {
+    "id": 173,
+    "display_name": "mud boutique kabwe mall",
+    "category": "boutique",
+    "lat": -14.425389,
+    "lon": 28.463393,
+    "source": "gm"
+  },
+  {
+    "id": 174,
+    "display_name": "Bolvic Cement Sales",
+    "category": "building_materials",
+    "lat": -14.443161,
+    "lon": 28.439083,
+    "source": "osm"
+  },
+  {
+    "id": 175,
+    "display_name": "Matilyo",
+    "category": "business broker",
+    "lat": -13.977503,
+    "lon": 28.68062,
+    "source": "gm"
+  },
+  {
+    "id": 176,
+    "display_name": "Mwamba Ng'ombe Meat Cutting Centre",
+    "category": "butcher",
+    "lat": -14.460006,
+    "lon": 28.451666,
+    "source": "osm"
+  },
+  {
+    "id": 177,
+    "display_name": "Kapiri mposhi (Kapiri Mposhi)",
+    "category": "cafe",
+    "lat": -13.963033,
+    "lon": 28.674463,
+    "source": "gm"
+  },
+  {
+    "id": 178,
+    "display_name": "Kapiri mposhi (Kapiri Mposhi)",
+    "category": "fuel",
+    "lat": -13.925747,
+    "lon": 28.666263,
+    "source": "gm"
+  },
+  {
+    "id": 179,
+    "display_name": "Kapiri Mposhi",
+    "category": "station",
+    "lat": -13.969919,
+    "lon": 28.676131,
+    "source": "osm"
+  },
+  {
+    "id": 180,
+    "display_name": "kapiri mposhi (Kapiri Mposhi)",
+    "category": "veterinary",
+    "lat": -14.001582,
+    "lon": 28.688908,
+    "source": "osm"
+  },
+  {
+    "id": 181,
+    "display_name": "kapiri mposhi (Kapiri Mposhi)",
+    "category": "veterinary",
+    "lat": -13.97264,
+    "lon": 28.681169,
+    "source": "osm"
+  },
+  {
+    "id": 182,
+    "display_name": "Palm Farm cottages and campsite",
+    "category": "camp_site",
+    "lat": -14.49769,
+    "lon": 28.388826,
+    "source": "osm"
+  },
+  {
+    "id": 183,
+    "display_name": "Elyada Farm",
+    "category": "campground",
+    "lat": -14.494085,
+    "lon": 28.38731,
+    "source": "gm"
+  },
+  {
+    "id": 184,
+    "display_name": "Autoworld",
+    "category": "car_repair",
+    "lat": -13.973173,
+    "lon": 28.679833,
+    "source": "osm"
+  },
+  {
+    "id": 185,
+    "display_name": "Splash Car Wash",
+    "category": "car_wash",
+    "lat": -14.45244,
+    "lon": 28.448557,
+    "source": "osm"
+  },
+  {
+    "id": 186,
+    "display_name": "Blossom surgery and clinic",
+    "category": "clinic",
+    "lat": -14.460182,
+    "lon": 28.45485,
+    "source": "gm"
+  },
+  {
+    "id": 187,
+    "display_name": "Central Division Police Clinic",
+    "category": "clinic",
+    "lat": -14.435713,
+    "lon": 28.444342,
+    "source": "osm"
+  },
+  {
+    "id": 188,
+    "display_name": "Chawama Clinic",
+    "category": "clinic",
+    "lat": -13.940839,
+    "lon": 28.667259,
+    "source": "osm"
+  },
+  {
+    "id": 189,
+    "display_name": "Chililalila Clinic",
+    "category": "clinic",
+    "lat": -14.443453,
+    "lon": 28.35484,
+    "source": "osm"
+  },
+  {
+    "id": 190,
+    "display_name": "Chowa Health centre",
+    "category": "clinic",
+    "lat": -14.459491,
+    "lon": 28.443445,
+    "source": "gm"
+  },
+  {
+    "id": 191,
+    "display_name": "Kabwe Trust Clinic",
+    "category": "clinic",
+    "lat": -14.434964,
+    "lon": 28.432389,
+    "source": "gm"
+  },
+  {
+    "id": 192,
+    "display_name": "Kafulamase Health Post",
+    "category": "clinic",
+    "lat": -14.484411,
+    "lon": 28.512846,
+    "source": "osm"
+  },
+  {
+    "id": 193,
+    "display_name": "Kasanda Clinic",
+    "category": "clinic",
+    "lat": -14.455327,
+    "lon": 28.426303,
+    "source": "gm"
+  },
+  {
+    "id": 194,
+    "display_name": "Katondo Clinic",
+    "category": "clinic",
+    "lat": -14.45665,
+    "lon": 28.471726,
+    "source": "osm"
+  },
+  {
+    "id": 195,
+    "display_name": "Katukwe health post",
+    "category": "clinic",
+    "lat": -13.966247,
+    "lon": 28.677272,
+    "source": "gm"
+  },
+  {
+    "id": 196,
+    "display_name": "Kawama Urban Health Centre",
+    "category": "clinic",
+    "lat": -13.98788,
+    "lon": 28.689411,
+    "source": "osm"
+  },
+  {
+    "id": 197,
+    "display_name": "KNU Clinic",
+    "category": "clinic",
+    "lat": -14.446403,
+    "lon": 28.466689,
+    "source": "gm"
+  },
+  {
+    "id": 198,
+    "display_name": "Magandanyama Health post",
+    "category": "clinic",
+    "lat": -14.457877,
+    "lon": 28.406268,
+    "source": "gm"
+  },
+  {
+    "id": 199,
+    "display_name": "Makululu Health Center",
+    "category": "clinic",
+    "lat": -14.445307,
+    "lon": 28.4137,
+    "source": "osm"
+  },
+  {
+    "id": 200,
+    "display_name": "Matilyo Health Centre",
+    "category": "clinic",
+    "lat": -13.976965,
+    "lon": 28.673473,
+    "source": "osm"
+  },
+  {
+    "id": 201,
+    "display_name": "Mela Medical Centre",
+    "category": "clinic",
+    "lat": -14.438309,
+    "lon": 28.45695,
+    "source": "gm"
+  },
+  {
+    "id": 202,
+    "display_name": "Mr Banda'S Clinic",
+    "category": "clinic",
+    "lat": -14.286467,
+    "lon": 28.548801,
+    "source": "osm"
+  },
+  {
+    "id": 203,
+    "display_name": "Mukuni Insurance Clinic Limited",
+    "category": "clinic",
+    "lat": -14.434199,
+    "lon": 28.461168,
+    "source": "osm"
+  },
+  {
+    "id": 204,
+    "display_name": "Mutaba Clinic",
+    "category": "clinic",
+    "lat": -13.921234,
+    "lon": 28.673739,
+    "source": "osm"
+  },
+  {
+    "id": 205,
+    "display_name": "Nakoli Clinic",
+    "category": "clinic",
+    "lat": -14.407734,
+    "lon": 28.449768,
+    "source": "osm"
+  },
+  {
+    "id": 206,
+    "display_name": "Ngungu Health Center",
+    "category": "clinic",
+    "lat": -14.39278,
+    "lon": 28.444078,
+    "source": "osm"
+  },
+  {
+    "id": 207,
     "display_name": "Pollen Health Center",
     "category": "clinic",
     "lat": -14.440958,
@@ -3696,7 +1656,95 @@
     "source": "osm"
   },
   {
-    "id": 104,
+    "id": 208,
+    "display_name": "Providence Medical Centre",
+    "category": "clinic",
+    "lat": -14.4388,
+    "lon": 28.441113,
+    "source": "gm"
+  },
+  {
+    "id": 209,
+    "display_name": "Railway Surgery Health Centre",
+    "category": "clinic",
+    "lat": -14.447781,
+    "lon": 28.442207,
+    "source": "gm"
+  },
+  {
+    "id": 210,
+    "display_name": "Waya Clinic",
+    "category": "clinic",
+    "lat": -14.472068,
+    "lon": 28.460497,
+    "source": "osm"
+  },
+  {
+    "id": 211,
+    "display_name": "Broken Hill College of Applied Sciences and Education",
+    "category": "college",
+    "lat": -14.450165,
+    "lon": 28.431337,
+    "source": "gm"
+  },
+  {
+    "id": 212,
+    "display_name": "Nkrumah University",
+    "category": "college",
+    "lat": -14.444716,
+    "lon": 28.469844,
+    "source": "osm"
+  },
+  {
+    "id": 213,
+    "display_name": "Valley View Medical Center",
+    "category": "community health center",
+    "lat": -14.448533,
+    "lon": 28.421669,
+    "source": "gm"
+  },
+  {
+    "id": 214,
+    "display_name": "Camco",
+    "category": "company",
+    "lat": -13.952582,
+    "lon": 28.667464,
+    "source": "osm"
+  },
+  {
+    "id": 215,
+    "display_name": "Zambia Railways Limited",
+    "category": "company",
+    "lat": -14.436432,
+    "lon": 28.443226,
+    "source": "osm"
+  },
+  {
+    "id": 216,
+    "display_name": "Founders Apartments",
+    "category": "condominium complex",
+    "lat": -14.439332,
+    "lon": 28.443599,
+    "source": "gm"
+  },
+  {
+    "id": 217,
+    "display_name": "Mutepa RARE Conference Centre",
+    "category": "conference center",
+    "lat": -14.317798,
+    "lon": 28.583251,
+    "source": "gm"
+  },
+  {
+    "id": 218,
+    "display_name": "Chabby's Store",
+    "category": "convenience",
+    "lat": -14.441423,
+    "lon": 28.466307,
+    "source": "osm"
+  },
+  {
+    "id": 219,
     "display_name": "Pollen Market",
     "category": "convenience",
     "lat": -14.440914,
@@ -3704,19 +1752,899 @@
     "source": "osm"
   },
   {
-    "id": 14,
-    "display_name": "Pond of Hope",
-    "category": "attraction",
-    "lat": -14.2948493,
-    "lon": 28.5584785,
-    "source": "jaeycod_kmz_razor_sharp"
+    "id": 220,
+    "display_name": "Kabwe High Court",
+    "category": "courthouse",
+    "lat": -14.443374,
+    "lon": 28.447215,
+    "source": "osm"
   },
   {
-    "id": 403,
-    "display_name": "Post Office",
-    "category": "post office",
-    "lat": -13.970065,
-    "lon": 28.678194,
+    "id": 221,
+    "display_name": "Mine secondary school 17310",
+    "category": "education center",
+    "lat": -14.428506,
+    "lon": 28.451357,
+    "source": "gm"
+  },
+  {
+    "id": 222,
+    "display_name": "School of Hope - AKCLZ",
+    "category": "education center",
+    "lat": -13.964281,
+    "lon": 28.674985,
+    "source": "gm"
+  },
+  {
+    "id": 223,
+    "display_name": "Soul Boarding house",
+    "category": "education center",
+    "lat": -14.284079,
+    "lon": 28.544741,
+    "source": "gm"
+  },
+  {
+    "id": 224,
+    "display_name": "Broadway School",
+    "category": "educational institution",
+    "lat": -14.442988,
+    "lon": 28.451185,
+    "source": "gm"
+  },
+  {
+    "id": 225,
+    "display_name": "Mine Secondary School",
+    "category": "educational institution",
+    "lat": -14.4454,
+    "lon": 28.428948,
+    "source": "gm"
+  },
+  {
+    "id": 226,
+    "display_name": "Mount Camel School",
+    "category": "educational institution",
+    "lat": -13.966064,
+    "lon": 28.669882,
+    "source": "gm"
+  },
+  {
+    "id": 227,
+    "display_name": "Pemeka Academy",
+    "category": "educational institution",
+    "lat": -13.980359,
+    "lon": 28.691113,
+    "source": "gm"
+  },
+  {
+    "id": 228,
+    "display_name": "Tesa Secondary School",
+    "category": "educational institution",
+    "lat": -13.983032,
+    "lon": 28.704316,
+    "source": "gm"
+  },
+  {
+    "id": 229,
+    "display_name": "Accounts",
+    "category": "educational_institution",
+    "lat": -14.445286,
+    "lon": 28.467186,
+    "source": "osm"
+  },
+  {
+    "id": 230,
+    "display_name": "Life Trust Empowerment",
+    "category": "educational_institution",
+    "lat": -14.47387,
+    "lon": 28.461867,
+    "source": "osm"
+  },
+  {
+    "id": 231,
+    "display_name": "ODL",
+    "category": "educational_institution",
+    "lat": -14.444536,
+    "lon": 28.466517,
+    "source": "osm"
+  },
+  {
+    "id": 232,
+    "display_name": "Unfinished power house",
+    "category": "electrical",
+    "lat": -14.444225,
+    "lon": 28.465404,
+    "source": "osm"
+  },
+  {
+    "id": 233,
+    "display_name": "Bremus",
+    "category": "fast_food",
+    "lat": -14.441215,
+    "lon": 28.448448,
+    "source": "osm"
+  },
+  {
+    "id": 234,
+    "display_name": "Hungry Lion",
+    "category": "fast_food",
+    "lat": -14.441526,
+    "lon": 28.446808,
+    "source": "osm"
+  },
+  {
+    "id": 235,
+    "display_name": "Subway",
+    "category": "fast_food",
+    "lat": -14.441471,
+    "lon": 28.447385,
+    "source": "osm"
+  },
+  {
+    "id": 236,
+    "display_name": "Agora microfinance Zambia",
+    "category": "financial institution",
+    "lat": -14.449621,
+    "lon": 28.426299,
+    "source": "gm"
+  },
+  {
+    "id": 237,
+    "display_name": "ExpressCredit Kabwe Branch",
+    "category": "financial institution",
+    "lat": -14.440829,
+    "lon": 28.444913,
+    "source": "gm"
+  },
+  {
+    "id": 238,
+    "display_name": "MyFund Zambia LTD",
+    "category": "financial institution",
+    "lat": -14.445964,
+    "lon": 28.464526,
+    "source": "gm"
+  },
+  {
+    "id": 239,
+    "display_name": "Herspace",
+    "category": "fitness_centre",
+    "lat": -14.448558,
+    "lon": 28.449339,
+    "source": "osm"
+  },
+  {
+    "id": 240,
+    "display_name": "Engen",
+    "category": "fuel",
+    "lat": -14.441652,
+    "lon": 28.446184,
+    "source": "gm"
+  },
+  {
+    "id": 241,
+    "display_name": "Kobil (Kabwe)",
+    "category": "fuel",
+    "lat": -14.441527,
+    "lon": 28.449193,
+    "source": "gm"
+  },
+  {
+    "id": 242,
+    "display_name": "Korridor Kapiri Mposhi Truck Stop",
+    "category": "fuel",
+    "lat": -13.922515,
+    "lon": 28.667634,
+    "source": "gm"
+  },
+  {
+    "id": 243,
+    "display_name": "Lake Petroieum",
+    "category": "fuel",
+    "lat": -13.96588,
+    "lon": 28.676118,
+    "source": "gm"
+  },
+  {
+    "id": 244,
+    "display_name": "Lake Petroleum (Kabwe Town)",
+    "category": "fuel",
+    "lat": -14.38835,
+    "lon": 28.496011,
+    "source": "gm"
+  },
+  {
+    "id": 245,
+    "display_name": "LAKE PETROLEUM (Kapiri Mposhi)",
+    "category": "fuel",
+    "lat": -13.976106,
+    "lon": 28.681185,
+    "source": "gm"
+  },
+  {
+    "id": 246,
+    "display_name": "Lake Petroleum (Kabwe Town)",
+    "category": "fuel",
+    "lat": -14.446977,
+    "lon": 28.429659,
+    "source": "osm"
+  },
+  {
+    "id": 247,
+    "display_name": "Meru",
+    "category": "fuel",
+    "lat": -14.442023,
+    "lon": 28.441519,
+    "source": "osm"
+  },
+  {
+    "id": 248,
+    "display_name": "Mount Meru Filling Station (Kapiri Mposhi)",
+    "category": "fuel",
+    "lat": -13.922274,
+    "lon": 28.675355,
+    "source": "gm"
+  },
+  {
+    "id": 249,
+    "display_name": "Mr Morgan Mumba's House",
+    "category": "fuel",
+    "lat": -13.998363,
+    "lon": 28.698833,
+    "source": "gm"
+  },
+  {
+    "id": 250,
+    "display_name": "MT. MERU-Kapiri Mposhi Weighbridge",
+    "category": "fuel",
+    "lat": -13.923687,
+    "lon": 28.666812,
+    "source": "gm"
+  },
+  {
+    "id": 251,
+    "display_name": "Puma Filling Station Kabwe Central",
+    "category": "fuel",
+    "lat": -14.441812,
+    "lon": 28.44463,
+    "source": "gm"
+  },
+  {
+    "id": 252,
+    "display_name": "Pure petroleum",
+    "category": "fuel",
+    "lat": -14.457327,
+    "lon": 28.425717,
+    "source": "gm"
+  },
+  {
+    "id": 253,
+    "display_name": "Rubis (Kabwe Town)",
+    "category": "fuel",
+    "lat": -14.424316,
+    "lon": 28.462625,
+    "source": "gm"
+  },
+  {
+    "id": 254,
+    "display_name": "Rubis (Kapiri Mposhi)",
+    "category": "fuel",
+    "lat": -13.950656,
+    "lon": 28.666475,
+    "source": "osm"
+  },
+  {
+    "id": 255,
+    "display_name": "Samfuel",
+    "category": "fuel",
+    "lat": -14.423941,
+    "lon": 28.462345,
+    "source": "gm"
+  },
+  {
+    "id": 256,
+    "display_name": "SURYA OIL-Kapiri Mposhi",
+    "category": "fuel",
+    "lat": -13.931908,
+    "lon": 28.66662,
+    "source": "gm"
+  },
+  {
+    "id": 257,
+    "display_name": "Total Filling Station",
+    "category": "fuel",
+    "lat": -14.419018,
+    "lon": 28.461321,
+    "source": "gm"
+  },
+  {
+    "id": 258,
+    "display_name": "UNO-Kapiri Mposhi",
+    "category": "fuel",
+    "lat": -13.981451,
+    "lon": 28.682343,
+    "source": "gm"
+  },
+  {
+    "id": 259,
+    "display_name": "Z I trading",
+    "category": "fuel",
+    "lat": -13.968563,
+    "lon": 28.677131,
+    "source": "gm"
+  },
+  {
+    "id": 260,
+    "display_name": "Kapiri Mposhi Weighbridge",
+    "category": "government",
+    "lat": -13.924892,
+    "lon": 28.665347,
+    "source": "osm"
+  },
+  {
+    "id": 261,
+    "display_name": "Road Traffic and Safety Agency (RTSA)",
+    "category": "government",
+    "lat": -14.426242,
+    "lon": 28.450959,
+    "source": "osm"
+  },
+  {
+    "id": 262,
+    "display_name": "Caracas lodge",
+    "category": "guest_house",
+    "lat": -13.929739,
+    "lon": 28.667048,
+    "source": "osm"
+  },
+  {
+    "id": 263,
+    "display_name": "Fred's Guest House",
+    "category": "guest_house",
+    "lat": -14.451432,
+    "lon": 28.424347,
+    "source": "gm"
+  },
+  {
+    "id": 264,
+    "display_name": "Luapula Guest House (Kabwe Town)",
+    "category": "guest_house",
+    "lat": -14.441444,
+    "lon": 28.458341,
+    "source": "osm"
+  },
+  {
+    "id": 265,
+    "display_name": "Luapula Guest House (Kabwe Town)",
+    "category": "hotel",
+    "lat": -14.429429,
+    "lon": 28.450747,
+    "source": "gm"
+  },
+  {
+    "id": 266,
+    "display_name": "Ma22 Annex",
+    "category": "guest_house",
+    "lat": -13.928919,
+    "lon": 28.667052,
+    "source": "osm"
+  },
+  {
+    "id": 267,
+    "display_name": "Ma22 Lodge",
+    "category": "guest_house",
+    "lat": -14.488013,
+    "lon": 28.406709,
+    "source": "osm"
+  },
+  {
+    "id": 268,
+    "display_name": "Mulubila Lodge",
+    "category": "guest_house",
+    "lat": -14.441844,
+    "lon": 28.469208,
+    "source": "osm"
+  },
+  {
+    "id": 269,
+    "display_name": "Nalikwanda Guest House",
+    "category": "guest_house",
+    "lat": -14.444862,
+    "lon": 28.460721,
+    "source": "gm"
+  },
+  {
+    "id": 270,
+    "display_name": "Ngocho lodge",
+    "category": "guest_house",
+    "lat": -14.483059,
+    "lon": 28.411969,
+    "source": "osm"
+  },
+  {
+    "id": 271,
+    "display_name": "Novotel Guest Rooms",
+    "category": "guest_house",
+    "lat": -13.971914,
+    "lon": 28.68292,
+    "source": "gm"
+  },
+  {
+    "id": 272,
+    "display_name": "Nyaka Guest House",
+    "category": "guest_house",
+    "lat": -14.450536,
+    "lon": 28.439223,
+    "source": "gm"
+  },
+  {
+    "id": 273,
+    "display_name": "Pillar lodge",
+    "category": "guest_house",
+    "lat": -13.930229,
+    "lon": 28.666733,
+    "source": "osm"
+  },
+  {
+    "id": 274,
+    "display_name": "Prezo Lodge",
+    "category": "guest_house",
+    "lat": -14.427562,
+    "lon": 28.432428,
+    "source": "osm"
+  },
+  {
+    "id": 275,
+    "display_name": "The Fig Tree Guest House Kabwe",
+    "category": "guest_house",
+    "lat": -14.511116,
+    "lon": 28.380999,
+    "source": "gm"
+  },
+  {
+    "id": 276,
+    "display_name": "Wilson's Guest House",
+    "category": "guest_house",
+    "lat": -14.413696,
+    "lon": 28.460212,
+    "source": "gm"
+  },
+  {
+    "id": 277,
+    "display_name": "Mahatma Gandhi Memorial Clinic",
+    "category": "health",
+    "lat": -14.43547,
+    "lon": 28.461628,
+    "source": "gm"
+  },
+  {
+    "id": 278,
+    "display_name": "Clinic-24 Medical Centre",
+    "category": "health consultant",
+    "lat": -13.97681,
+    "lon": 28.688205,
+    "source": "gm"
+  },
+  {
+    "id": 279,
+    "display_name": "Green World Health Post",
+    "category": "health_post",
+    "lat": -14.448078,
+    "lon": 28.411855,
+    "source": "osm"
+  },
+  {
+    "id": 280,
+    "display_name": "Mukuni Insurance Clinic",
+    "category": "health_post",
+    "lat": -13.973263,
+    "lon": 28.687759,
+    "source": "osm"
+  },
+  {
+    "id": 281,
+    "display_name": "Multi-Resistance Tuberculosis Centre",
+    "category": "health_post",
+    "lat": -14.410981,
+    "lon": 28.44423,
+    "source": "osm"
+  },
+  {
+    "id": 282,
+    "display_name": "Blood Bank - Kabwe Central Hospital",
+    "category": "hospital",
+    "lat": -14.43135,
+    "lon": 28.430146,
+    "source": "gm"
+  },
+  {
+    "id": 283,
+    "display_name": "Central Provincial Health Office - Pharmacy store",
+    "category": "hospital",
+    "lat": -14.431304,
+    "lon": 28.429441,
+    "source": "gm"
+  },
+  {
+    "id": 284,
+    "display_name": "HEALTHY LIVING MEDICAL CONSULTANCY PRIVATE CLINIC",
+    "category": "hospital",
+    "lat": -13.971942,
+    "lon": 28.681306,
+    "source": "gm"
+  },
+  {
+    "id": 285,
+    "display_name": "Kabwe Central Hospital",
+    "category": "hospital",
+    "lat": -14.434535,
+    "lon": 28.429463,
+    "source": "gm"
+  },
+  {
+    "id": 286,
+    "display_name": "Kabwe General Hospital",
+    "category": "hospital",
+    "lat": -14.43501,
+    "lon": 28.429398,
+    "source": "osm"
+  },
+  {
+    "id": 287,
+    "display_name": "Kapiri Mposhi District Hospital",
+    "category": "hospital",
+    "lat": -13.896559,
+    "lon": 28.670372,
+    "source": "gm"
+  },
+  {
+    "id": 288,
+    "display_name": "Mine Hospital 1B",
+    "category": "hospital",
+    "lat": -14.44861,
+    "lon": 28.43903,
+    "source": "osm"
+  },
+  {
+    "id": 289,
+    "display_name": "chimwemwe hostes",
+    "category": "hostel",
+    "lat": -14.446518,
+    "lon": 28.466086,
+    "source": "osm"
+  },
+  {
+    "id": 290,
+    "display_name": "DOSA",
+    "category": "hostel",
+    "lat": -14.445093,
+    "lon": 28.46904,
+    "source": "osm"
+  },
+  {
+    "id": 291,
+    "display_name": "Glamorous Lodge",
+    "category": "hostel",
+    "lat": -14.452288,
+    "lon": 28.418024,
+    "source": "gm"
+  },
+  {
+    "id": 292,
+    "display_name": "Hostels",
+    "category": "hostel",
+    "lat": -14.443971,
+    "lon": 28.469275,
+    "source": "osm"
+  },
+  {
+    "id": 293,
+    "display_name": "KNU Zambezi Hostel",
+    "category": "hostel",
+    "lat": -14.444458,
+    "lon": 28.468557,
+    "source": "gm"
+  },
+  {
+    "id": 294,
+    "display_name": "Luena down hostel",
+    "category": "hostel",
+    "lat": -14.448494,
+    "lon": 28.445583,
+    "source": "gm"
+  },
+  {
+    "id": 295,
+    "display_name": "Paidesa Hostel",
+    "category": "hostel",
+    "lat": -14.445128,
+    "lon": 28.474086,
+    "source": "gm"
+  },
+  {
+    "id": 296,
+    "display_name": "Shamis lodge kapiri mposhi",
+    "category": "hostel",
+    "lat": -13.951254,
+    "lon": 28.66798,
+    "source": "gm"
+  },
+  {
+    "id": 297,
+    "display_name": "B M Kalulu",
+    "category": "hotel",
+    "lat": -13.994071,
+    "lon": 28.686027,
+    "source": "gm"
+  },
+  {
+    "id": 298,
+    "display_name": "Caracus Lodge",
+    "category": "hotel",
+    "lat": -13.929536,
+    "lon": 28.666445,
+    "source": "gm"
+  },
+  {
+    "id": 299,
+    "display_name": "Chanika Lodge",
+    "category": "hotel",
+    "lat": -13.968096,
+    "lon": 28.677114,
+    "source": "osm"
+  },
+  {
+    "id": 300,
+    "display_name": "east park executive lodge",
+    "category": "hotel",
+    "lat": -13.97061,
+    "lon": 28.699409,
+    "source": "gm"
+  },
+  {
+    "id": 301,
+    "display_name": "FARMERS REST LODGE & RESORT",
+    "category": "hotel",
+    "lat": -14.43694,
+    "lon": 28.440906,
+    "source": "gm"
+  },
+  {
+    "id": 302,
+    "display_name": "Golden Sonnets Hotel Limited",
+    "category": "hotel",
+    "lat": -14.442513,
+    "lon": 28.455894,
+    "source": "gm"
+  },
+  {
+    "id": 303,
+    "display_name": "Gonde Lodge",
+    "category": "hotel",
+    "lat": -14.409484,
+    "lon": 28.473596,
+    "source": "osm"
+  },
+  {
+    "id": 304,
+    "display_name": "Green Grass Lodge",
+    "category": "hotel",
+    "lat": -14.446897,
+    "lon": 28.448104,
+    "source": "gm"
+  },
+  {
+    "id": 305,
+    "display_name": "Horizon",
+    "category": "hotel",
+    "lat": -14.441035,
+    "lon": 28.44433,
+    "source": "gm"
+  },
+  {
+    "id": 306,
+    "display_name": "JARIBU GUEST HOUSE",
+    "category": "hotel",
+    "lat": -13.923992,
+    "lon": 28.672841,
+    "source": "gm"
+  },
+  {
+    "id": 307,
+    "display_name": "Kabwe Hotel",
+    "category": "hotel",
+    "lat": -14.425914,
+    "lon": 28.438148,
+    "source": "gm"
+  },
+  {
+    "id": 308,
+    "display_name": "Kabwe Lodge",
+    "category": "hotel",
+    "lat": -14.440855,
+    "lon": 28.445915,
+    "source": "gm"
+  },
+  {
+    "id": 309,
+    "display_name": "Kabwe Safari Lodge",
+    "category": "hotel",
+    "lat": -14.435432,
+    "lon": 28.437613,
+    "source": "gm"
+  },
+  {
+    "id": 310,
+    "display_name": "KAPIRI COUNCIL LODGE",
+    "category": "hotel",
+    "lat": -13.971062,
+    "lon": 28.680862,
+    "source": "gm"
+  },
+  {
+    "id": 311,
+    "display_name": "Luchi Lodge",
+    "category": "hotel",
+    "lat": -14.435068,
+    "lon": 28.440954,
+    "source": "gm"
+  },
+  {
+    "id": 312,
+    "display_name": "Ma 22 Lodge",
+    "category": "hotel",
+    "lat": -13.928883,
+    "lon": 28.665874,
+    "source": "osm"
+  },
+  {
+    "id": 313,
+    "display_name": "Magogo Transit Lodge",
+    "category": "hotel",
+    "lat": -13.991054,
+    "lon": 28.685497,
+    "source": "gm"
+  },
+  {
+    "id": 314,
+    "display_name": "Misuku Lodge",
+    "category": "hotel",
+    "lat": -14.440359,
+    "lon": 28.449148,
+    "source": "gm"
+  },
+  {
+    "id": 315,
+    "display_name": "Moldies Lodge",
+    "category": "hotel",
+    "lat": -14.451072,
+    "lon": 28.439841,
+    "source": "gm"
+  },
+  {
+    "id": 316,
+    "display_name": "MOONLIGHT EXECUTIVE LODGE",
+    "category": "hotel",
+    "lat": -13.918997,
+    "lon": 28.683665,
+    "source": "gm"
+  },
+  {
+    "id": 317,
+    "display_name": "Mukuyu lodge",
+    "category": "hotel",
+    "lat": -14.444665,
+    "lon": 28.439445,
+    "source": "gm"
+  },
+  {
+    "id": 318,
+    "display_name": "Mwizu Lodge",
+    "category": "hotel",
+    "lat": -14.445978,
+    "lon": 28.445832,
+    "source": "gm"
+  },
+  {
+    "id": 319,
+    "display_name": "Neem Park Courtyard",
+    "category": "hotel",
+    "lat": -14.438109,
+    "lon": 28.452397,
+    "source": "gm"
+  },
+  {
+    "id": 320,
+    "display_name": "Ngocho Lodge Kabwe",
+    "category": "hotel",
+    "lat": -14.447193,
+    "lon": 28.475053,
+    "source": "gm"
+  },
+  {
+    "id": 321,
+    "display_name": "Orchard Mist Lodges",
+    "category": "hotel",
+    "lat": -14.455931,
+    "lon": 28.428239,
+    "source": "gm"
+  },
+  {
+    "id": 322,
+    "display_name": "Pa N'gwena Lodge",
+    "category": "hotel",
+    "lat": -13.973947,
+    "lon": 28.683194,
+    "source": "gm"
+  },
+  {
+    "id": 323,
+    "display_name": "PENIEL EXECUTIVE LODGE",
+    "category": "hotel",
+    "lat": -13.97338,
+    "lon": 28.682141,
+    "source": "gm"
+  },
+  {
+    "id": 324,
+    "display_name": "Roadside hotel kapiri mposhi",
+    "category": "hotel",
+    "lat": -13.94795,
+    "lon": 28.661927,
+    "source": "gm"
+  },
+  {
+    "id": 325,
+    "display_name": "Royal Cashrise Hotel",
+    "category": "hotel",
+    "lat": -14.445959,
+    "lon": 28.444789,
+    "source": "gm"
+  },
+  {
+    "id": 326,
+    "display_name": "Senady Lodge",
+    "category": "hotel",
+    "lat": -14.438813,
+    "lon": 28.442342,
+    "source": "gm"
+  },
+  {
+    "id": 327,
+    "display_name": "SHIKATASHA CORPORATE LODGE",
+    "category": "hotel",
+    "lat": -13.963689,
+    "lon": 28.675089,
+    "source": "gm"
+  },
+  {
+    "id": 328,
+    "display_name": "Sonnets Hotel Swimming pool",
+    "category": "hotel",
+    "lat": -14.442765,
+    "lon": 28.455293,
+    "source": "osm"
+  },
+  {
+    "id": 329,
+    "display_name": "Sweethouse",
+    "category": "hotel",
+    "lat": -14.424267,
+    "lon": 28.465632,
+    "source": "gm"
+  },
+  {
+    "id": 330,
+    "display_name": "The Enclave Lodge",
+    "category": "hotel",
+    "lat": -14.436694,
+    "lon": 28.455051,
+    "source": "gm"
+  },
+  {
+    "id": 331,
+    "display_name": "Tuskers",
+    "category": "hotel",
+    "lat": -14.443894,
+    "lon": 28.445755,
     "source": "gm"
   },
   {
@@ -3728,502 +2656,6 @@
     "source": "gm"
   },
   {
-    "id": 182,
-    "display_name": "Prezo Lodge",
-    "category": "guest_house",
-    "lat": -14.427562,
-    "lon": 28.432428,
-    "source": "osm"
-  },
-  {
-    "id": 605,
-    "display_name": "Primefuels Zambia Kapiri Mposhi Depot",
-    "category": "trucking company",
-    "lat": -13.95609,
-    "lon": 28.674177,
-    "source": "gm"
-  },
-  {
-    "id": 500,
-    "display_name": "Prince Of Peace School",
-    "category": "school",
-    "lat": -13.962632,
-    "lon": 28.682666,
-    "source": "osm"
-  },
-  {
-    "id": 89,
-    "display_name": "Providence Medical Centre",
-    "category": "clinic",
-    "lat": -14.4388,
-    "lon": 28.441113,
-    "source": "gm"
-  },
-  {
-    "id": 149,
-    "display_name": "Puma Central Service Station",
-    "category": "fuel",
-    "lat": -14.441745,
-    "lon": 28.444478,
-    "source": "osm"
-  },
-  {
-    "id": 150,
-    "display_name": "Puma Corner Filling Station Kabwe",
-    "category": "fuel",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 151,
-    "display_name": "Puma Filling Station Kabwe Central",
-    "category": "fuel",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 152,
-    "display_name": "Pure petroleum",
-    "category": "fuel",
-    "lat": -14.457327,
-    "lon": 28.425717,
-    "source": "gm"
-  },
-  {
-    "id": 157,
-    "display_name": "RUBIS-Kapiri(Formerly SAMFUEL)",
-    "category": "fuel",
-    "lat": -13.95067,
-    "lon": 28.666477,
-    "source": "gm"
-  },
-  {
-    "id": 540,
-    "display_name": "Radian Stores",
-    "category": "shop",
-    "lat": -14.442732,
-    "lon": 28.447516,
-    "source": "gm"
-  },
-  {
-    "id": 90,
-    "display_name": "Railway Surgery Health Centre",
-    "category": "clinic",
-    "lat": -14.447781,
-    "lon": 28.442207,
-    "source": "gm"
-  },
-  {
-    "id": 91,
-    "display_name": "Railway Surgical Centre",
-    "category": "clinic",
-    "lat": -14.447866,
-    "lon": 28.442251,
-    "source": "osm"
-  },
-  {
-    "id": 374,
-    "display_name": "RedRose Pharmacy",
-    "category": "pharmacy",
-    "lat": -14.442143,
-    "lon": 28.441796,
-    "source": "gm"
-  },
-  {
-    "id": 560,
-    "display_name": "Road Development Agency- Kapiri Mposhi Weighbridge",
-    "category": "station",
-    "lat": -13.925088,
-    "lon": 28.665496,
-    "source": "gm"
-  },
-  {
-    "id": 169,
-    "display_name": "Road Traffic and Safety Agency (RTSA)",
-    "category": "government",
-    "lat": -14.426242,
-    "lon": 28.450959,
-    "source": "osm"
-  },
-  {
-    "id": 320,
-    "display_name": "Roadside hotel kapiri mposhi",
-    "category": "hotel",
-    "lat": -13.94795,
-    "lon": 28.661927,
-    "source": "gm"
-  },
-  {
-    "id": 321,
-    "display_name": "Royal Cashrise Hotel",
-    "category": "hotel",
-    "lat": -14.445959,
-    "lon": 28.444789,
-    "source": "gm"
-  },
-  {
-    "id": 3,
-    "display_name": "Royalty apartments",
-    "category": "apartment",
-    "lat": -14.2924325,
-    "lon": 28.5464327,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 153,
-    "display_name": "Rubis",
-    "category": "fuel",
-    "lat": -13.950656,
-    "lon": 28.666475,
-    "source": "osm"
-  },
-  {
-    "id": 156,
-    "display_name": "Rubis Kabwe",
-    "category": "fuel",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 155,
-    "display_name": "Rubis filling station",
-    "category": "fuel",
-    "lat": -14.441531,
-    "lon": 28.449097,
-    "source": "gm"
-  },
-  {
-    "id": 274,
-    "display_name": "Rufunsa hostel",
-    "category": "hostel",
-    "lat": -14.2960142,
-    "lon": 28.5548727,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 627,
-    "display_name": "SBA-4",
-    "category": "university",
-    "lat": -14.2931366,
-    "lon": 28.5630272,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 324,
-    "display_name": "SHIKATASHA CORPORATE LODGE",
-    "category": "hotel",
-    "lat": -13.963689,
-    "lon": 28.675089,
-    "source": "gm"
-  },
-  {
-    "id": 581,
-    "display_name": "SHOPPERS 24HRS SUPERMARKET",
-    "category": "supermarket",
-    "lat": -14.441609,
-    "lon": 28.449296,
-    "source": "gm"
-  },
-  {
-    "id": 588,
-    "display_name": "SHOPRITE-Kapiri Mposhi",
-    "category": "supermarket",
-    "lat": -13.970674,
-    "lon": 28.678349,
-    "source": "gm"
-  },
-  {
-    "id": 375,
-    "display_name": "SMARTLIFE",
-    "category": "pharmacy",
-    "lat": -13.969328,
-    "lon": 28.677696,
-    "source": "gm"
-  },
-  {
-    "id": 279,
-    "display_name": "SOLWEZI HOSTEL",
-    "category": "hostel",
-    "lat": -14.2945613,
-    "lon": 28.5568688,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 628,
-    "display_name": "SSS-Block C",
-    "category": "university",
-    "lat": -14.2972844,
-    "lon": 28.553841,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 629,
-    "display_name": "SSS-Block E",
-    "category": "university",
-    "lat": -14.2977922,
-    "lon": 28.5539424,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 630,
-    "display_name": "SSS-Block F",
-    "category": "university",
-    "lat": -14.2978955,
-    "lon": 28.5538091,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 392,
-    "display_name": "ST. VERONICA PARISH",
-    "category": "place_of_worship",
-    "lat": -14.43725,
-    "lon": 28.476699,
-    "source": "osm"
-  },
-  {
-    "id": 509,
-    "display_name": "ST.JOHN PAUL II SECONDARY SCHOOL",
-    "category": "school",
-    "lat": -13.969778,
-    "lon": 28.679676,
-    "source": "gm"
-  },
-  {
-    "id": 159,
-    "display_name": "SURYA OIL-Kapiri Mposhi",
-    "category": "fuel",
-    "lat": -13.931908,
-    "lon": 28.66662,
-    "source": "gm"
-  },
-  {
-    "id": 390,
-    "display_name": "Saint Columba's Presbyterian Church",
-    "category": "place_of_worship",
-    "lat": -14.439094,
-    "lon": 28.457078,
-    "source": "osm"
-  },
-  {
-    "id": 275,
-    "display_name": "Sakeji Hostel",
-    "category": "hostel",
-    "lat": -14.2959815,
-    "lon": 28.5546792,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 158,
-    "display_name": "Samfuel",
-    "category": "fuel",
-    "lat": -14.423941,
-    "lon": 28.462345,
-    "source": "gm"
-  },
-  {
-    "id": 501,
-    "display_name": "School of Agriculture Laboratory",
-    "category": "school",
-    "lat": -14.2973562,
-    "lon": 28.555166,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 5,
-    "display_name": "School of Agriculture and Natural Resources (SANR)",
-    "category": "association / organization",
-    "lat": -14.2981297,
-    "lon": 28.5546295,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 6,
-    "display_name": "School of Business Studies (SBS)",
-    "category": "association / organization",
-    "lat": -14.298299,
-    "lon": 28.5552119,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 502,
-    "display_name": "School of Education (SOE)",
-    "category": "school",
-    "lat": -14.2970644,
-    "lon": 28.5533072,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 503,
-    "display_name": "School of Engineering and Technology",
-    "category": "school",
-    "lat": -14.2971123,
-    "lon": 28.5532378,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 109,
-    "display_name": "School of Hope - AKCLZ",
-    "category": "education center",
-    "lat": -13.964281,
-    "lon": 28.674985,
-    "source": "gm"
-  },
-  {
-    "id": 504,
-    "display_name": "School of Natural and Applied Science (SNAS)",
-    "category": "school",
-    "lat": -14.2969306,
-    "lon": 28.553101,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 7,
-    "display_name": "School of Social Sciences",
-    "category": "association / organization",
-    "lat": -14.2974806,
-    "lon": 28.5538906,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 431,
-    "display_name": "Seli's Treats",
-    "category": "restaurant",
-    "lat": -13.969525,
-    "lon": 28.677783,
-    "source": "gm"
-  },
-  {
-    "id": 322,
-    "display_name": "Senady Lodge",
-    "category": "hotel",
-    "lat": -14.438813,
-    "lon": 28.442342,
-    "source": "gm"
-  },
-  {
-    "id": 276,
-    "display_name": "Senanga Hostel",
-    "category": "hostel",
-    "lat": -14.2933197,
-    "lon": 28.5531349,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 277,
-    "display_name": "Serenje Hostel",
-    "category": "hostel",
-    "lat": -14.2942385,
-    "lon": 28.5550979,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 505,
-    "display_name": "Shalom Primary School",
-    "category": "school",
-    "lat": -13.970915,
-    "lon": 28.686713,
-    "source": "osm"
-  },
-  {
-    "id": 338,
-    "display_name": "Shamariah Lodge",
-    "category": "lodging",
-    "lat": -13.920877,
-    "lon": 28.67349,
-    "source": "gm"
-  },
-  {
-    "id": 278,
-    "display_name": "Shamis lodge kapiri mposhi",
-    "category": "hostel",
-    "lat": -13.951254,
-    "lon": 28.66798,
-    "source": "gm"
-  },
-  {
-    "id": 323,
-    "display_name": "Sherbourne Hotel",
-    "category": "hotel",
-    "lat": -13.971962,
-    "lon": 28.679153,
-    "source": "osm"
-  },
-  {
-    "id": 582,
-    "display_name": "Shoprite",
-    "category": "supermarket",
-    "lat": -14.424751,
-    "lon": 28.46394,
-    "source": "osm"
-  },
-  {
-    "id": 585,
-    "display_name": "Shoprite Kabwe",
-    "category": "supermarket",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 586,
-    "display_name": "Shoprite Mini Kapiri Mposhi",
-    "category": "supermarket",
-    "lat": -13.970576,
-    "lon": 28.678307,
-    "source": "gm"
-  },
-  {
-    "id": 587,
-    "display_name": "Shoprite Mulungushi Kabwe",
-    "category": "supermarket",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 589,
-    "display_name": "Sim one shopping centre",
-    "category": "supermarket",
-    "lat": -14.2918852,
-    "lon": 28.5472516,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 590,
-    "display_name": "Simba Milling LTD Kabwe Depot",
-    "category": "supermarket",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 432,
-    "display_name": "Sizzle and spice india Restaurant",
-    "category": "restaurant",
-    "lat": -14.442098,
-    "lon": 28.445739,
-    "source": "gm"
-  },
-  {
-    "id": 591,
-    "display_name": "Smart choice Indian groceries ltd kabwe",
-    "category": "supermarket",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 325,
-    "display_name": "Sonnets Hotel Swimming pool",
-    "category": "hotel",
-    "lat": -14.442765,
-    "lon": 28.455293,
-    "source": "osm"
-  },
-  {
     "id": 333,
     "display_name": "Sonnets Hypermarket",
     "category": "hypermarket",
@@ -4232,780 +2664,12 @@
     "source": "gm"
   },
   {
-    "id": 110,
-    "display_name": "Soul Boarding house",
-    "category": "education center",
-    "lat": -14.284079,
-    "lon": 28.544741,
+    "id": 334,
+    "display_name": "Dolphin Nursery School",
+    "category": "kindergarten",
+    "lat": -13.974213,
+    "lon": 28.685974,
     "source": "gm"
-  },
-  {
-    "id": 41,
-    "display_name": "Soul cafe",
-    "category": "bar",
-    "lat": -14.2906258,
-    "lon": 28.5450428,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 348,
-    "display_name": "Soweto Market",
-    "category": "market",
-    "lat": -13.958693,
-    "lon": 28.687461,
-    "source": "gm"
-  },
-  {
-    "id": 61,
-    "display_name": "Splash Car Wash",
-    "category": "car_wash",
-    "lat": -14.45244,
-    "lon": 28.448557,
-    "source": "osm"
-  },
-  {
-    "id": 506,
-    "display_name": "Ss School",
-    "category": "school",
-    "lat": -14.404864,
-    "lon": 28.461348,
-    "source": "osm"
-  },
-  {
-    "id": 507,
-    "display_name": "St Columba's",
-    "category": "school",
-    "lat": -14.439046,
-    "lon": 28.457136,
-    "source": "osm"
-  },
-  {
-    "id": 391,
-    "display_name": "St Mary's",
-    "category": "place_of_worship",
-    "lat": -14.445416,
-    "lon": 28.431143,
-    "source": "osm"
-  },
-  {
-    "id": 508,
-    "display_name": "St. Philomina College Of Education",
-    "category": "school",
-    "lat": -13.983979,
-    "lon": 28.683939,
-    "source": "osm"
-  },
-  {
-    "id": 32,
-    "display_name": "Stanbic Bank",
-    "category": "bank",
-    "lat": -14.441851,
-    "lon": 28.444122,
-    "source": "osm"
-  },
-  {
-    "id": 11,
-    "display_name": "Stanbic Bank ATM",
-    "category": "atm",
-    "lat": -13.971744,
-    "lon": 28.679282,
-    "source": "gm"
-  },
-  {
-    "id": 552,
-    "display_name": "Star Sports Club",
-    "category": "sports",
-    "lat": -14.437001,
-    "lon": 28.457711,
-    "source": "osm"
-  },
-  {
-    "id": 510,
-    "display_name": "Starise Academy",
-    "category": "school",
-    "lat": -14.437218,
-    "lon": 28.467837,
-    "source": "gm"
-  },
-  {
-    "id": 604,
-    "display_name": "Station Kabwe",
-    "category": "transportation service",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 433,
-    "display_name": "Steers",
-    "category": "restaurant",
-    "lat": -13.971953,
-    "lon": 28.679145,
-    "source": "gm"
-  },
-  {
-    "id": 435,
-    "display_name": "Steers/Debonairs Pizza",
-    "category": "restaurant",
-    "lat": -14.441509,
-    "lon": 28.447107,
-    "source": "osm"
-  },
-  {
-    "id": 511,
-    "display_name": "Stephen Luwisha Girls Secondary School",
-    "category": "school",
-    "lat": -14.445323,
-    "lon": 28.433071,
-    "source": "gm"
-  },
-  {
-    "id": 512,
-    "display_name": "Street",
-    "category": "school",
-    "lat": -13.977868,
-    "lon": 28.684811,
-    "source": "gm"
-  },
-  {
-    "id": 125,
-    "display_name": "Subway",
-    "category": "fast_food",
-    "lat": -14.441471,
-    "lon": 28.447385,
-    "source": "osm"
-  },
-  {
-    "id": 436,
-    "display_name": "Success foods",
-    "category": "restaurant",
-    "lat": -14.2936689,
-    "lon": 28.5491449,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 592,
-    "display_name": "Sunshine industries bakery 1",
-    "category": "supermarket",
-    "lat": -13.969923,
-    "lon": 28.678676,
-    "source": "gm"
-  },
-  {
-    "id": 280,
-    "display_name": "Sutam Boarding house",
-    "category": "hostel",
-    "lat": -14.2834033,
-    "lon": 28.5589853,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 437,
-    "display_name": "Swank Foods",
-    "category": "restaurant",
-    "lat": -14.43751,
-    "lon": 28.438328,
-    "source": "gm"
-  },
-  {
-    "id": 542,
-    "display_name": "Sweet Hour",
-    "category": "shop",
-    "lat": -14.448494,
-    "lon": 28.445584,
-    "source": "gm"
-  },
-  {
-    "id": 326,
-    "display_name": "Sweethouse",
-    "category": "hotel",
-    "lat": -14.424267,
-    "lon": 28.465632,
-    "source": "gm"
-  },
-  {
-    "id": 45,
-    "display_name": "TWIZANINGO LODGE",
-    "category": "bed & breakfast",
-    "lat": -13.969621,
-    "lon": 28.680464,
-    "source": "gm"
-  },
-  {
-    "id": 281,
-    "display_name": "Tanganika Hostel",
-    "category": "hostel",
-    "lat": -14.2970936,
-    "lon": 28.5601433,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 438,
-    "display_name": "Tawakal restaurant halal foods",
-    "category": "restaurant",
-    "lat": -13.920923,
-    "lon": 28.673488,
-    "source": "gm"
-  },
-  {
-    "id": 601,
-    "display_name": "Taxi rank and bus stop",
-    "category": "transport",
-    "lat": -14.2946378,
-    "lon": 28.5496993,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 118,
-    "display_name": "Tesa Secondary School",
-    "category": "educational institution",
-    "lat": -13.983032,
-    "lon": 28.704316,
-    "source": "gm"
-  },
-  {
-    "id": 543,
-    "display_name": "The Bed Shop Kabwe Mall",
-    "category": "shop",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 327,
-    "display_name": "The Enclave Lodge",
-    "category": "hotel",
-    "lat": -14.436694,
-    "lon": 28.455051,
-    "source": "gm"
-  },
-  {
-    "id": 439,
-    "display_name": "The Fig Tree Cafe",
-    "category": "restaurant",
-    "lat": -14.489823,
-    "lon": 28.405248,
-    "source": "gm"
-  },
-  {
-    "id": 183,
-    "display_name": "The Fig Tree Guest House Kabwe",
-    "category": "guest_house",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 44,
-    "display_name": "The House",
-    "category": "bed & breakfast",
-    "lat": -13.97176,
-    "lon": 28.684238,
-    "source": "gm"
-  },
-  {
-    "id": 440,
-    "display_name": "The Ranch",
-    "category": "restaurant",
-    "lat": -14.442456,
-    "lon": 28.452618,
-    "source": "gm"
-  },
-  {
-    "id": 441,
-    "display_name": "The Swan",
-    "category": "restaurant",
-    "lat": -13.947279,
-    "lon": 28.663985,
-    "source": "gm"
-  },
-  {
-    "id": 593,
-    "display_name": "The souk",
-    "category": "supermarket",
-    "lat": -14.443548,
-    "lon": 28.444607,
-    "source": "gm"
-  },
-  {
-    "id": 594,
-    "display_name": "Tita Wholesale And Retail",
-    "category": "supermarket",
-    "lat": -14.443209,
-    "lon": 28.443856,
-    "source": "gm"
-  },
-  {
-    "id": 442,
-    "display_name": "Toplife Pub",
-    "category": "restaurant",
-    "lat": -14.016694,
-    "lon": 28.677494,
-    "source": "gm"
-  },
-  {
-    "id": 160,
-    "display_name": "Total Filling Station",
-    "category": "restaurant",
-    "lat": -14.441893,
-    "lon": 28.443753,
-    "source": "gm"
-  },
-  {
-    "id": 161,
-    "display_name": "Total Kabwe",
-    "category": "fuel",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 162,
-    "display_name": "TotalEnergies",
-    "category": "fuel",
-    "lat": -14.418994,
-    "lon": 28.461243,
-    "source": "osm"
-  },
-  {
-    "id": 164,
-    "display_name": "TotalEnergies KAPIRI JUNCTION",
-    "category": "fuel",
-    "lat": -13.925926,
-    "lon": 28.666761,
-    "source": "gm"
-  },
-  {
-    "id": 163,
-    "display_name": "TotalEnergies Kabwe",
-    "category": "fuel",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 165,
-    "display_name": "TotalEnergies-KAPIRI MPOSHI",
-    "category": "fuel",
-    "lat": -13.971708,
-    "lon": 28.679056,
-    "source": "gm"
-  },
-  {
-    "id": 602,
-    "display_name": "Transport yard",
-    "category": "transport",
-    "lat": -14.2989209,
-    "lon": 28.5611498,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 645,
-    "display_name": "Transport yard Mulungushi",
-    "category": "unknown",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 184,
-    "display_name": "Travelodge",
-    "category": "guest_house",
-    "lat": -14.4412,
-    "lon": 28.447164,
-    "source": "osm"
-  },
-  {
-    "id": 328,
-    "display_name": "Tuskers",
-    "category": "hotel",
-    "lat": -14.443894,
-    "lon": 28.445755,
-    "source": "gm"
-  },
-  {
-    "id": 513,
-    "display_name": "Twalumba Community School",
-    "category": "school",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 166,
-    "display_name": "UNO-Kapiri Mposhi",
-    "category": "fuel",
-    "lat": -13.981451,
-    "lon": 28.682343,
-    "source": "gm"
-  },
-  {
-    "id": 122,
-    "display_name": "Unfinished power house",
-    "category": "electrical",
-    "lat": -14.444225,
-    "lon": 28.465404,
-    "source": "osm"
-  },
-  {
-    "id": 393,
-    "display_name": "United church of Zambia St Pauls congregation. Kabwe North consitory",
-    "category": "place_of_worship",
-    "lat": -14.2921917,
-    "lon": 28.5486719,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 329,
-    "display_name": "Urban Bliss",
-    "category": "hotel",
-    "lat": -14.425915,
-    "lon": 28.438215,
-    "source": "osm"
-  },
-  {
-    "id": 330,
-    "display_name": "Urban Bliss Hotel",
-    "category": "hotel",
-    "lat": -14.425912,
-    "lon": 28.438148,
-    "source": "gm"
-  },
-  {
-    "id": 331,
-    "display_name": "VK motel",
-    "category": "hotel",
-    "lat": -14.2938327,
-    "lon": 28.5492755,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 98,
-    "display_name": "Valley View Medical Center",
-    "category": "community health center",
-    "lat": -14.448533,
-    "lon": 28.421669,
-    "source": "gm"
-  },
-  {
-    "id": 514,
-    "display_name": "Vinjeru Trust School",
-    "category": "school",
-    "lat": -13.982606,
-    "lon": 28.702039,
-    "source": "gm"
-  },
-  {
-    "id": 561,
-    "display_name": "Vwalika Bus Station",
-    "category": "station",
-    "lat": -14.443009,
-    "lon": 28.444416,
-    "source": "osm"
-  },
-  {
-    "id": 444,
-    "display_name": "Wachis's Kitchen",
-    "category": "restaurant",
-    "lat": -14.45006,
-    "lon": 28.444118,
-    "source": "gm"
-  },
-  {
-    "id": 595,
-    "display_name": "Wallace Supermarket",
-    "category": "supermarket",
-    "lat": -14.2949046,
-    "lon": 28.5491145,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 544,
-    "display_name": "Wallace enterprise",
-    "category": "shop",
-    "lat": -14.2919512,
-    "lon": 28.5481148,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 519,
-    "display_name": "Walusungu Guest House",
-    "category": "serviced accommodation",
-    "lat": -14.44154,
-    "lon": 28.450618,
-    "source": "gm"
-  },
-  {
-    "id": 92,
-    "display_name": "Waya Clinic",
-    "category": "clinic",
-    "lat": -14.472068,
-    "lon": 28.460497,
-    "source": "osm"
-  },
-  {
-    "id": 354,
-    "display_name": "Western Union",
-    "category": "money transfer service",
-    "lat": -14.429895,
-    "lon": 28.462643,
-    "source": "gm"
-  },
-  {
-    "id": 520,
-    "display_name": "Westside Lodge & Tours",
-    "category": "serviced accommodation",
-    "lat": -14.437181,
-    "lon": 28.441332,
-    "source": "gm"
-  },
-  {
-    "id": 17,
-    "display_name": "William Cousin",
-    "category": "attraction",
-    "lat": -14.413587,
-    "lon": 28.434649,
-    "source": "osm"
-  },
-  {
-    "id": 185,
-    "display_name": "Wilson's Guest House",
-    "category": "guest_house",
-    "lat": -14.413696,
-    "lon": 28.460212,
-    "source": "gm"
-  },
-  {
-    "id": 376,
-    "display_name": "YELLOWROSE PHARMACY",
-    "category": "pharmacy",
-    "lat": -13.966865,
-    "lon": 28.677216,
-    "source": "gm"
-  },
-  {
-    "id": 377,
-    "display_name": "YOUR PHARMACY LIMITED",
-    "category": "pharmacy",
-    "lat": -14.428506,
-    "lon": 28.451357,
-    "source": "gm"
-  },
-  {
-    "id": 545,
-    "display_name": "Yalelo Kapiri Mposhi Store",
-    "category": "shop",
-    "lat": -13.978097,
-    "lon": 28.68406,
-    "source": "gm"
-  },
-  {
-    "id": 596,
-    "display_name": "Yalelo: Kabwe Fresh",
-    "category": "supermarket",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 546,
-    "display_name": "Yellow Shop Kapiri",
-    "category": "shop",
-    "lat": -13.966795,
-    "lon": 28.677435,
-    "source": "gm"
-  },
-  {
-    "id": 167,
-    "display_name": "Z I trading",
-    "category": "fuel",
-    "lat": -13.968563,
-    "lon": 28.677131,
-    "source": "gm"
-  },
-  {
-    "id": 34,
-    "display_name": "ZANACO",
-    "category": "bank",
-    "lat": -13.969946,
-    "lon": 28.678802,
-    "source": "gm"
-  },
-  {
-    "id": 12,
-    "display_name": "ZANACO ATM",
-    "category": "atm",
-    "lat": -13.969951,
-    "lon": 28.678805,
-    "source": "gm"
-  },
-  {
-    "id": 547,
-    "display_name": "Zacks foundation",
-    "category": "shop",
-    "lat": -14.444381,
-    "lon": 28.444671,
-    "source": "gm"
-  },
-  {
-    "id": 47,
-    "display_name": "Zaf Mess",
-    "category": "beverages",
-    "lat": -14.441979,
-    "lon": 28.451837,
-    "source": "osm"
-  },
-  {
-    "id": 515,
-    "display_name": "Zambezi Source",
-    "category": "school",
-    "lat": -14.410569,
-    "lon": 28.460769,
-    "source": "osm"
-  },
-  {
-    "id": 282,
-    "display_name": "Zambezi hostel",
-    "category": "hostel",
-    "lat": -14.2971638,
-    "lon": 28.555914,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 445,
-    "display_name": "Zambezi source lodge",
-    "category": "restaurant",
-    "lat": -14.41031,
-    "lon": 28.460896,
-    "source": "gm"
-  },
-  {
-    "id": 562,
-    "display_name": "Zambia Institute For Tourism and Hospitality Studies/Fairview Hotel",
-    "category": "student housing center",
-    "lat": -14.428506,
-    "lon": 28.451357,
-    "source": "gm"
-  },
-  {
-    "id": 51,
-    "display_name": "Zambia National Building Society",
-    "category": "building society",
-    "lat": -14.443649,
-    "lon": 28.443788,
-    "source": "gm"
-  },
-  {
-    "id": 33,
-    "display_name": "Zambia National Building Society Bank(ZNBS Kapiri)",
-    "category": "bank",
-    "lat": -13.972701,
-    "lon": 28.678663,
-    "source": "gm"
-  },
-  {
-    "id": 100,
-    "display_name": "Zambia Railways Limited",
-    "category": "company",
-    "lat": -14.436432,
-    "lon": 28.443226,
-    "source": "osm"
-  },
-  {
-    "id": 35,
-    "display_name": "Zanaco Kabwe Head Office",
-    "category": "bank",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 42,
-    "display_name": "Zoz Are Zoz",
-    "category": "bar",
-    "lat": -14.438023,
-    "lon": 28.438136,
-    "source": "osm"
-  },
-  {
-    "id": 548,
-    "display_name": "basket ball court",
-    "category": "sports",
-    "lat": -14.445299,
-    "lon": 28.467743,
-    "source": "osm"
-  },
-  {
-    "id": 209,
-    "display_name": "chimwemwe hostes",
-    "category": "hostel",
-    "lat": -14.446518,
-    "lon": 28.466086,
-    "source": "osm"
-  },
-  {
-    "id": 287,
-    "display_name": "east park executive lodge",
-    "category": "hotel",
-    "lat": -13.97061,
-    "lon": 28.699409,
-    "source": "gm"
-  },
-  {
-    "id": 550,
-    "display_name": "football pitch",
-    "category": "sports",
-    "lat": -14.445347,
-    "lon": 28.469453,
-    "source": "osm"
-  },
-  {
-    "id": 516,
-    "display_name": "guard post",
-    "category": "security",
-    "lat": -14.443352,
-    "lon": 28.467749,
-    "source": "osm"
-  },
-  {
-    "id": 337,
-    "display_name": "kabwebackpackers",
-    "category": "lodging",
-    "lat": -14.2952292,
-    "lon": 28.5594111,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 647,
-    "display_name": "kapiri",
-    "category": "veterinary",
-    "lat": -13.97619,
-    "lon": 28.681541,
-    "source": "osm"
-  },
-  {
-    "id": 4,
-    "display_name": "kwame nkrumah university statue",
-    "category": "artwork",
-    "lat": -14.445795,
-    "lon": 28.467324,
-    "source": "osm"
-  },
-  {
-    "id": 651,
-    "display_name": "lime",
-    "category": "veterinary",
-    "lat": -14.496956,
-    "lon": 28.511796,
-    "source": "osm"
-  },
-  {
-    "id": 236,
-    "display_name": "liseli hostel",
-    "category": "hostel",
-    "lat": -14.446568,
-    "lon": 28.466812,
-    "source": "osm"
   },
   {
     "id": 335,
@@ -5016,71 +2680,967 @@
     "source": "osm"
   },
   {
-    "id": 49,
-    "display_name": "mud boutique kabwe mall",
-    "category": "boutique",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 652,
-    "display_name": "mulonga",
-    "category": "veterinary",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 653,
-    "display_name": "mulonga extension",
-    "category": "veterinary",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 264,
-    "display_name": "mulungushi hostels",
-    "category": "hostel",
-    "lat": -14.2938264,
-    "lon": 28.5538827,
-    "source": "jaeycod_kmz_razor_sharp"
-  },
-  {
-    "id": 577,
-    "display_name": "mwilaba market",
-    "category": "supermarket",
-    "lat": -13.977868,
-    "lon": 28.684811,
+    "id": 336,
+    "display_name": "Homeland Executive Lodge",
+    "category": "lodging",
+    "lat": -14.445007,
+    "lon": 28.437901,
     "source": "gm"
   },
   {
-    "id": 521,
-    "display_name": "old graduation square",
-    "category": "shelter",
-    "lat": -14.2983256,
-    "lon": 28.5572266,
-    "source": "jaeycod_kmz_razor_sharp"
+    "id": 337,
+    "display_name": "kabwebackpackers",
+    "category": "lodging",
+    "lat": -14.446333,
+    "lon": 28.447585,
+    "source": "gm"
   },
   {
-    "id": 657,
-    "display_name": "shakumbila",
-    "category": "veterinary",
-    "lat": -14.487698,
-    "lon": 28.382244,
+    "id": 338,
+    "display_name": "Choppies",
+    "category": "mall",
+    "lat": -13.967166,
+    "lon": 28.67668,
+    "source": "gm"
+  },
+  {
+    "id": 339,
+    "display_name": "Kabwe Mall",
+    "category": "mall",
+    "lat": -14.424583,
+    "lon": 28.463711,
     "source": "osm"
   },
   {
-    "id": 541,
-    "display_name": "shop",
-    "category": "shop",
-    "lat": -14.442467,
-    "lon": 28.442303,
+    "id": 340,
+    "display_name": "Kabwe Mall . Kabwe Shoprite",
+    "category": "mall",
+    "lat": -14.424724,
+    "lon": 28.462085,
     "source": "gm"
   },
   {
-    "id": 518,
+    "id": 341,
+    "display_name": "Mukuyu Mall",
+    "category": "mall",
+    "lat": -14.442098,
+    "lon": 28.445739,
+    "source": "gm"
+  },
+  {
+    "id": 342,
+    "display_name": "Dreadlocking",
+    "category": "market",
+    "lat": -13.967546,
+    "lon": 28.680313,
+    "source": "gm"
+  },
+  {
+    "id": 343,
+    "display_name": "Kabwe New Market",
+    "category": "market",
+    "lat": -14.445271,
+    "lon": 28.435961,
+    "source": "gm"
+  },
+  {
+    "id": 344,
+    "display_name": "Mine Market",
+    "category": "market",
+    "lat": -14.443615,
+    "lon": 28.442105,
+    "source": "gm"
+  },
+  {
+    "id": 345,
+    "display_name": "Soweto Market",
+    "category": "market",
+    "lat": -13.958693,
+    "lon": 28.687461,
+    "source": "gm"
+  },
+  {
+    "id": 346,
+    "display_name": "MoneyGram",
+    "category": "money transfer service",
+    "lat": -14.444128,
+    "lon": 28.444743,
+    "source": "gm"
+  },
+  {
+    "id": 347,
+    "display_name": "Mukuru (Kabwe Town)",
+    "category": "money transfer service",
+    "lat": -14.441039,
+    "lon": 28.447062,
+    "source": "gm"
+  },
+  {
+    "id": 348,
+    "display_name": "Mukuru (Kabwe Town)",
+    "category": "money transfer service",
+    "lat": -14.433067,
+    "lon": 28.44991,
+    "source": "gm"
+  },
+  {
+    "id": 349,
+    "display_name": "Western Union",
+    "category": "money transfer service",
+    "lat": -14.429895,
+    "lon": 28.462643,
+    "source": "gm"
+  },
+  {
+    "id": 350,
+    "display_name": "Life Trust Office",
+    "category": "ngo",
+    "lat": -14.438185,
+    "lon": 28.451924,
+    "source": "osm"
+  },
+  {
+    "id": 351,
+    "display_name": "Empire Kapiri",
+    "category": "night club",
+    "lat": -13.987304,
+    "lon": 28.684439,
+    "source": "gm"
+  },
+  {
+    "id": 352,
+    "display_name": "Clayton Park",
+    "category": "park",
+    "lat": -14.437651,
+    "lon": 28.44336,
+    "source": "osm"
+  },
+  {
+    "id": 353,
+    "display_name": "Broken Hill Chemist",
+    "category": "pharmacy",
+    "lat": -14.442123,
+    "lon": 28.44523,
+    "source": "gm"
+  },
+  {
+    "id": 354,
+    "display_name": "BROKEN HILL CHEMIST LTD",
+    "category": "pharmacy",
+    "lat": -14.442743,
+    "lon": 28.443342,
+    "source": "gm"
+  },
+  {
+    "id": 355,
+    "display_name": "Healthcure pharmacy ltd",
+    "category": "pharmacy",
+    "lat": -14.442221,
+    "lon": 28.453328,
+    "source": "gm"
+  },
+  {
+    "id": 356,
+    "display_name": "Kabwe Pharmacy",
+    "category": "pharmacy",
+    "lat": -14.442722,
+    "lon": 28.444808,
+    "source": "gm"
+  },
+  {
+    "id": 357,
+    "display_name": "Kizito Aid pharmacy",
+    "category": "pharmacy",
+    "lat": -14.443528,
+    "lon": 28.437795,
+    "source": "gm"
+  },
+  {
+    "id": 358,
+    "display_name": "Makululu pharmacy",
+    "category": "pharmacy",
+    "lat": -14.440009,
+    "lon": 28.398439,
+    "source": "gm"
+  },
+  {
+    "id": 359,
+    "display_name": "Nags cure pharmacy, kapiri mposhi",
+    "category": "pharmacy",
+    "lat": -13.968917,
+    "lon": 28.677594,
+    "source": "gm"
+  },
+  {
+    "id": 360,
+    "display_name": "Peak Healthcare Pharmacy",
+    "category": "pharmacy",
+    "lat": -14.427331,
+    "lon": 28.461943,
+    "source": "gm"
+  },
+  {
+    "id": 361,
+    "display_name": "YELLOWROSE PHARMACY",
+    "category": "pharmacy",
+    "lat": -13.966865,
+    "lon": 28.677216,
+    "source": "gm"
+  },
+  {
+    "id": 362,
+    "display_name": "Christ Embassy Kabwe",
+    "category": "place_of_worship",
+    "lat": -14.45067,
+    "lon": 28.4379,
+    "source": "osm"
+  },
+  {
+    "id": 363,
+    "display_name": "CMML Chindwin",
+    "category": "place_of_worship",
+    "lat": -14.403094,
+    "lon": 28.482179,
+    "source": "osm"
+  },
+  {
+    "id": 364,
+    "display_name": "Hindu Hall",
+    "category": "place_of_worship",
+    "lat": -14.440562,
+    "lon": 28.452969,
+    "source": "osm"
+  },
+  {
+    "id": 365,
+    "display_name": "Kabwe Central SDA Church",
+    "category": "place_of_worship",
+    "lat": -14.447959,
+    "lon": 28.450927,
+    "source": "osm"
+  },
+  {
+    "id": 366,
+    "display_name": "Kabwe Chapel",
+    "category": "place_of_worship",
+    "lat": -14.441837,
+    "lon": 28.452305,
+    "source": "osm"
+  },
+  {
+    "id": 367,
+    "display_name": "Kabwe Christian Centre",
+    "category": "place_of_worship",
+    "lat": -14.413985,
+    "lon": 28.47167,
+    "source": "osm"
+  },
+  {
+    "id": 368,
+    "display_name": "New Apostolic -Kohima Congregation",
+    "category": "place_of_worship",
+    "lat": -14.403607,
+    "lon": 28.481704,
+    "source": "osm"
+  },
+  {
+    "id": 369,
+    "display_name": "New Apostolic Church Kabwe Central Congregation",
+    "category": "place_of_worship",
+    "lat": -14.44884,
+    "lon": 28.446305,
+    "source": "osm"
+  },
+  {
+    "id": 370,
+    "display_name": "Saint Columba's Presbyterian Church",
+    "category": "place_of_worship",
+    "lat": -14.439094,
+    "lon": 28.457078,
+    "source": "osm"
+  },
+  {
+    "id": 371,
+    "display_name": "St Mary's",
+    "category": "place_of_worship",
+    "lat": -14.445416,
+    "lon": 28.431143,
+    "source": "osm"
+  },
+  {
+    "id": 372,
+    "display_name": "ST. VERONICA PARISH",
+    "category": "place_of_worship",
+    "lat": -14.43725,
+    "lon": 28.476699,
+    "source": "osm"
+  },
+  {
+    "id": 373,
+    "display_name": "Central Police Head Quarters",
+    "category": "police",
+    "lat": -14.436287,
+    "lon": 28.446499,
+    "source": "osm"
+  },
+  {
+    "id": 374,
+    "display_name": "Chililalila Police Post",
+    "category": "police",
+    "lat": -14.448362,
+    "lon": 28.401737,
+    "source": "osm"
+  },
+  {
+    "id": 375,
+    "display_name": "Chowa Police Station",
+    "category": "police",
+    "lat": -14.452744,
+    "lon": 28.449109,
+    "source": "osm"
+  },
+  {
+    "id": 376,
+    "display_name": "Kabwe Central Police",
+    "category": "police",
+    "lat": -14.436618,
+    "lon": 28.444438,
+    "source": "osm"
+  },
+  {
+    "id": 377,
+    "display_name": "Kaphiri Mposhi Police Station",
+    "category": "police",
+    "lat": -13.978279,
+    "lon": 28.683261,
+    "source": "osm"
+  },
+  {
+    "id": 378,
+    "display_name": "Kaputula Police Post",
+    "category": "police",
+    "lat": -14.405959,
+    "lon": 28.461886,
+    "source": "osm"
+  },
+  {
+    "id": 379,
+    "display_name": "Kasanda Police Station",
+    "category": "police",
+    "lat": -14.446607,
+    "lon": 28.431788,
+    "source": "osm"
+  },
+  {
+    "id": 380,
+    "display_name": "Maganda Police Post",
+    "category": "police",
+    "lat": -14.459037,
+    "lon": 28.413054,
+    "source": "osm"
+  },
+  {
+    "id": 381,
+    "display_name": "Post Office",
+    "category": "post office",
+    "lat": -13.970065,
+    "lon": 28.678194,
+    "source": "gm"
+  },
+  {
+    "id": 382,
+    "display_name": "Kabwe Post Office",
+    "category": "post_office",
+    "lat": -14.440673,
+    "lon": 28.442511,
+    "source": "osm"
+  },
+  {
+    "id": 383,
+    "display_name": "Mukobeko Maximum Security Prison",
+    "category": "prison",
+    "lat": -14.382001,
+    "lon": 28.39891,
+    "source": "osm"
+  },
+  {
+    "id": 384,
+    "display_name": "Mummys School",
+    "category": "private educational institution",
+    "lat": -13.960008,
+    "lon": 28.66923,
+    "source": "gm"
+  },
+  {
+    "id": 385,
+    "display_name": "Bamboo Garden",
+    "category": "restaurant",
+    "lat": -14.388301,
+    "lon": 28.497557,
+    "source": "osm"
+  },
+  {
+    "id": 386,
+    "display_name": "Booze Cafe",
+    "category": "restaurant",
+    "lat": -14.447143,
+    "lon": 28.457366,
+    "source": "gm"
+  },
+  {
+    "id": 387,
+    "display_name": "Coffee Mug Café",
+    "category": "restaurant",
+    "lat": -14.485082,
+    "lon": 28.409217,
+    "source": "gm"
+  },
+  {
+    "id": 388,
+    "display_name": "Diggers Inn Restaurant and Pub",
+    "category": "restaurant",
+    "lat": -14.429653,
+    "lon": 28.435521,
+    "source": "gm"
+  },
+  {
+    "id": 389,
+    "display_name": "Ka Café",
+    "category": "restaurant",
+    "lat": -14.452164,
+    "lon": 28.47135,
+    "source": "gm"
+  },
+  {
+    "id": 390,
+    "display_name": "Kapiri bites",
+    "category": "restaurant",
+    "lat": -13.974239,
+    "lon": 28.680433,
+    "source": "gm"
+  },
+  {
+    "id": 391,
+    "display_name": "Kapiri Lodge",
+    "category": "restaurant",
+    "lat": -13.903459,
+    "lon": 28.664863,
+    "source": "gm"
+  },
+  {
+    "id": 392,
+    "display_name": "Matanda's take away",
+    "category": "restaurant",
+    "lat": -13.961436,
+    "lon": 28.704692,
+    "source": "gm"
+  },
+  {
+    "id": 393,
+    "display_name": "Pilgrims Motel",
+    "category": "restaurant",
+    "lat": -14.449721,
+    "lon": 28.44377,
+    "source": "gm"
+  },
+  {
+    "id": 394,
+    "display_name": "Swank Foods",
+    "category": "restaurant",
+    "lat": -14.43751,
+    "lon": 28.438328,
+    "source": "gm"
+  },
+  {
+    "id": 395,
+    "display_name": "The Fig Tree Cafe",
+    "category": "restaurant",
+    "lat": -14.489823,
+    "lon": 28.405248,
+    "source": "gm"
+  },
+  {
+    "id": 396,
+    "display_name": "The Ranch",
+    "category": "restaurant",
+    "lat": -14.442456,
+    "lon": 28.452618,
+    "source": "gm"
+  },
+  {
+    "id": 397,
+    "display_name": "The Swan",
+    "category": "restaurant",
+    "lat": -13.947279,
+    "lon": 28.663985,
+    "source": "gm"
+  },
+  {
+    "id": 398,
+    "display_name": "Toplife Pub",
+    "category": "restaurant",
+    "lat": -14.016694,
+    "lon": 28.677494,
+    "source": "gm"
+  },
+  {
+    "id": 399,
+    "display_name": "Wachis's Kitchen",
+    "category": "restaurant",
+    "lat": -14.45006,
+    "lon": 28.444118,
+    "source": "gm"
+  },
+  {
+    "id": 400,
+    "display_name": "Zambezi source lodge",
+    "category": "restaurant",
+    "lat": -14.41031,
+    "lon": 28.460896,
+    "source": "gm"
+  },
+  {
+    "id": 401,
+    "display_name": "Angeles Park School",
+    "category": "school",
+    "lat": -13.948025,
+    "lon": 28.663835,
+    "source": "osm"
+  },
+  {
+    "id": 402,
+    "display_name": "Aunty Getrude Community School",
+    "category": "school",
+    "lat": -13.957989,
+    "lon": 28.700431,
+    "source": "osm"
+  },
+  {
+    "id": 403,
+    "display_name": "Broadway Basic School",
+    "category": "school",
+    "lat": -14.443455,
+    "lon": 28.45137,
+    "source": "osm"
+  },
+  {
+    "id": 404,
+    "display_name": "Buyantanshi Primary School",
+    "category": "school",
+    "lat": -14.441911,
+    "lon": 28.465305,
+    "source": "osm"
+  },
+  {
+    "id": 405,
+    "display_name": "Bwacha Secondary School",
+    "category": "school",
+    "lat": -14.389759,
+    "lon": 28.438678,
+    "source": "gm"
+  },
+  {
+    "id": 406,
+    "display_name": "Caritas Convent Secondary School",
+    "category": "school",
+    "lat": -14.438562,
+    "lon": 28.446842,
+    "source": "gm"
+  },
+  {
+    "id": 407,
+    "display_name": "Carritas Girls Convent School",
+    "category": "school",
+    "lat": -14.438348,
+    "lon": 28.447593,
+    "source": "osm"
+  },
+  {
+    "id": 408,
+    "display_name": "Charitable Christian School",
+    "category": "school",
+    "lat": -13.976491,
+    "lon": 28.669539,
+    "source": "osm"
+  },
+  {
+    "id": 409,
+    "display_name": "Chawanangwa academy school",
+    "category": "school",
+    "lat": -13.970231,
+    "lon": 28.672071,
+    "source": "gm"
+  },
+  {
+    "id": 410,
+    "display_name": "Chilekwa School",
+    "category": "school",
+    "lat": -13.985826,
+    "lon": 28.676344,
+    "source": "osm"
+  },
+  {
+    "id": 411,
+    "display_name": "Chisekela Balanda A Child In Distress School",
+    "category": "school",
+    "lat": -13.975641,
+    "lon": 28.678042,
+    "source": "osm"
+  },
+  {
+    "id": 412,
+    "display_name": "Clayton School",
+    "category": "school",
+    "lat": -13.979366,
+    "lon": 28.664904,
+    "source": "osm"
+  },
+  {
+    "id": 413,
+    "display_name": "Daknam School",
+    "category": "school",
+    "lat": -13.963164,
+    "lon": 28.683859,
+    "source": "osm"
+  },
+  {
+    "id": 414,
+    "display_name": "DOLPHIN SECONDARY SCHOOL",
+    "category": "school",
+    "lat": -13.968916,
+    "lon": 28.682874,
+    "source": "gm"
+  },
+  {
+    "id": 415,
+    "display_name": "Ebenezer Pre & Primary School",
+    "category": "school",
+    "lat": -13.925089,
+    "lon": 28.678495,
+    "source": "osm"
+  },
+  {
+    "id": 416,
+    "display_name": "Flamingo Private School",
+    "category": "school",
+    "lat": -14.44235,
+    "lon": 28.457736,
+    "source": "osm"
+  },
+  {
+    "id": 417,
+    "display_name": "Fyabana Early Childhood And Primary School",
+    "category": "school",
+    "lat": -13.921642,
+    "lon": 28.65966,
+    "source": "osm"
+  },
+  {
+    "id": 418,
+    "display_name": "Gilgal Christian Academy",
+    "category": "school",
+    "lat": -13.993757,
+    "lon": 28.687705,
+    "source": "osm"
+  },
+  {
+    "id": 419,
+    "display_name": "Grace Academy",
+    "category": "school",
+    "lat": -13.927097,
+    "lon": 28.669026,
+    "source": "osm"
+  },
+  {
+    "id": 420,
+    "display_name": "Highridge Secondary School",
+    "category": "school",
+    "lat": -14.44782,
+    "lon": 28.468219,
+    "source": "osm"
+  },
+  {
+    "id": 421,
+    "display_name": "Jacaranda Trust School",
+    "category": "school",
+    "lat": -14.435528,
+    "lon": 28.456201,
+    "source": "gm"
+  },
+  {
+    "id": 422,
+    "display_name": "Jesus Care Ministries School",
+    "category": "school",
+    "lat": -13.988069,
+    "lon": 28.682902,
+    "source": "osm"
+  },
+  {
+    "id": 423,
+    "display_name": "John Paul II Secondary",
+    "category": "school",
+    "lat": -13.969958,
+    "lon": 28.679647,
+    "source": "osm"
+  },
+  {
+    "id": 424,
+    "display_name": "John Paul ll SrimarySschool",
+    "category": "school",
+    "lat": -13.969286,
+    "lon": 28.6795,
+    "source": "gm"
+  },
+  {
+    "id": 425,
+    "display_name": "Kabwe Adventist School",
+    "category": "school",
+    "lat": -14.442419,
+    "lon": 28.448377,
+    "source": "gm"
+  },
+  {
+    "id": 426,
+    "display_name": "Kabwe High School",
+    "category": "school",
+    "lat": -14.44667,
+    "lon": 28.464884,
+    "source": "gm"
+  },
+  {
+    "id": 427,
+    "display_name": "Kabwe Skills",
+    "category": "school",
+    "lat": -14.444736,
+    "lon": 28.451425,
+    "source": "osm"
+  },
+  {
+    "id": 428,
+    "display_name": "Kabwe Trust School",
+    "category": "school",
+    "lat": -14.428688,
+    "lon": 28.434524,
+    "source": "gm"
+  },
+  {
+    "id": 429,
+    "display_name": "Kalonga Secondary School",
+    "category": "school",
+    "lat": -14.433729,
+    "lon": 28.463946,
+    "source": "gm"
+  },
+  {
+    "id": 430,
+    "display_name": "Kapiri Basic School",
+    "category": "school",
+    "lat": -13.966954,
+    "lon": 28.676132,
+    "source": "gm"
+  },
+  {
+    "id": 431,
+    "display_name": "Kapiri College",
+    "category": "school",
+    "lat": -13.972755,
+    "lon": 28.687994,
+    "source": "osm"
+  },
+  {
+    "id": 432,
+    "display_name": "Kapiri Combined School",
+    "category": "school",
+    "lat": -13.96543,
+    "lon": 28.681249,
+    "source": "gm"
+  },
+  {
+    "id": 433,
+    "display_name": "Kapiri Day Secondary School",
+    "category": "school",
+    "lat": -13.993078,
+    "lon": 28.679828,
+    "source": "gm"
+  },
+  {
+    "id": 434,
+    "display_name": "Kapiri Modern School",
+    "category": "school",
+    "lat": -13.913038,
+    "lon": 28.666431,
+    "source": "osm"
+  },
+  {
+    "id": 435,
+    "display_name": "Lady Academy",
+    "category": "school",
+    "lat": -13.972301,
+    "lon": 28.675304,
+    "source": "osm"
+  },
+  {
+    "id": 436,
+    "display_name": "Life Trust School Waya",
+    "category": "school",
+    "lat": -14.474658,
+    "lon": 28.461493,
+    "source": "osm"
+  },
+  {
+    "id": 437,
+    "display_name": "Little Angels School",
+    "category": "school",
+    "lat": -13.949154,
+    "lon": 28.689431,
+    "source": "osm"
+  },
+  {
+    "id": 438,
+    "display_name": "Lukanda School",
+    "category": "school",
+    "lat": -13.975131,
+    "lon": 28.686523,
+    "source": "gm"
+  },
+  {
+    "id": 439,
+    "display_name": "Lukanga Basic School",
+    "category": "school",
+    "lat": -14.443987,
+    "lon": 28.44921,
+    "source": "osm"
+  },
+  {
+    "id": 440,
+    "display_name": "Mastridge Boarding and Day School",
+    "category": "school",
+    "lat": -14.456283,
+    "lon": 28.475506,
+    "source": "gm"
+  },
+  {
+    "id": 441,
+    "display_name": "Matilyo Secondary School",
+    "category": "school",
+    "lat": -13.977527,
+    "lon": 28.669878,
+    "source": "gm"
+  },
+  {
+    "id": 442,
+    "display_name": "Mpima Major Seminary",
+    "category": "school",
+    "lat": -14.399786,
+    "lon": 28.524135,
+    "source": "osm"
+  },
+  {
+    "id": 443,
+    "display_name": "Natuseko Basic School",
+    "category": "school",
+    "lat": -14.406868,
+    "lon": 28.460028,
+    "source": "osm"
+  },
+  {
+    "id": 444,
+    "display_name": "Natuseko S Sec",
+    "category": "school",
+    "lat": -14.40701,
+    "lon": 28.464205,
+    "source": "osm"
+  },
+  {
+    "id": 445,
+    "display_name": "Neemtree Secondary School",
+    "category": "school",
+    "lat": -14.439481,
+    "lon": 28.453084,
+    "source": "osm"
+  },
+  {
+    "id": 446,
+    "display_name": "Nkwashi Primary School",
+    "category": "school",
+    "lat": -14.414855,
+    "lon": 28.433655,
+    "source": "osm"
+  },
+  {
+    "id": 447,
+    "display_name": "Prince Of Peace School",
+    "category": "school",
+    "lat": -13.962632,
+    "lon": 28.682666,
+    "source": "osm"
+  },
+  {
+    "id": 448,
+    "display_name": "Shalom Primary School",
+    "category": "school",
+    "lat": -13.970915,
+    "lon": 28.686713,
+    "source": "osm"
+  },
+  {
+    "id": 449,
+    "display_name": "Ss School",
+    "category": "school",
+    "lat": -14.404864,
+    "lon": 28.461348,
+    "source": "osm"
+  },
+  {
+    "id": 450,
+    "display_name": "St. Philomina College Of Education",
+    "category": "school",
+    "lat": -13.983979,
+    "lon": 28.683939,
+    "source": "osm"
+  },
+  {
+    "id": 451,
+    "display_name": "Starise Academy",
+    "category": "school",
+    "lat": -14.437218,
+    "lon": 28.467837,
+    "source": "gm"
+  },
+  {
+    "id": 452,
+    "display_name": "Stephen Luwisha Girls Secondary School",
+    "category": "school",
+    "lat": -14.445323,
+    "lon": 28.433071,
+    "source": "gm"
+  },
+  {
+    "id": 453,
+    "display_name": "Twalumba Community School",
+    "category": "school",
+    "lat": -14.004395,
+    "lon": 28.672892,
+    "source": "osm"
+  },
+  {
+    "id": 454,
+    "display_name": "Vinjeru Trust School",
+    "category": "school",
+    "lat": -13.982606,
+    "lon": 28.702039,
+    "source": "gm"
+  },
+  {
+    "id": 455,
+    "display_name": "guard post",
+    "category": "security",
+    "lat": -14.443352,
+    "lon": 28.467749,
+    "source": "osm"
+  },
+  {
+    "id": 456,
     "display_name": "south east gaurd post",
     "category": "security",
     "lat": -14.446721,
@@ -5088,35 +3648,443 @@
     "source": "osm"
   },
   {
-    "id": 15,
-    "display_name": "steam locomotive",
-    "category": "attraction",
-    "lat": -14.446361,
-    "lon": 28.443085,
+    "id": 457,
+    "display_name": "Walusungu Guest House",
+    "category": "serviced accommodation",
+    "lat": -14.44154,
+    "lon": 28.450618,
+    "source": "gm"
+  },
+  {
+    "id": 458,
+    "display_name": "Westside Lodge & Tours",
+    "category": "serviced accommodation",
+    "lat": -14.437181,
+    "lon": 28.441332,
+    "source": "gm"
+  },
+  {
+    "id": 459,
+    "display_name": "old graduation square",
+    "category": "shelter",
+    "lat": -14.445414,
+    "lon": 28.466657,
     "source": "osm"
   },
   {
-    "id": 16,
-    "display_name": "steam locomotive 113",
-    "category": "attraction",
-    "lat": -14.447596,
-    "lon": 28.441251,
+    "id": 460,
+    "display_name": "ALL STREET",
+    "category": "shop",
+    "lat": -14.442697,
+    "lon": 28.445551,
+    "source": "gm"
+  },
+  {
+    "id": 461,
+    "display_name": "Cliff Cuts and stationery",
+    "category": "shop",
+    "lat": -13.966506,
+    "lon": 28.675761,
+    "source": "gm"
+  },
+  {
+    "id": 462,
+    "display_name": "Couple Store Kabwe",
+    "category": "shop",
+    "lat": -14.441923,
+    "lon": 28.448688,
+    "source": "gm"
+  },
+  {
+    "id": 463,
+    "display_name": "EMPYREAN HEALTH CHEMIST (Kabwe Town)",
+    "category": "shop",
+    "lat": -14.445177,
+    "lon": 28.43665,
+    "source": "gm"
+  },
+  {
+    "id": 464,
+    "display_name": "EMPYREAN HEALTH CHEMIST (Kabwe Town)",
+    "category": "shop",
+    "lat": -14.452196,
+    "lon": 28.470661,
+    "source": "gm"
+  },
+  {
+    "id": 465,
+    "display_name": "JUST OVERSEAS LTD",
+    "category": "shop",
+    "lat": -13.965985,
+    "lon": 28.678356,
+    "source": "gm"
+  },
+  {
+    "id": 466,
+    "display_name": "Kawama market place",
+    "category": "shop",
+    "lat": -13.987766,
+    "lon": 28.68862,
+    "source": "gm"
+  },
+  {
+    "id": 467,
+    "display_name": "Mh&m supermarket",
+    "category": "shop",
+    "lat": -14.443615,
+    "lon": 28.444187,
+    "source": "gm"
+  },
+  {
+    "id": 468,
+    "display_name": "PEP Zambia Kapiri Mposhi",
+    "category": "shop",
+    "lat": -13.972384,
+    "lon": 28.679214,
+    "source": "gm"
+  },
+  {
+    "id": 469,
+    "display_name": "Radian Stores",
+    "category": "shop",
+    "lat": -14.442732,
+    "lon": 28.447516,
+    "source": "gm"
+  },
+  {
+    "id": 470,
+    "display_name": "shop",
+    "category": "shop",
+    "lat": -14.442467,
+    "lon": 28.442303,
+    "source": "gm"
+  },
+  {
+    "id": 471,
+    "display_name": "Yalelo Kapiri Mposhi Store",
+    "category": "shop",
+    "lat": -13.978097,
+    "lon": 28.68406,
+    "source": "gm"
+  },
+  {
+    "id": 472,
+    "display_name": "basket ball court",
+    "category": "sports",
+    "lat": -14.445299,
+    "lon": 28.467743,
     "source": "osm"
   },
   {
-    "id": 658,
-    "display_name": "swan",
-    "category": "veterinary",
-    "lat": -13.94686,
-    "lon": 28.663711,
+    "id": 473,
+    "display_name": "football pitch",
+    "category": "sports",
+    "lat": -14.445347,
+    "lon": 28.469453,
     "source": "osm"
   },
   {
-    "id": 553,
+    "id": 474,
+    "display_name": "Godfrey Ucar Chitalu Stadium",
+    "category": "sports",
+    "lat": -14.449781,
+    "lon": 28.44208,
+    "source": "osm"
+  },
+  {
+    "id": 475,
+    "display_name": "Star Sports Club",
+    "category": "sports",
+    "lat": -14.437001,
+    "lon": 28.457711,
+    "source": "osm"
+  },
+  {
+    "id": 476,
     "display_name": "volleyball court",
     "category": "sports",
     "lat": -14.445696,
     "lon": 28.468151,
+    "source": "osm"
+  },
+  {
+    "id": 477,
+    "display_name": "Kabwe Fire Station",
+    "category": "station",
+    "lat": -14.43561,
+    "lon": 28.451489,
+    "source": "osm"
+  },
+  {
+    "id": 478,
+    "display_name": "Kabwe North",
+    "category": "station",
+    "lat": -14.37838,
+    "lon": 28.454538,
+    "source": "osm"
+  },
+  {
+    "id": 479,
+    "display_name": "Kapiri Mposhi Main Bus Station",
+    "category": "station",
+    "lat": -13.967843,
+    "lon": 28.676103,
+    "source": "osm"
+  },
+  {
+    "id": 480,
+    "display_name": "New Kapiri Mposhi",
+    "category": "station",
+    "lat": -13.954915,
+    "lon": 28.681182,
+    "source": "osm"
+  },
+  {
+    "id": 481,
+    "display_name": "Vwalika Bus Station",
+    "category": "station",
+    "lat": -14.443009,
+    "lon": 28.444416,
+    "source": "osm"
+  },
+  {
+    "id": 482,
+    "display_name": "BM Distributors Ltd",
+    "category": "supermarket",
+    "lat": -14.44296,
+    "lon": 28.445932,
+    "source": "osm"
+  },
+  {
+    "id": 483,
+    "display_name": "Central agro business services ltd",
+    "category": "supermarket",
+    "lat": -14.445865,
+    "lon": 28.457427,
+    "source": "gm"
+  },
+  {
+    "id": 484,
+    "display_name": "CHEAP CHOICE GROCERIES",
+    "category": "supermarket",
+    "lat": -14.457975,
+    "lon": 28.448425,
+    "source": "gm"
+  },
+  {
+    "id": 485,
+    "display_name": "D mark",
+    "category": "supermarket",
+    "lat": -13.972819,
+    "lon": 28.690176,
+    "source": "gm"
+  },
+  {
+    "id": 486,
+    "display_name": "Grand Mart",
+    "category": "supermarket",
+    "lat": -14.442156,
+    "lon": 28.439605,
+    "source": "gm"
+  },
+  {
+    "id": 487,
+    "display_name": "Iron laimu",
+    "category": "supermarket",
+    "lat": -13.990866,
+    "lon": 28.696656,
+    "source": "gm"
+  },
+  {
+    "id": 488,
+    "display_name": "Lusaka Matero",
+    "category": "supermarket",
+    "lat": -14.456674,
+    "lon": 28.451591,
+    "source": "gm"
+  },
+  {
+    "id": 489,
+    "display_name": "Mr Banda's shop",
+    "category": "supermarket",
+    "lat": -13.97603,
+    "lon": 28.669758,
+    "source": "gm"
+  },
+  {
+    "id": 490,
+    "display_name": "Ndeke market",
+    "category": "supermarket",
+    "lat": -13.965569,
+    "lon": 28.68864,
+    "source": "gm"
+  },
+  {
+    "id": 491,
+    "display_name": "Shoprite Mulungushi Kabwe",
+    "category": "supermarket",
+    "lat": -14.42555,
+    "lon": 28.46251,
+    "source": "gm"
+  },
+  {
+    "id": 492,
+    "display_name": "Smart choice Indian groceries ltd kabwe",
+    "category": "supermarket",
+    "lat": -14.442841,
+    "lon": 28.446436,
+    "source": "gm"
+  },
+  {
+    "id": 493,
+    "display_name": "Tita Wholesale And Retail",
+    "category": "supermarket",
+    "lat": -14.443209,
+    "lon": 28.443856,
+    "source": "gm"
+  },
+  {
+    "id": 494,
+    "display_name": "Primefuels Zambia Kapiri Mposhi Depot",
+    "category": "trucking company",
+    "lat": -13.95609,
+    "lon": 28.674177,
+    "source": "gm"
+  },
+  {
+    "id": 495,
+    "display_name": "Great North Road (Main Campus)",
+    "category": "unknown",
+    "lat": -14.277265,
+    "lon": 28.553084,
+    "source": "osm"
+  },
+  {
+    "id": 496,
+    "display_name": "Great North Road (Main Campus)",
+    "category": "unknown",
+    "lat": -14.307512,
+    "lon": 28.546815,
+    "source": "osm"
+  },
+  {
+    "id": 497,
+    "display_name": "Great North Road (Kabwe Town)",
+    "category": "unknown",
+    "lat": -14.380037,
+    "lon": 28.498042,
+    "source": "osm"
+  },
+  {
+    "id": 498,
+    "display_name": "Mulungushi (Main Campus)",
+    "category": "unknown",
+    "lat": -14.304328,
+    "lon": 28.560068,
+    "source": "osm"
+  },
+  {
+    "id": 499,
+    "display_name": "Mulungushi (Zambia)",
+    "category": "unknown",
+    "lat": -14.339601,
+    "lon": 28.604042,
+    "source": "osm"
+  },
+  {
+    "id": 500,
+    "display_name": "Mulungushi (Main Campus)",
+    "category": "unknown",
+    "lat": -14.291144,
+    "lon": 28.541345,
+    "source": "osm"
+  },
+  {
+    "id": 501,
+    "display_name": "Mulungushi (Main Campus)",
+    "category": "unknown",
+    "lat": -14.281859,
+    "lon": 28.510772,
+    "source": "osm"
+  },
+  {
+    "id": 502,
+    "display_name": "mulungushi (Kapiri Mposhi)",
+    "category": "veterinary",
+    "lat": -13.96206,
+    "lon": 28.66125,
+    "source": "osm"
+  },
+  {
+    "id": 503,
+    "display_name": "mulungushi (Main Campus)",
+    "category": "veterinary",
+    "lat": -14.304483,
+    "lon": 28.585244,
+    "source": "osm"
+  },
+  {
+    "id": 504,
+    "display_name": "Mulungushi Rock of Authority",
+    "category": "unknown",
+    "lat": -14.298294,
+    "lon": 28.581508,
+    "source": "osm"
+  },
+  {
+    "id": 505,
+    "display_name": "Damson",
+    "category": "veterinary",
+    "lat": -13.927416,
+    "lon": 28.667597,
+    "source": "osm"
+  },
+  {
+    "id": 506,
+    "display_name": "lime",
+    "category": "veterinary",
+    "lat": -14.496956,
+    "lon": 28.511796,
+    "source": "osm"
+  },
+  {
+    "id": 507,
+    "display_name": "mulonga",
+    "category": "veterinary",
+    "lat": -13.949839,
+    "lon": 28.699111,
+    "source": "osm"
+  },
+  {
+    "id": 508,
+    "display_name": "mulonga extension",
+    "category": "veterinary",
+    "lat": -13.954595,
+    "lon": 28.694793,
+    "source": "osm"
+  },
+  {
+    "id": 509,
+    "display_name": "North park",
+    "category": "veterinary",
+    "lat": -13.954333,
+    "lon": 28.680812,
+    "source": "osm"
+  },
+  {
+    "id": 510,
+    "display_name": "shakumbila",
+    "category": "veterinary",
+    "lat": -14.487698,
+    "lon": 28.382244,
+    "source": "osm"
+  },
+  {
+    "id": 511,
+    "display_name": "swan",
+    "category": "veterinary",
+    "lat": -13.94686,
+    "lon": 28.663711,
     "source": "osm"
   }
 ]
