@@ -843,34 +843,33 @@ const StudentDashboard = () => {
           </div>
 
           {/* Hero Top-Down Car with Yellow Circle Background */}
-          <div className="relative flex flex-col items-center justify-center w-full pt-1 pb-2 overflow-hidden max-h-[400px]">
-            {/* Yellow/Gold Circle Background */}
-            <div className="relative w-56 h-56 md:w-64 md:h-64 rounded-full bg-amber-400 flex items-center justify-center mt-6 mb-2">
-              {/* Top-Down Car Image (Drives into button and turns 100% transparent inside button) */}
+          <div className="relative flex flex-col items-center justify-center w-full pt-4 pb-2 overflow-hidden">
+            {/* Yellow/Gold Circle Background (Flat yellow, no outer glow/shadows) */}
+            <div className="relative w-56 h-56 md:w-64 md:h-64 rounded-full bg-amber-400 flex items-center justify-center my-2">
+              {/* Top-Down Transparent Car Image (Bigger than circle, overflowing circle boundary cleanly) */}
               <motion.img
                 src="/car_top.png"
                 alt="Ride Car"
                 initial={{ y: 0, scale: 1, opacity: 1 }}
-                animate={isDriving ? { y: 200, scale: 0.75, opacity: [1, 0.5, 0] } : { y: 0, scale: 1, opacity: 1 }}
-                transition={{ duration: 0.65, ease: [0.4, 0, 0.2, 1] }}
-                className="w-60 md:w-72 h-auto drop-shadow-xl z-0 select-none pointer-events-none absolute"
-                style={{ top: '-10%' }}
+                animate={isDriving ? { y: 450, scale: 0.85, opacity: [1, 1, 0] } : { y: 0, scale: 1, opacity: 1 }}
+                transition={{ duration: 0.85, ease: [0.45, 0, 0.55, 1] }}
+                className="w-60 md:w-72 h-auto drop-shadow-xl z-10 select-none pointer-events-none absolute"
               />
             </div>
 
             {/* Subtext Guidance (Moved further down) */}
-            <p className="text-xs md:text-sm text-muted-foreground font-medium mt-10 md:mt-12 mb-4 max-w-xs z-10">
+            <p className="text-xs md:text-sm text-muted-foreground font-medium mt-10 md:mt-12 mb-4 max-w-xs">
               Tap to set your pickup point and destination
             </p>
 
-            {/* Request a Ride Button (Zero car overflow past this button) */}
+            {/* Request a Ride Button (Moved further down, zero overlap with car) */}
             <motion.button
               type="button"
               onClick={handleRequestRideClick}
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.96 }}
               disabled={isDriving}
-              className="w-full max-w-xs py-4 px-8 rounded-2xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-black font-heading font-bold text-base md:text-lg shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 z-20 relative"
+              className="w-full max-w-xs py-4 px-8 rounded-2xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-black font-heading font-bold text-base md:text-lg shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 z-20"
               data-testid="request-ride-card"
             >
               <span>Request a Ride</span>
