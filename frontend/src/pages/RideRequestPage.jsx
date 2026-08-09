@@ -119,6 +119,7 @@ const RideRequestPage = () => {
 
   // Ref to track if user explicitly picked a place from search (prevents reverseGeocode from overwriting chosen landmark address)
   const isExplicitSelectionRef = useRef(false);
+  const explicitSelectedLocationRef = useRef(null);
 
   // Reverse Geocode whenever map stops moving (debounced)
   useEffect(() => {
@@ -219,7 +220,7 @@ const RideRequestPage = () => {
     // Pin landing ground thump haptic feedback
     haptics.pinDrop();
 
-    let loc = {
+    let loc = explicitSelectedLocationRef.current || {
       lat: mapCenter.lat,
       lng: mapCenter.lng,
       address: currentAddress
@@ -237,10 +238,13 @@ const RideRequestPage = () => {
       setPickup(loc);
       setStep('dropoff');
       isExplicitSelectionRef.current = false;
+      explicitSelectedLocationRef.current = null;
       setCurrentAddress('');
     } else if (step === 'dropoff') {
       setDropoff(loc);
       setStep('confirm');
+      isExplicitSelectionRef.current = false;
+      explicitSelectedLocationRef.current = null;
       // Pass loc directly to avoid stale closure — dropoff state won't be set yet
       calculateFare(pickup, loc);
     }
@@ -505,6 +509,7 @@ const RideRequestPage = () => {
                   onLocationSelect={(loc) => {
                     suppressConfirmUntilRef.current = Date.now() + 600;
                     isExplicitSelectionRef.current = true;
+                    explicitSelectedLocationRef.current = { lat: loc.lat, lng: loc.lng, address: loc.address };
                     setSelectionTarget({ lat: loc.lat, lng: loc.lng, ts: Date.now() });
                     setMapCenter({ lat: loc.lat, lng: loc.lng });
                     setCurrentAddress(loc.address);
@@ -524,7 +529,7 @@ const RideRequestPage = () => {
             </>
           )}
 
-          {step === 'confirm' && (
+        {step === 'confirm' && (
              <>
                {(() => {
                  const savePercent = fareEstimate && fareEstimate.private_fare > 0 && fareEstimate.shared_fare < fareEstimate.private_fare
