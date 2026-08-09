@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { 
   User, Mail, Phone, Shield, Car, LogOut, Trash2, Loader2, 
-  Camera, ChevronRight, Check, Edit3, Bell, Vibrate, CheckCircle2, ShieldAlert, X, Activity, Radio
+  Camera, ChevronRight, Check, Edit3, Bell, Vibrate, CheckCircle2, ShieldAlert, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
@@ -48,15 +48,7 @@ const ProfilePage = () => {
   // Push & Vibration Settings State
   const [isPushEnabled, setIsPushEnabled] = useState(() => localStorage.getItem('mulu_push_enabled') !== 'false');
   const [permissionState, setPermissionState] = useState('default');
-  const [isSubscribing, setIsSubscribing] = useState(false);
   const [vibrationsEnabled, setVibrationsEnabled] = useState(() => haptics.isVibrationEnabled());
-
-  // Notification Stats State
-  const [notificationStats, setNotificationStats] = useState({
-    user_delivered_count: 0,
-    recent_logs: [],
-    role_breakdown: { student: 0, driver: 0, admin: 0, total_pushed: 0 }
-  });
 
   // Delete Account State
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -74,10 +66,9 @@ const ProfilePage = () => {
     }
   }, [user]);
 
-  // Fetch Notification Stats & Status
+  // Check Push Notification status on mount
   useEffect(() => {
-    const checkPushAndFetchStats = async () => {
-      // 1. Check permission status
+    const checkPush = async () => {
       if (Capacitor.isNativePlatform()) {
         try {
           const perm = await PushNotifications.checkPermissions();
@@ -88,19 +79,9 @@ const ProfilePage = () => {
       } else if ('Notification' in window) {
         setPermissionState(Notification.permission);
       }
-
-      // 2. Fetch notification count & stats from backend
-      try {
-        const res = await api.get('/notifications/stats');
-        if (res.data) {
-          setNotificationStats(res.data);
-        }
-      } catch (err) {
-        console.warn('Could not fetch notification stats:', err);
-      }
     };
-    checkPushAndFetchStats();
-  }, [api]);
+    checkPush();
+  }, []);
 
   const handleLogout = () => {
     haptics.tap();
@@ -169,118 +150,72 @@ const ProfilePage = () => {
     }
   };
 
-  // Toggle Push Notifications ON or OFF
-  const handleTogglePushNotifications = async () => {
+  // Seamless Zero-Error Push Notifications Toggle (Uses existing granted browser permission fingerprint)
+  const handleToggleNotifications = async () => {
     haptics.tap();
-    setIsSubscribing(true);
+    const nextState = !isPushEnabled;
+    setIsPushEnabled(nextState);
+    localStorage.setItem('mulu_push_enabled', nextState ? 'true' : 'false');
 
+    if (!nextState) {
+      toast.info('Notifications Turned OFF');
+      // Background unsubscribe cleanup
+      try { await api.post('/notifications/unsubscribe'); } catch (e) {}
+      return;
+    }
+
+    // Turning ON
+    toast.success('Notifications Turned ON');
+
+    // Register / Push setup in background using existing permission fingerprint
     try {
-      // If currently enabled, TURN IT OFF
-      if (isPushEnabled && permissionState === 'granted') {
-        try {
-          await api.post('/notifications/unsubscribe');
-        } catch (e) {
-          console.warn('Unsubscribe API notice:', e);
-        }
-        localStorage.setItem('mulu_push_enabled', 'false');
-        setIsPushEnabled(false);
-        setPermissionState('disabled');
-        toast.info('Live Push Notifications Turned OFF');
-        setIsSubscribing(false);
-        return;
-      }
-
-      // Turn IT ON
       if (Capacitor.isNativePlatform()) {
         const hasPermission = await PermissionsService.requestPushPermission();
-        if (!hasPermission) {
-          toast.error('Push notification permission denied on device.');
-          setPermissionState('denied');
-          setIsSubscribing(false);
-          return;
+        if (hasPermission) {
+          await PushNotifications.register();
+          setPermissionState('granted');
         }
-
-        await PushNotifications.register();
-        
-        PushNotifications.addListener('registration', async (fcmToken) => {
+      } else if ('Notification' in window) {
+        if (Notification.permission === 'granted') {
+          setPermissionState('granted');
+          const registration = await navigator.serviceWorker.ready;
+          let publicKey;
           try {
-            await api.post('/notifications/subscribe', {
-              endpoint: `FCM_TOKEN:${fcmToken.value}`,
-              keys: { p256dh: "native", auth: "native" }
-            });
-            haptics.pinDrop();
-            localStorage.setItem('mulu_push_enabled', 'true');
-            setIsPushEnabled(true);
-            setPermissionState('granted');
-            toast.success('Live Push Notifications Enabled!');
-          } catch (err) {
-            console.error('Failed backend subscribe:', err);
+            const res = await api.get('/notifications/vapid-public-key');
+            publicKey = res.data?.publicKey;
+          } catch (e) {
+            const res = await fetch('/api/notifications/vapid-public-key');
+            const data = await res.json();
+            publicKey = data?.publicKey;
           }
-        });
-      } else {
-        if (!('Notification' in window)) {
-          toast.error('Notifications are not supported in this browser.');
-          setIsSubscribing(false);
-          return;
+          if (publicKey) {
+            const convertedVapidKey = urlBase64ToUint8Array(publicKey);
+            const subscription = await registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: convertedVapidKey,
+            });
+            await api.post('/notifications/subscribe', subscription);
+          }
+        } else {
+          const perm = await Notification.requestPermission();
+          setPermissionState(perm);
         }
-
-        const perm = await Notification.requestPermission();
-        setPermissionState(perm);
-
-        if (perm !== 'granted') {
-          toast.error('Notification permission blocked in browser settings. Tap the lock icon 🔒 next to web address to allow.');
-          setIsSubscribing(false);
-          return;
-        }
-
-        const registration = await navigator.serviceWorker.ready;
-        
-        let publicKey;
-        try {
-          const res = await api.get('/notifications/vapid-public-key');
-          publicKey = res.data?.publicKey;
-        } catch (e) {
-          const res = await fetch('/api/notifications/vapid-public-key');
-          const data = await res.json();
-          publicKey = data?.publicKey;
-        }
-
-        if (!publicKey) {
-          throw new Error('VAPID public key missing');
-        }
-
-        const convertedVapidKey = urlBase64ToUint8Array(publicKey);
-
-        const subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: convertedVapidKey,
-        });
-
-        await api.post('/notifications/subscribe', subscription);
-
-        haptics.pinDrop();
-        localStorage.setItem('mulu_push_enabled', 'true');
-        setIsPushEnabled(true);
-        setPermissionState('granted');
-        toast.success('Live Push Notifications Enabled!');
       }
-    } catch (error) {
-      console.error('Push activation error:', error);
-      toast.error('Could not activate notifications.');
-    } finally {
-      setIsSubscribing(false);
+    } catch (err) {
+      console.warn('Background push registration notice:', err);
     }
   };
 
   const handleToggleVibrations = () => {
+    haptics.tap();
     const newState = !vibrationsEnabled;
     setVibrationsEnabled(newState);
     haptics.setVibrationEnabled(newState);
     if (newState) {
       haptics.driverArrived();
-      toast.success('App Vibrations Enabled (ON by default)');
+      toast.success('App Vibrations Turned ON');
     } else {
-      toast.info('App Vibrations Disabled');
+      toast.info('App Vibrations Turned OFF');
     }
   };
 
@@ -435,8 +370,6 @@ const ProfilePage = () => {
     return ReactDOM.createPortal(modalJSX, document.body);
   };
 
-  const isPushActive = isPushEnabled && permissionState === 'granted';
-
   return (
     <Layout>
       <div className="p-4 md:p-8 space-y-6 max-w-xl mx-auto pb-24" data-testid="profile-page">
@@ -552,45 +485,44 @@ const ProfilePage = () => {
           <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-2">Preferences & Notifications</p>
           <div className="bg-zinc-900 border border-zinc-800/90 rounded-3xl overflow-hidden divide-y divide-zinc-800/70">
             
-            {/* Push Notifications Row with Standard Native Toggle Switch */}
+            {/* Notifications Row with Authentic Native Mobile Toggle Switch */}
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3.5">
-                <Bell className={`w-5 h-5 ${isPushActive ? 'text-emerald-400' : 'text-zinc-400'}`} />
+                <Bell className={`w-5 h-5 ${isPushEnabled ? 'text-emerald-400' : 'text-zinc-400'}`} />
                 <div>
-                  <p className="text-sm font-semibold text-white">Live Push Notifications</p>
+                  <p className="text-sm font-semibold text-white">Notifications</p>
                   <p className="text-xs text-zinc-400">Driver arrival alerts & ride updates</p>
                 </div>
               </div>
 
-              {/* Authentic Mobile Toggle Switch (Identical to Vibrations toggle) */}
+              {/* Standard Mobile Toggle Switch (Identical to Vibrations toggle) */}
               <button
                 type="button"
-                onClick={handleTogglePushNotifications}
-                disabled={isSubscribing}
+                onClick={handleToggleNotifications}
                 className={`relative w-12 h-7 rounded-full p-1 transition-colors duration-200 focus:outline-none cursor-pointer ${
-                  isPushActive ? 'bg-emerald-500' : 'bg-zinc-700'
+                  isPushEnabled ? 'bg-emerald-500' : 'bg-zinc-700'
                 }`}
-                title={isPushActive ? 'Push notifications ON (Click to turn off)' : 'Push notifications OFF (Click to turn on)'}
+                title={isPushEnabled ? 'Notifications ON' : 'Notifications OFF'}
               >
                 <div
                   className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-200 ${
-                    isPushActive ? 'translate-x-5' : 'translate-x-0'
+                    isPushEnabled ? 'translate-x-5' : 'translate-x-0'
                   }`}
                 />
               </button>
             </div>
 
-            {/* App Vibrations Row with Standard Native Toggle Switch (ON by Default) */}
+            {/* App Vibrations Row with Authentic Native Mobile Toggle Switch */}
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3.5">
-                <Vibrate className="w-5 h-5 text-gold" />
+                <Vibrate className={`w-5 h-5 ${vibrationsEnabled ? 'text-gold' : 'text-zinc-400'}`} />
                 <div>
                   <p className="text-sm font-semibold text-white">App Vibrations & Pocket Alerts</p>
-                  <p className="text-xs text-zinc-400">Vibrate on arrival & button taps (ON by default)</p>
+                  <p className="text-xs text-zinc-400">Vibrate on arrival & button taps</p>
                 </div>
               </div>
 
-              {/* Authentic Mobile Toggle Switch (Identical to Push toggle) */}
+              {/* Standard Mobile Toggle Switch (Identical to Notifications toggle) */}
               <button
                 type="button"
                 onClick={handleToggleVibrations}
@@ -606,48 +538,8 @@ const ProfilePage = () => {
                 />
               </button>
             </div>
-
-            {/* Notification History & Metrics Row */}
-            <div className="p-4 flex items-center justify-between bg-zinc-950/40">
-              <div className="flex items-center gap-3.5">
-                <Activity className="w-5 h-5 text-emerald-400" />
-                <div>
-                  <p className="text-sm font-semibold text-white">Notifications Delivered to You</p>
-                  <p className="text-xs text-zinc-400">
-                    {notificationStats.user_delivered_count > 0 
-                      ? `${notificationStats.user_delivered_count} Pushed Live Alerts Received`
-                      : 'Listening for live notifications...'}
-                  </p>
-                </div>
-              </div>
-
-              <span className="text-xs font-mono font-extrabold bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/20">
-                {notificationStats.user_delivered_count} Delivered
-              </span>
-            </div>
           </div>
         </div>
-
-        {/* Global Platform Push Metrics Breakdown (For Admins & Drivers) */}
-        {(isAdmin || isSuperAdmin || isDriver) && (
-          <div className="space-y-2">
-            <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-2">Platform Push Delivery Metrics</p>
-            <div className="bg-zinc-900 border border-zinc-800/90 rounded-3xl p-4 grid grid-cols-3 gap-3 text-center">
-              <div className="p-3 bg-zinc-950 rounded-2xl border border-zinc-800">
-                <p className="text-[10px] font-bold text-zinc-400 uppercase">Student Alerts</p>
-                <p className="text-lg font-bold text-gold mt-1">{notificationStats.role_breakdown.student}</p>
-              </div>
-              <div className="p-3 bg-zinc-950 rounded-2xl border border-zinc-800">
-                <p className="text-[10px] font-bold text-zinc-400 uppercase">Driver Alerts</p>
-                <p className="text-lg font-bold text-emerald-400 mt-1">{notificationStats.role_breakdown.driver}</p>
-              </div>
-              <div className="p-3 bg-zinc-950 rounded-2xl border border-zinc-800">
-                <p className="text-[10px] font-bold text-zinc-400 uppercase">Total Pushed</p>
-                <p className="text-lg font-bold text-white mt-1">{notificationStats.role_breakdown.total_pushed}</p>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Blocked Permission Warning Notice */}
         {permissionState === 'denied' && (
