@@ -38,17 +38,8 @@
 
 /* Sonner toast customization: Absolute Pitch Black with ZERO background shades */
 [data-sonner-toaster] {
-  top: 18px !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  width: 100% !important;
-  max-width: max-content !important;
-  display: flex !important;
-  justify-content: center !important;
-  align-items: center !important;
   box-shadow: none !important;
   filter: none !important;
-  z-index: 9999999 !important;
 }
 
 [data-sonner-toast] {
@@ -56,14 +47,7 @@
   background-color: #000000 !important;
   color: #FFFFFF !important;
   border-radius: 9999px !important;
-  padding: 9px 16px !important;
-  max-width: calc(100vw - 32px) !important;
-  width: max-content !important;
-  margin: 0 auto !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  text-align: center !important;
+  padding: 12px 20px !important;
   box-shadow: none !important;
   filter: none !important;
 }
@@ -72,12 +56,7 @@
 [data-sonner-toast] [data-title] {
   color: #FFFFFF !important;
   font-weight: 600 !important;
-  font-size: 13px !important;
-  line-height: 1.35 !important;
-  text-align: center !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
+  font-size: 14px !important;
 }
 
 /* Success Toast: Absolute Black bg, Absolute White text, Soft Emerald border */
