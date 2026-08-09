@@ -17,6 +17,8 @@ from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone, timedelta
 from enum import Enum
+import sqlite3
+
 # ── Path fix: ensure backend/services/ is always importable ──────────────────
 # Render runs from project root with PYTHONPATH=backend, but locally we may
 # run from inside backend/. This guarantees 'services.X' always resolves.
@@ -3730,7 +3732,67 @@ async def get_admin_logs(
     logs = await db.admin_logs.find({}, {"_id": 0}).sort("created_at", -1).to_list(limit)
     return [AdminLogResponse(**log) for log in logs]
 
+# ==================== PLACES SEARCH ROUTE ====================
+@api_router.get("/places/search")
+async def search_places(q: str = Query(..., min_length=1)):
+    """Search offline places database (places.db) by name or category"""
+    search_term = q.strip()
+    if not search_term:
+        return []
+
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    db_paths = [
+        os.path.join(base_dir, "places.db"),
+        os.path.join(os.path.dirname(base_dir), "places.db"),
+        "places.db"
+    ]
+    db_path = None
+    for p in db_paths:
+        if os.path.exists(p):
+            db_path = p
+            break
+
+    if not db_path:
+        return []
+
+    try:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+
+        like_query = f"%{search_term}%"
+        cur.execute(
+            """
+            SELECT id, name, category, latitude, longitude, source 
+            FROM places 
+            WHERE name LIKE ? OR category LIKE ? 
+            ORDER BY 
+              CASE WHEN name LIKE ? THEN 1 ELSE 2 END,
+              name ASC
+            LIMIT 15
+            """,
+            (like_query, like_query, f"{search_term}%")
+        )
+        rows = cur.fetchall()
+        conn.close()
+
+        results = []
+        for r in rows:
+            results.append({
+                "id": r["id"],
+                "display_name": r["name"],
+                "category": r["category"],
+                "lat": float(r["latitude"]),
+                "lon": float(r["longitude"]),
+                "source": r["source"]
+            })
+        return results
+    except Exception as e:
+        logging.error(f"Error searching places.db: {e}")
+        return []
+
 # ==================== DESTINATIONS MANAGEMENT ====================
+
 @api_router.get("/destinations", response_model=List[DestinationResponse])
 async def get_destinations(active_only: bool = True):
     """Get all destinations (public endpoint for ride booking)"""

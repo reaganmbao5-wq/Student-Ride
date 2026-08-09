@@ -449,24 +449,10 @@ const RideRequestPage = () => {
                 </div>
               </div>
               
-              <button 
-                onClick={() => {
-                  if (userLocation) {
-                    setMapCenter({ lat: userLocation.lat, lng: userLocation.lng });
-                    toast.success("Locating you...");
-                  } else {
-                    toast.error("Location not available yet.");
-                  }
-                }}
-                className="flex items-center gap-2 text-sm font-bold text-blue-600 dark:text-blue-400 py-1"
-              >
-                <Navigation className="w-4 h-4" /> Use Current Location
-              </button>
-
               <div className="w-full flex items-center gap-2">
                 <div className="flex-1">
                   <AddressSearch
-                    placeholder="Or search for an address..."
+                    placeholder="Search for a pickup..."
                     onLocationSelect={(loc) => {
                       setMapCenter({ lat: loc.lat, lng: loc.lng });
                       setCurrentAddress(loc.address);
@@ -505,6 +491,26 @@ const RideRequestPage = () => {
                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Dropoff Address</p>
                    <p className="text-sm font-medium truncate">{currentAddress || 'Fetching address...'}</p>
                 </div>
+              </div>
+
+              <div className="w-full flex items-center gap-2">
+                <div className="flex-1">
+                  <AddressSearch
+                    placeholder="Search for a destination..."
+                    onLocationSelect={(loc) => {
+                      setMapCenter({ lat: loc.lat, lng: loc.lng });
+                      setCurrentAddress(loc.address);
+                      setSelectedDestination(null);
+                    }}
+                  />
+                </div>
+                <button
+                  onClick={() => refreshLocation()}
+                  disabled={geoLoading}
+                  className="w-12 h-12 flex-shrink-0 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl flex items-center justify-center active:scale-95 transition-transform"
+                >
+                  <Navigation className={`w-5 h-5 text-black dark:text-white ${geoLoading ? 'animate-pulse' : ''}`} />
+                </button>
               </div>
 
               {destinations.length > 0 && (

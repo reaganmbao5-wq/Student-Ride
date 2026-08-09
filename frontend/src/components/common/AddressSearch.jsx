@@ -53,7 +53,7 @@ export const AddressSearch = ({ onLocationSelect, placeholder = "Search for a lo
                     onFocus={() => results.length > 0 && setShowResults(true)}
                     onBlur={() => setTimeout(() => setShowResults(false), 200)}
                     placeholder={placeholder}
-                    className="w-full h-12 pl-12 pr-12 bg-muted/50 border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/50 transition-all font-medium"
+                    className="w-full h-12 pl-12 pr-12 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/50 transition-all font-medium"
                 />
                 {loading && (
                     <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gold animate-spin" />

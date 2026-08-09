@@ -17,13 +17,35 @@ const getCached_ = (key) => {
     return null;
 };
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "https://student-ride-backend-manual.onrender.com";
+
 export const searchAddress = async (query) => {
-    if (!query || query.length < 3) return [];
+    if (!query || query.length < 2) return [];
 
     const cacheKey = `search:${query.toLowerCase().trim()}`;
     const cached = getCached_(cacheKey);
     if (cached) return cached;
 
+    // 1. Try offline places.db database via backend API first
+    try {
+        const localRes = await fetch(`${BACKEND_URL}/api/places/search?q=${encodeURIComponent(query)}`);
+        if (localRes.ok) {
+            const dbData = await localRes.json();
+            if (Array.isArray(dbData) && dbData.length > 0) {
+                const formatted = dbData.map(item => ({
+                    lat: String(item.lat),
+                    lon: String(item.lon),
+                    display_name: item.display_name + (item.category ? ` (${item.category})` : '')
+                }));
+                cache.set(cacheKey, { timestamp: Date.now(), data: formatted });
+                return formatted;
+            }
+        }
+    } catch (dbErr) {
+        console.warn('Local places search warning:', dbErr);
+    }
+
+    // 2. Fallback to online Nominatim OSM search
     try {
         const response = await fetch(
             `https://nominatim.openstreetmap.org/search?` +
