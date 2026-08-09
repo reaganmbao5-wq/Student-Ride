@@ -1,3 +1,5 @@
+import placesData from '../../data/places.json';
+
 // Rate limiting and caching utility for Nominatim
 
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
@@ -22,11 +24,40 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "https://student-ride-b
 export const searchAddress = async (query) => {
     if (!query || query.length < 2) return [];
 
-    const cacheKey = `search:${query.toLowerCase().trim()}`;
+    const searchLower = query.toLowerCase().trim();
+    const cacheKey = `search:${searchLower}`;
     const cached = getCached_(cacheKey);
     if (cached) return cached;
 
-    // 1. Try offline places.db database via backend API first
+    // 1. Instant offline search using local razor-sharp places dataset (works offline in Web & APK)
+    if (placesData && Array.isArray(placesData)) {
+        const matches = [];
+        const seen = new Set();
+        
+        for (const item of placesData) {
+            const nameLower = item.display_name.toLowerCase();
+            const catLower = (item.category || '').toLowerCase();
+            
+            if (nameLower.includes(searchLower) || catLower.includes(searchLower)) {
+                if (!seen.has(nameLower)) {
+                    seen.add(nameLower);
+                    matches.push({
+                        lat: String(item.lat),
+                        lon: String(item.lon),
+                        display_name: item.display_name
+                    });
+                }
+            }
+            if (matches.length >= 15) break;
+        }
+
+        if (matches.length > 0) {
+            cache.set(cacheKey, { timestamp: Date.now(), data: matches });
+            return matches;
+        }
+    }
+
+    // 2. Try online backend API as secondary fallback
     try {
         const localRes = await fetch(`${BACKEND_URL}/api/places/search?q=${encodeURIComponent(query)}`);
         if (localRes.ok) {
