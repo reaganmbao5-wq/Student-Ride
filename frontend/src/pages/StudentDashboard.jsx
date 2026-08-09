@@ -829,15 +829,15 @@ const StudentDashboard = () => {
   // ==========================================
   return (
     <Layout>
-      <div className="p-4 md:p-8 space-y-8 max-w-4xl mx-auto" data-testid="student-dashboard">
+      <div className="p-4 md:p-6 space-y-5 max-w-4xl mx-auto" data-testid="student-dashboard">
         {/* Top Greeting & Hero Ride Request Feature matching Mockup */}
-        <div className="flex flex-col items-center text-center space-y-8 pt-2 pb-4">
-          {/* Header Greeting */}
-          <div className="w-full text-left font-heading border-b border-border pb-4">
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight">
+        <div className="flex flex-col items-center text-center space-y-3 pt-0 pb-1">
+          {/* Header Greeting (Line removed, tight compact padding) */}
+          <div className="w-full text-left font-heading pb-1">
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
               Hello, {user?.name ? user.name.split(' ')[0] : 'Student'}
             </h1>
-            <p className="text-muted-foreground text-sm md:text-base font-medium mt-1">
+            <p className="text-muted-foreground text-xs md:text-sm font-medium mt-0.5">
               Where Would You Like To Go ?
             </p>
           </div>
