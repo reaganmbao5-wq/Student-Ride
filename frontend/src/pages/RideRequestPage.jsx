@@ -52,6 +52,7 @@ const RideRequestPage = () => {
   const geocodeTimeoutRef = useRef(null);
   const touchStartY = useRef(0);
   const lastHapticTime = useRef(0);
+  const suppressConfirmUntilRef = useRef(0);
 
   // Touch gesture handlers for stationary card swipe detection (isolating gesture from window scroll)
   const handleTouchStart = (e) => {
@@ -64,17 +65,22 @@ const RideRequestPage = () => {
     }
     // Continuous micro-haptics while dragging
     const now = Date.now();
-    if (now - lastHapticTime.current > 60) {
-      haptics.swipeProgress();
+    if (now - lastHapticTime.current > 120) {
+      haptics.selection();
       lastHapticTime.current = now;
     }
   };
 
   const handleTouchEnd = (e) => {
-    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
-    if (Math.abs(deltaY) > 20) {
-      setRideMode(prev => prev === 'shared' ? 'private' : 'shared');
-      haptics.swipeSnap();
+    const touchEndY = e.changedTouches[0].clientY;
+    const diff = touchStartY.current - touchEndY;
+    // Threshold for swipe gesture (50px)
+    if (diff > 50) {
+      haptics.buttonClick();
+      setIsSheetExpanded(true);
+    } else if (diff < -50) {
+      haptics.buttonClick();
+      setIsSheetExpanded(false);
     }
   };
 
@@ -161,44 +167,27 @@ const RideRequestPage = () => {
     const estPrivateFare = Math.max(20, Math.round(15 + estDist * 5));
     const estSharedFare = Math.max(15, Math.round(estPrivateFare * 0.7));
 
-    let cachedRoute = routeCache.getRoute(p, d);
-    if (cachedRoute) setRouteGeometry(cachedRoute);
-
     setFareEstimate({
-      private_fare: selectedDestination?.estimated_fare || estPrivateFare,
-      shared_fare: selectedDestination?.estimated_fare || estSharedFare,
-      distance: Math.round(estDist * 100) / 100,
-      duration: estDuration,
-      is_predefined: !!selectedDestination?.estimated_fare
+      private_fare: estPrivateFare,
+      shared_fare: estSharedFare,
+      distance_km: parseFloat(estDist.toFixed(1)),
+      duration_mins: estDuration
     });
-    setLoading(false); // Unblock UI immediately!
 
     try {
-      const response = await api.post('/rides/estimate-fare', {
-        pickup: p,
-        dropoff: d
+      const response = await api.post('/rides/estimate', {
+        pickup_lat: p.lat,
+        pickup_lng: p.lng,
+        dropoff_lat: d.lat,
+        dropoff_lng: d.lng,
+        destination_id: selectedDestination ? selectedDestination.id : null
       });
-
       const data = response.data;
-      let privateFare = data.private.estimated_fare;
-      let sharedFare = data.shared.estimated_fare;
-      
-      if (selectedDestination?.estimated_fare) {
-        privateFare = selectedDestination.estimated_fare;
-        sharedFare = selectedDestination.estimated_fare;
-      }
-
-      if (data.geometry && Array.isArray(data.geometry) && data.geometry.length > 2) {
-        setRouteGeometry(data.geometry);
-        routeCache.setRoute(p, d, data.geometry);
-      }
-
       setFareEstimate({
-        private_fare: privateFare,
-        shared_fare: sharedFare,
-        distance: data.verified_distance,
-        duration: data.verified_duration,
-        is_predefined: data.private.is_fixed || !!selectedDestination?.estimated_fare,
+        private_fare: data.private.fare,
+        shared_fare: data.shared.fare,
+        distance_km: data.distance_km,
+        duration_mins: data.duration_mins,
         private_surge: data.private.surge_reason,
         shared_surge: data.shared.surge_reason
       });
@@ -221,6 +210,11 @@ const RideRequestPage = () => {
 
 
   const handleConfirmLocation = () => {
+    // Suppress confirm clicks within 600ms of selecting a place from search (prevents touch tap-through auto-advance)
+    if (Date.now() < suppressConfirmUntilRef.current) {
+      return;
+    }
+
     // Pin landing ground thump haptic feedback
     haptics.pinDrop();
 
@@ -458,6 +452,7 @@ const RideRequestPage = () => {
                   <AddressSearch
                     placeholder="Search for a pickup..."
                     onLocationSelect={(loc) => {
+                      suppressConfirmUntilRef.current = Date.now() + 600;
                       isExplicitSelectionRef.current = true;
                       setMapCenter({ lat: loc.lat, lng: loc.lng });
                       setCurrentAddress(loc.address);
@@ -502,6 +497,7 @@ const RideRequestPage = () => {
                 <AddressSearch
                   placeholder="Search for a destination..."
                   onLocationSelect={(loc) => {
+                    suppressConfirmUntilRef.current = Date.now() + 600;
                     isExplicitSelectionRef.current = true;
                     setMapCenter({ lat: loc.lat, lng: loc.lng });
                     setCurrentAddress(loc.address);
