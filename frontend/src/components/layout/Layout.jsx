@@ -5,6 +5,7 @@ import { Home, MapPin, Clock, User, Settings, Car, DollarSign, Users, BarChart3,
 import { useTheme } from '../../context/ThemeContext';
 import { cn } from '../../lib/utils';
 import { haptics } from '../../utils/haptics';
+import { Dock, DockIcon, DockItem, DockLabel } from '../ui/dock';
 
 export const Layout = ({ children }) => {
   const { user, isDriver, isAdmin, logout } = useAuth();
@@ -176,34 +177,34 @@ export const Layout = ({ children }) => {
         </div>
       </main>
 
-      {/* Liquid Glass Navigation Bar */}
-      <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-lg safe-bottom">
-        <div className="liquid-glass rounded-[2rem] p-2 flex items-center justify-around gap-1 overflow-x-auto no-scrollbar scroll-smooth">
-          <div className="flex items-center gap-1 min-w-max px-2">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === '/dashboard' || item.to === '/driver' || item.to === '/admin'}
-                onClick={() => haptics.tap()}
-                className={({ isActive }) => cn(
-                  "flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all duration-300 relative min-w-[64px]",
-                  isActive ? "liquid-item-active text-gold scale-105" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {({ isActive }) => (
-                  <>
-                    <item.icon className="w-5 h-5" />
-                    <span className="text-[10px] font-medium whitespace-nowrap">{item.label}</span>
-                    {isActive && (
-                      <div className="absolute -bottom-1 w-1 h-1 rounded-full bg-gold" />
-                    )}
-                  </>
-                )}
-              </NavLink>
-            ))}
-          </div>
-        </div>
+      {/* Apple Style Floating Dock Navigation Bar */}
+      <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 max-w-full safe-bottom">
+        <Dock className="bg-zinc-950/90 border border-white/10 shadow-2xl backdrop-blur-xl items-center py-2 px-3 gap-3">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.to === '/dashboard' || item.to === '/driver' || item.to === '/admin'}
+              onClick={() => haptics.tap()}
+              className="outline-none"
+            >
+              {({ isActive }) => (
+                <DockItem className={cn(
+                  "aspect-square rounded-full transition-colors relative",
+                  isActive ? "bg-gold/20 border border-gold/40 text-gold shadow-[0_0_15px_rgba(234,179,8,0.3)]" : "bg-zinc-900 text-zinc-400 hover:text-white"
+                )}>
+                  <DockLabel>{item.label}</DockLabel>
+                  <DockIcon>
+                    <item.icon className="h-5 w-5" />
+                  </DockIcon>
+                  {isActive && (
+                    <div className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-gold shadow-[0_0_8px_#EAB308]" />
+                  )}
+                </DockItem>
+              )}
+            </NavLink>
+          ))}
+        </Dock>
       </nav>
     </div>
   );
