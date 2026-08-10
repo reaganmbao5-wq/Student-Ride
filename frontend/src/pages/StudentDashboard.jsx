@@ -699,37 +699,21 @@ const StudentDashboard = () => {
                    {/* Driver Profile Card */}
                    {activeRide.driver && (
                      <div className="flex items-center gap-4 bg-zinc-50 dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800">
-                        {/* Expandable Prominent Round Driver Face Image */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            haptics.primaryButton();
-                            setIsPhotoModalOpen(true);
-                          }}
-                          onTouchEnd={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            haptics.primaryButton();
-                            setIsPhotoModalOpen(true);
-                          }}
-                          className="relative group shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-gold/50 cursor-pointer active:scale-95 transition-all"
-                          title="Tap to view full driver photo"
-                        >
+                        {/* Static Prominent Round Driver Face Image */}
+                        <div className="relative group shrink-0 rounded-full">
                           {(typeof activeRide.driver.user?.avatar_url === 'string' && activeRide.driver.user.avatar_url.trim()) ||
                            (typeof activeRide.driver.avatar_url === 'string' && activeRide.driver.avatar_url.trim()) ? (
                             <img 
                               src={activeRide.driver.user?.avatar_url || activeRide.driver.avatar_url} 
                               alt={activeRide.driver.user?.name || 'Driver'} 
-                              className="w-16 h-16 rounded-full object-cover border-2 border-gold shadow-lg shadow-gold/20 group-hover:border-white transition-all" 
+                              className="w-16 h-16 rounded-full object-cover border-2 border-gold shadow-lg shadow-gold/20" 
                             />
                           ) : (
                             <div className="w-16 h-16 rounded-full bg-gold/20 border-2 border-gold flex items-center justify-center">
                               <UserIcon className="w-8 h-8 text-gold" />
                             </div>
                           )}
-                        </button>
+                        </div>
 
                         <div className="flex-1">
                           <p className="font-bold text-lg text-foreground">{activeRide.driver.user?.name}</p>
@@ -756,12 +740,6 @@ const StudentDashboard = () => {
                         </div>
                      </div>
                    )}
-
-                   <p className="text-[11px] text-gold/80 font-medium text-center tracking-wide -mt-4">
-                     Tap profile picture to expand
-                   </p>
-
-                   {/* Ride Details (Locations + Fare) */}
                    <div className="bg-zinc-50 dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 flex flex-col gap-4">
                       <div className="flex items-start gap-3 relative">
                          <div className="absolute left-[11px] top-6 bottom-[-20px] w-0.5 bg-zinc-300 dark:bg-zinc-700 border-dashed" />

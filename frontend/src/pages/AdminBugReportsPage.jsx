@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bug, AlertTriangle, CheckCircle, Clock, Smartphone, MapPin, RefreshCw, ChevronDown, Monitor } from 'lucide-react';
+import { Bug, AlertTriangle, CheckCircle, Clock, Smartphone, MapPin, RefreshCw, ChevronDown, Monitor, ZoomIn, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Layout } from '../components/layout/Layout';
 import { toast } from 'sonner';
@@ -11,6 +11,7 @@ export const AdminBugReportsPage = () => {
   const [systemErrors, setSystemErrors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedScreenshot, setSelectedScreenshot] = useState(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -177,13 +178,19 @@ export const AdminBugReportsPage = () => {
                     {report.device_info?.screenshot && (
                       <div className="space-y-1.5">
                         <span className="text-xs font-semibold text-zinc-400">Attached Active-Ride Screenshot:</span>
-                        <div className="rounded-xl overflow-hidden border border-white/10 max-w-sm bg-black">
+                        <div
+                          onClick={() => setSelectedScreenshot(report.device_info.screenshot)}
+                          className="relative group rounded-xl overflow-hidden border border-white/10 max-w-sm bg-black cursor-pointer shadow-lg"
+                        >
                           <img
                             src={report.device_info.screenshot}
                             alt="Active Ride Screenshot"
-                            className="w-full h-auto object-cover max-h-64 cursor-pointer hover:opacity-90 transition-opacity"
-                            onClick={() => window.open(report.device_info.screenshot, '_blank')}
+                            className="w-full h-auto object-cover max-h-64 group-hover:scale-105 transition-transform duration-300"
                           />
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white font-semibold text-xs">
+                            <ZoomIn className="w-5 h-5 text-gold-400" />
+                            <span>Click to Expand</span>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -265,6 +272,38 @@ export const AdminBugReportsPage = () => {
           </div>
         )}
       </div>
+
+      {/* Expandable Image Lightbox Modal */}
+      {selectedScreenshot && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+          <div className="absolute inset-0" onClick={() => setSelectedScreenshot(null)} />
+          
+          <div className="relative z-10 max-w-5xl w-full flex flex-col items-center gap-3">
+            {/* Top Bar */}
+            <div className="w-full flex items-center justify-between text-white bg-zinc-900/90 p-4 rounded-2xl border border-white/10 shadow-xl">
+              <span className="text-sm font-semibold flex items-center gap-2">
+                <ZoomIn className="w-4 h-4 text-gold-400" />
+                Attached Active-Ride Screenshot
+              </span>
+              <button
+                onClick={() => setSelectedScreenshot(null)}
+                className="p-1.5 text-zinc-400 hover:text-white rounded-full hover:bg-white/10 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* High Res Image */}
+            <div className="w-full max-h-[80vh] flex items-center justify-center overflow-auto rounded-2xl border border-white/10 bg-black p-2 shadow-2xl">
+              <img
+                src={selectedScreenshot}
+                alt="Expanded Active-Ride Screenshot"
+                className="max-w-full max-h-[75vh] object-contain rounded-xl"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 };
