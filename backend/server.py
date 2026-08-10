@@ -697,6 +697,15 @@ async def get_current_user(
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
+async def get_optional_current_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    query_token: Optional[str] = Query(None, alias="token")
+) -> Optional[dict]:
+    try:
+        return await get_current_user(credentials, query_token)
+    except Exception:
+        return None
+
 async def require_admin(user: dict = Depends(get_current_user)) -> dict:
     role = user.get("role", UserRole.STUDENT.value)
     if role not in [UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value]:
@@ -4308,8 +4317,84 @@ async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_cur
         
         return {"url": doc_url}
     except Exception as e:
-        logger.error(f"File upload error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to upload file")
+        logger.error(f"Failed to upload document: {e}")
+        raise HTTPException(status_code=500, detail=f"Document upload failed: {str(e)}")
+
+# ─── BUG REPORTING & AUTOMATED DIAGNOSTICS ENDPOINTS ───
+
+class BugReportCreate(BaseModel):
+    category: str
+    description: str
+    device_info: Optional[Dict[str, Any]] = None
+    location_data: Optional[Dict[str, Any]] = None
+
+class AutoSystemErrorCreate(BaseModel):
+    error_message: str
+    stack_trace: Optional[str] = None
+    url_route: Optional[str] = None
+    device_info: Optional[Dict[str, Any]] = None
+
+@api_router.post("/support/report-bug")
+async def create_bug_report(
+    payload: BugReportCreate,
+    user: Optional[dict] = Depends(get_optional_current_user)
+):
+    doc = {
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"] if user else "anonymous",
+        "user_email": user.get("email", "") if user else "",
+        "user_name": user.get("full_name", "Anonymous User") if user else "Anonymous User",
+        "category": payload.category,
+        "description": payload.description,
+        "device_info": payload.device_info or {},
+        "location_data": payload.location_data or {},
+        "status": "open",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.bug_reports.insert_one(doc)
+    doc.pop("_id", None)
+    return {"status": "success", "report": doc}
+
+@api_router.post("/support/auto-log-error")
+async def auto_log_system_error(
+    payload: AutoSystemErrorCreate,
+    user: Optional[dict] = Depends(get_optional_current_user)
+):
+    doc = {
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"] if user else "anonymous",
+        "user_email": user.get("email", "") if user else "",
+        "error_message": payload.error_message,
+        "stack_trace": payload.stack_trace or "",
+        "url_route": payload.url_route or "",
+        "device_info": payload.device_info or {},
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.auto_system_errors.insert_one(doc)
+    doc.pop("_id", None)
+    return {"status": "recorded", "id": doc["id"]}
+
+@api_router.get("/admin/bug-reports")
+async def get_admin_bug_reports(admin: dict = Depends(require_admin)):
+    reports = await db.bug_reports.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    return reports
+
+@api_router.get("/admin/system-errors")
+async def get_admin_system_errors(admin: dict = Depends(require_admin)):
+    errors = await db.auto_system_errors.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    return errors
+
+@api_router.patch("/admin/bug-reports/{report_id}/status")
+async def update_bug_report_status(
+    report_id: str,
+    status_update: dict,
+    admin: dict = Depends(require_admin)
+):
+    new_status = status_update.get("status", "open")
+    res = await db.bug_reports.update_one({"id": report_id}, {"$set": {"status": new_status}})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Bug report not found")
+    return {"status": "updated", "id": report_id, "new_status": new_status}
 
 # Include router
 app.include_router(api_router, prefix="/api")
@@ -4329,3 +4414,7 @@ app.add_middleware(
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)

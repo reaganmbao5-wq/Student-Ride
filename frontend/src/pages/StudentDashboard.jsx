@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { MapPin, Clock, Car, Star, ChevronRight, Navigation, AlertCircle, MessageCircle, Phone, PhoneCall, Loader2, Trash2, User as UserIcon } from 'lucide-react';
+import { MapPin, Clock, Car, Star, ChevronRight, Navigation, AlertCircle, MessageCircle, Phone, PhoneCall, Loader2, Trash2, User as UserIcon, Bug } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard, GoldButton, StatusBadge, LoadingSpinner, EmptyState } from '../components/common/GlassComponents';
 import { RatingModal } from '../components/common/RatingModal';
+
 import SwipableRideCard from '../components/common/SwipableRideCard';
 import { PlatformMap } from '../map/components/PlatformMap';
 import { CAMERA_MODES } from '../map/camera/CameraConfig';
@@ -59,9 +60,10 @@ const StudentDashboard = () => {
   const [driverPos, setDriverPos] = useState(null);
   const [isRouteAnimating, setIsRouteAnimating] = useState(false);
   
-  // Bottom Sheet State
+  // Bottom Sheet & Modal State
   const [isSheetExpanded, setIsSheetExpanded] = useState(false);
   const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
+
 
   // Track locally cancelled ride IDs to prevent in-flight fetchData race conditions from restoring cancelled rides
   const cancelledRideIdsRef = React.useRef(new Set());
@@ -698,17 +700,21 @@ const StudentDashboard = () => {
                    {activeRide.driver && (
                      <div className="flex items-center gap-4 bg-zinc-50 dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800">
                         {/* Expandable Prominent Round Driver Face Image */}
-                        <motion.button
+                        <button
                           type="button"
-                          whileHover={{ scale: 1.08 }}
-                          whileTap={{ scale: 0.92 }}
                           onClick={(e) => {
+                            e.preventDefault();
                             e.stopPropagation();
-                            haptics.pinDrop();
                             haptics.primaryButton();
                             setIsPhotoModalOpen(true);
                           }}
-                          className="relative group shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-gold/50 cursor-pointer"
+                          onTouchEnd={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            haptics.primaryButton();
+                            setIsPhotoModalOpen(true);
+                          }}
+                          className="relative group shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-gold/50 cursor-pointer active:scale-95 transition-all"
                           title="Tap to view full driver photo"
                         >
                           {(typeof activeRide.driver.user?.avatar_url === 'string' && activeRide.driver.user.avatar_url.trim()) ||
@@ -723,7 +729,7 @@ const StudentDashboard = () => {
                               <UserIcon className="w-8 h-8 text-gold" />
                             </div>
                           )}
-                        </motion.button>
+                        </button>
 
                         <div className="flex-1">
                           <p className="font-bold text-lg text-foreground">{activeRide.driver.user?.name}</p>
@@ -794,13 +800,22 @@ const StudentDashboard = () => {
                      )}
                      
                      {['accepted', 'driver_accepted', 'driver_en_route_to_pickup', 'driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination', 'ongoing'].includes(activeRide.status) && (
-                        <button
-                          onClick={handleSOS}
-                          className="w-full py-4 bg-red-600 text-white rounded-xl font-bold text-base active:scale-95 transition-transform flex items-center justify-center gap-2 shadow-lg shadow-red-600/20"
-                        >
-                          <AlertCircle className="w-5 h-5" />
-                          Emergency SOS
-                        </button>
+                        <div className="flex items-center gap-2.5 w-full">
+                          <button
+                            onClick={handleSOS}
+                            className="flex-1 py-3.5 bg-red-600 text-white rounded-xl font-bold text-base active:scale-95 transition-transform flex items-center justify-center gap-2 shadow-lg shadow-red-600/20"
+                          >
+                            <AlertCircle className="w-5 h-5" />
+                            Emergency SOS
+                          </button>
+                          <button
+                            onClick={() => window.dispatchEvent(new CustomEvent('open-bug-report-modal', { detail: { isFromActiveRide: true, locationData: userLocation } }))}
+                            className="shrink-0 px-3 py-2 bg-[#2B2B2B] hover:bg-[#383838] border border-white/10 text-white rounded-xl font-medium text-xs active:scale-95 transition-all flex flex-col items-center justify-center gap-0.5 shadow-md"
+                          >
+                            <Bug className="w-4 h-4 text-white" />
+                            <span className="text-[10px] leading-none">Report bug</span>
+                          </button>
+                        </div>
                      )}
                   </div>
                 </div>
@@ -1038,14 +1053,14 @@ const StudentDashboard = () => {
         }}
       />
 
-      {activeRide?.driver && (
-        <DriverPhotoModal
-          isOpen={isPhotoModalOpen}
-          photoUrl={activeRide.driver.user?.avatar_url || activeRide.driver.avatar_url}
-          driver={activeRide.driver}
-          onClose={() => setIsPhotoModalOpen(false)}
-        />
-      )}
+      <DriverPhotoModal
+        isOpen={isPhotoModalOpen}
+        photoUrl={activeRide?.driver?.user?.avatar_url || activeRide?.driver?.avatar_url}
+        driver={activeRide?.driver}
+        onClose={() => setIsPhotoModalOpen(false)}
+      />
+
+
     </Layout>
   );
 };

@@ -7,6 +7,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
 import { MultiPlatformInstallSection } from '../components/common/MultiPlatformInstallSection';
+import { BugReportButton } from '../components/common/BugReportButton';
 import { compressImageToDataUrl } from '../utils/imageCompressor';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -53,6 +54,7 @@ const ProfilePage = () => {
   // Delete Account State
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
 
   const fileInputRef = useRef(null);
 
@@ -599,8 +601,9 @@ const ProfilePage = () => {
         {/* ==================================================== */}
         {/* GROUP 4: APP & SYSTEM FEATURES                       */}
         {/* ==================================================== */}
-        <div className="space-y-2">
-          <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-2">App & System</p>
+        <div className="space-y-3">
+          <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-2">Support & App</p>
+          <BugReportButton onClick={() => window.dispatchEvent(new CustomEvent('open-bug-report-modal', { detail: { isFromActiveRide: false } }))} />
           <MultiPlatformInstallSection />
         </div>
 

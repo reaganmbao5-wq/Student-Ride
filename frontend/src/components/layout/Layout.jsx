@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Home, MapPin, Clock, User, Settings, Car, DollarSign, Users, BarChart3, Shield, LogOut, Menu, X, Sun, Moon } from 'lucide-react';
+import { Home, MapPin, Clock, User, Settings, Car, DollarSign, Users, BarChart3, Shield, LogOut, Menu, X, Sun, Moon, Bug } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { cn } from '../../lib/utils';
 import { haptics } from '../../utils/haptics';
@@ -38,6 +38,7 @@ export const Layout = ({ children }) => {
     { to: '/admin/rides', icon: MapPin, label: 'Rides' },
     { to: '/admin/destinations', icon: MapPin, label: 'Destinations' },
     { to: '/admin/pricing', icon: DollarSign, label: 'Pricing' },
+    { to: '/admin/bug-reports', icon: Bug, label: 'Bug Reports' },
     { to: '/admin/settings', icon: Settings, label: 'Settings' }
   ];
 

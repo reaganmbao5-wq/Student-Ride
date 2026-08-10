@@ -10,6 +10,7 @@ import PushNotificationManager from "./components/common/PushNotificationManager
 import SWUpdateManager from "./components/common/SWUpdateManager";
 import NetworkMonitor from "./components/common/NetworkMonitor";
 import { StudentDashboardSkeleton, DriverDashboardSkeleton, AdminDashboardSkeleton, ProfilePageSkeleton } from "./components/common/PageSkeletons";
+import { ReportBugModal } from "./components/common/ReportBugModal";
 
 // Pages
 import LandingPage from "./pages/LandingPage";
@@ -30,6 +31,7 @@ import AdminRidesPage from "./pages/AdminRidesPage";
 import AdminSettingsPage from "./pages/AdminSettingsPage";
 import AdminDestinationsPage from "./pages/AdminDestinationsPage";
 import AdminPricingPage from "./pages/AdminPricingPage";
+import AdminBugReportsPage from "./pages/AdminBugReportsPage";
 import ChatPage from "./pages/ChatPage";
 import ProfilePage from "./pages/ProfilePage";
 
@@ -247,10 +249,10 @@ const AppRoutes = () => {
           }
         />
         <Route
-          path="/admin/pricing"
+          path="/admin/bug-reports"
           element={
             <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
-              <AdminPricingPage />
+              <AdminBugReportsPage />
             </ProtectedRoute>
           }
         />
@@ -297,6 +299,7 @@ function App() {
             <AuthProvider>
             <AppRoutes />
             {/* Global Components */}
+            <ReportBugModal />
             <PushNotificationManager />
             <NetworkMonitor />
             <SWUpdateManager />

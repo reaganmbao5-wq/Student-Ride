@@ -1,11 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Star, ShieldCheck, Car } from 'lucide-react';
+import { X, Star, ShieldCheck, Car, User } from 'lucide-react';
 import { haptics } from '../../utils/haptics';
 
 export const DriverPhotoModal = ({ isOpen, photoUrl, driver, onClose }) => {
-  if (!isOpen || !photoUrl) return null;
+  if (!isOpen) return null;
 
   const handleClose = () => {
     haptics.tap();
@@ -48,15 +48,22 @@ export const DriverPhotoModal = ({ isOpen, photoUrl, driver, onClose }) => {
             </div>
 
             {/* Large 4x4 Square/Round Image with Pulse Halo */}
-            <div className="relative group w-72 h-72 sm:w-80 sm:h-80 rounded-2xl overflow-hidden border-2 border-gold shadow-[0_0_40px_rgba(234,179,8,0.4)]">
-              <motion.img
-                initial={{ scale: 1.1 }}
-                animate={{ scale: 1 }}
-                transition={{ duration: 0.35 }}
-                src={photoUrl}
-                alt={driver?.user?.name || 'Driver Photo'}
-                className="w-full h-full object-cover"
-              />
+            <div className="relative group w-72 h-72 sm:w-80 sm:h-80 rounded-2xl overflow-hidden border-2 border-gold shadow-[0_0_40px_rgba(234,179,8,0.4)] bg-zinc-900 flex items-center justify-center">
+              {photoUrl ? (
+                <motion.img
+                  initial={{ scale: 1.1 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.35 }}
+                  src={photoUrl}
+                  alt={driver?.user?.name || 'Driver Photo'}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gold/10 flex flex-col items-center justify-center gap-3">
+                  <User className="w-24 h-24 text-gold" />
+                  <span className="text-xs text-gold/80 font-medium">Verified Driver</span>
+                </div>
+              )}
               {/* Ambient Radial Gradient Overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
             </div>
