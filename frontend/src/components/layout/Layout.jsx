@@ -178,8 +178,8 @@ export const Layout = ({ children }) => {
       </main>
 
       {/* Apple Style Floating Dock Navigation Bar */}
-      <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 max-w-full safe-bottom">
-        <Dock className="bg-zinc-950/90 border border-white/10 shadow-2xl backdrop-blur-xl items-center py-2 px-3 gap-3">
+      <nav className="fixed bottom-2 left-1/2 -translate-x-1/2 z-50 max-w-full safe-bottom">
+        <Dock className="items-end pb-3">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
@@ -190,16 +190,16 @@ export const Layout = ({ children }) => {
             >
               {({ isActive }) => (
                 <DockItem className={cn(
-                  "aspect-square rounded-full transition-colors relative",
-                  isActive ? "bg-gold/20 border border-gold/40 text-gold shadow-[0_0_15px_rgba(234,179,8,0.3)]" : "bg-zinc-900 text-zinc-400 hover:text-white"
+                  "aspect-square rounded-full transition-colors",
+                  isActive ? "bg-gray-300 dark:bg-neutral-700" : "bg-gray-200 dark:bg-neutral-800"
                 )}>
                   <DockLabel>{item.label}</DockLabel>
                   <DockIcon>
-                    <item.icon className="h-5 w-5" />
+                    <item.icon className={cn(
+                      "h-full w-full",
+                      isActive ? "text-neutral-900 dark:text-white" : "text-neutral-600 dark:text-neutral-300"
+                    )} />
                   </DockIcon>
-                  {isActive && (
-                    <div className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-gold shadow-[0_0_8px_#EAB308]" />
-                  )}
                 </DockItem>
               )}
             </NavLink>
