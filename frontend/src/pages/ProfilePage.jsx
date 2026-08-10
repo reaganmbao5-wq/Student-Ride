@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { 
   User, Mail, Phone, Shield, Car, LogOut, Trash2, Loader2, 
-  Camera, ChevronRight, Check, Edit3, Bell, Vibrate, CheckCircle2, ShieldAlert, X
+  Camera, ChevronRight, Check, Edit3, Bell, Vibrate, CheckCircle2, ShieldAlert, X,
+  Sun, Paintbrush, MapPin, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
@@ -13,6 +14,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { haptics } from '../utils/haptics';
+import { useTheme } from '../context/ThemeContext';
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { PermissionsService } from '../services/PermissionsService';
@@ -55,6 +57,15 @@ const ProfilePage = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Theme & Accent Color Context
+  const { themeMode, setThemeMode, accentColor, setAccentColor, ACCENT_COLORS } = useTheme();
+  const [appearanceMenuOpen, setAppearanceMenuOpen] = useState(false);
+  const [accentMenuOpen, setAccentMenuOpen] = useState(false);
+
+  // Location Permission & Toggle State
+  const [isLocationEnabled, setIsLocationEnabled] = useState(() => localStorage.getItem('mulu_location_enabled') !== 'false');
+  const [locationPermissionState, setLocationPermissionState] = useState('prompt');
+
 
   const fileInputRef = useRef(null);
 
@@ -68,9 +79,10 @@ const ProfilePage = () => {
     }
   }, [user]);
 
-  // Check Push Notification status on mount
+  // Check Location & Push Notification permission status on mount
   useEffect(() => {
-    const checkPush = async () => {
+    const checkPermissions = async () => {
+      // Check Push
       if (Capacitor.isNativePlatform()) {
         try {
           const perm = await PushNotifications.checkPermissions();
@@ -81,9 +93,55 @@ const ProfilePage = () => {
       } else if ('Notification' in window) {
         setPermissionState(Notification.permission);
       }
+
+      // Check Location Permission
+      if (navigator.permissions && navigator.permissions.query) {
+        try {
+          const res = await navigator.permissions.query({ name: 'geolocation' });
+          setLocationPermissionState(res.state);
+          res.onchange = () => setLocationPermissionState(res.state);
+        } catch (e) {
+          setLocationPermissionState('prompt');
+        }
+      }
     };
-    checkPush();
+    checkPermissions();
   }, []);
+
+  const handleToggleLocation = async () => {
+    haptics.tap();
+    if (isLocationEnabled) {
+      setIsLocationEnabled(false);
+      localStorage.setItem('mulu_location_enabled', 'false');
+      toast.info('Location tracking turned OFF');
+    } else {
+      toast.info('Requesting Location Permission...');
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            setIsLocationEnabled(true);
+            localStorage.setItem('mulu_location_enabled', 'true');
+            setLocationPermissionState('granted');
+            toast.success('Location permission granted & turned ON!');
+          },
+          (err) => {
+            console.warn('Location permission notice:', err);
+            if (err.code === err.PERMISSION_DENIED) {
+              setLocationPermissionState('denied');
+              toast.error('Location permission is blocked in browser settings.');
+            } else {
+              setIsLocationEnabled(true);
+              localStorage.setItem('mulu_location_enabled', 'true');
+            }
+          },
+          { timeout: 10000, enableHighAccuracy: true }
+        );
+      } else {
+        setIsLocationEnabled(true);
+        localStorage.setItem('mulu_location_enabled', 'true');
+      }
+    }
+  };
 
   const handleLogout = () => {
     haptics.tap();
@@ -481,50 +539,84 @@ const ProfilePage = () => {
         </div>
 
         {/* ==================================================== */}
-        {/* GROUP 2: PREFERENCES & NOTIFICATIONS                */}
+        {/* GROUP 2: PREFERENCES, LOCATION & NOTIFICATIONS       */}
         {/* ==================================================== */}
         <div className="space-y-2">
-          <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-2">Preferences & Notifications</p>
+          <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-2">Preferences & Permissions</p>
           <div className="bg-zinc-900 border border-zinc-800/90 rounded-3xl overflow-hidden divide-y divide-zinc-800/70">
             
-            {/* Notifications Row with Authentic Native Mobile Toggle Switch */}
+            {/* Location Permission & Toggle Row */}
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3.5">
-                <Bell className={`w-5 h-5 ${isPushEnabled ? 'text-emerald-400' : 'text-zinc-400'}`} />
+                <MapPin className={`w-5 h-5 ${isLocationEnabled && locationPermissionState === 'granted' ? 'text-emerald-400' : 'text-zinc-400'}`} />
                 <div>
-                  <p className="text-sm font-semibold text-white">Notifications</p>
-                  <p className="text-xs text-zinc-400">Driver arrival alerts & ride updates</p>
+                  <p className="text-sm font-semibold text-white">Location Services</p>
+                  <p className="text-xs text-zinc-400">
+                    {locationPermissionState === 'denied'
+                      ? 'Blocked in browser settings'
+                      : locationPermissionState === 'granted'
+                      ? 'GPS pickup & ETA tracking active'
+                      : 'Required for ride requests'}
+                  </p>
                 </div>
               </div>
 
-              {/* Standard Mobile Toggle Switch (Identical to Vibrations toggle) */}
               <button
                 type="button"
-                onClick={handleToggleNotifications}
+                onClick={handleToggleLocation}
                 className={`relative w-12 h-7 rounded-full p-1 transition-colors duration-200 focus:outline-none cursor-pointer ${
-                  isPushEnabled ? 'bg-emerald-500' : 'bg-zinc-700'
+                  isLocationEnabled && locationPermissionState !== 'denied' ? 'bg-emerald-500' : 'bg-zinc-700'
                 }`}
-                title={isPushEnabled ? 'Notifications ON' : 'Notifications OFF'}
+                title={isLocationEnabled ? 'Location ON' : 'Location OFF'}
               >
                 <div
                   className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-200 ${
-                    isPushEnabled ? 'translate-x-5' : 'translate-x-0'
+                    isLocationEnabled && locationPermissionState !== 'denied' ? 'translate-x-5' : 'translate-x-0'
                   }`}
                 />
               </button>
             </div>
 
-            {/* App Vibrations Row with Authentic Native Mobile Toggle Switch */}
+            {/* Notifications Row with Authentic Native Mobile Toggle Switch */}
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3.5">
-                <Vibrate className={`w-5 h-5 ${vibrationsEnabled ? 'text-gold' : 'text-zinc-400'}`} />
+                <Bell className={`w-5 h-5 ${isPushEnabled && permissionState === 'granted' ? 'text-emerald-400' : 'text-zinc-400'}`} />
+                <div>
+                  <p className="text-sm font-semibold text-white">Notifications</p>
+                  <p className="text-xs text-zinc-400">
+                    {permissionState === 'denied'
+                      ? 'Blocked in browser settings'
+                      : 'Driver arrival alerts & ride updates'}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleToggleNotifications}
+                className={`relative w-12 h-7 rounded-full p-1 transition-colors duration-200 focus:outline-none cursor-pointer ${
+                  isPushEnabled && permissionState !== 'denied' ? 'bg-emerald-500' : 'bg-zinc-700'
+                }`}
+                title={isPushEnabled ? 'Notifications ON' : 'Notifications OFF'}
+              >
+                <div
+                  className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-200 ${
+                    isPushEnabled && permissionState !== 'denied' ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* App Vibrations Row */}
+            <div className="flex items-center justify-between p-4">
+              <div className="flex items-center gap-3.5">
+                <Vibrate className={`w-5 h-5 ${vibrationsEnabled ? 'text-emerald-400' : 'text-zinc-400'}`} />
                 <div>
                   <p className="text-sm font-semibold text-white">App Vibrations & Pocket Alerts</p>
                   <p className="text-xs text-zinc-400">Vibrate on arrival & button taps</p>
                 </div>
               </div>
 
-              {/* Standard Mobile Toggle Switch (Identical to Notifications toggle) */}
               <button
                 type="button"
                 onClick={handleToggleVibrations}
@@ -540,6 +632,148 @@ const ProfilePage = () => {
                 />
               </button>
             </div>
+          </div>
+        </div>
+
+        {/* ==================================================== */}
+        {/* APPEARANCE & ACCENT COLOR (Exact Clone of Screenshots 1, 2 & 3) */}
+        {/* ==================================================== */}
+        <div className="space-y-2">
+          <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-2">Theme & Style</p>
+          <div className="bg-[#2A2A2A] border border-white/10 rounded-3xl overflow-hidden divide-y divide-white/5">
+            
+            {/* Appearance Card (Exact clone of Screenshot 1 & 2) */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  haptics.tap();
+                  setAppearanceMenuOpen(!appearanceMenuOpen);
+                  setAccentMenuOpen(false);
+                }}
+                className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-3.5">
+                  <Sun className="w-5 h-5 text-zinc-300 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-white">Appearance</p>
+                    <p className="text-xs text-zinc-400 capitalize">
+                      {themeMode === 'system' ? 'System (Default)' : themeMode === 'light' ? 'Light' : 'Dark'}
+                    </p>
+                  </div>
+                </div>
+                {appearanceMenuOpen ? (
+                  <ChevronUp className="w-5 h-5 text-zinc-300 shrink-0" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-zinc-300 shrink-0" />
+                )}
+              </button>
+
+              {/* Appearance Popup Menu (Exact clone of Screenshot 2) */}
+              <AnimatePresence>
+                {appearanceMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-4 top-14 z-50 w-56 bg-[#222222] border border-white/10 rounded-2xl shadow-2xl p-2 space-y-1"
+                  >
+                    {[
+                      { id: 'system', label: 'System (Default)' },
+                      { id: 'light', label: 'Light' },
+                      { id: 'dark', label: 'Dark' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => {
+                          haptics.tap();
+                          setThemeMode(opt.id);
+                          setAppearanceMenuOpen(false);
+                        }}
+                        className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium flex items-center justify-between transition-colors ${
+                          themeMode === opt.id ? 'bg-white/10 text-white font-semibold' : 'text-zinc-300 hover:bg-white/5'
+                        }`}
+                      >
+                        <span>{opt.label}</span>
+                        {themeMode === opt.id && <Check className="w-4 h-4 text-white shrink-0" />}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Accent color Card (Exact clone of Screenshot 1 & 3) */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  haptics.tap();
+                  setAccentMenuOpen(!accentMenuOpen);
+                  setAppearanceMenuOpen(false);
+                }}
+                className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-3.5">
+                  <Paintbrush className="w-5 h-5 text-zinc-300 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-white">Accent color</p>
+                    <p className="text-xs text-zinc-400 flex items-center gap-1.5 capitalize mt-0.5">
+                      <span
+                        className="w-3 h-3 rounded-full inline-block shrink-0 border border-white/20"
+                        style={{ backgroundColor: ACCENT_COLORS[accentColor]?.hex || '#808080' }}
+                      />
+                      <span>{ACCENT_COLORS[accentColor]?.label || 'Default'}</span>
+                    </p>
+                  </div>
+                </div>
+                {accentMenuOpen ? (
+                  <ChevronUp className="w-5 h-5 text-zinc-300 shrink-0" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-zinc-300 shrink-0" />
+                )}
+              </button>
+
+              {/* Accent Color Popup Menu (Exact clone of Screenshot 3) */}
+              <AnimatePresence>
+                {accentMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-4 top-14 z-50 w-56 bg-[#222222] border border-white/10 rounded-2xl shadow-2xl p-2 space-y-1 max-h-72 overflow-y-auto"
+                  >
+                    {Object.entries(ACCENT_COLORS).map(([key, opt]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => {
+                          haptics.tap();
+                          setAccentColor(key);
+                          setAccentMenuOpen(false);
+                        }}
+                        className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium flex items-center justify-between transition-colors ${
+                          accentColor === key ? 'bg-white/10 text-white font-semibold' : 'text-zinc-300 hover:bg-white/5'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span
+                            className="w-3.5 h-3.5 rounded-full inline-block shrink-0 border border-white/20"
+                            style={{ backgroundColor: opt.hex }}
+                          />
+                          <span>{opt.label}</span>
+                        </div>
+                        {accentColor === key && <Check className="w-4 h-4 text-white shrink-0" />}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
           </div>
         </div>
 
