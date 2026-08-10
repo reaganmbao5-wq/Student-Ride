@@ -495,7 +495,7 @@ const ProfilePage = () => {
         {/* ==================================================== */}
         <div className="space-y-2">
           <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-2">Account</p>
-          <div className="bg-zinc-900 border border-zinc-800/90 rounded-3xl overflow-hidden divide-y divide-zinc-800/70">
+          <div className="bg-[#2A2A2A] border border-white/10 rounded-3xl overflow-hidden divide-y divide-white/5">
             {/* Edit Profile Row */}
             <div 
               onClick={() => {
@@ -543,7 +543,7 @@ const ProfilePage = () => {
         {/* ==================================================== */}
         <div className="space-y-2">
           <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-2">Preferences & Permissions</p>
-          <div className="bg-zinc-900 border border-zinc-800/90 rounded-3xl overflow-hidden divide-y divide-zinc-800/70">
+          <div className="bg-[#2A2A2A] border border-white/10 rounded-3xl overflow-hidden divide-y divide-white/5">
             
             {/* Location Permission & Toggle Row */}
             <div className="flex items-center justify-between p-4">
@@ -669,15 +669,15 @@ const ProfilePage = () => {
                 )}
               </button>
 
-              {/* Appearance Popup Menu (Exact clone of Screenshot 2) */}
+              {/* Appearance Popup Menu (Exact clone of Screenshot 2 - Opens UPWARDS) */}
               <AnimatePresence>
                 {appearanceMenuOpen && (
                   <motion.div
-                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute right-4 top-14 z-50 w-56 bg-[#222222] border border-white/10 rounded-2xl shadow-2xl p-2 space-y-1"
+                    className="absolute right-4 bottom-full mb-2 z-[100] w-56 bg-[#222222] border border-white/10 rounded-2xl shadow-2xl p-2 space-y-1"
                   >
                     {[
                       { id: 'system', label: 'System (Default)' },
@@ -736,15 +736,15 @@ const ProfilePage = () => {
                 )}
               </button>
 
-              {/* Accent Color Popup Menu (Exact clone of Screenshot 3) */}
+              {/* Accent Color Popup Menu (Exact clone of Screenshot 3 - Opens UPWARDS) */}
               <AnimatePresence>
                 {accentMenuOpen && (
                   <motion.div
-                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    exit={{ opacity: 0, y: 0, scale: 1 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute right-4 top-14 z-50 w-56 bg-[#222222] border border-white/10 rounded-2xl shadow-2xl p-2 space-y-1 max-h-72 overflow-y-auto"
+                    className="absolute right-4 bottom-full mb-2 z-[100] w-56 bg-[#222222] border border-white/10 rounded-2xl shadow-2xl p-2 space-y-1 max-h-72 overflow-y-auto"
                   >
                     {Object.entries(ACCENT_COLORS).map(([key, opt]) => (
                       <button
@@ -846,7 +846,7 @@ const ProfilePage = () => {
         {/* ==================================================== */}
         <div className="space-y-2">
           <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-2">Actions</p>
-          <div className="bg-zinc-900 border border-zinc-800/90 rounded-3xl overflow-hidden divide-y divide-zinc-800/70">
+          <div className="bg-[#2A2A2A] border border-white/10 rounded-3xl overflow-hidden divide-y divide-white/5">
             {/* Log Out Row */}
             <div 
               onClick={handleLogout}
