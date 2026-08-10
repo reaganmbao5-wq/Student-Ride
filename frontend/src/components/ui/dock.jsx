@@ -125,7 +125,7 @@ function DockItem({ children, className, onClick }) {
       aria-haspopup="true"
     >
       {Children.map(children, (child) =>
-        cloneElement(child, { width, isHovered })
+        React.isValidElement(child) ? cloneElement(child, { width, isHovered }) : child
       )}
     </motion.div>
   );
@@ -136,7 +136,7 @@ function DockLabel({ children, className, ...rest }) {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    if (!isHovered) return;
+    if (!isHovered || typeof isHovered.on !== 'function') return;
     const unsubscribe = isHovered.on('change', (latest) => {
       setIsVisible(latest === 1);
     });
