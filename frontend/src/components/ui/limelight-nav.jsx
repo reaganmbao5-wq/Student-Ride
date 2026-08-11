@@ -1,4 +1,5 @@
 import React, { useState, useRef, useLayoutEffect, cloneElement, useEffect } from 'react';
+import { motion } from 'framer-motion';
 
 export const LimelightNav = ({
   items = [],
@@ -10,9 +11,9 @@ export const LimelightNav = ({
   iconClassName = '',
 }) => {
   const [activeIndex, setActiveIndex] = useState(defaultActiveIndex);
+  const [leftPos, setLeftPos] = useState(-999);
   const [isReady, setIsReady] = useState(false);
   const navItemRefs = useRef([]);
-  const limelightRef = useRef(null);
 
   useEffect(() => {
     if (defaultActiveIndex !== undefined && defaultActiveIndex !== null) {
@@ -23,19 +24,18 @@ export const LimelightNav = ({
   useLayoutEffect(() => {
     if (!items || items.length === 0) return;
 
-    const limelight = limelightRef.current;
     const activeItem = navItemRefs.current[activeIndex];
     
-    if (limelight && activeItem) {
-      const newLeft = activeItem.offsetLeft + activeItem.offsetWidth / 2 - limelight.offsetWidth / 2;
-      limelight.style.left = `${newLeft}px`;
+    if (activeItem) {
+      // Position center of 40px (w-10) spotlight over the middle of the active icon button
+      const newLeft = activeItem.offsetLeft + activeItem.offsetWidth / 2 - 20;
+      setLeftPos(newLeft);
 
       if (!isReady) {
-        const timer = setTimeout(() => setIsReady(true), 50);
-        return () => clearTimeout(timer);
+        setIsReady(true);
       }
     }
-  }, [activeIndex, isReady, items]);
+  }, [activeIndex, items, isReady]);
 
   if (!items || items.length === 0) {
     return null; 
@@ -58,32 +58,36 @@ export const LimelightNav = ({
           aria-label={label}
         >
           {cloneElement(icon, {
-            className: `w-6 h-6 transition-all duration-200 ease-in-out ${
+            className: `w-6 h-6 transition-all duration-300 ease-in-out ${
               activeIndex === index ? 'opacity-100 scale-110' : 'opacity-40 text-zinc-400 hover:opacity-70'
             } ${icon.props?.className || ''} ${iconClassName || ''}`,
           })}
         </a>
       ))}
 
-      <div 
-        ref={limelightRef}
-        className={`absolute top-0 z-10 w-10 h-[4px] rounded-full ${
-          isReady ? 'transition-[left] duration-[780ms] ease-in-out' : ''
-        } ${limelightClassName}`}
-        style={{
-          left: '-999px',
-          backgroundColor: 'var(--color-accent, #EAB308)',
-          boxShadow: '0 8px 20px var(--color-accent, #EAB308)'
-        }}
-      >
-        <div 
-          className="absolute left-[-35%] top-[4px] w-[170%] h-12 [clip-path:polygon(10%_100%,30%_0,70%_0,90%_100%)] pointer-events-none" 
-          style={{
-            background: 'linear-gradient(to bottom, var(--color-accent, #EAB308) 0%, transparent 100%)',
-            opacity: 0.4
+      {isReady && leftPos > -500 && (
+        <motion.div 
+          initial={false}
+          animate={{ x: leftPos }}
+          transition={{
+            duration: 1.3,
+            ease: [0.16, 1, 0.3, 1], // Smooth liquid deceleration curve
           }}
-        />
-      </div>
+          className={`absolute top-0 left-0 z-10 w-10 h-[4px] rounded-full ${limelightClassName}`}
+          style={{
+            backgroundColor: 'var(--color-accent, #EAB308)',
+            boxShadow: '0 8px 20px var(--color-accent, #EAB308)'
+          }}
+        >
+          <div 
+            className="absolute left-[-35%] top-[4px] w-[170%] h-12 [clip-path:polygon(10%_100%,30%_0,70%_0,90%_100%)] pointer-events-none" 
+            style={{
+              background: 'linear-gradient(to bottom, var(--color-accent, #EAB308) 0%, transparent 100%)',
+              opacity: 0.4
+            }}
+          />
+        </motion.div>
+      )}
     </nav>
   );
 };
