@@ -1,16 +1,18 @@
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Home, MapPin, Clock, User, Settings, Car, DollarSign, Users, BarChart3, Shield, LogOut, Menu, X, Sun, Moon, Bug } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { cn } from '../../lib/utils';
 import { haptics } from '../../utils/haptics';
 import { Dock, DockIcon, DockItem, DockLabel } from '../ui/dock';
+import { LimelightNav } from '../ui/limelight-nav';
 
 export const Layout = ({ children }) => {
   const { user, isDriver, isAdmin, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
   const handleLogout = () => {
@@ -44,6 +46,20 @@ export const Layout = ({ children }) => {
   ];
 
   const navItems = isAdmin ? adminNavItems : isDriver ? driverNavItems : studentNavItems;
+
+  const limelightNavItems = navItems.map((item) => ({
+    id: item.to,
+    icon: <item.icon />,
+    label: item.label,
+    to: item.to,
+  }));
+
+  const activeLimelightIndex = limelightNavItems.findIndex((item) => {
+    if (item.to === '/dashboard' || item.to === '/driver' || item.to === '/admin') {
+      return location.pathname === item.to;
+    }
+    return location.pathname.startsWith(item.to);
+  });
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col transition-colors duration-300">
@@ -177,8 +193,8 @@ export const Layout = ({ children }) => {
         </div>
       </main>
 
-      {/* Apple Style Floating Dock Navigation Bar */}
-      <nav className="fixed bottom-2 left-1/2 -translate-x-1/2 z-50 max-w-full safe-bottom">
+      {/* Desktop Apple Dock (Large screens with mouse hover: md:flex) */}
+      <nav className="hidden md:block fixed bottom-2 left-1/2 -translate-x-1/2 z-50 max-w-full safe-bottom">
         <Dock className="items-end pb-3">
           {navItems.map((item) => (
             <NavLink
@@ -205,6 +221,21 @@ export const Layout = ({ children }) => {
             </NavLink>
           ))}
         </Dock>
+      </nav>
+
+      {/* Mobile & APK Limelight Nav (Mobile & Touch screens: block md:hidden) */}
+      <nav className="block md:hidden fixed bottom-3 left-1/2 -translate-x-1/2 z-50 max-w-full w-fit safe-bottom">
+        <LimelightNav
+          items={limelightNavItems}
+          defaultActiveIndex={activeLimelightIndex >= 0 ? activeLimelightIndex : 0}
+          onTabChange={(index) => {
+            const target = limelightNavItems[index];
+            if (target && target.to) {
+              haptics.tap();
+              navigate(target.to);
+            }
+          }}
+        />
       </nav>
     </div>
   );
