@@ -225,7 +225,19 @@ export const Layout = ({ children }) => {
 
       {/* Mobile & APK Limelight Nav (Mobile & Touch screens: block md:hidden) */}
       <nav className="block md:hidden fixed bottom-3 left-1/2 -translate-x-1/2 z-50 max-w-full w-fit safe-bottom">
-        <LimelightNav />
+        <LimelightNav
+          items={limelightNavItems}
+          defaultActiveIndex={activeLimelightIndex >= 0 ? activeLimelightIndex : 0}
+          onTabChange={(index) => {
+            const target = navItems[index];
+            if (target && target.to) {
+              haptics.tap();
+              setTimeout(() => {
+                navigate(target.to);
+              }, 120);
+            }
+          }}
+        />
       </nav>
     </div>
   );
