@@ -113,32 +113,20 @@ const ProfilePage = () => {
     if (isLocationEnabled) {
       setIsLocationEnabled(false);
       localStorage.setItem('mulu_location_enabled', 'false');
-      toast.info('Location tracking turned OFF');
+      toast.info('Location turned OFF');
     } else {
-      toast.info('Requesting Location Permission...');
-      if ('geolocation' in navigator) {
+      setIsLocationEnabled(true);
+      localStorage.setItem('mulu_location_enabled', 'true');
+      toast.success('Location turned ON');
+
+      if (Capacitor.isNativePlatform()) {
+        try { await PermissionsService.requestLocationPermission(); } catch (e) {}
+      } else if ('geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            setIsLocationEnabled(true);
-            localStorage.setItem('mulu_location_enabled', 'true');
-            setLocationPermissionState('granted');
-            toast.success('Location permission granted & turned ON!');
-          },
-          (err) => {
-            console.warn('Location permission notice:', err);
-            if (err.code === err.PERMISSION_DENIED) {
-              setLocationPermissionState('denied');
-              toast.error('Location permission is blocked in browser settings.');
-            } else {
-              setIsLocationEnabled(true);
-              localStorage.setItem('mulu_location_enabled', 'true');
-            }
-          },
-          { timeout: 10000, enableHighAccuracy: true }
+          (pos) => setLocationPermissionState('granted'),
+          (err) => {},
+          { timeout: 5000, enableHighAccuracy: true }
         );
-      } else {
-        setIsLocationEnabled(true);
-        localStorage.setItem('mulu_location_enabled', 'true');
       }
     }
   };
@@ -548,15 +536,11 @@ const ProfilePage = () => {
             {/* Location Permission & Toggle Row */}
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3.5">
-                <MapPin className={`w-5 h-5 ${isLocationEnabled && locationPermissionState === 'granted' ? 'text-emerald-400' : 'text-zinc-400'}`} />
+                <MapPin className={`w-5 h-5 ${isLocationEnabled ? 'text-emerald-400' : 'text-zinc-400'}`} />
                 <div>
                   <p className="text-sm font-semibold text-white">Location Services</p>
                   <p className="text-xs text-zinc-400">
-                    {locationPermissionState === 'denied'
-                      ? 'Blocked in browser settings'
-                      : locationPermissionState === 'granted'
-                      ? 'GPS pickup & ETA tracking active'
-                      : 'Required for ride requests'}
+                    {isLocationEnabled ? 'GPS pickup & ETA tracking active' : 'Location disabled'}
                   </p>
                 </div>
               </div>
@@ -565,13 +549,13 @@ const ProfilePage = () => {
                 type="button"
                 onClick={handleToggleLocation}
                 className={`relative w-12 h-7 rounded-full p-1 transition-colors duration-200 focus:outline-none cursor-pointer ${
-                  isLocationEnabled && locationPermissionState !== 'denied' ? 'bg-emerald-500' : 'bg-zinc-700'
+                  isLocationEnabled ? 'bg-emerald-500' : 'bg-zinc-700'
                 }`}
                 title={isLocationEnabled ? 'Location ON' : 'Location OFF'}
               >
                 <div
                   className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-200 ${
-                    isLocationEnabled && locationPermissionState !== 'denied' ? 'translate-x-5' : 'translate-x-0'
+                    isLocationEnabled ? 'translate-x-5' : 'translate-x-0'
                   }`}
                 />
               </button>
@@ -580,13 +564,11 @@ const ProfilePage = () => {
             {/* Notifications Row with Authentic Native Mobile Toggle Switch */}
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3.5">
-                <Bell className={`w-5 h-5 ${isPushEnabled && permissionState === 'granted' ? 'text-emerald-400' : 'text-zinc-400'}`} />
+                <Bell className={`w-5 h-5 ${isPushEnabled ? 'text-emerald-400' : 'text-zinc-400'}`} />
                 <div>
                   <p className="text-sm font-semibold text-white">Notifications</p>
                   <p className="text-xs text-zinc-400">
-                    {permissionState === 'denied'
-                      ? 'Blocked in browser settings'
-                      : 'Driver arrival alerts & ride updates'}
+                    {isPushEnabled ? 'Driver arrival alerts & ride updates' : 'Notifications disabled'}
                   </p>
                 </div>
               </div>
@@ -595,13 +577,13 @@ const ProfilePage = () => {
                 type="button"
                 onClick={handleToggleNotifications}
                 className={`relative w-12 h-7 rounded-full p-1 transition-colors duration-200 focus:outline-none cursor-pointer ${
-                  isPushEnabled && permissionState !== 'denied' ? 'bg-emerald-500' : 'bg-zinc-700'
+                  isPushEnabled ? 'bg-emerald-500' : 'bg-zinc-700'
                 }`}
                 title={isPushEnabled ? 'Notifications ON' : 'Notifications OFF'}
               >
                 <div
                   className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-200 ${
-                    isPushEnabled && permissionState !== 'denied' ? 'translate-x-5' : 'translate-x-0'
+                    isPushEnabled ? 'translate-x-5' : 'translate-x-0'
                   }`}
                 />
               </button>
@@ -640,7 +622,7 @@ const ProfilePage = () => {
         {/* ==================================================== */}
         <div className="space-y-2">
           <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-2">Theme & Style</p>
-          <div className="bg-[#2A2A2A] border border-white/10 rounded-3xl overflow-hidden divide-y divide-white/5">
+          <div className="bg-[#2A2A2A] border border-white/10 rounded-3xl divide-y divide-white/5 relative z-30">
             
             {/* Appearance Card (Exact clone of Screenshot 1 & 2) */}
             <div className="relative">

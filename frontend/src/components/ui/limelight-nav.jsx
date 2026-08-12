@@ -91,12 +91,21 @@ export const LimelightNav = ({
 
       <div 
         ref={limelightRef}
-        className={`absolute top-0 z-10 w-11 h-[5px] rounded-full bg-primary shadow-[0_50px_15px_var(--primary)] ${
+        className={`absolute top-0 z-10 w-11 h-[5px] rounded-full ${
           isReady ? 'transition-[left] duration-400 ease-in-out' : ''
         } ${limelightClassName}`}
-        style={{ left: '-999px' }}
+        style={{
+          left: '-999px',
+          backgroundColor: 'var(--color-accent, #EAB308)',
+          boxShadow: '0 50px 15px var(--color-accent, #EAB308)'
+        }}
       >
-        <div className="absolute left-[-30%] top-[5px] w-[160%] h-14 [clip-path:polygon(5%_100%,25%_0,75%_0,95%_100%)] bg-gradient-to-b from-primary/30 to-transparent pointer-events-none" />
+        <div 
+          className="absolute left-[-30%] top-[5px] w-[160%] h-14 [clip-path:polygon(5%_100%,25%_0,75%_0,95%_100%)] pointer-events-none" 
+          style={{
+            background: 'linear-gradient(to bottom, var(--color-accent, #EAB308) 30%, transparent 100%)'
+          }}
+        />
       </div>
     </nav>
   );

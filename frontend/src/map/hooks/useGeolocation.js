@@ -15,6 +15,13 @@ export const useGeolocation = (options = {}) => {
     console.log('GEOLOCATION_STARTED');
     setLoading(true);
     
+    if (localStorage.getItem('mulu_location_enabled') === 'false') {
+      setLocation({ lat: -14.294896006738625, lng: 28.55979849713035, accuracy: null });
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     const parsedOptions = JSON.parse(optionsString);
     const defaultOptions = {
       enableHighAccuracy: true,
