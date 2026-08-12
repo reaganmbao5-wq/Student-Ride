@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { 
-  User, Mail, Phone, Shield, Car, LogOut, Trash2, Loader2, 
-  Camera, ChevronRight, Check, Edit3, Bell, Vibrate, CheckCircle2, ShieldAlert, X,
-  Sun, Paintbrush, MapPin, ChevronDown, ChevronUp
+  User as UserIcon, Mail, Phone as PhoneIcon, Shield as ShieldIcon, Car as CarIcon, LogOut, Trash2, Loader2, 
+  Camera, ChevronRight, Check, Edit3, Bell as BellIcon, Vibrate, CheckCircle2, ShieldAlert, X,
+  Sun, Paintbrush, MapPin as MapPinIcon, ChevronDown, ChevronUp
 } from 'lucide-react';
+import { 
+  User, EnvelopeSimple, Phone, Shield, Car, Bell, DeviceMobile, MapPin 
+} from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
 import { MultiPlatformInstallSection } from '../components/common/MultiPlatformInstallSection';
@@ -493,7 +496,7 @@ const ProfilePage = () => {
               className="flex items-center justify-between p-4 hover:bg-zinc-800/50 transition-colors cursor-pointer"
             >
               <div className="flex items-center gap-3.5">
-                <User className="w-5 h-5 text-zinc-400" />
+                <User weight="duotone" className="w-5 h-5 text-zinc-400" />
                 <div>
                   <p className="text-sm font-semibold text-white">Full Name</p>
                   <p className="text-xs text-zinc-400">{user?.name || 'Not set'}</p>
@@ -505,7 +508,7 @@ const ProfilePage = () => {
             {/* Email Row */}
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3.5">
-                <Mail className="w-5 h-5 text-zinc-400" />
+                <EnvelopeSimple weight="duotone" className="w-5 h-5 text-zinc-400" />
                 <div>
                   <p className="text-sm font-semibold text-white">Email</p>
                   <p className="text-xs text-zinc-400">{user?.email || 'Not set'}</p>
@@ -516,7 +519,7 @@ const ProfilePage = () => {
             {/* Phone Row */}
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3.5">
-                <Phone className="w-5 h-5 text-zinc-400" />
+                <Phone weight="duotone" className="w-5 h-5 text-zinc-400" />
                 <div>
                   <p className="text-sm font-semibold text-white">Phone Number</p>
                   <p className="text-xs text-zinc-400">{user?.phone || 'Not set'}</p>
@@ -536,7 +539,7 @@ const ProfilePage = () => {
             {/* Location Permission & Toggle Row */}
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3.5">
-                <MapPin className={`w-5 h-5 ${isLocationEnabled ? 'text-emerald-400' : 'text-zinc-400'}`} />
+                <MapPin weight="duotone" className={`w-5 h-5 ${isLocationEnabled ? 'text-emerald-400' : 'text-zinc-400'}`} />
                 <div>
                   <p className="text-sm font-semibold text-white">Location Services</p>
                   <p className="text-xs text-zinc-400">
@@ -564,7 +567,7 @@ const ProfilePage = () => {
             {/* Notifications Row with Authentic Native Mobile Toggle Switch */}
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3.5">
-                <Bell className={`w-5 h-5 ${isPushEnabled ? 'text-emerald-400' : 'text-zinc-400'}`} />
+                <Bell weight="duotone" className={`w-5 h-5 ${isPushEnabled ? 'text-emerald-400' : 'text-zinc-400'}`} />
                 <div>
                   <p className="text-sm font-semibold text-white">Notifications</p>
                   <p className="text-xs text-zinc-400">
@@ -592,7 +595,7 @@ const ProfilePage = () => {
             {/* App Vibrations Row */}
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3.5">
-                <Vibrate className={`w-5 h-5 ${vibrationsEnabled ? 'text-emerald-400' : 'text-zinc-400'}`} />
+                <DeviceMobile weight="duotone" className={`w-5 h-5 ${vibrationsEnabled ? 'text-emerald-400' : 'text-zinc-400'}`} />
                 <div>
                   <p className="text-sm font-semibold text-white">App Vibrations & Pocket Alerts</p>
                   <p className="text-xs text-zinc-400">Vibrate on arrival & button taps</p>
@@ -781,7 +784,7 @@ const ProfilePage = () => {
             <div className="bg-zinc-900 border border-zinc-800/90 rounded-3xl overflow-hidden divide-y divide-zinc-800/70">
               <div className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-3.5">
-                  <Car className="w-5 h-5 text-gold" />
+                  <Car weight="duotone" className="w-5 h-5 text-gold" />
                   <div>
                     <p className="text-sm font-semibold text-white">Vehicle</p>
                     <p className="text-xs text-zinc-400">{driverProfile.vehicle_color} {driverProfile.vehicle_model} ({driverProfile.vehicle_type})</p>
@@ -791,7 +794,7 @@ const ProfilePage = () => {
 
               <div className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-3.5">
-                  <Shield className="w-5 h-5 text-zinc-400" />
+                  <Shield weight="duotone" className="w-5 h-5 text-zinc-400" />
                   <div>
                     <p className="text-sm font-semibold text-white">Plate Number</p>
                     <p className="text-xs text-gold font-mono font-bold">{driverProfile.plate_number}</p>

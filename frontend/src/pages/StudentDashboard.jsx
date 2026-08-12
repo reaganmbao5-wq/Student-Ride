@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { MapPin, Clock, Car, Star, ChevronRight, Navigation, AlertCircle, MessageCircle, Phone, PhoneCall, Loader2, Trash2, User as UserIcon, Bug } from 'lucide-react';
+import { MapPin, Clock, Car as CarLucide, Star, ChevronRight, Navigation, AlertCircle, MessageCircle, Phone, PhoneCall, Loader2, Trash2, User as UserIcon, Bug } from 'lucide-react';
+import { Car } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard, GoldButton, StatusBadge, LoadingSpinner, EmptyState } from '../components/common/GlassComponents';
 import { RatingModal } from '../components/common/RatingModal';
@@ -875,7 +876,7 @@ const StudentDashboard = () => {
           <GlassCard className="p-4" hover={false}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                <Car className="w-5 h-5 text-blue-400" />
+                <Car weight="duotone" className="w-5 h-5 text-blue-400" />
               </div>
               <div>
                 <p className="text-2xl font-heading font-bold text-foreground">
