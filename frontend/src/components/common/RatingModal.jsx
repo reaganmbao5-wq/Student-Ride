@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Star, X } from 'lucide-react';
+import { Star, X } from '@phosphor-icons/react';
 import { GlassCard, GoldButton } from './GlassComponents';
 import { toast } from 'sonner';
 
@@ -52,9 +52,10 @@ export const RatingModal = ({ isOpen, onClose, onSubmit, driverName, rideId }) =
                             className="p-1 transition-transform hover:scale-110 focus:outline-none"
                         >
                             <Star
+                                weight="duotone"
                                 className={`w-10 h-10 ${star <= rating
                                     ? 'text-gold fill-gold'
-                                    : 'text-white/20 fill-none'
+                                    : 'text-white/20'
                                     }`}
                             />
                         </button>

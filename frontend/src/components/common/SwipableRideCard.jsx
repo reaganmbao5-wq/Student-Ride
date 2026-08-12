@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  Clock, Star, Car, ChevronDown, ChevronUp, Trash2, ArrowRight 
-} from 'lucide-react';
+  Clock, Star, Car, CaretDown, CaretUp, Trash, ArrowRight 
+} from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { StatusBadge } from './GlassComponents';
 import { haptics } from '../../utils/haptics';
@@ -55,7 +55,7 @@ export const SwipableRideCard = ({
           className="flex flex-col items-center justify-center gap-1 w-full h-full text-white font-medium hover:bg-red-700 transition-colors cursor-pointer"
           title="Delete Ride"
         >
-          <Trash2 className="w-5 h-5 text-white" />
+          <Trash weight="duotone" className="w-5 h-5 text-white" />
           <span className="text-[10px] font-bold uppercase tracking-wider">Delete</span>
         </button>
       </motion.div>
@@ -95,7 +95,7 @@ export const SwipableRideCard = ({
         >
           <div className="flex items-center justify-between gap-2 mb-2.5">
             <div className="flex items-center gap-2">
-              <Clock className="w-3.5 h-3.5 text-gold" />
+              <Clock weight="duotone" className="w-4 h-4 text-gold" />
               <span className="text-xs md:text-sm font-medium text-neutral-300">
                 {formattedDate}
               </span>
@@ -110,9 +110,9 @@ export const SwipableRideCard = ({
               {/* Chevron Collapse Indicator */}
               <div className="p-0.5 text-neutral-400">
                 {isExpanded ? (
-                  <ChevronUp className="w-5 h-5 text-gold" />
+                  <CaretUp weight="bold" className="w-5 h-5 text-gold" />
                 ) : (
-                  <ChevronDown className="w-5 h-5 text-neutral-400" />
+                  <CaretDown weight="bold" className="w-5 h-5 text-neutral-400" />
                 )}
               </div>
             </div>
@@ -126,7 +126,7 @@ export const SwipableRideCard = ({
                 {ride.pickup_location?.address || 'Pickup Location'}
               </span>
             </div>
-            <ArrowRight className="w-4 h-4 text-neutral-500 shrink-0" />
+            <ArrowRight weight="bold" className="w-4 h-4 text-neutral-500 shrink-0" />
             <div className="flex items-center gap-1.5 flex-1 min-w-0">
               <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
               <span className="text-white font-medium truncate">
@@ -138,8 +138,8 @@ export const SwipableRideCard = ({
           {/* Collapsed Footer (Fare & Driver/Passenger Info) */}
           <div className="flex items-center justify-between pt-2">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-gold">
-                <Car className="w-3 h-3" />
+              <div className="w-7 h-7 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center text-gold">
+                <Car weight="duotone" className="w-4 h-4" />
               </div>
               <span className="text-xs text-neutral-300 font-medium truncate max-w-[150px] md:max-w-[220px]">
                 {isDriver ? ride.student?.name || 'Passenger' : ride.driver?.user?.name || 'Driver'}
@@ -226,7 +226,7 @@ export const SwipableRideCard = ({
                     <div className="flex items-center gap-2">
                       {ride.rating ? (
                         <div className="flex items-center gap-1.5 bg-gold/10 px-3 py-1.5 rounded-xl">
-                          <Star className="w-4 h-4 text-gold fill-gold" />
+                          <Star weight="duotone" className="w-4 h-4 text-gold fill-gold" />
                           <span className="text-xs font-bold text-gold">{ride.rating}.0 Rated</span>
                         </div>
                       ) : !isDriver && onRateClick ? (
@@ -256,7 +256,7 @@ export const SwipableRideCard = ({
                       }}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-colors cursor-pointer ml-auto"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash weight="duotone" className="w-3.5 h-3.5" />
                       Delete Record
                     </button>
                   )}

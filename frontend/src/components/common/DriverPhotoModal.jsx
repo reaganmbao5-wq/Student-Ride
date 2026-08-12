@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Star, ShieldCheck, Car, User } from 'lucide-react';
+import { X, Star, ShieldCheck, Car, User } from '@phosphor-icons/react';
 import { haptics } from '../../utils/haptics';
 
 export const DriverPhotoModal = ({ isOpen, photoUrl, driver, onClose }) => {
@@ -37,7 +37,7 @@ export const DriverPhotoModal = ({ isOpen, photoUrl, driver, onClose }) => {
             {/* Top Close Bar */}
             <div className="w-full flex items-center justify-between">
               <div className="flex items-center gap-1.5 text-xs font-bold text-gold bg-gold/10 px-3 py-1 rounded-full border border-gold/30">
-                <ShieldCheck className="w-4 h-4 text-gold" /> Verified Driver
+                <ShieldCheck weight="duotone" className="w-4 h-4 text-gold" /> Verified Driver
               </div>
               <button
                 onClick={handleClose}
@@ -60,7 +60,7 @@ export const DriverPhotoModal = ({ isOpen, photoUrl, driver, onClose }) => {
                 />
               ) : (
                 <div className="w-full h-full bg-gold/10 flex flex-col items-center justify-center gap-3">
-                  <User className="w-24 h-24 text-gold" />
+                  <User weight="duotone" className="w-24 h-24 text-gold" />
                   <span className="text-xs text-gold/80 font-medium">Verified Driver</span>
                 </div>
               )}
@@ -77,7 +77,7 @@ export const DriverPhotoModal = ({ isOpen, photoUrl, driver, onClose }) => {
               {driver && (
                 <div className="flex flex-col items-center gap-1.5 text-sm text-zinc-300">
                   <div className="flex items-center gap-1.5 text-gold font-semibold">
-                    <Star className="w-4 h-4 fill-gold text-gold" />
+                    <Star weight="duotone" className="w-4 h-4 fill-gold text-gold" />
                     <span>{driver.rating?.toFixed(1) || '5.0'} Rating</span>
                   </div>
 

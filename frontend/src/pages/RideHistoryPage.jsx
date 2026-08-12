@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  Clock, MapPin, Star, Car, ChevronDown, ChevronUp, Trash2, 
-  Search, Filter, ShieldCheck, ArrowRight, User, AlertTriangle
-} from 'lucide-react';
+  Clock, MagnifyingGlass, Star, Car, Trash, 
+  ShieldCheck, ArrowRight, User, Warning
+} from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard, LoadingSpinner, StatusBadge, EmptyState, GoldButton } from '../components/common/GlassComponents';
 import { RatingModal } from '../components/common/RatingModal';
@@ -176,7 +176,7 @@ const RideHistoryPage = () => {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             {/* Search Input */}
             <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+              <MagnifyingGlass weight="duotone" className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
               <input
                 type="text"
                 placeholder="Search by address or name..."
@@ -223,13 +223,13 @@ const RideHistoryPage = () => {
           </div>
         ) : rides.length > 0 ? (
           <EmptyState
-            icon={Search}
+            icon={(props) => <MagnifyingGlass weight="duotone" {...props} />}
             title="No matching rides found"
             description="Try adjusting your search query or filter criteria"
           />
         ) : (
           <EmptyState
-            icon={Clock}
+            icon={(props) => <Clock weight="duotone" {...props} />}
             title="No ride history"
             description="Your completed or cancelled rides will appear here"
           />
@@ -257,7 +257,7 @@ const RideHistoryPage = () => {
               >
                 <div className="flex flex-col items-center text-center space-y-3">
                   <div className="w-14 h-14 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500">
-                    <Trash2 className="w-7 h-7" />
+                    <Trash weight="duotone" className="w-7 h-7" />
                   </div>
 
                   <div>
@@ -308,7 +308,7 @@ const RideHistoryPage = () => {
                         <LoadingSpinner size="sm" />
                       ) : (
                         <>
-                          <Trash2 className="w-4 h-4" />
+                          <Trash weight="duotone" className="w-4 h-4" />
                           Delete
                         </>
                       )}

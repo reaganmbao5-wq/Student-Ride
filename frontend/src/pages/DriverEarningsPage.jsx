@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, TrendingUp, Clock, Star, Calendar } from 'lucide-react';
+import { CurrencyCircleDollar, TrendUp, Clock, Star, CalendarBlank } from '@phosphor-icons/react';
 import { GlassCard, LoadingSpinner } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
@@ -48,7 +48,7 @@ const DriverEarningsPage = () => {
               K{earnings?.total_earnings?.toFixed(2) || '0.00'}
             </p>
             <div className="flex items-center gap-2 text-emerald-400 text-sm">
-              <TrendingUp className="w-4 h-4" />
+              <TrendUp weight="duotone" className="w-4 h-4" />
               <span>All time earnings</span>
             </div>
           </div>
@@ -59,7 +59,7 @@ const DriverEarningsPage = () => {
           <GlassCard className="p-4" hover={false}>
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center">
-                <DollarSign className="w-5 h-5 text-gold" />
+                <CurrencyCircleDollar weight="duotone" className="w-5 h-5 text-gold" />
               </div>
               <span className="text-muted-foreground text-sm">Today</span>
             </div>
@@ -71,7 +71,7 @@ const DriverEarningsPage = () => {
           <GlassCard className="p-4" hover={false}>
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-blue-400" />
+                <CalendarBlank weight="duotone" className="w-5 h-5 text-blue-400" />
               </div>
               <span className="text-muted-foreground text-sm">This Week</span>
             </div>
@@ -83,7 +83,7 @@ const DriverEarningsPage = () => {
           <GlassCard className="p-4" hover={false}>
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-purple-400" />
+                <TrendUp weight="duotone" className="w-5 h-5 text-purple-400" />
               </div>
               <span className="text-muted-foreground text-sm">This Month</span>
             </div>
@@ -98,7 +98,7 @@ const DriverEarningsPage = () => {
           <GlassCard className="p-4" hover={false}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                <Clock className="w-5 h-5 text-emerald-400" />
+                <Clock weight="duotone" className="w-5 h-5 text-emerald-400" />
               </div>
               <div>
                 <p className="font-heading text-2xl font-bold text-foreground">
@@ -112,7 +112,7 @@ const DriverEarningsPage = () => {
           <GlassCard className="p-4" hover={false}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-yellow-500/10 flex items-center justify-center">
-                <Star className="w-5 h-5 text-yellow-400" />
+                <Star weight="duotone" className="w-5 h-5 text-yellow-400" />
               </div>
               <div>
                 <p className="font-heading text-2xl font-bold text-foreground">
