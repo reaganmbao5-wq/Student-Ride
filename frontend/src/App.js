@@ -34,6 +34,8 @@ import AdminPricingPage from "./pages/AdminPricingPage";
 import AdminBugReportsPage from "./pages/AdminBugReportsPage";
 import ChatPage from "./pages/ChatPage";
 import ProfilePage from "./pages/ProfilePage";
+import TermsOfServicePage from "./pages/TermsOfServicePage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
@@ -122,6 +124,8 @@ const AppRoutes = () => {
           path="/complete-profile"
           element={<CompleteProfilePage />}
         />
+        <Route path="/terms" element={<TermsOfServicePage />} />
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
 
         {/* Student Routes */}
         <Route

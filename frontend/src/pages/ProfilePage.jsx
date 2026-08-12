@@ -6,7 +6,7 @@ import {
   Sun, Paintbrush, MapPin as MapPinIcon, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { 
-  User, EnvelopeSimple, Phone, Shield, Car, Bell, DeviceMobile, MapPin 
+  User, EnvelopeSimple, Phone, Shield, Car, Bell, DeviceMobile, MapPin, Info 
 } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout } from '../components/layout/Layout';
@@ -64,6 +64,7 @@ const ProfilePage = () => {
   const { themeMode, setThemeMode, accentColor, setAccentColor, ACCENT_COLORS } = useTheme();
   const [appearanceMenuOpen, setAppearanceMenuOpen] = useState(false);
   const [accentMenuOpen, setAccentMenuOpen] = useState(false);
+  const [aboutMenuOpen, setAboutMenuOpen] = useState(false);
 
   // Location Permission & Toggle State
   const [isLocationEnabled, setIsLocationEnabled] = useState(() => localStorage.getItem('mulu_location_enabled') !== 'false');
@@ -754,6 +755,70 @@ const ProfilePage = () => {
                         {accentColor === key && <Check className="w-4 h-4 text-white shrink-0" />}
                       </button>
                     ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* About Card (Expands DOWNWARDS with Terms & Privacy Policy) */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  haptics.tap();
+                  setAboutMenuOpen(!aboutMenuOpen);
+                  setAppearanceMenuOpen(false);
+                  setAccentMenuOpen(false);
+                }}
+                className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-3.5">
+                  <Info weight="duotone" className="w-5 h-5 text-zinc-300 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-white">About</p>
+                    <p className="text-xs text-zinc-400">Terms of service & privacy policy</p>
+                  </div>
+                </div>
+                {aboutMenuOpen ? (
+                  <ChevronUp className="w-5 h-5 text-zinc-300 shrink-0" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-zinc-300 shrink-0" />
+                )}
+              </button>
+
+              {/* Expanded Content (Expands DOWNWARDS) */}
+              <AnimatePresence>
+                {aboutMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden bg-[#222222] border-t border-white/5 divide-y divide-white/5"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        haptics.tap();
+                        navigate('/terms');
+                      }}
+                      className="w-full p-4 flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer text-left"
+                    >
+                      <span className="text-sm font-medium text-white">Terms of service</span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400 shrink-0" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        haptics.tap();
+                        navigate('/privacy');
+                      }}
+                      className="w-full p-4 flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer text-left"
+                    >
+                      <span className="text-sm font-medium text-white">Privacy policy</span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400 shrink-0" />
+                    </button>
                   </motion.div>
                 )}
               </AnimatePresence>
