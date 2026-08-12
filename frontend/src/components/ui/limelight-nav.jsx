@@ -1,31 +1,10 @@
 import React, { useState, useRef, useLayoutEffect, cloneElement } from 'react';
-
-// --- Internal Types and Defaults ---
-
-const DefaultHomeIcon = (props) => (
-  <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-  </svg>
-);
-
-const DefaultCompassIcon = (props) => (
-  <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10" />
-    <path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z" />
-  </svg>
-);
-
-const DefaultBellIcon = (props) => (
-  <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-    <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-  </svg>
-);
+import { House, Compass, Bell } from '@phosphor-icons/react';
 
 const defaultNavItems = [
-  { id: 'default-home', icon: <DefaultHomeIcon />, label: 'Home' },
-  { id: 'default-explore', icon: <DefaultCompassIcon />, label: 'Explore' },
-  { id: 'default-notifications', icon: <DefaultBellIcon />, label: 'Notifications' },
+  { id: 'default-home', icon: <House weight="duotone" className="w-6 h-6" />, label: 'Home' },
+  { id: 'default-explore', icon: <Compass weight="duotone" className="w-6 h-6" />, label: 'Explore' },
+  { id: 'default-notifications', icon: <Bell weight="duotone" className="w-6 h-6" />, label: 'Notifications' },
 ];
 
 /**

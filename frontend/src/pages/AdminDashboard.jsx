@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Car, MapPin, DollarSign, TrendingUp, Clock, Shield, AlertCircle } from 'lucide-react';
+import { UsersThree, SteeringWheel, MapPin, Clock, TrendUp, Warning, Shield } from '@phosphor-icons/react';
 import { GlassCard, LoadingSpinner, StatusBadge } from '../components/common/GlassComponents';
 import { RideMap } from '../map/components/RideMap';
 import { Layout } from '../components/layout/Layout';
@@ -38,15 +38,15 @@ const AdminDashboard = () => {
 
   const fetchData = async () => {
     try {
-      const [statsRes, analyticsRes, ridesRes] = await Promise.all([
+      setLoading(true);
+      const [statsRes, analyticsRes, activeRidesRes] = await Promise.all([
         api.get('/admin/stats'),
         api.get('/admin/analytics'),
-        api.get('/admin/rides?status=ongoing&limit=10')
+        api.get('/admin/active-rides')
       ]);
-
       setStats(statsRes.data);
       setAnalytics(analyticsRes.data);
-      setActiveRides(ridesRes.data);
+      setActiveRides(activeRidesRes.data || []);
       console.log('DASHBOARD_RENDER_COMPLETE (Admin)');
     } catch (error) {
       console.error('Error fetching admin data:', error);
@@ -55,31 +55,34 @@ const AdminDashboard = () => {
     }
   };
 
-  if (loading) {
-    return <AdminDashboardSkeleton />;
+  if (loading && !stats) {
+    return (
+      <Layout>
+        <AdminDashboardSkeleton />
+      </Layout>
+    );
   }
 
   return (
     <Layout>
-      <div className="p-4 md:p-8 space-y-6" data-testid="admin-dashboard">
+      <div className="p-6 space-y-6" data-testid="admin-dashboard">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-2">
-              Admin Dashboard
-            </h1>
-            <p className="text-muted-foreground">Platform overview and analytics</p>
+            <h1 className="text-2xl font-bold text-foreground">Admin Overview</h1>
+            <p className="text-muted-foreground text-sm">Platform overview and analytics</p>
           </div>
           {isSuperAdmin && (
             <div className="flex items-center gap-2 px-3 py-1.5 bg-gold/10 rounded-full border border-gold/20">
-              <Shield className="w-4 h-4 text-gold" />
+              <Shield weight="duotone" className="w-4 h-4 text-gold" />
               <span className="text-gold text-sm font-medium">Super Admin</span>
             </div>
           )}
+          <AdminPushNotifications />
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <GlassCard className="p-4" hover={false}>
             <div className="flex items-start justify-between">
               <div>
@@ -89,7 +92,7 @@ const AdminDashboard = () => {
                 </p>
               </div>
               <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                <Users className="w-5 h-5 text-blue-400" />
+                <UsersThree weight="duotone" className="w-5 h-5 text-blue-400" />
               </div>
             </div>
           </GlassCard>
@@ -103,13 +106,13 @@ const AdminDashboard = () => {
                 </p>
                 {stats?.pending_drivers > 0 && (
                   <p className="text-xs text-yellow-400 flex items-center gap-1 mt-1">
-                    <AlertCircle className="w-3 h-3" />
+                    <Warning weight="duotone" className="w-3 h-3" />
                     {stats.pending_drivers} pending
                   </p>
                 )}
               </div>
               <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
-                <Car className="w-5 h-5 text-green-400" />
+                <SteeringWheel weight="duotone" className="w-5 h-5 text-green-400" />
               </div>
             </div>
           </GlassCard>
@@ -126,7 +129,7 @@ const AdminDashboard = () => {
                 </p>
               </div>
               <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
-                <MapPin className="w-5 h-5 text-purple-400" />
+                <MapPin weight="duotone" className="w-5 h-5 text-purple-400" />
               </div>
             </div>
           </GlassCard>
@@ -140,7 +143,7 @@ const AdminDashboard = () => {
                 </p>
               </div>
               <div className="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center">
-                <Clock className="w-5 h-5 text-gold" />
+                <Clock weight="duotone" className="w-5 h-5 text-gold" />
               </div>
             </div>
           </GlassCard>

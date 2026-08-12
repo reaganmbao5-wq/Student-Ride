@@ -1,7 +1,10 @@
 import React from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Home, MapPin, Clock, User, Settings, Car, DollarSign, Users, BarChart3, Shield, LogOut, Menu, X, Sun, Moon, Bug } from 'lucide-react';
+import { 
+  House, MapPin, Clock, User, Gear, Car, CurrencyCircleDollar, 
+  UsersThree, ChartBar, Shield, SignOut, BugBeetle, SteeringWheel 
+} from '@phosphor-icons/react';
 import { useTheme } from '../../context/ThemeContext';
 import { cn } from '../../lib/utils';
 import { haptics } from '../../utils/haptics';
@@ -21,28 +24,28 @@ export const Layout = ({ children }) => {
   };
 
   const studentNavItems = [
-    { to: '/dashboard', icon: Home, label: 'Home' },
-    { to: '/ride', icon: MapPin, label: 'Ride' },
-    { to: '/history', icon: Clock, label: 'History' },
-    { to: '/profile', icon: User, label: 'Profile' }
+    { to: '/dashboard', icon: (props) => <House weight="duotone" {...props} />, label: 'Home' },
+    { to: '/ride', icon: (props) => <MapPin weight="duotone" {...props} />, label: 'Ride' },
+    { to: '/history', icon: (props) => <Clock weight="duotone" {...props} />, label: 'History' },
+    { to: '/profile', icon: (props) => <User weight="duotone" {...props} />, label: 'Profile' }
   ];
 
   const driverNavItems = [
-    { to: '/driver', icon: Home, label: 'Dashboard' },
-    { to: '/driver/earnings', icon: DollarSign, label: 'Earnings' },
-    { to: '/driver/history', icon: Clock, label: 'History' },
-    { to: '/profile', icon: User, label: 'Profile' }
+    { to: '/driver', icon: (props) => <SteeringWheel weight="duotone" {...props} />, label: 'Dashboard' },
+    { to: '/driver/earnings', icon: (props) => <CurrencyCircleDollar weight="duotone" {...props} />, label: 'Earnings' },
+    { to: '/driver/history', icon: (props) => <Clock weight="duotone" {...props} />, label: 'History' },
+    { to: '/profile', icon: (props) => <User weight="duotone" {...props} />, label: 'Profile' }
   ];
 
   const adminNavItems = [
-    { to: '/admin', icon: BarChart3, label: 'Overview' },
-    { to: '/admin/users', icon: Users, label: 'Users' },
-    { to: '/admin/drivers', icon: Car, label: 'Drivers' },
-    { to: '/admin/rides', icon: MapPin, label: 'Rides' },
-    { to: '/admin/destinations', icon: MapPin, label: 'Destinations' },
-    { to: '/admin/pricing', icon: DollarSign, label: 'Pricing' },
-    { to: '/admin/bug-reports', icon: Bug, label: 'Bug Reports' },
-    { to: '/admin/settings', icon: Settings, label: 'Settings' }
+    { to: '/admin', icon: (props) => <ChartBar weight="duotone" {...props} />, label: 'Overview' },
+    { to: '/admin/users', icon: (props) => <UsersThree weight="duotone" {...props} />, label: 'Users' },
+    { to: '/admin/drivers', icon: (props) => <Car weight="duotone" {...props} />, label: 'Drivers' },
+    { to: '/admin/rides', icon: (props) => <MapPin weight="duotone" {...props} />, label: 'Rides' },
+    { to: '/admin/destinations', icon: (props) => <MapPin weight="duotone" {...props} />, label: 'Destinations' },
+    { to: '/admin/pricing', icon: (props) => <CurrencyCircleDollar weight="duotone" {...props} />, label: 'Pricing' },
+    { to: '/admin/bug-reports', icon: (props) => <BugBeetle weight="duotone" {...props} />, label: 'Bug Reports' },
+    { to: '/admin/settings', icon: (props) => <Gear weight="duotone" {...props} />, label: 'Settings' }
   ];
 
   const navItems = isAdmin ? adminNavItems : isDriver ? driverNavItems : studentNavItems;
