@@ -3,7 +3,8 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { 
   House, MapPin, Clock, User, Gear, Car, CurrencyCircleDollar, 
-  UsersThree, ChartBar, Shield, SignOut, BugBeetle, SteeringWheel 
+  UsersThree, ChartBar, Shield, SignOut, BugBeetle, SteeringWheel,
+  Sun, Moon
 } from '@phosphor-icons/react';
 import { useTheme } from '../../context/ThemeContext';
 import { cn } from '../../lib/utils';
@@ -72,7 +73,7 @@ export const Layout = ({ children }) => {
         <div className="p-4 border-b border-border h-20 flex items-center">
           <div className="flex items-center gap-3 overflow-hidden">
             <div className="w-12 h-12 min-w-[48px] rounded-xl bg-gold flex items-center justify-center">
-              <Car className="w-7 h-7 text-black" />
+              <Car weight="duotone" className="w-7 h-7 text-black" />
             </div>
             <div className="sidebar-label-transition opacity-0 group-hover:opacity-100 whitespace-nowrap">
               <h1 className="font-heading font-bold text-foreground text-lg">MuluRides</h1>
@@ -109,12 +110,12 @@ export const Layout = ({ children }) => {
         <div className="p-3 border-t border-border">
           <div className="flex items-center gap-3 mb-4 overflow-hidden">
             <div className="w-10 h-10 min-w-[40px] rounded-full bg-muted flex items-center justify-center">
-              <User className="w-5 h-5 text-muted-foreground" />
+              <User weight="duotone" className="w-5 h-5 text-muted-foreground" />
             </div>
             <div className="sidebar-label-transition opacity-0 group-hover:opacity-100 flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground truncate">{user?.name}</p>
               <p className="text-xs text-muted-foreground capitalize flex items-center gap-1">
-                {user?.role === 'super_admin' && <Shield className="w-3 h-3 text-gold" />}
+                {user?.role === 'super_admin' && <Shield weight="duotone" className="w-3 h-3 text-gold" />}
                 {user?.role?.replace('_', ' ')}
               </p>
             </div>
@@ -126,7 +127,7 @@ export const Layout = ({ children }) => {
               className="flex items-center gap-3 p-3 w-full rounded-xl text-muted-foreground/60 hover:text-gold hover:bg-gold/10 transition-all overflow-hidden"
             >
               <div className="w-6 flex justify-center">
-                {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                {theme === 'dark' ? <Sun weight="duotone" className="w-5 h-5" /> : <Moon weight="duotone" className="w-5 h-5" />}
               </div>
               <span className="font-medium sidebar-label-transition opacity-0 group-hover:opacity-100 whitespace-nowrap">
                 {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
@@ -138,7 +139,7 @@ export const Layout = ({ children }) => {
               className="flex items-center gap-3 p-3 w-full rounded-xl text-muted-foreground/60 hover:text-red-400 hover:bg-red-500/10 transition-all overflow-hidden"
             >
               <div className="w-6 flex justify-center">
-                <LogOut className="w-5 h-5 min-w-[20px]" />
+                <SignOut weight="duotone" className="w-5 h-5 min-w-[20px]" />
               </div>
               <span className="font-medium sidebar-label-transition opacity-0 group-hover:opacity-100 whitespace-nowrap">
                 Logout
@@ -152,7 +153,7 @@ export const Layout = ({ children }) => {
       <header className="md:hidden fixed top-0 left-0 right-0 h-16 bg-background/80 backdrop-blur-xl border-b border-border z-40 flex items-center justify-between px-4 safe-top">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-gold flex items-center justify-center">
-            <Car className="w-5 h-5 text-black" />
+            <Car weight="duotone" className="w-5 h-5 text-black" />
           </div>
           <h1 className="font-heading font-bold text-foreground">MuluRides</h1>
         </div>
@@ -161,12 +162,12 @@ export const Layout = ({ children }) => {
             onClick={toggleTheme}
             className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-gold transition-colors"
           >
-            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            {theme === 'dark' ? <Sun weight="duotone" className="w-4 h-4" /> : <Moon weight="duotone" className="w-4 h-4" />}
           </button>
 
           <div className="relative group">
             <button className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground border border-border">
-              <User className="w-4 h-4" />
+              <User weight="duotone" className="w-4 h-4" />
             </button>
             <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-xl shadow-xl py-2 opacity-0 invisible group-focus-within:opacity-100 group-focus-within:visible transition-all z-[100]">
               <div className="px-4 py-2 border-b border-border mb-1">
@@ -174,14 +175,14 @@ export const Layout = ({ children }) => {
                 <p className="text-[10px] text-muted-foreground capitalize">{user?.role?.replace('_', ' ')}</p>
               </div>
               <NavLink to="/profile" className="flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors">
-                <Settings className="w-4 h-4" />
+                <Gear weight="duotone" className="w-4 h-4" />
                 Profile
               </NavLink>
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-500/10 transition-colors text-left"
               >
-                <LogOut className="w-4 h-4" />
+                <SignOut weight="duotone" className="w-4 h-4" />
                 Logout
               </button>
             </div>
