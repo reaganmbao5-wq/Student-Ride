@@ -3,10 +3,9 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 const ThemeContext = createContext();
 
 export const ACCENT_COLORS = {
-  default: { label: 'Default', hex: '#808080', tailwind: 'bg-zinc-500' },
-  blue: { label: 'Blue', hex: '#3B82F6', tailwind: 'bg-blue-500' },
+  default: { label: 'Blue (Default)', hex: '#3B82F6', tailwind: 'bg-blue-500' },
+  gold: { label: 'Gold', hex: '#EAB308', tailwind: 'bg-yellow-500' },
   green: { label: 'Green', hex: '#22C55E', tailwind: 'bg-green-500' },
-  yellow: { label: 'Yellow', hex: '#EAB308', tailwind: 'bg-yellow-500' },
   pink: { label: 'Pink', hex: '#EC4899', tailwind: 'bg-pink-500' },
   orange: { label: 'Orange', hex: '#F97316', tailwind: 'bg-orange-500' },
   purple: { label: 'Purple', hex: '#A855F7', tailwind: 'bg-purple-500' },
@@ -22,7 +21,7 @@ export const ThemeProvider = ({ children }) => {
   // Effective theme: 'dark' | 'light'
   const [theme, setTheme] = useState('dark');
 
-  // Accent Color: 'default' | 'blue' | 'green' | 'yellow' | 'pink' | 'orange' | 'purple' | 'black'
+  // Accent Color: 'default' | 'gold' | 'blue' | 'green' | 'pink' | 'orange' | 'purple' | 'black'
   const [accentColor, setAccentColorState] = useState(() => {
     return localStorage.getItem('mulu_accent_color') || 'default';
   });
@@ -58,11 +57,13 @@ export const ThemeProvider = ({ children }) => {
     const root = window.document.documentElement;
     const colorObj = ACCENT_COLORS[accentColor] || ACCENT_COLORS.default;
 
-    let hexColor = colorObj.hex;
+    let hexColor = colorObj ? colorObj.hex : '#3B82F6';
     if (accentColor === 'black') {
       hexColor = theme === 'dark' ? '#FFFFFF' : '#000000';
-    } else if (accentColor === 'default') {
-      hexColor = '#EAB308'; // Default gold accent
+    } else if (accentColor === 'default' || accentColor === 'blue') {
+      hexColor = '#3B82F6'; // Default Blue accent
+    } else if (accentColor === 'gold' || accentColor === 'yellow') {
+      hexColor = '#EAB308'; // Gold accent option
     }
 
     root.style.setProperty('--color-accent', hexColor);

@@ -709,9 +709,9 @@ const ProfilePage = () => {
                     <p className="text-xs text-zinc-400 flex items-center gap-1.5 capitalize mt-0.5">
                       <span
                         className="w-3 h-3 rounded-full inline-block shrink-0 border border-white/20"
-                        style={{ backgroundColor: ACCENT_COLORS[accentColor]?.hex || '#808080' }}
+                        style={{ backgroundColor: ACCENT_COLORS[accentColor]?.hex || '#3B82F6' }}
                       />
-                      <span>{ACCENT_COLORS[accentColor]?.label || 'Default'}</span>
+                      <span>{ACCENT_COLORS[accentColor]?.label || 'Blue (Default)'}</span>
                     </p>
                   </div>
                 </div>
