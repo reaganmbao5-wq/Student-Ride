@@ -64,10 +64,18 @@ const AuthPage = () => {
   const { login, register, signupDriver, api } = useAuth();
 
   const [mode, setMode] = useState(searchParams.get('mode') === 'driver' ? 'register' : 'login');
+  const [direction, setDirection] = useState(searchParams.get('mode') === 'driver' ? 1 : -1);
   const [isDriver, setIsDriver] = useState(searchParams.get('mode') === 'driver');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+
+  const handleModeChange = (newMode) => {
+    if (newMode !== mode) {
+      setDirection(newMode === 'register' ? 1 : -1);
+      setMode(newMode);
+    }
+  };
 
   useEffect(() => {
     try {
@@ -313,7 +321,7 @@ const AuthPage = () => {
           layout: { duration: 0.85, ease: [0.16, 1, 0.3, 1] }
         }}
         style={{ willChange: 'transform', transform: 'translateZ(0)' }}
-        className="relative z-20 w-full md:max-w-md md:mx-auto md:mb-auto md:mt-32 bg-zinc-950 border-t md:border border-zinc-800/80 rounded-t-[2.5rem] md:rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black max-h-[90vh] md:max-h-[85vh] overflow-y-auto transform-gpu"
+        className={`relative z-20 w-full md:max-w-md md:mx-auto md:mb-auto md:mt-32 bg-zinc-950 border-t md:border border-zinc-800/80 rounded-t-[2.5rem] md:rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black overflow-y-auto transform-gpu transition-[max-height,padding] duration-[850ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${mode === 'login' ? 'max-h-[560px]' : 'max-h-[850px]'}`}
       >
         <div className="w-12 h-1.5 bg-zinc-800 rounded-full mx-auto mb-6 md:hidden" />
 
@@ -334,7 +342,7 @@ const AuthPage = () => {
         <motion.div layout="position" className="relative flex p-1 bg-zinc-900/80 rounded-xl mb-8 border border-zinc-800/50 overflow-hidden">
           <button
             type="button"
-            onClick={() => setMode('login')}
+            onClick={() => handleModeChange('login')}
             className={`relative flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-500 z-10 ${mode === 'login' ? 'text-zinc-950 font-bold' : 'text-zinc-400 hover:text-zinc-200'
               }`}
           >
@@ -349,7 +357,7 @@ const AuthPage = () => {
           </button>
           <button
             type="button"
-            onClick={() => setMode('register')}
+            onClick={() => handleModeChange('register')}
             className={`relative flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-500 z-10 ${mode === 'register' ? 'text-zinc-950 font-bold' : 'text-zinc-400 hover:text-zinc-200'
               }`}
           >
@@ -365,12 +373,13 @@ const AuthPage = () => {
         </motion.div>
 
         {/* Form Container with Reversed Direction & Simultaneous Layout Transition */}
-        <AnimatePresence mode="wait" initial={false}>
+        <AnimatePresence mode="popLayout" custom={direction} initial={false}>
           <motion.form 
             key={mode}
-            initial={{ opacity: 0, x: mode === 'register' ? -20 : 20 }}
+            custom={direction}
+            initial={{ opacity: 0, x: direction === 1 ? -40 : 40 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: mode === 'register' ? 20 : -20 }}
+            exit={{ opacity: 0, x: direction === 1 ? 40 : -40 }}
             transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
             onSubmit={handleSubmit} 
             className="space-y-4"
