@@ -18,6 +18,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { haptics } from '../utils/haptics';
 import { useTheme } from '../context/ThemeContext';
+import { openExternalUrl } from '../utils/urlHelpers';
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { PermissionsService } from '../services/PermissionsService';
@@ -800,7 +801,7 @@ const ProfilePage = () => {
                       type="button"
                       onClick={() => {
                         haptics.tap();
-                        navigate('/terms');
+                        openExternalUrl('/terms');
                       }}
                       className="w-full p-4 flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer text-left"
                     >
@@ -812,7 +813,7 @@ const ProfilePage = () => {
                       type="button"
                       onClick={() => {
                         haptics.tap();
-                        navigate('/privacy');
+                        openExternalUrl('/privacy');
                       }}
                       className="w-full p-4 flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer text-left"
                     >

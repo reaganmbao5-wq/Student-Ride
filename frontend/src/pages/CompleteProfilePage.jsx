@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { GlassCard, GlassInput, GoldButton, LoadingSpinner } from '../components/common/GlassComponents';
 import { Car, Phone, Lock, User, Mail, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { getOnlineWebUrl, openExternalUrl } from '../utils/urlHelpers';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://student-ride-backend-manual.onrender.com';
 
@@ -235,21 +236,29 @@ export default function CompleteProfilePage() {
                           <label htmlFor="google-terms-checkbox" className="text-xs text-muted-foreground select-none cursor-pointer leading-relaxed">
                             I agree to the{' '}
                             <a
-                              href="/terms"
+                              href={getOnlineWebUrl('/terms')}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-gold underline hover:text-gold/80 transition-colors font-semibold"
-                              onClick={(e) => e.stopPropagation()}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                openExternalUrl('/terms');
+                              }}
                             >
                               terms of service
                             </a>
                             {' '}and{' '}
                             <a
-                              href="/privacy"
+                              href={getOnlineWebUrl('/privacy')}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-gold underline hover:text-gold/80 transition-colors font-semibold"
-                              onClick={(e) => e.stopPropagation()}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                openExternalUrl('/privacy');
+                              }}
                             >
                               privacy policy
                             </a>

@@ -10,6 +10,7 @@ import { Camera as CapacitorCamera, CameraResultType, CameraSource } from '@capa
 import { motion, AnimatePresence } from 'framer-motion';
 import { PermissionsService } from '../services/PermissionsService';
 import { compressImage } from '../utils/imageCompressor';
+import { getOnlineWebUrl, openExternalUrl } from '../utils/urlHelpers';
 
 const GlassInput = React.forwardRef(({ className, ...props }, ref) => (
   <input
@@ -640,21 +641,29 @@ const AuthPage = () => {
                 <label htmlFor="auth-terms-checkbox" className="text-xs text-zinc-400 select-none cursor-pointer leading-relaxed">
                   I agree to the{' '}
                   <a
-                    href="/terms"
+                    href={getOnlineWebUrl('/terms')}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-gold underline hover:text-gold/80 transition-colors font-semibold"
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      openExternalUrl('/terms');
+                    }}
                   >
                     terms of service
                   </a>
                   {' '}and{' '}
                   <a
-                    href="/privacy"
+                    href={getOnlineWebUrl('/privacy')}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-gold underline hover:text-gold/80 transition-colors font-semibold"
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      openExternalUrl('/privacy');
+                    }}
                   >
                     privacy policy
                   </a>
