@@ -77,10 +77,8 @@ const LandingPage = () => {
 
         <div className="relative z-10 max-w-6xl mx-auto text-center">
           {/* Logo */}
-          <div className="flex items-center justify-center gap-3 mb-8 animate-float">
-            <div className="w-16 h-16 rounded-2xl bg-gold flex items-center justify-center shadow-gold">
-              <Car weight="duotone" className="w-8 h-8 text-black" />
-            </div>
+          <div className="flex items-center justify-center gap-3 mb-8">
+            <Car weight="duotone" className="w-20 h-20 text-gold" />
           </div>
 
           {/* Headline */}
