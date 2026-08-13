@@ -42,7 +42,7 @@ const PrivacyPolicyPage = () => {
               1. Commitment to Privacy
             </p>
             <p className="text-zinc-300">
-              Mulungushi Rides (MuluRides) is dedicated to protecting your personal privacy. This Privacy Policy details the types of information we collect, how it is processed to deliver safe campus transport, and how your data is secured.
+              Jaey Ride is dedicated to protecting your personal privacy. This Privacy Policy details the types of information we collect, how it is processed to deliver safe campus transport, and how your data is secured.
             </p>
           </div>
 
@@ -80,7 +80,7 @@ const PrivacyPolicyPage = () => {
               4. Data Sharing & Third-Party Protection
             </p>
             <p className="text-zinc-300">
-              MuluRides strictly prohibits selling, renting, or leasing user data to third-party advertisers. Personal information is disclosed only to matched trip participants for active navigation or to campus security authorities when legally required during safety emergency investigations.
+              Jaey Ride strictly prohibits selling, renting, or leasing user data to third-party advertisers. Personal information is disclosed only to matched trip participants for active navigation or to campus security authorities when legally required during safety emergency investigations.
             </p>
           </div>
 
@@ -107,7 +107,7 @@ const PrivacyPolicyPage = () => {
               7. Privacy Policy Updates
             </p>
             <p className="text-zinc-300">
-              MuluRides reserves the right to update this Privacy Policy. Any changes will be posted on this page with an updated effective date.
+              Jaey Ride reserves the right to update this Privacy Policy. Any changes will be posted on this page with an updated effective date.
             </p>
           </div>
 
@@ -116,7 +116,7 @@ const PrivacyPolicyPage = () => {
               8. Contact & Privacy Inquiries
             </p>
             <p className="text-zinc-300">
-              For privacy inquiries, data requests, or policy questions, contact MuluRides Support at{' '}
+              For privacy inquiries, data requests, or policy questions, contact Jaey Ride Support at{' '}
               <a
                 href="mailto:Reaganmbao31@gmail.com"
                 className="text-gold underline hover:text-gold/80 font-mono transition-colors"
@@ -136,7 +136,7 @@ const PrivacyPolicyPage = () => {
 
         {/* Footer */}
         <div className="border-t border-zinc-800/80 pt-6 text-center text-xs text-zinc-500">
-          <p>© 2026 Mulungushi Rides (MuluRides). All rights reserved.</p>
+          <p>© 2026 Jaey Ride. All rights reserved.</p>
         </div>
       </main>
     </div>

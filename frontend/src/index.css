@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=DM+Sans:wght@400;500;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500;700&family=Noto+Sans:wght@400;500;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,6 +6,18 @@
 
 @layer base {
   :root {
+    /* Dynamic Display & Headers (Brand heavy: Ginto / Apple SF Display / Android) */
+    --font-header: "gg sans", "Ginto Nord", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Roboto", "Segoe UI", sans-serif;
+
+    /* Main UI & Subtitles (Clean readability: SF Pro Text / gg sans / Whitney / Roboto) */
+    --font-subtitle: "gg sans", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Whitney", "Roboto", "Helvetica Neue", sans-serif;
+
+    /* Chat Messages & Small Text (Compact, high-legibility interface text) */
+    --font-body: "gg sans", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Roboto", "Noto Sans", "Helvetica Neue", sans-serif;
+
+    /* Code Blocks & Monospace Snippets */
+    --font-mono: "gg mono", "Consolas", "Andale Mono WT", "Andale Mono", "Lucida Console", "SF Mono", "Roboto Mono", monospace;
+
     --background: 235 50% 6%;
     --foreground: 235 20% 95%;
     --card: 236 40% 11%;
@@ -51,6 +63,29 @@
   }
 }
 
+.font-heading {
+  font-family: var(--font-header);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.font-subtitle {
+  font-family: var(--font-subtitle);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.font-body {
+  font-family: var(--font-body);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.font-code {
+  font-family: var(--font-mono);
+  font-weight: 400;
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -58,7 +93,7 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--font-body);
   }
 
   h1,
@@ -67,7 +102,7 @@
   h4,
   h5,
   h6 {
-    font-family: 'Outfit', sans-serif;
+    font-family: var(--font-header);
   }
 }
 

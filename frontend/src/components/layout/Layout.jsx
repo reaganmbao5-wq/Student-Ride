@@ -76,7 +76,7 @@ export const Layout = ({ children }) => {
               <Car weight="duotone" className="w-7 h-7 text-black" />
             </div>
             <div className="sidebar-label-transition opacity-0 group-hover:opacity-100 whitespace-nowrap">
-              <h1 className="font-heading font-bold text-foreground text-lg">MuluRides</h1>
+              <h1 className="font-heading font-bold text-foreground text-lg">JRide</h1>
               <p className="text-[10px] text-muted-foreground">Student Transport</p>
             </div>
           </div>
@@ -155,7 +155,7 @@ export const Layout = ({ children }) => {
           <div className="w-8 h-8 rounded-lg bg-gold flex items-center justify-center">
             <Car weight="duotone" className="w-5 h-5 text-black" />
           </div>
-          <h1 className="font-heading font-bold text-foreground">MuluRides</h1>
+          <h1 className="font-heading font-bold text-foreground">JRide</h1>
         </div>
         <div className="flex items-center gap-2">
           <button

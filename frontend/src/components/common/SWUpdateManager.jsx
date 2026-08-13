@@ -43,7 +43,7 @@ const SWUpdateManager = () => {
                     <div>
                         <h4 className="text-white font-medium text-sm">Update Available</h4>
                         <p className="text-white/60 text-xs mt-0.5">
-                            A new version of MuluRides is ready. Reload to update.
+                            A new version of Jaey Ride is ready. Reload to update.
                         </p>
                     </div>
                 </div>

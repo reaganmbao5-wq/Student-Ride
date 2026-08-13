@@ -109,7 +109,7 @@ const PushNotificationManager = () => {
                     
                     // The backend payload might send it in `data.payload`
                     let data = notification.data || {};
-                    let title = notification.title || "Mulu Rides Update";
+                    let title = notification.title || "Jaey Ride Update";
                     let body = notification.body || "You have a new update.";
 
                     // If it's a data-only payload containing Live Tracking info:

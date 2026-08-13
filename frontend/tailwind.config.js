@@ -7,9 +7,11 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        'heading': ['Outfit', 'sans-serif'],
-        'body': ['DM Sans', 'sans-serif'],
-        'accent': ['Playfair Display', 'serif'],
+        'heading': ['var(--font-header)'],
+        'subtitle': ['var(--font-subtitle)'],
+        'body': ['var(--font-body)'],
+        'code': ['var(--font-mono)'],
+        'accent': ['var(--font-header)'],
       },
       colors: {
         background: 'hsl(var(--background))',

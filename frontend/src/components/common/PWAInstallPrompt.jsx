@@ -74,7 +74,7 @@ const PWAInstallPrompt = () => {
             <Download className="w-5 h-5 text-gold" />
           </div>
           <div>
-            <h4 className="text-white font-medium text-sm">Install MuluRides App</h4>
+            <h4 className="text-white font-medium text-sm">Install JRide App</h4>
             <p className="text-white/60 text-xs mt-0.5">
               {isIOS ? 'Tap Share ➝ Add to Home Screen' : 'Install for a faster, app-like experience'}
             </p>

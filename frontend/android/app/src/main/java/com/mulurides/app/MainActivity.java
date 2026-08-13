@@ -1,4 +1,4 @@
-package com.mulurides.app;
+package com.jride.app;
 
 import com.getcapacitor.BridgeActivity;
 

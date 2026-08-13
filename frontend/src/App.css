@@ -43,7 +43,7 @@
 }
 
 [data-sonner-toast] {
-  font-family: 'DM Sans', sans-serif !important;
+  font-family: var(--font-body) !important;
   background-color: #000000 !important;
   color: #FFFFFF !important;
   border-radius: 9999px !important;

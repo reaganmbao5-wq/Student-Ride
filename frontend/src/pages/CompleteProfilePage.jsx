@@ -89,7 +89,7 @@ export default function CompleteProfilePage() {
                 throw new Error(err.detail || 'Failed to update profile');
             }
 
-            toast.success('Welcome to MuluRides! 🎉');
+            toast.success('Welcome to Jaey Ride! 🎉');
 
             // Reload into the dashboard so AuthContext picks up the stored token
             window.location.href = isDriver ? '/driver/register' : '/dashboard';

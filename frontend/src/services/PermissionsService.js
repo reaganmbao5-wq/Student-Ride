@@ -14,7 +14,7 @@ export const PermissionsService = {
       
       const request = await Geolocation.requestPermissions();
       if (request.location !== 'granted') {
-        toast.error('Location permission is required for MuluRides.');
+        toast.error('Location permission is required for Jaey Ride.');
         return false;
       }
       return true;

@@ -138,7 +138,7 @@ const LandingPage = () => {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Why Choose MuluRides?
+              Why Choose Jaey Ride?
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
               Built for students, by students. Experience transportation like never before.
@@ -209,7 +209,7 @@ const LandingPage = () => {
               </h2>
               <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
                 Join our growing network of drivers. Set your own schedule, earn great commissions,
-                and become part of the MuluRides family.
+                and become part of the Jaey Ride family.
               </p>
               <GoldButton onClick={() => navigate('/auth?mode=driver')} data-testid="driver-signup-cta">
                 Start Earning Today
@@ -229,12 +229,12 @@ const LandingPage = () => {
                 <Car className="w-5 h-5 text-black" />
               </div>
               <div>
-                <h3 className="font-heading font-bold text-foreground">MuluRides</h3>
+                <h3 className="font-heading font-bold text-foreground">JRide</h3>
                 <p className="text-xs text-muted-foreground">Mulungushi University</p>
               </div>
             </div>
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
-              <span>© {new Date().getFullYear()} MuluRides</span>
+              <span>© {new Date().getFullYear()} Jaey Ride</span>
               <span>•</span>
               <span>Kabwe, Zambia</span>
             </div>

@@ -131,7 +131,7 @@ export const MultiPlatformInstallSection = () => {
                 <div>
                     <h3 className="font-heading font-semibold text-foreground text-lg">Download Our App</h3>
                     <p className="text-muted-foreground text-sm mt-1 max-w-sm">
-                        Get the full MuluRides experience on your home screen for faster booking, real-time tracking, and instant alerts.
+                        Get the full Jaey Ride experience on your home screen for faster booking, real-time tracking, and instant alerts.
                     </p>
                 </div>
 
@@ -162,7 +162,7 @@ export const MultiPlatformInstallSection = () => {
                     <DialogHeader>
                         <DialogTitle className="text-foreground font-heading text-xl">Install on iOS</DialogTitle>
                         <DialogDescription className="text-muted-foreground">
-                            Install MuluRides directly to your home screen across iPhone or iPad.
+                            Install Jaey Ride directly to your home screen across iPhone or iPad.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-6 py-4">
@@ -203,7 +203,7 @@ export const MultiPlatformInstallSection = () => {
                     <DialogHeader>
                         <DialogTitle className="text-foreground font-heading text-xl">Install on Android</DialogTitle>
                         <DialogDescription className="text-muted-foreground">
-                            Automatic installation is currently blocked by your browser. You can still install MuluRides manually.
+                            Automatic installation is currently blocked by your browser. You can still install Jaey Ride manually.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-6 py-4">

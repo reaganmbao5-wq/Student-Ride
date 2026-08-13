@@ -42,7 +42,7 @@ const TermsOfServicePage = () => {
               1. Acceptance of Terms
             </p>
             <p className="text-zinc-300">
-              By accessing, registering, or using the Mulungushi Rides (MuluRides) web application or mobile platform, users explicitly agree to comply with and be bound by these Terms of Service. If you do not agree with any part of these terms, you must immediately discontinue using the application.
+              By accessing, registering, or using the Jaey Ride web application or mobile platform, users explicitly agree to comply with and be bound by these Terms of Service. If you do not agree with any part of these terms, you must immediately discontinue using the application.
             </p>
           </div>
 
@@ -51,7 +51,7 @@ const TermsOfServicePage = () => {
               2. Platform Overview & User Eligibility
             </p>
             <p className="text-zinc-300">
-              MuluRides provides a digital ride-matching platform connecting students, staff, and drivers within Mulungushi University (Great North Road Campus, Town Campus, and Kabwe metropolitan areas).
+              Jaey Ride provides a digital ride-matching platform connecting students, staff, and drivers within Mulungushi University (Great North Road Campus, Town Campus, and Kabwe metropolitan areas).
             </p>
             <ul className="list-disc pl-5 space-y-1 text-zinc-400 text-xs md:text-sm">
               <li>Student accounts require active enrollment or authorized campus affiliate status.</li>
@@ -65,7 +65,7 @@ const TermsOfServicePage = () => {
               3. User Account Responsibilities
             </p>
             <p className="text-zinc-300">
-              Users are solely responsible for maintaining the confidentiality of their account credentials, passwords, and phone verification access. All activities occurring under a user's account remain the legal responsibility of the account holder. Users must notify MuluRides administrators immediately if unauthorized account access is suspected.
+              Users are solely responsible for maintaining the confidentiality of their account credentials, passwords, and phone verification access. All activities occurring under a user's account remain the legal responsibility of the account holder. Users must notify Jaey Ride administrators immediately if unauthorized account access is suspected.
             </p>
           </div>
 
@@ -74,7 +74,7 @@ const TermsOfServicePage = () => {
               4. Ride Booking, Fares & Payment Terms
             </p>
             <p className="text-zinc-300">
-              MuluRides supports both Private (direct) and Shared (pooled) ride options with clear upfront fare estimations.
+              Jaey Ride supports both Private (direct) and Shared (pooled) ride options with clear upfront fare estimations.
             </p>
             <ul className="list-disc pl-5 space-y-1 text-zinc-400 text-xs md:text-sm">
               <li>Fares are calculated based on travel distance (KM), ride mode, and campus zone pricing.</li>
@@ -88,7 +88,7 @@ const TermsOfServicePage = () => {
               5. Safety, Code of Conduct & Zero Tolerance Policy
             </p>
             <p className="text-zinc-300">
-              Safety is paramount across all campus commutes. MuluRides maintains a strict zero-tolerance policy regarding harassment, physical or verbal abuse, intoxication, possession of illegal substances, weapons, or reckless driving. Violations result in immediate permanent account suspension and reporting to campus security.
+              Safety is paramount across all campus commutes. Jaey Ride maintains a strict zero-tolerance policy regarding harassment, physical or verbal abuse, intoxication, possession of illegal substances, weapons, or reckless driving. Violations result in immediate permanent account suspension and reporting to campus security.
             </p>
           </div>
 
@@ -97,7 +97,7 @@ const TermsOfServicePage = () => {
               6. Limitation of Liability
             </p>
             <p className="text-zinc-300">
-              MuluRides acts as an intermediary technology platform connecting independent drivers and passengers. MuluRides shall not be held liable for indirect, incidental, or consequential damages, personal property loss, or unexpected travel delays outside reasonable platform control.
+              Jaey Ride acts as an intermediary technology platform connecting independent drivers and passengers. Jaey Ride shall not be held liable for indirect, incidental, or consequential damages, personal property loss, or unexpected travel delays outside reasonable platform control.
             </p>
           </div>
 
@@ -106,7 +106,7 @@ const TermsOfServicePage = () => {
               7. Modifications to Terms
             </p>
             <p className="text-zinc-300">
-              MuluRides reserves the right to modify or update these Terms of Service at any time. Continued use of the platform following published changes constitutes full acceptance of the updated terms.
+              Jaey Ride reserves the right to modify or update these Terms of Service at any time. Continued use of the platform following published changes constitutes full acceptance of the updated terms.
             </p>
           </div>
 
@@ -115,7 +115,7 @@ const TermsOfServicePage = () => {
               8. Account Termination
             </p>
             <p className="text-zinc-300">
-              MuluRides administration reserves the right to suspend or terminate user accounts without prior notice for violations of these guidelines, security breaches, or fraudulent behavior.
+              Jaey Ride administration reserves the right to suspend or terminate user accounts without prior notice for violations of these guidelines, security breaches, or fraudulent behavior.
             </p>
           </div>
 
@@ -124,7 +124,7 @@ const TermsOfServicePage = () => {
               9. Contact Information
             </p>
             <p className="text-zinc-300">
-              For questions regarding these terms, contact MuluRides Support at{' '}
+              For questions regarding these terms, contact Jaey Ride Support at{' '}
               <a
                 href="mailto:Reaganmbao31@gmail.com"
                 className="text-gold underline hover:text-gold/80 font-mono transition-colors"
@@ -145,7 +145,7 @@ const TermsOfServicePage = () => {
 
         {/* Footer */}
         <div className="border-t border-zinc-800/80 pt-6 text-center text-xs text-zinc-500">
-          <p>© 2026 Mulungushi Rides (MuluRides). All rights reserved.</p>
+          <p>© 2026 Jaey Ride. All rights reserved.</p>
         </div>
       </main>
     </div>

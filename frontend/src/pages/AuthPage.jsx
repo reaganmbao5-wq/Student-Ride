@@ -329,7 +329,7 @@ const AuthPage = () => {
           transition={{ delay: 0.4, duration: 0.8 }}
           className="text-3xl font-bold tracking-tight text-white"
         >
-          MuluRides
+          JRide
         </motion.h1>
       </div>
 
@@ -350,8 +350,8 @@ const AuthPage = () => {
             {mode === 'login'
               ? 'Sign in to continue your journey'
               : isDriver
-                ? 'Start earning with MuluRides'
-                : 'Join the MuluRides community'}
+                ? 'Start earning with Jaey Ride'
+                : 'Join the Jaey Ride community'}
           </p>
         </div>
 

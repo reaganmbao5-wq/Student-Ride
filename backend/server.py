@@ -130,7 +130,7 @@ sentry_sdk.init(
     include_local_variables=True
 )
 
-app = FastAPI(title="Mulungushi Rides API")
+app = FastAPI(title="Jaey Ride API")
 
 # Configure CORS — allow all origins for APK/mobile/script support
 app.add_middleware(
@@ -1292,14 +1292,14 @@ async def request_password_reset(request: PasswordResetRequest):
         
         from_email = os.environ.get("RESEND_FROM_EMAIL", "noreply@mulungushistudentride.site")
         
-        # If we are using the test address, we cannot use a display name wrapper (e.g. MuluRides <...>)
+        # If we are using the test address, we cannot use a display name wrapper (e.g. Jaey Ride <...>)
         # Resend strictly validates this.
-        sender = from_email if "onboarding@resend.dev" in from_email else f"MuluRides <{from_email}>"
+        sender = from_email if "onboarding@resend.dev" in from_email else f"Jaey Ride <{from_email}>"
         
         email_params = {
             "from": sender,
             "to": [user["email"]],
-            "subject": "Reset your MuluRides Password",
+            "subject": "Reset your Jaey Ride Password",
             "html": f"""
             <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
                 <h2>Password Reset Request</h2>
@@ -1309,7 +1309,7 @@ async def request_password_reset(request: PasswordResetRequest):
                 <p>If you didn't request this, you can safely ignore this email.</p>
                 <p>This link will expire in 1 hour.</p>
                 <hr style="border: none; border-top: 1px solid #eaeaea; margin-top: 30px;"/>
-                <p style="font-size: 12px; color: #888;">MuluRides Support Team</p>
+                <p style="font-size: 12px; color: #888;">Jaey Ride Support Team</p>
             </div>
             """
         }

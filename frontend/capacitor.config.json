@@ -1,6 +1,6 @@
 {
-  "appId": "com.mulurides.app",
-  "appName": "MuluRides",
+  "appId": "com.jride.app",
+  "appName": "JRide",
   "webDir": "build",
   "plugins": {
     "CapacitorHttp": {
