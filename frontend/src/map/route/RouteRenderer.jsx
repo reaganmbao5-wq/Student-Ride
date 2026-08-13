@@ -17,11 +17,15 @@ const normalizePointToLngLat = (pt) => {
   return null;
 };
 
-export const RouteRenderer = ({ map, remainingPath = [], status, color, onAnimationChange }) => {
+export const RouteRenderer = ({ id = 'default', map, remainingPath = [], status, color, onAnimationChange }) => {
   const normalizedStatus = status ? String(status).toLowerCase() : '';
   const isHeadingToPickup = ['accepted', 'driver_accepted', 'driver_en_route_to_pickup', 'driver_arrived'].includes(normalizedStatus);
   const strokeColor = color || (isHeadingToPickup ? '#10B981' : '#3B82F6');
   const strokeColorRef = useRef(strokeColor);
+
+  const cleanId = String(id).replace(/[^a-zA-Z0-9_-]/g, '_');
+  const sourceId = `mulu-route-src-${cleanId}`;
+  const layerId = `mulu-route-ln-${cleanId}`;
 
   useEffect(() => {
     strokeColorRef.current = strokeColor;
@@ -30,7 +34,6 @@ export const RouteRenderer = ({ map, remainingPath = [], status, color, onAnimat
   // Secondary effect to dynamically switch line colors on existing layers
   useEffect(() => {
     if (!map || !map.style) return;
-    const layerId = 'mulu-route-line';
     try {
       if (map.getLayer(layerId)) {
         map.setPaintProperty(layerId, 'line-color', strokeColor);
@@ -38,22 +41,19 @@ export const RouteRenderer = ({ map, remainingPath = [], status, color, onAnimat
     } catch (err) {
       console.warn('Error updating route line stroke color:', err);
     }
-  }, [map, strokeColor]);
+  }, [map, strokeColor, layerId]);
 
   // Main lifecycle: register style.load listener and handle drawing
   useEffect(() => {
     if (!map || !remainingPath || remainingPath.length <= 1) {
       try {
         if (map && map.style) {
-          if (map.getLayer('mulu-route-line')) map.removeLayer('mulu-route-line');
-          if (map.getSource('mulu-route-source')) map.removeSource('mulu-route-source');
+          if (map.getLayer(layerId)) map.removeLayer(layerId);
+          if (map.getSource(sourceId)) map.removeSource(sourceId);
         }
       } catch (e) {}
       return;
     }
-
-    const sourceId = 'mulu-route-source';
-    const layerId = 'mulu-route-line';
 
     // Format coordinates from remainingPath (handles [lat, lng] arrays and {lat, lng} objects)
     const formattedCoords = remainingPath.map(normalizePointToLngLat).filter(Boolean);
@@ -127,7 +127,7 @@ export const RouteRenderer = ({ map, remainingPath = [], status, color, onAnimat
         console.warn('Error cleaning up Route Line:', err);
       }
     };
-  }, [map, remainingPath]);
+  }, [map, remainingPath, sourceId, layerId]);
 
   return null;
 };

@@ -3872,11 +3872,16 @@ async def delete_destination(dest_id: str, user: dict = Depends(require_admin)):
     return {"status": "deleted"}
 
 # ==================== FARE CALCULATION ====================
+@api_router.post("/rides/estimate")
 @api_router.post("/rides/estimate-fare")
 async def estimate_fare(data: dict, user: dict = Depends(get_current_user)):
     # Check if coordinates are provided for server-side calculation
     pickup = data.get("pickup", {})
     dropoff = data.get("dropoff", {})
+    if not pickup and "pickup_lat" in data:
+        pickup = {"lat": data["pickup_lat"], "lng": data["pickup_lng"]}
+    if not dropoff and "dropoff_lat" in data:
+        dropoff = {"lat": data["dropoff_lat"], "lng": data["dropoff_lng"]}
     
     distance_km = data.get("distance_km", 0)
     duration_min = data.get("duration_min", 0)

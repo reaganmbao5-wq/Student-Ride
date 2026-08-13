@@ -403,6 +403,30 @@ export const PlatformMap = ({
           : 150;
         const calcSide = 25;
 
+        // Policy B: Adaptive distance-scaled zoom tightening during driver approach (< 400m)
+        let dynamicMaxZoom = 18.0;
+        if (cameraMode === CAMERA_MODES.FOLLOW_DRIVER && targetArray.length === 2) {
+          const pt1 = targetArray[0];
+          const pt2 = targetArray[1];
+          const lat1 = Number(pt1?.lat ?? pt1?.[0] ?? pt1?.latitude);
+          const lon1 = Number(pt1?.lng ?? pt1?.[1] ?? pt1?.longitude);
+          const lat2 = Number(pt2?.lat ?? pt2?.[0] ?? pt2?.latitude);
+          const lon2 = Number(pt2?.lng ?? pt2?.[1] ?? pt2?.longitude);
+          if (!isNaN(lat1) && !isNaN(lon1) && !isNaN(lat2) && !isNaN(lon2)) {
+            const dLat = (lat2 - lat1) * (Math.PI / 180);
+            const dLon = (lon2 - lon1) * (Math.PI / 180);
+            const a =
+              Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const distMeters = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            if (distMeters < 400) {
+              // Smooth tightening: 400m -> 17.5, 200m -> 18.5, 50m -> 19.5
+              dynamicMaxZoom = Math.min(19.5, Math.max(17.5, 19.5 - (distMeters / 400) * 2.0));
+            }
+          }
+        }
+
         // Skip re-fitting if coordinates & padding are virtually identical (prevents twitching during polling)
         const prev = lastFittedBoundsRef.current;
         const isSameBounds = prev &&
@@ -411,13 +435,14 @@ export const PlatformMap = ({
           Math.abs(prev.minLng - minLng) < 0.00015 &&
           Math.abs(prev.maxLng - maxLng) < 0.00015 &&
           Math.abs(prev.calcBottom - calcBottom) < 10 &&
+          Math.abs((prev.dynamicMaxZoom || 18.0) - dynamicMaxZoom) < 0.2 &&
           prev.calcTop === calcTop;
 
         if (isSameBounds) {
           return;
         }
 
-        lastFittedBoundsRef.current = { minLat, maxLat, minLng, maxLng, calcTop, calcBottom };
+        lastFittedBoundsRef.current = { minLat, maxLat, minLng, maxLng, calcTop, calcBottom, dynamicMaxZoom };
 
         try {
           mapRef.current.fitBounds([
@@ -430,7 +455,7 @@ export const PlatformMap = ({
               left: calcSide,
               right: calcSide
             },
-            maxZoom: 18,
+            maxZoom: dynamicMaxZoom,
             duration: 800,
             essential: true
           });
@@ -529,6 +554,8 @@ export const PlatformMap = ({
 
                key={`route-${route.rideId || idx}`}
 
+               id={`route-${route.rideId || idx}`}
+
                map={mapRef.current}
 
                geometry={route.geometry}
@@ -550,6 +577,8 @@ export const PlatformMap = ({
           routeGeometry && routeGeometry.length > 0 && (
 
             <RouteEngine 
+
+              id="main-route"
 
               map={mapRef.current}
 

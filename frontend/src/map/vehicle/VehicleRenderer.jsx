@@ -61,6 +61,7 @@ export const VehicleRenderer = ({ map, driver }) => {
     img.style.height = '100%';
     img.style.objectFit = 'contain';
     img.style.filter = 'drop-shadow(0 4px 8px rgba(0,0,0,0.5))';
+    img.style.transform = 'rotate(180deg)';
 
     el.appendChild(img);
 

@@ -185,14 +185,20 @@ const RideRequestPage = () => {
         destination_id: selectedDestination ? selectedDestination.id : null
       });
       const data = response.data;
-      setFareEstimate({
-        private_fare: data.private.fare,
-        shared_fare: data.shared.fare,
-        distance_km: data.distance_km,
-        duration_mins: data.duration_mins,
-        private_surge: data.private.surge_reason,
-        shared_surge: data.shared.surge_reason
-      });
+      if (data) {
+        setFareEstimate({
+          private_fare: data.private?.estimated_fare || data.private?.fare || estPrivateFare,
+          shared_fare: data.shared?.estimated_fare || data.shared?.fare || estSharedFare,
+          distance_km: data.verified_distance || data.distance_km || parseFloat(estDist.toFixed(1)),
+          duration_mins: data.verified_duration || data.duration_mins || estDuration,
+          private_surge: data.private?.surge_reason,
+          shared_surge: data.shared?.surge_reason
+        });
+
+        if (data.geometry && Array.isArray(data.geometry) && data.geometry.length > 2) {
+          setRouteGeometry(data.geometry);
+        }
+      }
     } catch (error) {
       console.error('Background fare calc error:', error);
     }
