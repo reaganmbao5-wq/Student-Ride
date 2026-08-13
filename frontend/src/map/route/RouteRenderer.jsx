@@ -1,6 +1,23 @@
 import React, { useEffect, useRef } from 'react';
 
-export const RouteRenderer = ({ map, remainingPath = [], status, color }) => {
+/**
+ * Universal Coordinate Normalizer for Mapbox (GeoJSON requires [lng, lat])
+ */
+const normalizePointToLngLat = (pt) => {
+  if (!pt) return null;
+  if (Array.isArray(pt) && pt.length >= 2) {
+    const lat = Number(pt[0]);
+    const lng = Number(pt[1]);
+    if (!isNaN(lat) && !isNaN(lng)) return [lng, lat];
+  } else if (typeof pt === 'object') {
+    const lat = Number(pt.lat ?? pt.latitude);
+    const lng = Number(pt.lng ?? pt.longitude);
+    if (!isNaN(lat) && !isNaN(lng)) return [lng, lat];
+  }
+  return null;
+};
+
+export const RouteRenderer = ({ map, remainingPath = [], status, color, onAnimationChange }) => {
   const normalizedStatus = status ? String(status).toLowerCase() : '';
   const isHeadingToPickup = ['accepted', 'driver_accepted', 'driver_en_route_to_pickup', 'driver_arrived'].includes(normalizedStatus);
   const strokeColor = color || (isHeadingToPickup ? '#10B981' : '#3B82F6');
@@ -25,13 +42,23 @@ export const RouteRenderer = ({ map, remainingPath = [], status, color }) => {
 
   // Main lifecycle: register style.load listener and handle drawing
   useEffect(() => {
-    if (!map || !remainingPath || remainingPath.length <= 2) return;
+    if (!map || !remainingPath || remainingPath.length <= 1) {
+      try {
+        if (map && map.style) {
+          if (map.getLayer('mulu-route-line')) map.removeLayer('mulu-route-line');
+          if (map.getSource('mulu-route-source')) map.removeSource('mulu-route-source');
+        }
+      } catch (e) {}
+      return;
+    }
 
     const sourceId = 'mulu-route-source';
     const layerId = 'mulu-route-line';
 
-    // Format coordinates from remainingPath
-    const formattedCoords = remainingPath.map(pt => [pt.lng, pt.lat]);
+    // Format coordinates from remainingPath (handles [lat, lng] arrays and {lat, lng} objects)
+    const formattedCoords = remainingPath.map(normalizePointToLngLat).filter(Boolean);
+
+    if (formattedCoords.length < 2) return;
 
     const geojson = {
       type: 'Feature',
@@ -68,12 +95,12 @@ export const RouteRenderer = ({ map, remainingPath = [], status, color }) => {
             paint: {
               'line-color': strokeColorRef.current,
               'line-width': 6,
-              'line-opacity': 0.9
+              'line-opacity': 0.95
             }
           });
         }
       } catch (err) {
-        console.warn('Error drawing Route Line:', err);
+        console.warn('Error drawing Route Line on Mapbox:', err);
       }
     };
 

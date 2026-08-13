@@ -347,66 +347,50 @@ export const PlatformMap = ({
 
 
 
-  // Handle FlyTo Center / Bounds / Driver Follow safely
+  const lastFlownCenterRef = useRef(null);
 
+  // Handle Smooth Center / Bounds / Driver Follow with zero twitching
   useEffect(() => {
-
     if (!mapRef.current || !mapLoaded) return;
-
-
-
-    // Reset Mapbox transform padding to 0 so center aligns with center pin overlay
 
     mapRef.current.setPadding({ top: 0, bottom: 0, left: 0, right: 0 });
 
-    isUserInteractingRef.current = false;
-
-    isUserDraggingRef.current = false;
-
-    mapRef.current.resize();
-
-
-
     if (cameraMode === CAMERA_MODES.FOLLOW_DRIVER && driverLocation) {
-
       const lat = driverLocation.lat ?? driverLocation.latitude;
-
       const lng = driverLocation.lng ?? driverLocation.longitude;
 
-      if (lat !== undefined && lng !== undefined) {
-
+      if (lat !== undefined && lng !== undefined && !isNaN(lat) && !isNaN(lng)) {
         mapRef.current.easeTo({
-
           center: [lng, lat],
-
           zoom: 17,
-
           duration: 600,
-
           essential: true
-
         });
-
       }
-
     } else if (routeBounds || bounds) {
       const targetArray = routeBounds || bounds;
-      // Extract all lats and lngs to derive proper southwest and northeast corners across all points
       const lats = [];
       const lngs = [];
       if (Array.isArray(targetArray)) {
         targetArray.forEach(pt => {
-          if (Array.isArray(pt)) {
-            lats.push(pt[0]);
-            lngs.push(pt[1]);
+          if (Array.isArray(pt) && pt.length >= 2) {
+            const lat = Number(pt[0]);
+            const lng = Number(pt[1]);
+            if (!isNaN(lat) && !isNaN(lng)) {
+              lats.push(lat);
+              lngs.push(lng);
+            }
           } else if (pt && typeof pt === 'object') {
-            const lat = pt.lat ?? pt.latitude;
-            const lng = pt.lng ?? pt.longitude;
-            if (lat !== undefined && !isNaN(lat)) lats.push(lat);
-            if (lng !== undefined && !isNaN(lng)) lngs.push(lng);
+            const lat = Number(pt.lat ?? pt.latitude);
+            const lng = Number(pt.lng ?? pt.longitude);
+            if (!isNaN(lat) && !isNaN(lng)) {
+              lats.push(lat);
+              lngs.push(lng);
+            }
           }
         });
       }
+
       if (lats.length > 0 && lngs.length > 0) {
         const minLat = Math.min(...lats);
         const maxLat = Math.max(...lats);
@@ -419,8 +403,7 @@ export const PlatformMap = ({
           : 150;
         const calcSide = 25;
 
-        // Stabilize: Skip re-running fitBounds if coordinates & padding are virtually identical to last fit
-        // Stops camera twitching/shaking during driver polling!
+        // Skip re-fitting if coordinates & padding are virtually identical (prevents twitching during polling)
         const prev = lastFittedBoundsRef.current;
         const isSameBounds = prev &&
           Math.abs(prev.minLat - minLat) < 0.00015 &&
@@ -434,38 +417,26 @@ export const PlatformMap = ({
           return;
         }
 
-        const isInitialFit = !lastFittedBoundsRef.current;
         lastFittedBoundsRef.current = { minLat, maxLat, minLng, maxLng, calcTop, calcBottom };
 
-        const targetCamera = mapRef.current.cameraForBounds([
-          [minLng, minLat],
-          [maxLng, maxLat]
-        ], {
-          padding: {
-            top: calcTop,
-            bottom: calcBottom,
-            left: calcSide,
-            right: calcSide
-          },
-          maxZoom: 18.5
-        });
-
-        if (targetCamera) {
-          mapRef.current.flyTo({
-            center: targetCamera.center,
-            zoom: targetCamera.zoom,
+        try {
+          mapRef.current.fitBounds([
+            [minLng, minLat],
+            [maxLng, maxLat]
+          ], {
             padding: {
               top: calcTop,
               bottom: calcBottom,
               left: calcSide,
               right: calcSide
             },
-            duration: 2200,
+            maxZoom: 18,
+            duration: 800,
             essential: true
           });
-        }
+        } catch (e) {}
       }
-    } else if (center) {
+    } else if (center && center.lat !== undefined && center.lng !== undefined) {
       const defaultStepZoom = cameraMode === CAMERA_MODES.PICKUP_SELECTION
         ? CAMERA_CONFIG.ZOOM.PICKUP_SELECTION
         : cameraMode === CAMERA_MODES.DESTINATION_SELECTION
@@ -476,17 +447,23 @@ export const PlatformMap = ({
         ? mapRef.current.getZoom()
         : defaultStepZoom;
 
-      console.log('PLATFORM_MAP_FLY_TO:', center, 'zoom:', targetZoom);
-      mapRef.current.flyTo({
-        center: [center.lng, center.lat],
-        zoom: targetZoom,
-        speed: 0.15,
-        duration: 2400,
-        padding: { top: 0, bottom: 0, left: 0, right: 0 }
-      });
-    }
+      const prevCenter = lastFlownCenterRef.current;
+      const centerChanged = !prevCenter ||
+        Math.abs(prevCenter.lat - center.lat) > 0.00005 ||
+        Math.abs(prevCenter.lng - center.lng) > 0.00005 ||
+        Math.abs(prevCenter.zoom - targetZoom) > 0.1;
 
-  }, [center, zoom, bounds, routeBounds, cameraMode, driverLocation, mapLoaded]);
+      if (centerChanged) {
+        lastFlownCenterRef.current = { lat: center.lat, lng: center.lng, zoom: targetZoom };
+        mapRef.current.flyTo({
+          center: [center.lng, center.lat],
+          zoom: targetZoom,
+          duration: 1200,
+          essential: true
+        });
+      }
+    }
+  }, [center, zoom, bounds, routeBounds, cameraMode, driverLocation, mapLoaded, bottomPadding]);
 
 
 
