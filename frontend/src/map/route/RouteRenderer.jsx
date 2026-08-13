@@ -27,63 +27,35 @@ export const RouteRenderer = ({ id = 'default', map, remainingPath = [], status,
   const sourceId = `mulu-route-src-${cleanId}`;
   const layerId = `mulu-route-ln-${cleanId}`;
 
+  // Keep stroke color ref in sync
   useEffect(() => {
     strokeColorRef.current = strokeColor;
-  }, [strokeColor]);
-
-  // Secondary effect to dynamically switch line colors on existing layers
-  useEffect(() => {
     if (!map || !map.style) return;
     try {
       if (map.getLayer(layerId)) {
         map.setPaintProperty(layerId, 'line-color', strokeColor);
       }
-    } catch (err) {
-      console.warn('Error updating route line stroke color:', err);
-    }
+    } catch (err) {}
   }, [map, strokeColor, layerId]);
 
-  // Main lifecycle: register style.load listener and handle drawing
+  // 1. Source and layer lifecycle: Add ONCE when map is ready, remove ONLY on component unmount
   useEffect(() => {
-    if (!map || !remainingPath || remainingPath.length <= 1) {
+    if (!map) return;
+
+    const initLayer = () => {
+      if (!map.style) return;
       try {
-        if (map && map.style) {
-          if (map.getLayer(layerId)) map.removeLayer(layerId);
-          if (map.getSource(sourceId)) map.removeSource(sourceId);
-        }
-      } catch (e) {}
-      return;
-    }
-
-    // Format coordinates from remainingPath (handles [lat, lng] arrays and {lat, lng} objects)
-    const formattedCoords = remainingPath.map(normalizePointToLngLat).filter(Boolean);
-
-    if (formattedCoords.length < 2) return;
-
-    const geojson = {
-      type: 'Feature',
-      properties: {},
-      geometry: {
-        type: 'LineString',
-        coordinates: formattedCoords
-      }
-    };
-
-    let isCleanedUp = false;
-
-    const drawRoute = () => {
-      if (isCleanedUp) return;
-      if (!map || !map.style) return;
-
-      try {
-        if (map.getSource(sourceId)) {
-          map.getSource(sourceId).setData(geojson);
-        } else {
+        if (!map.getSource(sourceId)) {
           map.addSource(sourceId, {
             type: 'geojson',
-            data: geojson
+            data: {
+              type: 'Feature',
+              properties: {},
+              geometry: { type: 'LineString', coordinates: [] }
+            }
           });
-
+        }
+        if (!map.getLayer(layerId)) {
           map.addLayer({
             id: layerId,
             type: 'line',
@@ -93,40 +65,79 @@ export const RouteRenderer = ({ id = 'default', map, remainingPath = [], status,
               'line-cap': 'round'
             },
             paint: {
-              'line-color': strokeColorRef.current,
+              'line-color': strokeColorRef.current || '#3B82F6',
               'line-width': 6,
               'line-opacity': 0.95
             }
           });
         }
       } catch (err) {
-        console.warn('Error drawing Route Line on Mapbox:', err);
+        console.warn('Error initializing route layer:', err);
       }
     };
 
     const handleStyleLoad = () => {
-      if (isCleanedUp) return;
-      drawRoute();
+      initLayer();
     };
 
     map.on('style.load', handleStyleLoad);
-
     if (map.style) {
-      drawRoute();
+      initLayer();
     }
 
     return () => {
-      isCleanedUp = true;
       map.off('style.load', handleStyleLoad);
       try {
         if (map && map.style) {
           if (map.getLayer(layerId)) map.removeLayer(layerId);
           if (map.getSource(sourceId)) map.removeSource(sourceId);
         }
-      } catch (err) {
-        console.warn('Error cleaning up Route Line:', err);
+      } catch (err) {}
+    };
+  }, [map, sourceId, layerId]);
+
+  // 2. Pure data updates via setData() - ZERO layer removals, ZERO flicker!
+  useEffect(() => {
+    if (!map || !map.style) return;
+
+    const formattedCoords = (remainingPath || []).map(normalizePointToLngLat).filter(Boolean);
+    const geojson = {
+      type: 'Feature',
+      properties: {},
+      geometry: {
+        type: 'LineString',
+        coordinates: formattedCoords.length >= 2 ? formattedCoords : []
       }
     };
+
+    try {
+      const src = map.getSource(sourceId);
+      if (src) {
+        src.setData(geojson);
+      } else if (map.style) {
+        // Fallback: If source not yet initialized, add it
+        map.addSource(sourceId, {
+          type: 'geojson',
+          data: geojson
+        });
+        if (!map.getLayer(layerId)) {
+          map.addLayer({
+            id: layerId,
+            type: 'line',
+            source: sourceId,
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round'
+            },
+            paint: {
+              'line-color': strokeColorRef.current || '#3B82F6',
+              'line-width': 6,
+              'line-opacity': 0.95
+            }
+          });
+        }
+      }
+    } catch (e) {}
   }, [map, remainingPath, sourceId, layerId]);
 
   return null;

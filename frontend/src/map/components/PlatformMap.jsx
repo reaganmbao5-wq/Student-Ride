@@ -418,15 +418,15 @@ export const PlatformMap = ({
           }
         }
 
-        // Skip re-fitting if coordinates & padding are virtually identical (prevents twitching during polling)
+        // Skip re-fitting if coordinates & padding haven't shifted significantly (prevents up/down bouncing during live driver tracking)
         const prev = lastFittedBoundsRef.current;
         const isSameBounds = prev &&
-          Math.abs(prev.minLat - minLat) < 0.00015 &&
-          Math.abs(prev.maxLat - maxLat) < 0.00015 &&
-          Math.abs(prev.minLng - minLng) < 0.00015 &&
-          Math.abs(prev.maxLng - maxLng) < 0.00015 &&
-          Math.abs(prev.calcBottom - calcBottom) < 10 &&
-          Math.abs((prev.dynamicMaxZoom || 18.0) - dynamicMaxZoom) < 0.2 &&
+          Math.abs(prev.minLat - minLat) < 0.00045 &&
+          Math.abs(prev.maxLat - maxLat) < 0.00045 &&
+          Math.abs(prev.minLng - minLng) < 0.00045 &&
+          Math.abs(prev.maxLng - maxLng) < 0.00045 &&
+          Math.abs(prev.calcBottom - calcBottom) < 20 &&
+          Math.abs((prev.dynamicMaxZoom || 18.0) - dynamicMaxZoom) < 0.35 &&
           prev.calcTop === calcTop;
 
         if (isSameBounds) {
@@ -447,7 +447,7 @@ export const PlatformMap = ({
               right: calcSide
             },
             maxZoom: dynamicMaxZoom,
-            duration: 800,
+            duration: 600,
             essential: true
           });
         } catch (e) {}
