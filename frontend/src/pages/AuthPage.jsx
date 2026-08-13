@@ -307,7 +307,7 @@ const AuthPage = () => {
       <motion.div 
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
-        transition={{ type: "spring", damping: 28, stiffness: 240 }}
+        transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
         style={{ willChange: 'transform', transform: 'translateZ(0)' }}
         className="relative z-20 w-full md:max-w-md md:mx-auto md:mb-auto md:mt-32 bg-zinc-950 border-t md:border border-zinc-800/80 rounded-t-[2.5rem] md:rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black max-h-[90vh] md:max-h-[85vh] overflow-y-auto transform-gpu"
       >
@@ -326,38 +326,48 @@ const AuthPage = () => {
           </p>
         </div>
 
-        {/* Mode Toggle Tabs */}
-        <div className="flex p-1 bg-zinc-900/80 rounded-xl mb-8 border border-zinc-800/50">
+        {/* Mode Toggle Tabs with Sliding Active Pill */}
+        <div className="relative flex p-1 bg-zinc-900/80 rounded-xl mb-8 border border-zinc-800/50 overflow-hidden">
           <button
             type="button"
             onClick={() => setMode('login')}
-            className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${mode === 'login'
-              ? 'bg-gold text-zinc-950 shadow-md shadow-gold/20'
-              : 'text-zinc-400 hover:text-zinc-200'
+            className={`relative flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-300 z-10 ${mode === 'login' ? 'text-zinc-950 font-bold' : 'text-zinc-400 hover:text-zinc-200'
               }`}
           >
+            {mode === 'login' && (
+              <motion.div
+                layoutId="activeAuthTabPill"
+                className="absolute inset-0 bg-gold rounded-lg shadow-md shadow-gold/20 -z-10"
+                transition={{ type: "spring", stiffness: 220, damping: 24 }}
+              />
+            )}
             Sign In
           </button>
           <button
             type="button"
             onClick={() => setMode('register')}
-            className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${mode === 'register'
-              ? 'bg-gold text-zinc-950 shadow-md shadow-gold/20'
-              : 'text-zinc-400 hover:text-zinc-200'
+            className={`relative flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-300 z-10 ${mode === 'register' ? 'text-zinc-950 font-bold' : 'text-zinc-400 hover:text-zinc-200'
               }`}
           >
+            {mode === 'register' && (
+              <motion.div
+                layoutId="activeAuthTabPill"
+                className="absolute inset-0 bg-gold rounded-lg shadow-md shadow-gold/20 -z-10"
+                transition={{ type: "spring", stiffness: 220, damping: 24 }}
+              />
+            )}
             Sign Up
           </button>
         </div>
 
-        {/* Form Container with Smooth Fade Animation */}
+        {/* Form Container with Smooth Sliding Fade Transition */}
         <AnimatePresence mode="wait" initial={false}>
           <motion.form 
             key={mode}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.15 }}
+            initial={{ opacity: 0, x: mode === 'login' ? -16 : 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: mode === 'login' ? 16 : -16 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             onSubmit={handleSubmit} 
             className="space-y-4"
           >
