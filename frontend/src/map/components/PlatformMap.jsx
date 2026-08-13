@@ -397,11 +397,14 @@ export const PlatformMap = ({
         const minLng = Math.min(...lngs);
         const maxLng = Math.max(...lngs);
 
-        const calcTop = 75;
-        const calcBottom = (typeof bottomPadding === 'number' && bottomPadding > 0)
+        const containerRect = mapContainerRef.current?.getBoundingClientRect();
+        const isMiniMap = !interactive || (containerRect && containerRect.height < 250);
+
+        const calcTop = isMiniMap ? 14 : 75;
+        const calcBottom = isMiniMap ? 14 : ((typeof bottomPadding === 'number' && bottomPadding > 0)
           ? Math.min(bottomPadding, 180)
-          : 150;
-        const calcSide = 25;
+          : 150);
+        const calcSide = isMiniMap ? 14 : 25;
 
         // Policy B: Adaptive distance-scaled zoom tightening during driver approach (< 400m)
         let dynamicMaxZoom = 18.0;
