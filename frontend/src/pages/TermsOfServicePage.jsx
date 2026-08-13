@@ -124,7 +124,21 @@ const TermsOfServicePage = () => {
               9. Contact Information
             </p>
             <p className="text-zinc-300">
-              For questions regarding these terms, contact MuluRides Support at <span className="text-gold font-mono">support@mulurides.app</span> or visit the Student Center, Mulungushi University Great North Road Campus, Kabwe, Zambia.
+              For questions regarding these terms, contact MuluRides Support at{' '}
+              <a
+                href="mailto:Reaganmbao31@gmail.com"
+                className="text-gold underline hover:text-gold/80 font-mono transition-colors"
+              >
+                Reaganmbao31@gmail.com
+              </a>
+              {' '}and{' '}
+              <a
+                href="mailto:Chabotasiyingwa77@gmail.com"
+                className="text-gold underline hover:text-gold/80 font-mono transition-colors"
+              >
+                Chabotasiyingwa77@gmail.com
+              </a>
+              {' '}or visit the Student Center, Mulungushi University Great North Road Campus, Kabwe, Zambia.
             </p>
           </div>
         </div>

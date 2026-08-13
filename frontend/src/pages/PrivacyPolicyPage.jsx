@@ -110,6 +110,28 @@ const PrivacyPolicyPage = () => {
               MuluRides reserves the right to update this Privacy Policy. Any changes will be posted on this page with an updated effective date.
             </p>
           </div>
+
+          <div className="space-y-2">
+            <p className="text-base text-gold font-bold tracking-wide">
+              8. Contact & Privacy Inquiries
+            </p>
+            <p className="text-zinc-300">
+              For privacy inquiries, data requests, or policy questions, contact MuluRides Support at{' '}
+              <a
+                href="mailto:Reaganmbao31@gmail.com"
+                className="text-gold underline hover:text-gold/80 font-mono transition-colors"
+              >
+                Reaganmbao31@gmail.com
+              </a>
+              {' '}and{' '}
+              <a
+                href="mailto:Chabotasiyingwa77@gmail.com"
+                className="text-gold underline hover:text-gold/80 font-mono transition-colors"
+              >
+                Chabotasiyingwa77@gmail.com
+              </a>.
+            </p>
+          </div>
         </div>
 
         {/* Footer */}
