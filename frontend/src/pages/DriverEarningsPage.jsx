@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CurrencyCircleDollar, TrendUp, Clock, Star, CalendarBlank } from '@phosphor-icons/react';
+import { CurrencyCircleDollar, TrendUp, Clock, Star, CalendarBlank, Car } from '@phosphor-icons/react';
 import { GlassCard, LoadingSpinner } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
@@ -98,7 +98,7 @@ const DriverEarningsPage = () => {
           <GlassCard className="p-4" hover={false}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                <Clock weight="duotone" className="w-5 h-5 text-emerald-400" />
+                <Car weight="duotone" className="w-5 h-5 text-emerald-400" />
               </div>
               <div>
                 <p className="font-heading text-2xl font-bold text-foreground">

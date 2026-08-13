@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Power, MapPin, Clock, DollarSign, Star, Navigation, AlertCircle, Bell, Check, X, Upload, FileText, MessageCircle, PhoneCall, Loader2, Users } from 'lucide-react';
+import { CurrencyCircleDollar, Wallet, Car, Star as PhosphorStar } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard, GoldButton, StatusBadge, LoadingSpinner, EmptyState } from '../components/common/GlassComponents';
 import { PlatformMap } from '../map/components/PlatformMap';
@@ -1045,9 +1046,19 @@ const DriverDashboard = () => {
         {/* Header with Online Toggle */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-1">
-              {isOnline ? 'Ready for Rides' : 'You\'re Offline'}
-            </h1>
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground">
+                {isOnline ? 'Ready for Rides' : 'You\'re Offline'}
+              </h1>
+              {earnings && (
+                <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-gold/10 border border-gold/20 shadow-sm" title="Driver Rating">
+                  <PhosphorStar weight="duotone" className="w-4 h-4 text-gold fill-gold" />
+                  <span className="font-heading font-bold text-foreground text-sm">
+                    {earnings.rating?.toFixed(1) || '5.0'}
+                  </span>
+                </div>
+              )}
+            </div>
             <p className="text-muted-foreground">
               {isOnline ? 'Waiting for ride requests...' : 'Go online to start accepting rides'}
             </p>
@@ -1106,7 +1117,7 @@ const DriverDashboard = () => {
             <GlassCard className="p-4" hover={false}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center">
-                  <DollarSign className="w-5 h-5 text-gold" />
+                  <CurrencyCircleDollar weight="duotone" className="w-5 h-5 text-gold" />
                 </div>
                 <div>
                   <p className="text-lg font-heading font-bold text-foreground">
@@ -1119,13 +1130,9 @@ const DriverDashboard = () => {
 
             <GlassCard className="p-4" hover={false}>
               <div className="flex items-center gap-3">
-                {/* Wallet Card Concept */}
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${driverProfile?.wallet_status === 'restricted' ? 'bg-red-500/20' : 'bg-blue-500/10'
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${driverProfile?.wallet_status === 'restricted' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/10 text-blue-400'
                   }`}>
-                  <div className={`font-bold ${driverProfile?.wallet_status === 'restricted' ? 'text-red-400' : 'text-blue-400'
-                    }`}>
-                    W
-                  </div>
+                  <Wallet weight="duotone" className="w-5 h-5" />
                 </div>
                 <div>
                   <p className={`text-lg font-heading font-bold ${driverProfile?.wallet_status === 'restricted' ? 'text-red-400' : 'text-foreground'
@@ -1140,7 +1147,7 @@ const DriverDashboard = () => {
             <GlassCard className="p-4 col-span-2 md:col-span-1" hover={false}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                  <Clock className="w-5 h-5 text-emerald-400" />
+                  <Car weight="duotone" className="w-5 h-5 text-emerald-400" />
                 </div>
                 <div>
                   <p className="text-lg font-heading font-bold text-foreground">{earnings.total_rides}</p>
@@ -1176,21 +1183,6 @@ const DriverDashboard = () => {
             title="No rides available"
             description="Stay online, new ride requests will appear here"
           />
-        )}
-
-        {/* Rating */}
-        {earnings && (
-          <GlassCard className="p-4" hover={false}>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Your Rating</span>
-              <div className="flex items-center gap-2">
-                <Star className="w-5 h-5 text-gold fill-gold" />
-                <span className="font-heading font-bold text-foreground text-lg">
-                  {earnings.rating?.toFixed(1)}
-                </span>
-              </div>
-            </div>
-          </GlassCard>
         )}
       </div>
     </Layout >

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Car, MapPin, Shield, Star, Smartphone, Clock, ChevronRight, Users, Wallet, Sun, Moon } from 'lucide-react';
+import { Car, MapPin, ShieldCheck, Clock, Wallet, CaretRight, UsersThree, Sun, Moon } from '@phosphor-icons/react';
 import { GlassCard, GoldButton } from '../components/common/GlassComponents';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -31,7 +31,7 @@ const LandingPage = () => {
       description: 'Track your ride in real-time with GPS precision'
     },
     {
-      icon: Shield,
+      icon: ShieldCheck,
       title: 'Safe & Secure',
       description: 'Verified drivers and secure payment system'
     },
@@ -63,7 +63,7 @@ const LandingPage = () => {
           className="p-3 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 text-foreground transition-all backdrop-blur-sm"
           aria-label="Toggle theme"
         >
-          {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          {theme === 'dark' ? <Sun weight="duotone" className="w-5 h-5" /> : <Moon weight="duotone" className="w-5 h-5" />}
         </button>
       </div>
 
@@ -79,7 +79,7 @@ const LandingPage = () => {
           {/* Logo */}
           <div className="flex items-center justify-center gap-3 mb-8 animate-float">
             <div className="w-16 h-16 rounded-2xl bg-gold flex items-center justify-center shadow-gold">
-              <Car className="w-8 h-8 text-black" />
+              <Car weight="duotone" className="w-8 h-8 text-black" />
             </div>
           </div>
 
@@ -89,7 +89,6 @@ const LandingPage = () => {
             <br />
             <span className="text-gold-gradient">One Tap Away</span>
           </h1>
-          Broadway
 
           <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 font-body">
             The premium ride-hailing platform designed exclusively for Mulungushi University students.
@@ -100,19 +99,19 @@ const LandingPage = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
             <GoldButton
               onClick={handleGetStarted}
-              className="w-full sm:w-auto text-lg"
+              className="w-full sm:w-auto text-lg flex items-center justify-center"
               data-testid="get-started-btn"
             >
               {isAuthenticated ? 'Go to Dashboard' : 'Get Started'}
-              <ChevronRight className="w-5 h-5 ml-2 inline" />
+              <CaretRight weight="bold" className="w-5 h-5 ml-2 inline" />
             </GoldButton>
             <GoldButton
               variant="secondary"
               onClick={() => navigate('/auth?mode=driver')}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto flex items-center justify-center"
               data-testid="become-driver-btn"
             >
-              <Car className="w-5 h-5 mr-2 inline" />
+              <Car weight="duotone" className="w-5 h-5 mr-2 inline" />
               Become a Driver
             </GoldButton>
           </div>
@@ -149,7 +148,7 @@ const LandingPage = () => {
             {features.map((feature, idx) => (
               <GlassCard key={idx} className="p-6 group" data-testid={`feature-card-${idx}`}>
                 <div className="w-12 h-12 rounded-xl bg-gold/10 flex items-center justify-center mb-4 group-hover:bg-gold/20 transition-colors">
-                  <feature.icon className="w-6 h-6 text-gold" />
+                  <feature.icon weight="duotone" className="w-6 h-6 text-gold" />
                 </div>
                 <h3 className="font-heading font-semibold text-foreground text-lg mb-2">
                   {feature.title}
@@ -187,7 +186,7 @@ const LandingPage = () => {
                 </h3>
                 <p className="text-muted-foreground">{item.desc}</p>
                 {idx < 2 && (
-                  <ChevronRight className="hidden sm:block absolute top-1/2 -right-4 w-8 h-8 text-gold/30 -translate-y-1/2" />
+                  <CaretRight weight="bold" className="hidden sm:block absolute top-1/2 -right-4 w-8 h-8 text-gold/30 -translate-y-1/2" />
                 )}
               </div>
             ))}
@@ -202,7 +201,7 @@ const LandingPage = () => {
             <div className="absolute top-0 right-0 w-64 h-64 bg-gold/10 rounded-full blur-[100px]" />
             <div className="relative z-10">
               <div className="w-16 h-16 rounded-2xl bg-gold/10 flex items-center justify-center mx-auto mb-6">
-                <Users className="w-8 h-8 text-gold" />
+                <UsersThree weight="duotone" className="w-8 h-8 text-gold" />
               </div>
               <h2 className="font-heading text-2xl sm:text-3xl font-bold text-foreground mb-4">
                 Want to Earn as a Driver?
@@ -211,9 +210,9 @@ const LandingPage = () => {
                 Join our growing network of drivers. Set your own schedule, earn great commissions,
                 and become part of the Jaey Ride family.
               </p>
-              <GoldButton onClick={() => navigate('/auth?mode=driver')} data-testid="driver-signup-cta">
+              <GoldButton onClick={() => navigate('/auth?mode=driver')} className="flex items-center justify-center mx-auto" data-testid="driver-signup-cta">
                 Start Earning Today
-                <ChevronRight className="w-5 h-5 ml-2 inline" />
+                <CaretRight weight="bold" className="w-5 h-5 ml-2 inline" />
               </GoldButton>
             </div>
           </GlassCard>
@@ -226,7 +225,7 @@ const LandingPage = () => {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gold flex items-center justify-center">
-                <Car className="w-5 h-5 text-black" />
+                <Car weight="duotone" className="w-5 h-5 text-black" />
               </div>
               <div>
                 <h3 className="font-heading font-bold text-foreground">JRide</h3>
