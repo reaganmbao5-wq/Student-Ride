@@ -313,19 +313,15 @@ const AuthPage = () => {
 
       {/* Hardware-Accelerated Zero-Flicker Bottom Sheet */}
       <motion.div 
-        layout
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
-        transition={{
-          y: { duration: 1.85, ease: [0.16, 1, 0.3, 1] },
-          layout: { duration: 0.85, ease: [0.16, 1, 0.3, 1] }
-        }}
+        transition={{ duration: 1.85, ease: [0.16, 1, 0.3, 1] }}
         style={{ willChange: 'transform', transform: 'translateZ(0)' }}
-        className={`relative z-20 w-full md:max-w-md md:mx-auto md:mb-auto md:mt-32 bg-zinc-950 border-t md:border border-zinc-800/80 rounded-t-[2.5rem] md:rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black overflow-y-auto transform-gpu transition-[max-height,padding] duration-[850ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${mode === 'login' ? 'max-h-[560px]' : 'max-h-[850px]'}`}
+        className="relative z-20 w-full md:max-w-md md:mx-auto md:mb-auto md:mt-32 bg-zinc-950 border-t md:border border-zinc-800/80 rounded-t-[2.5rem] md:rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black max-h-[90vh] md:max-h-[85vh] overflow-y-auto transform-gpu"
       >
         <div className="w-12 h-1.5 bg-zinc-800 rounded-full mx-auto mb-6 md:hidden" />
 
-        <motion.div layout="position" className="mb-8">
+        <div className="mb-8">
           <h2 className="text-2xl font-bold text-zinc-100 mb-1">
             {mode === 'login' ? 'Welcome Back' : isDriver ? 'Become a Driver' : 'Create Account'}
           </h2>
@@ -336,51 +332,50 @@ const AuthPage = () => {
                 ? 'Start earning with Jaey Ride'
                 : 'Join the Jaey Ride community'}
           </p>
-        </motion.div>
+        </div>
 
         {/* Mode Toggle Tabs with Sliding Active Pill */}
-        <motion.div layout="position" className="relative flex p-1 bg-zinc-900/80 rounded-xl mb-8 border border-zinc-800/50 overflow-hidden">
+        <div className="relative flex p-1 bg-zinc-900/80 rounded-xl mb-8 border border-zinc-800/50 overflow-hidden">
           <button
             type="button"
-            onClick={() => handleModeChange('login')}
-            className={`relative flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-500 z-10 ${mode === 'login' ? 'text-zinc-950 font-bold' : 'text-zinc-400 hover:text-zinc-200'
+            onClick={() => setMode('login')}
+            className={`relative flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-300 z-10 ${mode === 'login' ? 'text-zinc-950 font-bold' : 'text-zinc-400 hover:text-zinc-200'
               }`}
           >
             {mode === 'login' && (
               <motion.div
                 layoutId="activeAuthTabPill"
                 className="absolute inset-0 bg-gold rounded-lg shadow-md shadow-gold/20 -z-10"
-                transition={{ type: "spring", stiffness: 75, damping: 20, mass: 1.2 }}
+                transition={{ type: "spring", stiffness: 100, damping: 22, mass: 1 }}
               />
             )}
             Sign In
           </button>
           <button
             type="button"
-            onClick={() => handleModeChange('register')}
-            className={`relative flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-500 z-10 ${mode === 'register' ? 'text-zinc-950 font-bold' : 'text-zinc-400 hover:text-zinc-200'
+            onClick={() => setMode('register')}
+            className={`relative flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-300 z-10 ${mode === 'register' ? 'text-zinc-950 font-bold' : 'text-zinc-400 hover:text-zinc-200'
               }`}
           >
             {mode === 'register' && (
               <motion.div
                 layoutId="activeAuthTabPill"
                 className="absolute inset-0 bg-gold rounded-lg shadow-md shadow-gold/20 -z-10"
-                transition={{ type: "spring", stiffness: 75, damping: 20, mass: 1.2 }}
+                transition={{ type: "spring", stiffness: 100, damping: 22, mass: 1 }}
               />
             )}
             Sign Up
           </button>
-        </motion.div>
+        </div>
 
-        {/* Form Container with Reversed Direction & Simultaneous Layout Transition */}
-        <AnimatePresence mode="popLayout" custom={direction} initial={false}>
+        {/* Form Container with Clean Non-Overlapping Directional Transitions */}
+        <AnimatePresence mode="wait" initial={false}>
           <motion.form 
             key={mode}
-            custom={direction}
-            initial={{ opacity: 0, x: direction === 1 ? -40 : 40 }}
+            initial={{ opacity: 0, x: mode === 'register' ? -24 : 24 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: direction === 1 ? 40 : -40 }}
-            transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
+            exit={{ opacity: 0, x: mode === 'register' ? 24 : -24 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
             onSubmit={handleSubmit} 
             className="space-y-4"
           >
