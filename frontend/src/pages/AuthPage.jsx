@@ -305,15 +305,19 @@ const AuthPage = () => {
 
       {/* Hardware-Accelerated Zero-Flicker Bottom Sheet */}
       <motion.div 
+        layout
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
-        transition={{ duration: 1.85, ease: [0.16, 1, 0.3, 1] }}
+        transition={{
+          y: { duration: 1.85, ease: [0.16, 1, 0.3, 1] },
+          layout: { duration: 0.85, ease: [0.16, 1, 0.3, 1] }
+        }}
         style={{ willChange: 'transform', transform: 'translateZ(0)' }}
         className="relative z-20 w-full md:max-w-md md:mx-auto md:mb-auto md:mt-32 bg-zinc-950 border-t md:border border-zinc-800/80 rounded-t-[2.5rem] md:rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black max-h-[90vh] md:max-h-[85vh] overflow-y-auto transform-gpu"
       >
         <div className="w-12 h-1.5 bg-zinc-800 rounded-full mx-auto mb-6 md:hidden" />
 
-        <div className="mb-8">
+        <motion.div layout="position" className="mb-8">
           <h2 className="text-2xl font-bold text-zinc-100 mb-1">
             {mode === 'login' ? 'Welcome Back' : isDriver ? 'Become a Driver' : 'Create Account'}
           </h2>
@@ -324,10 +328,10 @@ const AuthPage = () => {
                 ? 'Start earning with Jaey Ride'
                 : 'Join the Jaey Ride community'}
           </p>
-        </div>
+        </motion.div>
 
         {/* Mode Toggle Tabs with Sliding Active Pill */}
-        <div className="relative flex p-1 bg-zinc-900/80 rounded-xl mb-8 border border-zinc-800/50 overflow-hidden">
+        <motion.div layout="position" className="relative flex p-1 bg-zinc-900/80 rounded-xl mb-8 border border-zinc-800/50 overflow-hidden">
           <button
             type="button"
             onClick={() => setMode('login')}
@@ -358,15 +362,15 @@ const AuthPage = () => {
             )}
             Sign Up
           </button>
-        </div>
+        </motion.div>
 
-        {/* Form Container with Ultra-Smooth Slow Sliding Fade Transition */}
+        {/* Form Container with Reversed Direction & Simultaneous Layout Transition */}
         <AnimatePresence mode="wait" initial={false}>
           <motion.form 
             key={mode}
-            initial={{ opacity: 0, x: mode === 'login' ? -16 : 16 }}
+            initial={{ opacity: 0, x: mode === 'register' ? -20 : 20 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: mode === 'login' ? 16 : -16 }}
+            exit={{ opacity: 0, x: mode === 'register' ? 20 : -20 }}
             transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
             onSubmit={handleSubmit} 
             className="space-y-4"
