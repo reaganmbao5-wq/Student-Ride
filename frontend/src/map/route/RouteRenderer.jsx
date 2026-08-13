@@ -1,101 +1,108 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Polyline } from 'react-leaflet';
+import React, { useEffect, useRef } from 'react';
 
-/**
- * RouteRenderer.jsx
- * Professional polyline rendering component.
- * Renders the travelled path in a muted style, and the remaining path in a bright, prominent style.
- * Includes smooth animation for initial route drawing and high accuracy rendering.
- */
-export const RouteRenderer = ({ travelledPath, remainingPath, status, onAnimationChange, color }) => {
+export const RouteRenderer = ({ map, remainingPath = [], status, color }) => {
   const normalizedStatus = status ? String(status).toLowerCase() : '';
   const isHeadingToPickup = ['accepted', 'driver_accepted', 'driver_en_route_to_pickup', 'driver_arrived'].includes(normalizedStatus);
-  
-  // Style config
-  const remainingColor = color || (isHeadingToPickup ? '#10B981' : '#3B82F6'); // Use provided color, else fallback
-  const remainingWeight = 5;
-  const remainingOpacity = 0.9;
-  
-  const travelledColor = '#4B5563'; // Darker gray for better visibility
-  const travelledWeight = 5;
-  const travelledOpacity = 0.8;
-
-  const [animatedRemainingPath, setAnimatedRemainingPath] = useState([]);
-  
-  const routePhase = status === 'accepted' ? 'pickup' : 'dropoff';
-  const destinationSignature = remainingPath && remainingPath.length > 0 
-    ? `${remainingPath[remainingPath.length-1][0]},${remainingPath[remainingPath.length-1][1]}-${routePhase}`
-    : '';
-
-  const animatedDestinationRef = useRef('');
-  const intervalRef = useRef(null);
+  const strokeColor = color || (isHeadingToPickup ? '#10B981' : '#3B82F6');
+  const strokeColorRef = useRef(strokeColor);
 
   useEffect(() => {
-    if (!remainingPath || remainingPath.length === 0) {
-      setAnimatedRemainingPath([]);
-      if (onAnimationChange) onAnimationChange(false);
-      return;
-    }
+    strokeColorRef.current = strokeColor;
+  }, [strokeColor]);
 
-    // If we already have a path or destination animated, update instantly to avoid polyline flickering!
-    if (animatedRemainingPath.length > 0 || animatedDestinationRef.current === destinationSignature) {
-      animatedDestinationRef.current = destinationSignature;
-      setAnimatedRemainingPath(remainingPath);
-      if (onAnimationChange) onAnimationChange(false);
-      return;
+  // Secondary effect to dynamically switch line colors on existing layers
+  useEffect(() => {
+    if (!map || !map.style) return;
+    const layerId = 'mulu-route-line';
+    try {
+      if (map.getLayer(layerId)) {
+        map.setPaintProperty(layerId, 'line-color', strokeColor);
+      }
+    } catch (err) {
+      console.warn('Error updating route line stroke color:', err);
     }
+  }, [map, strokeColor]);
 
-    // New destination detected! Animate the drawing of the route.
-    animatedDestinationRef.current = destinationSignature;
-    setAnimatedRemainingPath([]); // Reset before initial draw
-    if (onAnimationChange) onAnimationChange(true);
-    
-    let currentIndex = 0;
-    const totalPoints = remainingPath.length;
-    // Calculate speed: aim for ~3000ms total animation time for a very slow, dramatic draw
-    const pointsPerFrame = Math.max(1, Math.ceil(totalPoints / 150)); 
-    
-    // Delay the start by 800ms to allow Leaflet's flyTo/fitBounds camera animation to finish
-    const timeout = setTimeout(() => {
-      const interval = setInterval(() => {
-        currentIndex += pointsPerFrame;
-        if (currentIndex >= remainingPath.length) {
-          clearInterval(interval);
-          setAnimatedRemainingPath(remainingPath);
-          if (onAnimationChange) onAnimationChange(false);
+  // Main lifecycle: register style.load listener and handle drawing
+  useEffect(() => {
+    if (!map || !remainingPath || remainingPath.length <= 2) return;
+
+    const sourceId = 'mulu-route-source';
+    const layerId = 'mulu-route-line';
+
+    // Format coordinates from remainingPath
+    const formattedCoords = remainingPath.map(pt => [pt.lng, pt.lat]);
+
+    const geojson = {
+      type: 'Feature',
+      properties: {},
+      geometry: {
+        type: 'LineString',
+        coordinates: formattedCoords
+      }
+    };
+
+    let isCleanedUp = false;
+
+    const drawRoute = () => {
+      if (isCleanedUp) return;
+      if (!map || !map.style) return;
+
+      try {
+        if (map.getSource(sourceId)) {
+          map.getSource(sourceId).setData(geojson);
         } else {
-          setAnimatedRemainingPath(remainingPath.slice(0, currentIndex + 1));
+          map.addSource(sourceId, {
+            type: 'geojson',
+            data: geojson
+          });
+
+          map.addLayer({
+            id: layerId,
+            type: 'line',
+            source: sourceId,
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round'
+            },
+            paint: {
+              'line-color': strokeColorRef.current,
+              'line-width': 6,
+              'line-opacity': 0.9
+            }
+          });
         }
-      }, 20);
-      
-      // Store interval so we can clear it if unmounted
-      intervalRef.current = interval;
-    }, 800);
+      } catch (err) {
+        console.warn('Error drawing Route Line:', err);
+      }
+    };
+
+    const handleStyleLoad = () => {
+      if (isCleanedUp) return;
+      drawRoute();
+    };
+
+    map.on('style.load', handleStyleLoad);
+
+    if (map.style) {
+      drawRoute();
+    }
 
     return () => {
-      clearTimeout(timeout);
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      isCleanedUp = true;
+      map.off('style.load', handleStyleLoad);
+      try {
+        if (map && map.style) {
+          if (map.getLayer(layerId)) map.removeLayer(layerId);
+          if (map.getSource(sourceId)) map.removeSource(sourceId);
+        }
+      } catch (err) {
+        console.warn('Error cleaning up Route Line:', err);
+      }
     };
-  }, [remainingPath, destinationSignature, onAnimationChange]);
+  }, [map, remainingPath]);
 
-  return (
-    <>
-      {/* Travelled Path behind driver is completely erased in real-time */}
-
-      {/* Remaining Path (ahead of driver - animated) */}
-      {animatedRemainingPath && animatedRemainingPath.length > 1 && (
-        <Polyline
-          positions={animatedRemainingPath}
-          pathOptions={{ 
-            color: remainingColor, 
-            weight: remainingWeight, 
-            opacity: remainingOpacity, 
-            lineCap: 'round', 
-            lineJoin: 'round',
-            smoothFactor: 0.1 // Higher accuracy rendering
-          }}
-        />
-      )}
-    </>
-  );
+  return null;
 };
+
+export default RouteRenderer;

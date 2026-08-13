@@ -1,0 +1,58 @@
+{
+  "map_theme": "dark",
+  "icon_style": {
+    "default_stroke": "#FFFFFF",
+    "stroke_width": 2,
+    "glow_effect": "0px 0px 6px rgba(255, 255, 255, 0.4)"
+  },
+  "categories": [
+    {
+      "id": "restaurant",
+      "label": "Restaurants & Dining",
+      "icon_glyph": "utensils",
+      "primary_color": "#FF6B6B",
+      "background_fill": "#2C1F2B",
+      "border_color": "#FF8E8E"
+    },
+    {
+      "id": "hotel",
+      "label": "Accommodations",
+      "icon_glyph": "bed",
+      "primary_color": "#4D96FF",
+      "background_fill": "#1E2A3A",
+      "border_color": "#6BCBFF"
+    },
+    {
+      "id": "park",
+      "label": "Parks & Nature",
+      "icon_glyph": "tree",
+      "primary_color": "#6BCB77",
+      "background_fill": "#1B2E24",
+      "border_color": "#B5EAEA"
+    },
+    {
+      "id": "gas_station",
+      "label": "Fuel & Charging",
+      "icon_glyph": "charging-station",
+      "primary_color": "#FFD93D",
+      "background_fill": "#2E2A1F",
+      "border_color": "#FFE57F"
+    },
+    {
+      "id": "shopping",
+      "label": "Retail & Shopping",
+      "icon_glyph": "shopping-bag",
+      "primary_color": "#FF78F0",
+      "background_fill": "#2E1F2D",
+      "border_color": "#FFA3F5"
+    },
+    {
+      "id": "transit",
+      "label": "Public Transit",
+      "icon_glyph": "bus",
+      "primary_color": "#00F5D4",
+      "background_fill": "#152E2C",
+      "border_color": "#7BFEEC"
+    }
+  ]
+}

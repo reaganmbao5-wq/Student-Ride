@@ -1,0 +1,461 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Mulungushi University Great North Road Campus",
+        "category": "location",
+        "icon": "graduation-cap",
+        "color": "#EAB308"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.5597445,
+          -14.2950491
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Mulungushi University Main Cafeteria",
+        "category": "location",
+        "icon": "utensils",
+        "color": "#F97316"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.5604086,
+          -14.2954433
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Mulungushi University Library",
+        "category": "location",
+        "icon": "book-open",
+        "color": "#3B82F6"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.5605025,
+          -14.2963582
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Mulungushi University ICT Centre",
+        "category": "location",
+        "icon": "laptop",
+        "color": "#6366F1"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.5562,
+          -14.2938
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Mulungushi University Main Gate",
+        "category": "location",
+        "icon": "door-open",
+        "color": "#64748B"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.5528,
+          -14.2925
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Mulungushi University Sports Grounds",
+        "category": "location",
+        "icon": "tree",
+        "color": "#22C55E"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.5628,
+          -14.2965
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Graduation Square",
+        "category": "location",
+        "icon": "award",
+        "color": "#A855F7"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.557,
+          -14.2995
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Mulungushi University Community Health Center",
+        "category": "location",
+        "icon": "hospital",
+        "color": "#EF4444"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.559661,
+          -14.29339
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Chambeshi Hostel",
+        "category": "location",
+        "icon": "bed",
+        "color": "#EC4899"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.5601737,
+          -14.2980485
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Tanganika Hostel",
+        "category": "location",
+        "icon": "bed",
+        "color": "#EC4899"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.5588,
+          -14.2972
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Mkushi Hostel",
+        "category": "location",
+        "icon": "bed",
+        "color": "#EC4899"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.5568,
+          -14.2942
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Chibombo Hostel",
+        "category": "location",
+        "icon": "bed",
+        "color": "#EC4899"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.5562,
+          -14.2952
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Handima Boarding House",
+        "category": "location",
+        "icon": "bed",
+        "color": "#EC4899"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.5448,
+          -14.2835
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "VK Motel",
+        "category": "location",
+        "icon": "bed",
+        "color": "#EC4899"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.5492,
+          -14.2958
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Boarding House (The Silungwe's)",
+        "category": "location",
+        "icon": "bed",
+        "color": "#EC4899"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.5498,
+          -14.2975
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Ejembi's Boarding Houses",
+        "category": "location",
+        "icon": "bed",
+        "color": "#EC4899"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.5465,
+          -14.2912
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "CKAT BH",
+        "category": "location",
+        "icon": "bed",
+        "color": "#EC4899"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.5562,
+          -14.2798
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Mukonchi",
+        "category": "location",
+        "icon": "bed",
+        "color": "#3B82F6"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.5568,
+          -14.283
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Soul Cafe",
+        "category": "location",
+        "icon": "coffee",
+        "color": "#F59E0B"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.5475,
+          -14.2928
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Bossan Pub & Grill",
+        "category": "location",
+        "icon": "beer",
+        "color": "#F97316"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.5532,
+          -14.2835
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Wallace Enterprise",
+        "category": "location",
+        "icon": "shopping-bag",
+        "color": "#0EA5E9"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.5488,
+          -14.2938
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Apple Truck Parking",
+        "category": "location",
+        "icon": "truck",
+        "color": "#64748B"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.5495,
+          -14.2858
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Crosscity by c4kld",
+        "category": "location",
+        "icon": "briefcase",
+        "color": "#0EA5E9"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.551,
+          -14.2778
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Kingdom Hall",
+        "category": "location",
+        "icon": "church",
+        "color": "#8B5CF6"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.5442,
+          -14.2922
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Luaggelion Outreach Christian Center",
+        "category": "location",
+        "icon": "cross",
+        "color": "#8B5CF6"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.5502,
+          -14.2875
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Mulungushi University Campus Boundary",
+        "category": "campus_boundary",
+        "icon": "map",
+        "color": "#EAB308"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              28.5591814,
+              -14.2955225
+            ],
+            [
+              28.5586289,
+              -14.2957408
+            ],
+            [
+              28.557969,
+              -14.2959955
+            ],
+            [
+              28.5576096,
+              -14.2972691
+            ],
+            [
+              28.5576633,
+              -14.298917
+            ],
+            [
+              28.5600558,
+              -14.299941
+            ],
+            [
+              28.5630974,
+              -14.2997123
+            ],
+            [
+              28.563548,
+              -14.2963802
+            ],
+            [
+              28.5616276,
+              -14.2950183
+            ],
+            [
+              28.5591814,
+              -14.2955225
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

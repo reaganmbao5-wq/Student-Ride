@@ -67,6 +67,17 @@ const ProfilePage = () => {
   const [accentMenuOpen, setAccentMenuOpen] = useState(false);
   const [aboutMenuOpen, setAboutMenuOpen] = useState(false);
 
+  // Map Theme State & Handler
+  const [mapThemeMode, setMapThemeMode] = useState(() => localStorage.getItem('map_theme_mode') || 'auto');
+  const [mapThemeMenuOpen, setMapThemeMenuOpen] = useState(false);
+
+  const handleMapThemeChange = (mode) => {
+    setMapThemeMode(mode);
+    localStorage.setItem('map_theme_mode', mode);
+    window.dispatchEvent(new CustomEvent('map-theme-change', { detail: mode }));
+    toast.success(`Map Theme set to ${mode === 'auto' ? 'Auto (Follow Time)' : mode === 'light' ? 'Light Mode' : 'Night Dark Mode'}`);
+  };
+
   // Location Permission & Toggle State
   const [isLocationEnabled, setIsLocationEnabled] = useState(() => localStorage.getItem('mulu_location_enabled') !== 'false');
   const [locationPermissionState, setLocationPermissionState] = useState('prompt');
@@ -754,6 +765,70 @@ const ProfilePage = () => {
                           <span>{opt.label}</span>
                         </div>
                         {accentColor === key && <Check className="w-4 h-4 text-white shrink-0" />}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Map Theme Mode Card (Premium Expanding Popup Menu) */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  haptics.tap();
+                  setMapThemeMenuOpen(!mapThemeMenuOpen);
+                  setAppearanceMenuOpen(false);
+                  setAccentMenuOpen(false);
+                }}
+                className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-3.5">
+                  <MapPin className="w-5 h-5 text-gold shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-white">Map Theme</p>
+                    <p className="text-xs text-zinc-400 capitalize">
+                      {mapThemeMode === 'auto' ? 'Auto (Follow Time)' : mapThemeMode === 'light' ? 'Light Mode' : 'Night Dark Mode'}
+                    </p>
+                  </div>
+                </div>
+                {mapThemeMenuOpen ? (
+                  <ChevronUp className="w-5 h-5 text-zinc-300 shrink-0" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-zinc-300 shrink-0" />
+                )}
+              </button>
+
+              {/* Map Theme Popup Menu (Opens UPWARDS) */}
+              <AnimatePresence>
+                {mapThemeMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-4 bottom-full mb-2 z-[100] w-64 bg-[#222222] border border-white/10 rounded-2xl shadow-2xl p-2 space-y-1"
+                  >
+                    {[
+                      { id: 'auto', label: 'Auto (Follow Time)' },
+                      { id: 'light', label: 'Light Mode' },
+                      { id: 'dark', label: 'Night Dark Mode' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => {
+                          haptics.tap();
+                          handleMapThemeChange(opt.id);
+                          setMapThemeMenuOpen(false);
+                        }}
+                        className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium flex items-center justify-between transition-colors ${
+                          mapThemeMode === opt.id ? 'bg-white/10 text-white font-semibold' : 'text-zinc-300 hover:bg-white/5'
+                        }`}
+                      >
+                        <span>{opt.label}</span>
+                        {mapThemeMode === opt.id && <Check className="w-4 h-4 text-white shrink-0" />}
                       </button>
                     ))}
                   </motion.div>
