@@ -462,8 +462,13 @@ const StudentDashboard = () => {
     if (driverPos) bounds.push([driverPos.lat, driverPos.lng]);
     
     if (['accepted', 'driver_accepted', 'driver_en_route_to_pickup'].includes(currentStatus)) {
-      // Driver is on the way to pickup: frame Driver + Pickup ALWAYS (adaptive tightening)
+      // Driver is on the way to pickup: frame Driver + Pickup + Intermediate Stops ALWAYS
       if (activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
+      if (isBriefingForThisRide && Array.isArray(passengerBriefing?.intermediate_stops)) {
+        passengerBriefing.intermediate_stops.forEach(st => {
+          if (st.lat && st.lng) bounds.push([st.lat, st.lng]);
+        });
+      }
     } else if (currentStatus === 'driver_arrived') {
       // Driver arrived at pickup: frame Pickup + Destination
       if (activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);

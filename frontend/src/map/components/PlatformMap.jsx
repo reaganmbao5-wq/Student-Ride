@@ -355,43 +355,31 @@ export const PlatformMap = ({
 
     mapRef.current.setPadding({ top: 0, bottom: 0, left: 0, right: 0 });
 
-    if (cameraMode === CAMERA_MODES.FOLLOW_DRIVER && driverLocation) {
-      const lat = driverLocation.lat ?? driverLocation.latitude;
-      const lng = driverLocation.lng ?? driverLocation.longitude;
+    const targetArray = routeBounds || bounds;
+    const hasMultipleBounds = Array.isArray(targetArray) && targetArray.length >= 2;
 
-      if (lat !== undefined && lng !== undefined && !isNaN(lat) && !isNaN(lng)) {
-        mapRef.current.easeTo({
-          center: [lng, lat],
-          zoom: 17,
-          duration: 600,
-          essential: true
-        });
-      }
-    } else if (routeBounds || bounds) {
-      const targetArray = routeBounds || bounds;
+    if (hasMultipleBounds) {
       const lats = [];
       const lngs = [];
-      if (Array.isArray(targetArray)) {
-        targetArray.forEach(pt => {
-          if (Array.isArray(pt) && pt.length >= 2) {
-            const lat = Number(pt[0]);
-            const lng = Number(pt[1]);
-            if (!isNaN(lat) && !isNaN(lng)) {
-              lats.push(lat);
-              lngs.push(lng);
-            }
-          } else if (pt && typeof pt === 'object') {
-            const lat = Number(pt.lat ?? pt.latitude);
-            const lng = Number(pt.lng ?? pt.longitude);
-            if (!isNaN(lat) && !isNaN(lng)) {
-              lats.push(lat);
-              lngs.push(lng);
-            }
+      targetArray.forEach(pt => {
+        if (Array.isArray(pt) && pt.length >= 2) {
+          const lat = Number(pt[0]);
+          const lng = Number(pt[1]);
+          if (!isNaN(lat) && !isNaN(lng)) {
+            lats.push(lat);
+            lngs.push(lng);
           }
-        });
-      }
+        } else if (pt && typeof pt === 'object') {
+          const lat = Number(pt.lat ?? pt.latitude);
+          const lng = Number(pt.lng ?? pt.longitude);
+          if (!isNaN(lat) && !isNaN(lng)) {
+            lats.push(lat);
+            lngs.push(lng);
+          }
+        }
+      });
 
-      if (lats.length > 0 && lngs.length > 0) {
+      if (lats.length >= 2 && lngs.length >= 2) {
         const minLat = Math.min(...lats);
         const maxLat = Math.max(...lats);
         const minLng = Math.min(...lngs);
@@ -463,6 +451,21 @@ export const PlatformMap = ({
             essential: true
           });
         } catch (e) {}
+        return;
+      }
+    }
+
+    if (cameraMode === CAMERA_MODES.FOLLOW_DRIVER && driverLocation) {
+      const lat = driverLocation.lat ?? driverLocation.latitude;
+      const lng = driverLocation.lng ?? driverLocation.longitude;
+
+      if (lat !== undefined && lng !== undefined && !isNaN(lat) && !isNaN(lng)) {
+        mapRef.current.easeTo({
+          center: [lng, lat],
+          zoom: 18,
+          duration: 600,
+          essential: true
+        });
       }
     } else if (center && center.lat !== undefined && center.lng !== undefined) {
       const defaultStepZoom = cameraMode === CAMERA_MODES.PICKUP_SELECTION
