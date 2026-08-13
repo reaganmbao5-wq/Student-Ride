@@ -6,22 +6,7 @@ const TermsOfServicePage = () => {
 
   return (
     <div className="min-h-screen bg-[#08091A] text-zinc-100 flex flex-col selection:bg-gold/30 selection:text-gold">
-      {/* Top Header Bar */}
-      <header className="sticky top-0 z-50 bg-[#08091A]/90 backdrop-blur-xl border-b border-zinc-800/80 px-4 py-4 md:px-8">
-        <div className="max-w-3xl mx-auto flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="text-xs font-semibold text-zinc-300 hover:text-white transition-colors bg-zinc-900 hover:bg-zinc-800 px-3.5 py-2 rounded-xl border border-zinc-800 cursor-pointer"
-          >
-            ← Back to App
-          </button>
-          
-          <span className="font-heading font-bold text-xs uppercase tracking-widest text-gold">
-            Mulungushi Rides
-          </span>
-        </div>
-      </header>
+
 
       {/* Main Document Content */}
       <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-8 md:px-8 space-y-8">

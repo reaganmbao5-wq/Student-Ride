@@ -287,41 +287,29 @@ const AuthPage = () => {
 
   return (
     <div className="fixed inset-0 bg-zinc-950 text-zinc-50 overflow-hidden flex flex-col justify-end">
-      {/* Dynamic Background */}
+      {/* Optimized Static Hardware-Accelerated Background Glow */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <motion.div 
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.15, 0.25, 0.15],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-          className="absolute -top-1/4 -left-1/4 w-[150vw] h-[150vw] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gold/20 via-zinc-950/0 to-zinc-950/0 rounded-full blur-3xl"
-        />
-        {/* Subtle grid pattern */}
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik02MCAwaDF2NjBoLTF6TTAgNTloNjB2MWgtNnoiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wMykiIC8+PC9nPjwvc3ZnPg==')] opacity-30" />
+        <div className="absolute -top-1/4 -left-1/4 w-[150vw] h-[150vw] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gold/15 via-zinc-950/0 to-zinc-950/0 rounded-full blur-2xl transform-gpu" />
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik02MCAwaDF2NjBoLTF6TTAgNTloNjB2MWgtNnoiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wMykiIC8+PC9nPjwvc3ZnPg==')] opacity-20" />
       </div>
 
       {/* Header Area (Visible before sheet) */}
       <div className="absolute top-0 left-0 right-0 p-6 z-10">
         <button
           onClick={() => navigate('/')}
-          className="w-10 h-10 rounded-full bg-zinc-900/80 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-all backdrop-blur-sm"
+          className="w-10 h-10 rounded-full bg-zinc-900/80 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-all"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
       </div>
 
-
-      {/* Animated Bottom Sheet */}
+      {/* Hardware-Accelerated Zero-Flicker Bottom Sheet */}
       <motion.div 
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
-        transition={{ type: "spring", damping: 25, stiffness: 200, delay: 0.1 }}
-        className={`relative z-20 w-full md:max-w-md md:mx-auto md:mb-auto md:mt-32 bg-zinc-950/80 backdrop-blur-xl border-t md:border border-zinc-800/80 rounded-t-[2.5rem] md:rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black overflow-y-auto transition-[height] duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] ${mode === 'login' ? 'h-[65vh]' : 'h-[90vh]'}`}
+        transition={{ type: "spring", damping: 28, stiffness: 240 }}
+        style={{ willChange: 'transform', transform: 'translateZ(0)' }}
+        className="relative z-20 w-full md:max-w-md md:mx-auto md:mb-auto md:mt-32 bg-zinc-950 border-t md:border border-zinc-800/80 rounded-t-[2.5rem] md:rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black max-h-[90vh] md:max-h-[85vh] overflow-y-auto transform-gpu"
       >
         <div className="w-12 h-1.5 bg-zinc-800 rounded-full mx-auto mb-6 md:hidden" />
 
@@ -343,7 +331,7 @@ const AuthPage = () => {
           <button
             type="button"
             onClick={() => setMode('login')}
-            className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 ${mode === 'login'
+            className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${mode === 'login'
               ? 'bg-gold text-zinc-950 shadow-md shadow-gold/20'
               : 'text-zinc-400 hover:text-zinc-200'
               }`}
@@ -353,7 +341,7 @@ const AuthPage = () => {
           <button
             type="button"
             onClick={() => setMode('register')}
-            className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 ${mode === 'register'
+            className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${mode === 'register'
               ? 'bg-gold text-zinc-950 shadow-md shadow-gold/20'
               : 'text-zinc-400 hover:text-zinc-200'
               }`}
@@ -362,14 +350,14 @@ const AuthPage = () => {
           </button>
         </div>
 
-        {/* Form Container with Layout Animation */}
-        <AnimatePresence mode="popLayout">
+        {/* Form Container with Smooth Fade Animation */}
+        <AnimatePresence mode="wait" initial={false}>
           <motion.form 
             key={mode}
-            initial={{ opacity: 0, x: mode === 'login' ? -20 : 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: mode === 'login' ? 20 : -20 }}
-            transition={{ duration: 0.2 }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.15 }}
             onSubmit={handleSubmit} 
             className="space-y-4"
           >
