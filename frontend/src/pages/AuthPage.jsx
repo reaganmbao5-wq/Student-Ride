@@ -307,7 +307,7 @@ const AuthPage = () => {
       <motion.div 
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
-        transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 1.85, ease: [0.16, 1, 0.3, 1] }}
         style={{ willChange: 'transform', transform: 'translateZ(0)' }}
         className="relative z-20 w-full md:max-w-md md:mx-auto md:mb-auto md:mt-32 bg-zinc-950 border-t md:border border-zinc-800/80 rounded-t-[2.5rem] md:rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black max-h-[90vh] md:max-h-[85vh] overflow-y-auto transform-gpu"
       >
@@ -331,14 +331,14 @@ const AuthPage = () => {
           <button
             type="button"
             onClick={() => setMode('login')}
-            className={`relative flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-300 z-10 ${mode === 'login' ? 'text-zinc-950 font-bold' : 'text-zinc-400 hover:text-zinc-200'
+            className={`relative flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-500 z-10 ${mode === 'login' ? 'text-zinc-950 font-bold' : 'text-zinc-400 hover:text-zinc-200'
               }`}
           >
             {mode === 'login' && (
               <motion.div
                 layoutId="activeAuthTabPill"
                 className="absolute inset-0 bg-gold rounded-lg shadow-md shadow-gold/20 -z-10"
-                transition={{ type: "spring", stiffness: 220, damping: 24 }}
+                transition={{ type: "spring", stiffness: 75, damping: 20, mass: 1.2 }}
               />
             )}
             Sign In
@@ -346,28 +346,28 @@ const AuthPage = () => {
           <button
             type="button"
             onClick={() => setMode('register')}
-            className={`relative flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-300 z-10 ${mode === 'register' ? 'text-zinc-950 font-bold' : 'text-zinc-400 hover:text-zinc-200'
+            className={`relative flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-500 z-10 ${mode === 'register' ? 'text-zinc-950 font-bold' : 'text-zinc-400 hover:text-zinc-200'
               }`}
           >
             {mode === 'register' && (
               <motion.div
                 layoutId="activeAuthTabPill"
                 className="absolute inset-0 bg-gold rounded-lg shadow-md shadow-gold/20 -z-10"
-                transition={{ type: "spring", stiffness: 220, damping: 24 }}
+                transition={{ type: "spring", stiffness: 75, damping: 20, mass: 1.2 }}
               />
             )}
             Sign Up
           </button>
         </div>
 
-        {/* Form Container with Smooth Sliding Fade Transition */}
+        {/* Form Container with Ultra-Smooth Slow Sliding Fade Transition */}
         <AnimatePresence mode="wait" initial={false}>
           <motion.form 
             key={mode}
             initial={{ opacity: 0, x: mode === 'login' ? -16 : 16 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: mode === 'login' ? 16 : -16 }}
-            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
             onSubmit={handleSubmit} 
             className="space-y-4"
           >
