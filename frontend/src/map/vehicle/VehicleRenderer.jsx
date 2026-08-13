@@ -28,7 +28,7 @@ export const VehicleRenderer = ({ map, driver }) => {
   });
 
   useEffect(() => {
-    if (!map || !driver) return;
+    if (!map || !driver || markerRef.current) return;
 
     const lat = Number(driver.lat ?? driver.latitude);
     const lng = Number(driver.lng ?? driver.longitude);
@@ -81,8 +81,9 @@ export const VehicleRenderer = ({ map, driver }) => {
         cancelAnimationFrame(animFrameRef.current);
       }
       marker.remove();
+      markerRef.current = null;
     };
-  }, [map]);
+  }, [map, driver]);
 
   // High-performance 60/120 FPS requestAnimationFrame gliding loop
   useEffect(() => {
