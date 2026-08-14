@@ -462,17 +462,21 @@ const StudentDashboard = () => {
     if (driverPos) bounds.push([driverPos.lat, driverPos.lng]);
     
     if (['accepted', 'driver_accepted', 'driver_en_route_to_pickup'].includes(currentStatus)) {
-      // Driver is on the way to pickup: frame Driver + Pickup + Intermediate Stops ALWAYS
+      // Driver is on the way to pickup: frame Driver + Pickup + ONLY Intermediate Stops BEFORE this student's pickup
       if (activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
-      if (isBriefingForThisRide && Array.isArray(passengerBriefing?.intermediate_stops)) {
-        passengerBriefing.intermediate_stops.forEach(st => {
-          if (st.lat && st.lng) bounds.push([st.lat, st.lng]);
+      
+      // If driver is visiting other stops first (stops_remaining > 0), frame only those prior intermediate stops
+      const stopsRemaining = passengerBriefing?.stops_remaining ?? 0;
+      if (isBriefingForThisRide && Array.isArray(passengerBriefing?.intermediate_stops) && stopsRemaining > 0) {
+        const myPickupIdx = passengerBriefing.intermediate_stops.findIndex(st => st.is_my_stop && st.stop_type === 'pickup');
+        const limitIdx = myPickupIdx !== -1 ? myPickupIdx : passengerBriefing.intermediate_stops.length;
+        passengerBriefing.intermediate_stops.slice(0, limitIdx).forEach(st => {
+          if (st.lat && st.lng && !st.is_my_stop) bounds.push([st.lat, st.lng]);
         });
       }
     } else if (currentStatus === 'driver_arrived') {
-      // Driver arrived at pickup: frame Pickup + Destination
-      if (activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
-      if (activeRide.dropoff_location) bounds.push([activeRide.dropoff_location.lat, activeRide.dropoff_location.lng]);
+      // Driver arrived at pickup: clear bounds to let camera lock directly on driver at Zoom 18
+      bounds = [];
     } else if (['ongoing', 'ride_started', 'ride_in_progress', 'arriving_destination'].includes(currentStatus)) {
       // Driver heading to destination:
       // Lock onto driver during main trip. Only begin adaptive arrival framing when driver reaches 350 meters threshold
@@ -490,24 +494,30 @@ const StudentDashboard = () => {
         }
       }
     } else if (currentStatus === 'requested') {
-      // Searching for driver: frame Pickup + Destination + NEARBY DRIVERS ONLY (within 3.0km radius)
+      // Searching for driver: frame Pickup + Destination stably
       if (activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
       if (activeRide.dropoff_location) bounds.push([activeRide.dropoff_location.lat, activeRide.dropoff_location.lng]);
       
-      // Include nearby drivers within 3.0km so distant drivers across town do not force wide zoom
+      // Include the closest discovered driver within 3.0km stably (prevents repeated jumping on driver list polling)
       if (activeRide.pickup_location && nearbyDrivers && nearbyDrivers.length > 0) {
         const pLat = activeRide.pickup_location.lat;
         const pLng = activeRide.pickup_location.lng;
+        let closestDriverCoord = null;
+        let minDistanceSq = Infinity;
         nearbyDrivers.forEach(d => {
           const dLat = d.latitude || d.lat;
           const dLng = d.longitude || d.lng;
           if (dLat && dLng) {
             const distSq = Math.pow(dLat - pLat, 2) + Math.pow(dLng - pLng, 2);
-            if (distSq <= 0.00075) { // ~3.0 km radius threshold
-              bounds.push([dLat, dLng]);
+            if (distSq <= 0.00075 && distSq < minDistanceSq) {
+              minDistanceSq = distSq;
+              closestDriverCoord = [dLat, dLng];
             }
           }
         });
+        if (closestDriverCoord) {
+          bounds.push(closestDriverCoord);
+        }
       }
     }
 

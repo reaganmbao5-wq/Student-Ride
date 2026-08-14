@@ -390,9 +390,9 @@ export const PlatformMap = ({
 
         const calcTop = isMiniMap ? 14 : 75;
         const calcBottom = isMiniMap ? 14 : ((typeof bottomPadding === 'number' && bottomPadding > 0)
-          ? Math.min(bottomPadding, 180)
-          : 150);
-        const calcSide = isMiniMap ? 14 : 25;
+          ? Math.max(bottomPadding, 240)
+          : 240);
+        const calcSide = isMiniMap ? 14 : Math.max(60, Math.min(85, Math.round((containerRect?.width || 400) * 0.14)));
 
         // Policy B: Adaptive distance-scaled zoom tightening during driver approach (< 400m)
         let dynamicMaxZoom = 18.0;
@@ -420,13 +420,14 @@ export const PlatformMap = ({
 
         // Skip re-fitting if coordinates & padding haven't shifted significantly (prevents up/down bouncing during live driver tracking)
         const prev = lastFittedBoundsRef.current;
+        const coordThreshold = cameraMode === CAMERA_MODES.FOLLOW_DRIVER ? 0.0001 : 0.00045;
         const isSameBounds = prev &&
-          Math.abs(prev.minLat - minLat) < 0.00045 &&
-          Math.abs(prev.maxLat - maxLat) < 0.00045 &&
-          Math.abs(prev.minLng - minLng) < 0.00045 &&
-          Math.abs(prev.maxLng - maxLng) < 0.00045 &&
+          Math.abs(prev.minLat - minLat) < coordThreshold &&
+          Math.abs(prev.maxLat - maxLat) < coordThreshold &&
+          Math.abs(prev.minLng - minLng) < coordThreshold &&
+          Math.abs(prev.maxLng - maxLng) < coordThreshold &&
           Math.abs(prev.calcBottom - calcBottom) < 20 &&
-          Math.abs((prev.dynamicMaxZoom || 18.0) - dynamicMaxZoom) < 0.35 &&
+          Math.abs((prev.dynamicMaxZoom || 18.0) - dynamicMaxZoom) < 0.25 &&
           prev.calcTop === calcTop;
 
         if (isSameBounds) {
@@ -456,10 +457,24 @@ export const PlatformMap = ({
     }
 
     if (cameraMode === CAMERA_MODES.FOLLOW_DRIVER && driverLocation) {
-      const lat = driverLocation.lat ?? driverLocation.latitude;
-      const lng = driverLocation.lng ?? driverLocation.longitude;
+      let lat = Number(driverLocation.lat ?? driverLocation.latitude);
+      let lng = Number(driverLocation.lng ?? driverLocation.longitude);
+      const heading = driverLocation.heading !== undefined && driverLocation.heading !== null ? Number(driverLocation.heading) : 0;
 
-      if (lat !== undefined && lng !== undefined && !isNaN(lat) && !isNaN(lng)) {
+      if (!isNaN(lat) && !isNaN(lng)) {
+        // 1. Heading Look-Ahead Vector: offset camera ahead of the vehicle in the direction of motion
+        if (driverLocation.heading !== undefined && driverLocation.heading !== null) {
+          const LOOK_AHEAD = 0.00035; // ~40m look-ahead
+          const headingRad = heading * (Math.PI / 180);
+          lat += Math.cos(headingRad) * LOOK_AHEAD;
+          lng += Math.sin(headingRad) * LOOK_AHEAD;
+        }
+
+        // 2. Bottom Sheet Compensation Offset
+        const containerHeight = mapContainerRef.current?.getBoundingClientRect()?.height || 600;
+        const effBottom = (typeof bottomPadding === 'number' && bottomPadding > 0) ? Math.max(bottomPadding, 240) : 240;
+        lat -= (effBottom / Math.max(containerHeight, 400)) * 0.00075;
+
         mapRef.current.easeTo({
           center: [lng, lat],
           zoom: 18,
