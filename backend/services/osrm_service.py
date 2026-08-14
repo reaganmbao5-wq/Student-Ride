@@ -1,3 +1,4 @@
+import os
 import httpx
 import math
 import logging
@@ -7,6 +8,12 @@ from typing import Optional
 # Configure logging
 logger = logging.getLogger(__name__)
 
+MAPBOX_ACCESS_TOKEN = os.environ.get(
+    "MAPBOX_ACCESS_TOKEN",
+    "pk.eyJ1IjoiamFleSIsImEiOiJjbXNocmV5ZXAwM3JlMnhzZ29raTB3eGc5In0.riXZQNEurCaETWjZt02R6A"
+)
+
+MAPBOX_DIRECTIONS_BASE_URL = "https://api.mapbox.com/directions/v5/mapbox/driving"
 OSRM_BASE_URL = "http://router.project-osrm.org/route/v1/driving"
 
 # Shared HTTPX Client Singleton (Connection Reuse & Reduced TCP Overhead)
@@ -15,7 +22,7 @@ _http_client: Optional[httpx.AsyncClient] = None
 def get_http_client() -> httpx.AsyncClient:
     global _http_client
     if _http_client is None or _http_client.is_closed:
-        _http_client = httpx.AsyncClient(timeout=httpx.Timeout(5.0, connect=2.0))
+        _http_client = httpx.AsyncClient(timeout=httpx.Timeout(6.0, connect=3.0))
     return _http_client
 
 # Performance Metrics Tracker
@@ -49,7 +56,7 @@ def reset_eta_metrics():
 
 async def get_route(pickup_lat: float, pickup_lng: float, drop_lat: float, drop_lng: float):
     """
-    Calculates route using OSRM.
+    Calculates route using Mapbox Directions API (with OSRM + Haversine fallback).
     Returns:
         dict: {
             "distance_km": float,
@@ -57,14 +64,42 @@ async def get_route(pickup_lat: float, pickup_lng: float, drop_lat: float, drop_
             "geometry": list[list[float]]  # [[lat, lng], ...]
         }
     """
+    client = get_http_client()
+    
+    # 1. Primary Engine: Mapbox Directions API v5
     try:
-        url = f"{OSRM_BASE_URL}/{pickup_lng},{pickup_lat};{drop_lng},{drop_lat}"
+        coord_str = f"{pickup_lng},{pickup_lat};{drop_lng},{drop_lat}"
+        url = f"{MAPBOX_DIRECTIONS_BASE_URL}/{coord_str}"
         params = {
             "overview": "full",
-            "geometries": "geojson"
+            "geometries": "geojson",
+            "access_token": MAPBOX_ACCESS_TOKEN
         }
         
-        client = get_http_client()
+        response = await client.get(url, params=params)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("routes") and len(data["routes"]) > 0:
+                route = data["routes"][0]
+                distance_meters = route["distance"]
+                duration_seconds = route["duration"]
+                # Mapbox returns [lng, lat], convert to [lat, lng] for Leaflet/Google/Mapbox frontend
+                raw_geometry = route["geometry"]["coordinates"]
+                geometry = [[coord[1], coord[0]] for coord in raw_geometry]
+                
+                return {
+                    "distance_km": distance_meters / 1000.0,
+                    "duration_minutes": duration_seconds / 60.0,
+                    "geometry": geometry,
+                    "source": "mapbox"
+                }
+    except Exception as e:
+        logger.warning(f"Mapbox Directions API Error: {e}, falling back to OSRM")
+
+    # 2. Secondary Engine Fallback: OSRM
+    try:
+        url = f"{OSRM_BASE_URL}/{pickup_lng},{pickup_lat};{drop_lng},{drop_lat}"
+        params = {"overview": "full", "geometries": "geojson"}
         response = await client.get(url, params=params)
         
         if response.status_code == 200:
@@ -73,7 +108,6 @@ async def get_route(pickup_lat: float, pickup_lng: float, drop_lat: float, drop_
                 route = data["routes"][0]
                 distance_meters = route["distance"]
                 duration_seconds = route["duration"]
-                # OSRM returns [lng, lat], we need [lat, lng] for frontend mapping (Leaflet/Google)
                 raw_geometry = route["geometry"]["coordinates"]
                 geometry = [[coord[1], coord[0]] for coord in raw_geometry]
                 
@@ -83,18 +117,12 @@ async def get_route(pickup_lat: float, pickup_lng: float, drop_lat: float, drop_
                     "geometry": geometry,
                     "source": "osrm"
                 }
-        
-        logger.warning(f"OSRM request failed: {response.status_code} - {response.text}")
-        
     except Exception as e:
-        logger.error(f"OSRM Error: {e}")
+        logger.error(f"OSRM Fallback Error: {e}")
 
-    # Fallback to Haversine
+    # 3. Final Fallback: Haversine
     logger.info("Falling back to Haversine calculation")
     dist = haversine_distance(pickup_lat, pickup_lng, drop_lat, drop_lng)
-    
-    # Estimate duration: assume 30km/h average speed in city
-    # Time = Distance / Speed
     duration_minutes = (dist / 30.0) * 60.0
     
     return {
@@ -106,7 +134,7 @@ async def get_route(pickup_lat: float, pickup_lng: float, drop_lat: float, drop_
 
 async def get_multi_waypoint_route(waypoints: list):
     """
-    Calculates multi-stop road route using OSRM.
+    Calculates multi-stop road route using Mapbox Directions API (with OSRM fallback).
     waypoints: list of dicts or tuples e.g. [{"lat": y, "lng": x}, ...] or [[lat, lng], ...]
     Returns list of [lat, lng] coordinates following road network.
     """
@@ -129,26 +157,41 @@ async def get_multi_waypoint_route(waypoints: list):
         return []
 
     coord_str = ";".join(formatted_coords)
-    url = f"{OSRM_BASE_URL}/{coord_str}"
-    params = {
-        "overview": "full",
-        "geometries": "geojson"
-    }
+    client = get_http_client()
 
+    # 1. Primary Engine: Mapbox Directions API v5 (Multi-Waypoint)
     try:
-        client = get_http_client()
+        url = f"{MAPBOX_DIRECTIONS_BASE_URL}/{coord_str}"
+        params = {
+            "overview": "full",
+            "geometries": "geojson",
+            "access_token": MAPBOX_ACCESS_TOKEN
+        }
+        response = await client.get(url, params=params)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("routes") and len(data["routes"]) > 0:
+                route = data["routes"][0]
+                raw_geometry = route["geometry"]["coordinates"]
+                return [[coord[1], coord[0]] for coord in raw_geometry]
+    except Exception as e:
+        logger.warning(f"Mapbox Multi-Waypoint Error: {e}, falling back to OSRM")
+
+    # 2. Secondary Engine Fallback: OSRM
+    try:
+        url = f"{OSRM_BASE_URL}/{coord_str}"
+        params = {"overview": "full", "geometries": "geojson"}
         response = await client.get(url, params=params)
         if response.status_code == 200:
             data = response.json()
             if data.get("code") == "Ok" and data.get("routes"):
                 route = data["routes"][0]
                 raw_geometry = route["geometry"]["coordinates"]
-                # OSRM returns [lng, lat], convert to [lat, lng]
                 return [[coord[1], coord[0]] for coord in raw_geometry]
     except Exception as e:
-        logger.error(f"OSRM Multi-Waypoint Error: {e}")
+        logger.error(f"OSRM Multi-Waypoint Fallback Error: {e}")
 
-    # NEVER return straight lines when OSRM fails. Return empty list to trigger last valid route preservation.
+    # NEVER return straight lines when API calls fail. Return empty list to preserve active geometry.
     return []
 
 def haversine_distance(lat1, lon1, lat2, lon2):
@@ -165,35 +208,38 @@ _eta_cache = {}  # key: "drop_lat,drop_lng", value: {"pickup_lat": lat, "pickup_
 
 async def calculate_eta(pickup_lat: float, pickup_lng: float, drop_lat: float, drop_lng: float, force_recalculate: bool = False) -> int:
     """
-    Independent ETA calculation (Phase 4 / Phase 2 Optimization). Returns ETA in seconds.
-    Hierarchy: Shared HTTP OSRM -> Movement (50m) & Time (12s) Cache -> Haversine fallback (30km/h).
+    Independent ETA calculation using Mapbox Directions API (with OSRM & Haversine fallback).
     """
     global _eta_cache, _metrics
     _metrics["total_calls"] += 1
     cache_key = f"{drop_lat:.5f},{drop_lng:.5f}"
     current_time = time.time()
     
-    # 1. Intelligent Throttled & Movement-Based Cache Check
+    # 1. Throttled & Movement-Based Cache Check (<50m movement & <12s elapsed)
     if cache_key in _eta_cache and not force_recalculate:
         cached = _eta_cache[cache_key]
         dist_moved_km = haversine_distance(pickup_lat, pickup_lng, cached["pickup_lat"], cached["pickup_lng"])
         time_elapsed = current_time - cached["timestamp"]
         
-        # Cache Hit: Driver moved < 50m (0.05 km) AND < 12 seconds elapsed since last OSRM call
         if dist_moved_km < 0.05 and time_elapsed < 12.0:
             _metrics["cache_hits"] += 1
             return cached["eta"]
 
-    # 2. Try OSRM using Shared HTTP Client
+    # 2. Try Mapbox Directions API
     start_time = time.time()
     _metrics["osrm_requests"] += 1
+    client = get_http_client()
+    
     try:
-        client = get_http_client()
-        url = f"{OSRM_BASE_URL}/{pickup_lng},{pickup_lat};{drop_lng},{drop_lat}"
-        response = await client.get(url)
+        coord_str = f"{pickup_lng},{pickup_lat};{drop_lng},{drop_lat}"
+        url = f"{MAPBOX_DIRECTIONS_BASE_URL}/{coord_str}"
+        params = {
+            "access_token": MAPBOX_ACCESS_TOKEN
+        }
+        response = await client.get(url, params=params)
         if response.status_code == 200:
             data = response.json()
-            if data.get("code") == "Ok" and data.get("routes"):
+            if data.get("routes") and len(data["routes"]) > 0:
                 eta = int(data["routes"][0]["duration"])
                 _eta_cache[cache_key] = {
                     "pickup_lat": pickup_lat, 
@@ -205,13 +251,13 @@ async def calculate_eta(pickup_lat: float, pickup_lng: float, drop_lat: float, d
                 return eta
     except Exception as e:
         _metrics["osrm_errors"] += 1
-        logger.warning(f"OSRM ETA failed, using fallback: {e}")
+        logger.warning(f"Mapbox ETA failed, falling back: {e}")
 
-    # 3. Fallback to Last Valid ETA if OSRM fails
+    # 3. Fallback to Last Valid ETA
     if cache_key in _eta_cache:
         return _eta_cache[cache_key]["eta"]
 
-    # 4. Final Haversine Fallback (30 km/h) if no cache exists
+    # 4. Final Haversine Fallback (30 km/h)
     dist_km = haversine_distance(pickup_lat, pickup_lng, drop_lat, drop_lng)
     speed_kmh = 30.0
     duration_hours = dist_km / speed_kmh
@@ -223,4 +269,3 @@ async def calculate_eta(pickup_lat: float, pickup_lng: float, drop_lat: float, d
         "timestamp": current_time
     }
     return eta
-

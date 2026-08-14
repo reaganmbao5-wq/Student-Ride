@@ -3881,6 +3881,49 @@ async def search_places(q: str = Query(..., min_length=1)):
                 "lon": round(float(r["longitude"]), 7),
                 "source": r["source"]
             })
+
+        # 2. Hybrid Search Enhancement: Query Mapbox Geocoding API v5 for real-time address & POI matches
+        try:
+            import urllib.parse
+            mapbox_token = os.environ.get(
+                "MAPBOX_ACCESS_TOKEN",
+                "pk.eyJ1IjoiamFleSIsImEiOiJjbXNocmV5ZXAwM3JlMnhzZ29raTB3eGc5In0.riXZQNEurCaETWjZt02R6A"
+            )
+            encoded_query = urllib.parse.quote(search_term)
+            url = f"https://api.mapbox.com/geocoding/v5/mapbox.places/{encoded_query}.json"
+            params = {
+                "access_token": mapbox_token,
+                "country": "zm",
+                "proximity": "28.549662,-14.294646",
+                "autocomplete": "true",
+                "types": "address,poi,neighborhood,locality,place"
+            }
+            from services.osrm_service import get_http_client
+            client = get_http_client()
+            resp = await client.get(url, params=params)
+            
+            if resp.status_code == 200:
+                mapbox_data = resp.json()
+                features = mapbox_data.get("features", [])
+                for f in features:
+                    place_name = f.get("place_name", f.get("text", "")).strip()
+                    name_key = place_name.lower()
+                    if not place_name or name_key in seen_names:
+                        continue
+                    seen_names.add(name_key)
+                    
+                    center = f.get("center", [0.0, 0.0]) # [lng, lat]
+                    results.append({
+                        "id": f.get("id", f"mapbox_{len(results)}"),
+                        "display_name": place_name,
+                        "category": f.get("properties", {}).get("category", "Address / POI"),
+                        "lat": round(float(center[1]), 7),
+                        "lon": round(float(center[0]), 7),
+                        "source": "mapbox"
+                    })
+        except Exception as mb_err:
+            logging.warning(f"Mapbox Geocoding search failed: {mb_err}")
+
         return results
     except Exception as e:
         logging.error(f"Error searching places.db: {e}")
