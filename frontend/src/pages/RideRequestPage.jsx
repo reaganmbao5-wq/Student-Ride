@@ -185,14 +185,20 @@ const RideRequestPage = () => {
         destination_id: selectedDestination ? selectedDestination.id : null
       });
       const data = response.data;
-      setFareEstimate({
-        private_fare: data.private.fare,
-        shared_fare: data.shared.fare,
-        distance_km: data.distance_km,
-        duration_mins: data.duration_mins,
-        private_surge: data.private.surge_reason,
-        shared_surge: data.shared.surge_reason
-      });
+      if (data) {
+        setFareEstimate({
+          private_fare: data.private?.estimated_fare || data.private?.fare || estPrivateFare,
+          shared_fare: data.shared?.estimated_fare || data.shared?.fare || estSharedFare,
+          distance_km: data.verified_distance || data.distance_km || parseFloat(estDist.toFixed(1)),
+          duration_mins: data.verified_duration || data.duration_mins || estDuration,
+          private_surge: data.private?.surge_reason,
+          shared_surge: data.shared?.surge_reason
+        });
+
+        if (data.geometry && Array.isArray(data.geometry) && data.geometry.length > 2) {
+          setRouteGeometry(data.geometry);
+        }
+      }
     } catch (error) {
       console.error('Background fare calc error:', error);
     }
@@ -614,8 +620,12 @@ const RideRequestPage = () => {
                                   </div>
                                   {/* Shifted ETA & Distance comfortably below Save badge */}
                                   <div className={`flex flex-col items-end shrink-0 ${rideMode === 'shared' ? 'pt-3.5' : 'pt-0.5'}`}>
-                                    <p className="text-xs text-zinc-300 font-semibold">{fareEstimate.duration_min || fareEstimate.duration} min</p>
-                                    <p className="text-[10px] text-zinc-400">{fareEstimate.distance_km || fareEstimate.distance?.toFixed(1)} km</p>
+                                    <p className="text-xs text-zinc-300 font-semibold">
+                                      {Math.ceil(fareEstimate.duration_min ?? fareEstimate.duration ?? fareEstimate.verified_duration ?? 1)} min
+                                    </p>
+                                    <p className="text-[10px] text-zinc-400">
+                                      {(fareEstimate.distance_km ?? fareEstimate.verified_distance ?? fareEstimate.distance ?? 0.8).toFixed(2)} km
+                                    </p>
                                   </div>
                                 </div>
 

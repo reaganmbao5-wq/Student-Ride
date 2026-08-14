@@ -46,6 +46,12 @@ const AdminDriversPage = () => {
   const [verificationModalOpen, setVerificationModalOpen] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
 
+  // Settlement Modal State
+  const [settleModalOpen, setSettleModalOpen] = useState(false);
+  const [settleAmount, setSettleAmount] = useState('');
+  const [settleNotes, setSettleNotes] = useState('Commission Remittance Settlement');
+  const [isSubmittingSettle, setIsSubmittingSettle] = useState(false);
+
   useEffect(() => {
     fetchDrivers();
   }, []);
@@ -59,6 +65,40 @@ const AdminDriversPage = () => {
       toast.error('Failed to load drivers');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSettleCommission = async (e) => {
+    e.preventDefault();
+    if (!selectedDriver) return;
+
+    setIsSubmittingSettle(true);
+    try {
+      const response = await api.post(`/admin/drivers/${selectedDriver.id}/settle-commission`, {
+        amount: parseFloat(settleAmount),
+        notes: settleNotes
+      });
+
+      toast.success(`Successfully settled K${parseFloat(settleAmount).toFixed(2)} commission debt`);
+
+      setDrivers(prev => prev.map(d => {
+        if (d.id === selectedDriver.id) {
+          return {
+            ...d,
+            total_commission_due: response.data.remaining_due,
+            wallet_status: response.data.wallet_status
+          };
+        }
+        return d;
+      }));
+
+      setSettleModalOpen(false);
+      setSelectedDriver(null);
+      setSettleAmount('');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to settle commission');
+    } finally {
+      setIsSubmittingSettle(false);
     }
   };
 
@@ -258,22 +298,36 @@ const AdminDriversPage = () => {
                   </div>
 
                   <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-                    {/* Wallet Stats */}
+                    {/* Wallet & Debt Stats */}
                     <div className="flex items-center gap-6">
                       <div className="text-right">
-                        <p className={`font-bold font-heading ${driver.wallet_balance < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
-                          K{driver.wallet_balance?.toFixed(2)}
+                        <p className={`font-bold font-heading ${(driver.total_commission_due || 0) >= 500 ? 'text-red-400 font-extrabold animate-pulse' : 'text-gold'}`}>
+                          K{(driver.total_commission_due || 0).toFixed(2)}
                         </p>
-                        <p className="text-xs text-muted-foreground">Balance</p>
+                        <p className="text-xs text-muted-foreground">Comm. Owed</p>
                       </div>
                       <div className="text-right hidden md:block">
-                        <p className="text-foreground font-medium">K{driver.total_commission_paid?.toFixed(2)}</p>
+                        <p className="text-emerald-400 font-medium">K{(driver.total_commission_paid || 0).toFixed(2)}</p>
                         <p className="text-xs text-muted-foreground">Comm. Paid</p>
                       </div>
                     </div>
 
                     {/* Actions */}
                     <div className="flex items-center gap-2">
+                      {/* Settle Commission Button */}
+                      <button
+                        onClick={() => {
+                          setSelectedDriver(driver);
+                          setSettleAmount(driver.total_commission_due ? driver.total_commission_due.toString() : '0');
+                          setSettleModalOpen(true);
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-semibold hover:bg-emerald-500/30 transition-colors flex items-center gap-1"
+                        title="Settle Owed Commission"
+                      >
+                        <Wallet className="w-3.5 h-3.5" />
+                        Settle Debt
+                      </button>
+
                       <Dialog open={topUpModalOpen && selectedDriver?.id === driver.id} onOpenChange={(open) => {
                         if (!open) {
                           setTopUpModalOpen(false);
@@ -403,6 +457,60 @@ const AdminDriversPage = () => {
                 </GoldButton>
               </div>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Settle Commission Modal */}
+        <Dialog open={settleModalOpen} onOpenChange={(open) => {
+          if (!open) {
+            setSettleModalOpen(false);
+            setSelectedDriver(null);
+          }
+        }}>
+          <DialogContent className="bg-card border-border">
+            <DialogHeader>
+              <DialogTitle className="text-foreground font-heading flex items-center gap-2">
+                <Wallet className="w-5 h-5 text-emerald-400" />
+                Settle Driver Commission Debt
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSettleCommission} className="space-y-4 mt-4">
+              <div className="p-4 bg-muted rounded-xl border border-border">
+                <p className="text-xs text-muted-foreground mb-1">Driver Name</p>
+                <p className="text-foreground font-bold">{selectedDriver?.user?.name}</p>
+                <div className="flex justify-between items-center mt-2 text-xs">
+                  <span className="text-muted-foreground">Commission Owed:</span>
+                  <span className="font-mono font-bold text-gold">K{(selectedDriver?.total_commission_due || 0).toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">Payment Remittance Amount (K)</label>
+                <GlassInput
+                  type="number"
+                  placeholder="Amount (K)"
+                  value={settleAmount}
+                  onChange={(e) => setSettleAmount(e.target.value)}
+                  required
+                  min="0.01"
+                  step="0.01"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">Payment Reference / Notes</label>
+                <GlassInput
+                  type="text"
+                  placeholder="e.g. Mobile Money Txn #12345"
+                  value={settleNotes}
+                  onChange={(e) => setSettleNotes(e.target.value)}
+                />
+              </div>
+
+              <GoldButton type="submit" className="w-full bg-emerald-500 text-black hover:bg-emerald-400" disabled={isSubmittingSettle}>
+                {isSubmittingSettle ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirm & Clear Balance'}
+              </GoldButton>
+            </form>
           </DialogContent>
         </Dialog>
       </div>
