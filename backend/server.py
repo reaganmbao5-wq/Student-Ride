@@ -2277,8 +2277,8 @@ async def request_ride(ride_data: RideRequest, user: dict = Depends(get_current_
             ride_data.dropoff_location["lat"], ride_data.dropoff_location["lng"]
         )
         
-        if route_data.get("source") != "osrm":
-             logger.error("OSRM Routing failed. Rejecting ride request for safety.")
+        if route_data.get("source") not in ["mapbox", "osrm"]:
+             logger.error("Routing failed (neither Mapbox nor OSRM available). Rejecting ride request for safety.")
              raise HTTPException(status_code=503, detail="Routing service unavailable. Cannot calculate secure fare.")
 
         dist = route_data["distance_km"]
