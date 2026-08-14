@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, WebSocket, WebSocketDisconnect, status, Query, File, UploadFile, Response, BackgroundTasks
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, WebSocket, WebSocketDisconnect, status, Query, File, UploadFile, Response, BackgroundTasks, Body
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
@@ -118,7 +118,7 @@ JWT_EXPIRATION_HOURS = 24 * 14  # 14 days
 
 # Super Admin Email
 SUPER_ADMIN_EMAIL = "Reaganmbao5@gmail.com"
-DEFAULT_COMMISSION_RATE = 15.0
+DEFAULT_COMMISSION_RATE = 0.10
 
 # Create the main app
 sentry_sdk.init(
@@ -781,34 +781,27 @@ async def log_admin_action(admin_id: str, admin_name: str, action: str, target_i
     await db.admin_logs.insert_one(log)
 
 async def get_platform_settings() -> dict:
-    # Query the NEW pricing_settings collection
     settings = await db.pricing_settings.find_one({})
     
-    # Also get commission rate from legacy/platform settings if needed, 
-    # OR move commission to pricing_settings. Proper migration:
-    # For now, let's keep commission in generic settings or migrate it.
-    # The prompt asked for "pricing_settings" to have base_fare, etc.
-    # It didn't explicitly say commission is there, but typically it is.
-    # Let's fetch commission from old settings to be safe, or default.
-    
-    platform_settings = await db.settings.find_one({"type": "platform"}, {"_id": 0})
-    commission = DEFAULT_COMMISSION_RATE
-    if platform_settings:
-        commission = platform_settings.get("commission_rate", DEFAULT_COMMISSION_RATE)
-        
     if not settings:
         return {
             "base_fare": 15.0,
-            "per_km_rate": 5.0,
-            "per_minute_rate": 2.0,
+            "per_km_rate": 1.40,
+            "per_minute_rate": 0.10,
             "surge_multiplier": 1.0,
-            "minimum_fare": 20.0,
-            "commission_rate": commission,
+            "minimum_fare": 15.0,
+            "commission_rate": 0.10,
+            "private_multiplier": 3.5,
+            "max_commission_owed_limit": 500.0,
             "updated_at": datetime.now(timezone.utc)
         }
     
-    # Inject commission rate into the result so other parts of app don't break
-    settings["commission_rate"] = commission
+    # Normalize commission_rate if legacy > 1.0
+    comm = settings.get("commission_rate", 0.10)
+    if comm > 1.0:
+        comm = comm / 100.0 if comm <= 100.0 else 0.10
+    settings["commission_rate"] = comm
+    
     return settings
 
 async def calculate_ride_fare(pickup_loc: Dict[str, Any], dropoff_loc: Dict[str, Any], distance_km: float, duration_min: float, ride_mode: RideMode = RideMode.PRIVATE) -> Dict[str, Any]:
