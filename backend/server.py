@@ -540,17 +540,22 @@ class EmergencyRequest(BaseModel):
     
 # ==================== PRICING MODELS ====================
 class PricingSettings(BaseModel):
-    base_fare: float = Field(..., gt=0)
-    per_km_rate: float = Field(..., gt=0)
-    per_minute_rate: float = Field(..., gt=0)
+    base_fare: float = Field(15.0, gt=0)
+    per_km_rate: float = Field(1.40, gt=0)
+    per_minute_rate: float = Field(0.10, gt=0)
     surge_multiplier: float = Field(1.0, ge=1.0, le=5.0)
-    minimum_fare: float = Field(..., gt=0)
+    minimum_fare: float = Field(15.0, gt=0)
     
-    shared_base_fare: float = Field(10.0, gt=0)
-    shared_per_km_rate: float = Field(3.5, gt=0)
-    shared_per_minute_rate: float = Field(1.5, gt=0)
+    shared_base_fare: float = Field(15.0, gt=0)
+    shared_per_km_rate: float = Field(1.40, gt=0)
+    shared_per_minute_rate: float = Field(0.10, gt=0)
     shared_surge_multiplier: float = Field(1.0, ge=1.0, le=5.0)
     shared_minimum_fare: float = Field(15.0, gt=0)
+    
+    commission_rate: float = Field(0.10, ge=0.0, le=0.50) # Default 10%
+    private_multiplier: float = Field(3.5, ge=1.0, le=5.0) # 3.5 seats for Whole Car / In Taka
+    max_commission_owed_limit: float = Field(500.0, gt=0) # K500 max limit before lockout
+    default_flat_commission: float = Field(5.0, ge=0.0) # K5.00 default flat fee
     
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -559,8 +564,9 @@ class FixedRouteBase(BaseModel):
     dropoff_name: str
     pickup_coordinates: Dict[str, Any] # GeoJSON Point
     dropoff_coordinates: Dict[str, Any] # GeoJSON Point
-    tolerance_radius_meters: float = Field(..., ge=50, le=1000)
+    tolerance_radius_meters: float = Field(..., ge=50, le=2000)
     fixed_price: float = Field(..., gt=0)
+    flat_commission: Optional[float] = Field(5.0, ge=0.0)
     is_active: bool = True
 
 class FixedRouteResponse(FixedRouteBase):
@@ -809,68 +815,63 @@ async def calculate_ride_fare(pickup_loc: Dict[str, Any], dropoff_loc: Dict[str,
     """
     Centralized Pricing Engine.
     Hierarchy:
-    1. Fixed Route (if match)
-    2. Dynamic (Distance + Time) * Surge
+    1. Fixed Route (if match): Base Driver Fare + Flat Commission Add-On
+    2. Dynamic (Distance + Time) * Surge:
+       - Shared Mode (Per Seat): Base K15 + (1.40/km) + (0.10/min)
+       - Private Mode ("In Taka" Whole Car): Shared Base x 3.5 Multiplier
+       - Platform Commission: 10% Add-On (Student Pays Base + Commission)
     3. Minimum Fare Floor
     """
-    
-    # 1. Check Fixed Routes
-    active_routes = await db.fixed_routes.find({"is_active": True}).to_list(100)
+    settings = await get_platform_settings()
+    commission_rate = settings.get("commission_rate", 0.10)
+    private_mult = settings.get("private_multiplier", 3.5)
     
     pickup_point = (pickup_loc["lat"], pickup_loc["lng"])
     dropoff_point = (dropoff_loc["lat"], dropoff_loc["lng"])
     
+    # 1. Check Fixed Routes
+    active_routes = await db.fixed_routes.find({"is_active": True}).to_list(100)
     for route in active_routes:
-        # Check Pickup
-        # Ensure coordinates are extracted correctly from GeoJSON Point [lng, lat]
         r_p_lng = route["pickup_coordinates"]["coordinates"][0]
         r_p_lat = route["pickup_coordinates"]["coordinates"][1]
-        
         r_d_lng = route["dropoff_coordinates"]["coordinates"][0]
         r_d_lat = route["dropoff_coordinates"]["coordinates"][1]
         
-        p_dist = calculate_haversine_distance(
-            pickup_point[0], pickup_point[1],
-            r_p_lat, r_p_lng
-        )
-        # Check Dropoff
-        d_dist = calculate_haversine_distance(
-            dropoff_point[0], dropoff_point[1],
-            r_d_lat, r_d_lng
-        )
+        p_dist = calculate_haversine_distance(pickup_point[0], pickup_point[1], r_p_lat, r_p_lng)
+        d_dist = calculate_haversine_distance(dropoff_point[0], dropoff_point[1], r_d_lat, r_d_lng)
         
-        # Convert tolerance to km
         tolerance_km = route["tolerance_radius_meters"] / 1000.0
         
         if p_dist <= tolerance_km and d_dist <= tolerance_km:
-            logger.info(f"Fixed Route Match: {route['pickup_name']} -> {route['dropoff_name']}")
+            fixed_driver_base = route["fixed_price"]
+            fixed_commission = route.get("flat_commission", round(fixed_driver_base * commission_rate, 2))
+            if fixed_commission is None:
+                fixed_commission = round(fixed_driver_base * commission_rate, 2)
+            total_student_fare = round(fixed_driver_base + fixed_commission, 2)
+            
+            logger.info(f"Fixed Route Match: {route['pickup_name']} -> {route['dropoff_name']} | Driver Base: {fixed_driver_base}, Comm: {fixed_commission}, Student Total: {total_student_fare}")
             return {
-                "fare": route["fixed_price"],
+                "fare": total_student_fare,
+                "driver_earning": fixed_driver_base,
+                "commission": fixed_commission,
                 "is_fixed": True,
                 "route_name": f"{route['pickup_name']} to {route['dropoff_name']}",
                 "breakdown": {
-                    "base": 0,
+                    "base": fixed_driver_base,
                     "distance": 0,
                     "time": 0,
-                    "surge": 0
+                    "surge": 0,
+                    "commission": fixed_commission,
+                    "student_fare": total_student_fare
                 }
             }
 
     # 2. Dynamic Pricing
-    settings = await get_platform_settings()
-    
-    if ride_mode == RideMode.SHARED:
-        base_fare = settings.get("shared_base_fare", settings.get("base_fare", 15.0) * 0.7)
-        per_km = settings.get("shared_per_km_rate", settings.get("per_km_rate", 5.0) * 0.7)
-        per_min = settings.get("shared_per_minute_rate", settings.get("per_minute_rate", 2.0) * 0.7)
-        surge = settings.get("shared_surge_multiplier", settings.get("surge_multiplier", 1.0))
-        min_fare = settings.get("shared_minimum_fare", settings.get("minimum_fare", 20.0) * 0.7)
-    else:
-        base_fare = settings.get("base_fare", 15.0)
-        per_km = settings.get("per_km_rate", 5.0)
-        per_min = settings.get("per_minute_rate", 2.0)
-        surge = settings.get("surge_multiplier", 1.0)
-        min_fare = settings.get("minimum_fare", 20.0)
+    base_fare = settings.get("base_fare", 15.0)
+    per_km = settings.get("per_km_rate", 1.40)
+    per_min = settings.get("per_minute_rate", 0.10)
+    surge = settings.get("surge_multiplier", 1.0)
+    min_fare = settings.get("minimum_fare", 15.0)
     
     # Time-based Surge Logic
     current_hour = datetime.now(timezone.utc).hour + 2 # Adjusting to local Lusaka time (UTC+2)
@@ -894,11 +895,24 @@ async def calculate_ride_fare(pickup_loc: Dict[str, Any], dropoff_loc: Dict[str,
     subtotal = base_fare + dist_cost + time_cost
     surge_total = subtotal * final_surge
     
-    final_fare = max(surge_total, min_fare)
-    final_fare = round(final_fare, 2)
+    # Shared vs Private Mode Calculation
+    shared_per_seat_base = max(surge_total, min_fare)
+    
+    if ride_mode == RideMode.PRIVATE or ride_mode == "private":
+        # Private Ride ("In Taka" Whole Car) = 3.5x Shared Per-Seat Base Fare
+        driver_base_fare = round(shared_per_seat_base * private_mult, 2)
+    else:
+        # Shared Ride (Per Seat)
+        driver_base_fare = round(shared_per_seat_base, 2)
+        
+    # Commission Add-On (Student Pays Driver Base + 10% Commission)
+    commission_amount = round(driver_base_fare * commission_rate, 2)
+    student_total_fare = round(driver_base_fare + commission_amount, 2)
     
     return {
-        "fare": final_fare,
+        "fare": student_total_fare,
+        "driver_earning": driver_base_fare,
+        "commission": commission_amount,
         "is_fixed": False,
         "route_name": "Standard Ride",
         "surge_reason": surge_reason,
@@ -906,8 +920,11 @@ async def calculate_ride_fare(pickup_loc: Dict[str, Any], dropoff_loc: Dict[str,
             "base": base_fare,
             "distance": round(dist_cost, 2),
             "time": round(time_cost, 2),
-            "surge_multiplier": surge,
-            "min_fare_applied": final_fare == min_fare
+            "surge_multiplier": final_surge,
+            "driver_earning": driver_base_fare,
+            "commission": commission_amount,
+            "student_fare": student_total_fare,
+            "min_fare_applied": shared_per_seat_base == min_fare
         }
     }
 
@@ -2090,6 +2107,57 @@ async def run_daily_settlement(user: dict = Depends(require_admin)):
         "total_settled_amount": total_amount
     }
 
+@api_router.post("/admin/drivers/{driver_id}/settle-commission")
+async def settle_single_driver_commission(driver_id: str, data: dict = Body({}), user: dict = Depends(require_admin)):
+    """
+    Admin clears/settles a specific driver's accumulated commission debt (remittance payment).
+    Resets total_commission_due, increments total_commission_paid, restores wallet_status to ACTIVE.
+    """
+    driver = await db.drivers.find_one({"id": driver_id})
+    if not driver:
+        driver = await db.drivers.find_one({"user_id": driver_id})
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver not found")
+        
+    current_due = driver.get("total_commission_due", 0.0)
+    settle_amount = float(data.get("amount", current_due))
+    notes = data.get("notes", "Commission Remittance Settlement")
+    
+    new_due = max(0.0, current_due - settle_amount)
+    
+    update_ops = {
+        "total_commission_due": new_due,
+        "wallet_status": WalletStatus.ACTIVE.value
+    }
+    
+    await db.drivers.update_one(
+        {"id": driver["id"]},
+        {
+            "$set": update_ops,
+            "$inc": {"total_commission_paid": settle_amount}
+        }
+    )
+    
+    timestamp = datetime.now(timezone.utc).isoformat()
+    await db.driver_wallet_transactions.insert_one({
+        "id": str(uuid.uuid4()),
+        "driver_id": driver["id"],
+        "type": TransactionType.COMMISSION_SETTLEMENT.value,
+        "amount": settle_amount,
+        "description": f"Admin Settlement: {notes}",
+        "timestamp": timestamp
+    })
+    
+    await log_admin_action(user["id"], user["name"], "settle_driver_commission", driver["id"], f"Settled K{settle_amount:.2f} for driver {driver['id']}. Remaining due: K{new_due:.2f}")
+    
+    return {
+        "status": "success",
+        "driver_id": driver["id"],
+        "settled_amount": settle_amount,
+        "remaining_due": new_due,
+        "wallet_status": WalletStatus.ACTIVE.value
+    }
+
 @api_router.get("/admin/analytics")
 async def get_admin_analytics(user: dict = Depends(require_admin)):
     """
@@ -2373,6 +2441,16 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
     driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
     if not driver:
         raise HTTPException(status_code=404, detail="Driver profile not found")
+        
+    # Debt Limit Check
+    settings = await get_platform_settings()
+    max_limit = settings.get("max_commission_owed_limit", 500.0)
+    total_due = driver.get("total_commission_due", 0.0)
+    if total_due >= max_limit:
+        raise HTTPException(
+            status_code=403,
+            detail=f"Commission debt limit reached (K{total_due:.2f} / K{max_limit:.2f}). Please remit payment to Admin to clear your balance and unlock your account."
+        )
     
     # Check if ride exists and get its mode
     target_ride = await db.rides.find_one({"id": ride_id})
@@ -2650,16 +2728,20 @@ async def complete_ride(ride_id: str, background_tasks: BackgroundTasks, user: d
     now = datetime.now(timezone.utc).isoformat()
     commission_amount = ride.get("commission", 0.0)
     
-    # Deduct from wallet
-    new_balance = driver.get("wallet_balance", 0.0) - commission_amount
+    # Flipped Wallet Logic: Accumulate Platform Commission Debt
+    settings = await get_platform_settings()
+    max_limit = settings.get("max_commission_owed_limit", 500.0)
+    
     total_due = driver.get("total_commission_due", 0.0) + commission_amount
+    driver_earning = ride.get("driver_earning", max(0.0, ride.get("fare", 0.0) - commission_amount))
     
     wallet_status = WalletStatus.ACTIVE.value
     is_still_online = driver.get("is_online", True)
     
-    if new_balance < driver.get("minimum_required_balance", 50.0):
+    if total_due >= max_limit:
         wallet_status = WalletStatus.RESTRICTED.value
         is_still_online = False
+        logger.warning(f"Driver {driver['id']} reached commission debt limit: K{total_due:.2f} / K{max_limit:.2f}. Restricting account.")
         
     remaining_active_rides = await db.rides.count_documents({
         "driver_id": driver["id"],
@@ -2667,7 +2749,6 @@ async def complete_ride(ride_id: str, background_tasks: BackgroundTasks, user: d
     })
 
     set_ops = {
-        "wallet_balance": new_balance,
         "total_commission_due": total_due,
         "wallet_status": wallet_status,
         "is_online": is_still_online
