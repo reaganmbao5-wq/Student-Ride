@@ -1093,18 +1093,18 @@ const DriverDashboard = () => {
         </div>
 
         {/* Commission Debt Restriction Alert */}
-        {(driverProfile?.wallet_status === 'restricted' || (driverProfile?.total_commission_due || 0) >= 500) && (
+        {(driverProfile?.wallet_status === 'restricted' || (driverProfile?.total_commission_due || 0) >= (driverProfile?.max_commission_owed_limit || 500)) && (
           <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-4 flex items-start gap-4 mb-6 animate-pulse">
             <AlertCircle className="w-6 h-6 text-red-500 shrink-0 mt-1" />
             <div>
               <h3 className="font-heading font-bold text-foreground text-lg">Commission Debt Limit Reached</h3>
               <p className="text-muted-foreground text-sm mb-2">
-                You have reached the maximum accumulated commission limit (K{(driverProfile?.total_commission_due || 0).toFixed(2)} / K500.00).
+                You have reached the maximum accumulated commission limit (K{(driverProfile?.total_commission_due || 0).toFixed(2)} / K{(driverProfile?.max_commission_owed_limit || 500).toFixed(2)}).
                 You cannot accept new rides until you remit payment to the Admin.
               </p>
               <div className="bg-black/20 rounded px-2 py-1 inline-block">
                 <span className="text-xs text-red-400 font-mono">
-                  Limit: K500.00 • Please contact Admin to settle payment
+                  Limit: K{(driverProfile?.max_commission_owed_limit || 500).toFixed(2)} • Please contact Admin to settle payment
                 </span>
               </div>
             </div>
@@ -1118,20 +1118,20 @@ const DriverDashboard = () => {
               <Wallet className="w-5 h-5 text-gold" />
               <span className="font-semibold text-foreground text-sm">Platform Commission Owed</span>
             </div>
-            <span className={`font-mono font-bold text-sm ${(driverProfile?.total_commission_due || 0) >= 450 ? 'text-red-400' : 'text-gold'}`}>
-              K{(driverProfile?.total_commission_due || 0).toFixed(2)} / K500.00
+            <span className={`font-mono font-bold text-sm ${(driverProfile?.total_commission_due || 0) >= ((driverProfile?.max_commission_owed_limit || 500) * 0.9) ? 'text-red-400' : 'text-gold'}`}>
+              K{(driverProfile?.total_commission_due || 0).toFixed(2)} / K{(driverProfile?.max_commission_owed_limit || 500).toFixed(2)}
             </span>
           </div>
           <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
             <div 
               className={`h-full transition-all duration-500 ${
-                (driverProfile?.total_commission_due || 0) >= 450 ? 'bg-red-500' : (driverProfile?.total_commission_due || 0) >= 350 ? 'bg-amber-400' : 'bg-gold'
+                (driverProfile?.total_commission_due || 0) >= ((driverProfile?.max_commission_owed_limit || 500) * 0.9) ? 'bg-red-500' : (driverProfile?.total_commission_due || 0) >= ((driverProfile?.max_commission_owed_limit || 500) * 0.7) ? 'bg-amber-400' : 'bg-gold'
               }`}
-              style={{ width: `${Math.min(100, (((driverProfile?.total_commission_due || 0) / 500) * 100))}%` }}
+              style={{ width: `${Math.min(100, (((driverProfile?.total_commission_due || 0) / (driverProfile?.max_commission_owed_limit || 500)) * 100))}%` }}
             />
           </div>
           <p className="text-[11px] text-muted-foreground mt-2">
-            Students pay the platform fee in cash to you on each trip. Accumulate up to K500 before remitting payment to Admin.
+            Students pay the platform fee in cash to you on each trip. Accumulate up to K{(driverProfile?.max_commission_owed_limit || 500).toFixed(0)} before remitting payment to Admin.
           </p>
         </GlassCard>
 

@@ -464,6 +464,7 @@ class DriverResponse(BaseModel):
     minimum_required_balance: float = 50.0
     total_commission_due: float = 0.0
     total_commission_paid: float = 0.0
+    max_commission_owed_limit: float = 500.0
     verification_docs: Optional[Dict[str, str]] = None # {"license": "url", "id": "url"}
     verification_status: str = "none" # none, pending, approved, rejected
     created_at: Optional[str] = None
@@ -1629,6 +1630,9 @@ async def get_my_driver_profile(user: dict = Depends(require_driver)):
     driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
     if not driver:
         raise HTTPException(status_code=404, detail="Driver profile not found")
+    
+    settings = await get_platform_settings()
+    driver["max_commission_owed_limit"] = settings.get("max_commission_owed_limit", 500.0)
     
     driver["user"] = UserResponse(
         id=user["id"],
