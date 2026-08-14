@@ -37,6 +37,7 @@ export const AdminDestinations = () => {
     const [newDestName, setNewDestName] = useState('');
     const [selectedPos, setSelectedPos] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [searchResults, setSearchResults] = useState([]);
 
     useEffect(() => {
         fetchDestinations();
@@ -44,13 +45,32 @@ export const AdminDestinations = () => {
 
     const fetchDestinations = async () => {
         try {
-            // Fetch ALL (active and inactive) ? API default is active_only=True
-            // Let's assume we want to see active ones for now.
             const response = await api.get('/popular-destinations');
             setDestinations(response.data);
         } catch (error) {
             toast.error("Failed to fetch destinations");
         }
+    };
+
+    const handleSearchPlaces = async (q) => {
+        setNewDestName(q);
+        if (!q || q.trim().length < 2) {
+            setSearchResults([]);
+            return;
+        }
+        try {
+            const res = await api.get(`/places/search?q=${encodeURIComponent(q)}`);
+            setSearchResults(res.data || []);
+        } catch (e) {
+            setSearchResults([]);
+        }
+    };
+
+    const handleSelectPlace = (place) => {
+        setNewDestName(place.display_name);
+        setSelectedPos({ lat: place.lat, lng: place.lon });
+        setSearchResults([]);
+        toast.success(`Location set: ${place.display_name}`);
     };
 
     const handleCreate = async () => {
@@ -99,13 +119,27 @@ export const AdminDestinations = () => {
                     </h2>
 
                     <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm text-muted-foreground mb-2">Destination Name</label>
+                        <div className="relative">
+                            <label className="block text-sm text-muted-foreground mb-2">Destination Name / Search Place</label>
                             <GlassInput
-                                placeholder="e.g. South Gate"
+                                placeholder="Search e.g. South Gate, Kobil..."
                                 value={newDestName}
-                                onChange={(e) => setNewDestName(e.target.value)}
+                                onChange={(e) => handleSearchPlaces(e.target.value)}
                             />
+                            {searchResults.length > 0 && (
+                                <div className="absolute left-0 right-0 top-full mt-1 bg-black/90 border border-gold/30 rounded-xl max-h-40 overflow-y-auto z-[2000] shadow-xl">
+                                    {searchResults.map(p => (
+                                        <div
+                                            key={p.id}
+                                            onClick={() => handleSelectPlace(p)}
+                                            className="p-2 hover:bg-gold/20 text-xs text-foreground cursor-pointer transition-colors border-b border-white/5"
+                                        >
+                                            <div className="font-semibold">{p.display_name}</div>
+                                            <div className="text-[10px] text-muted-foreground">{p.category}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         <div className="h-64 rounded-xl overflow-hidden border border-white/10 relative">

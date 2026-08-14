@@ -620,8 +620,12 @@ const RideRequestPage = () => {
                                   </div>
                                   {/* Shifted ETA & Distance comfortably below Save badge */}
                                   <div className={`flex flex-col items-end shrink-0 ${rideMode === 'shared' ? 'pt-3.5' : 'pt-0.5'}`}>
-                                    <p className="text-xs text-zinc-300 font-semibold">{fareEstimate.duration_min || fareEstimate.duration} min</p>
-                                    <p className="text-[10px] text-zinc-400">{fareEstimate.distance_km || fareEstimate.distance?.toFixed(1)} km</p>
+                                    <p className="text-xs text-zinc-300 font-semibold">
+                                      {Math.ceil(fareEstimate.duration_min ?? fareEstimate.duration ?? fareEstimate.verified_duration ?? 1)} min
+                                    </p>
+                                    <p className="text-[10px] text-zinc-400">
+                                      {(fareEstimate.distance_km ?? fareEstimate.verified_distance ?? fareEstimate.distance ?? 0.8).toFixed(2)} km
+                                    </p>
                                   </div>
                                 </div>
 
