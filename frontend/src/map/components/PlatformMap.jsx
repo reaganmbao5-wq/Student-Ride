@@ -353,6 +353,8 @@ export const PlatformMap = ({
   useEffect(() => {
     if (!mapRef.current || !mapLoaded) return;
 
+    mapRef.current.setPadding({ top: 0, bottom: 0, left: 0, right: 0 });
+
     // 1. ACTIVE DRIVER FOLLOW MODE (Directional 45-deg Perspective, Smooth, Tied to Driver)
     if (cameraMode === CAMERA_MODES.FOLLOW_DRIVER && driverLocation) {
       const rawLat = driverLocation.lat ?? driverLocation.latitude;
@@ -376,7 +378,7 @@ export const PlatformMap = ({
             }
           }
 
-          let dynamicZoom = 17.2;
+          let dynamicZoom = 18.0;
           if (targetCoord && !isNaN(targetCoord.lat) && !isNaN(targetCoord.lng)) {
             const dLat = (targetCoord.lat - lat) * (Math.PI / 180);
             const dLon = (targetCoord.lng - lng) * (Math.PI / 180);
@@ -387,10 +389,10 @@ export const PlatformMap = ({
             const distMeters = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
             if (distMeters < 400) {
-              // Smoothly scale zoom from 16.0 at 400m up to 18.2 at 30m so both vehicle and pin stay visible
-              dynamicZoom = Math.min(18.2, Math.max(16.0, 18.2 - Math.log2(Math.max(distMeters, 30) / 30) * 0.6));
+              // Smoothly scale zoom from 17.8 at 400m up to 19.5 at 20m for tight, detailed street-level framing
+              dynamicZoom = Math.min(19.5, Math.max(17.8, 19.5 - Math.log2(Math.max(distMeters, 20) / 20) * 0.39));
             } else {
-              dynamicZoom = 17.0;
+              dynamicZoom = 18.0;
             }
           }
 
@@ -410,7 +412,7 @@ export const PlatformMap = ({
       }
     }
 
-    // 2. OVERVIEW / BOUNDS MODE (Finding a Driver / Requested State / Route Preview)
+    // 2. OVERVIEW / BOUNDS MODE (Finding a Driver / Shared Ride with Other Stops Ahead / Route Preview)
     const targetArray = routeBounds || bounds;
     const hasMultipleBounds = Array.isArray(targetArray) && targetArray.length >= 2;
 
@@ -446,17 +448,17 @@ export const PlatformMap = ({
 
         const calcTop = isMiniMap ? 14 : 75;
         const calcBottom = isMiniMap ? 14 : ((typeof bottomPadding === 'number' && bottomPadding > 0)
-          ? Math.max(bottomPadding, 240)
-          : 240);
-        const calcSide = isMiniMap ? 14 : Math.max(60, Math.min(85, Math.round((containerRect?.width || 400) * 0.14)));
+          ? Math.min(bottomPadding, 180)
+          : 150);
+        const calcSide = isMiniMap ? 14 : 25;
 
-        // Skip re-fitting if bounds haven't shifted significantly (prevents shaking)
+        // Skip re-fitting if coordinates haven't shifted significantly
         const prev = lastFittedBoundsRef.current;
         const isSameBounds = prev &&
-          Math.abs(prev.minLat - minLat) < 0.0001 &&
-          Math.abs(prev.maxLat - maxLat) < 0.0001 &&
-          Math.abs(prev.minLng - minLng) < 0.0001 &&
-          Math.abs(prev.maxLng - maxLng) < 0.0001 &&
+          Math.abs(prev.minLat - minLat) < 0.00045 &&
+          Math.abs(prev.maxLat - maxLat) < 0.00045 &&
+          Math.abs(prev.minLng - minLng) < 0.00045 &&
+          Math.abs(prev.maxLng - maxLng) < 0.00045 &&
           Math.abs(prev.calcBottom - calcBottom) < 20 &&
           prev.calcTop === calcTop;
 
@@ -477,9 +479,9 @@ export const PlatformMap = ({
               left: calcSide,
               right: calcSide
             },
+            pitch: 0, // Flat 2D overview for multi-point framing
             bearing: 0,
-            pitch: 0,
-            maxZoom: 17.5,
+            maxZoom: 18.0,
             duration: 800,
             essential: true
           });
@@ -488,7 +490,6 @@ export const PlatformMap = ({
       }
     }
 
-    // 3. STATIC CENTER & ZOOM (Pickup Selection / Destination Selection / Idle)
     if (center && center.lat !== undefined && center.lng !== undefined) {
       const defaultStepZoom = cameraMode === CAMERA_MODES.PICKUP_SELECTION
         ? CAMERA_CONFIG.ZOOM.PICKUP_SELECTION
@@ -510,9 +511,9 @@ export const PlatformMap = ({
         lastFlownCenterRef.current = { lat: center.lat, lng: center.lng, zoom: targetZoom };
         mapRef.current.flyTo({
           center: [center.lng, center.lat],
-          bearing: 0,
-          pitch: 0,
           zoom: targetZoom,
+          pitch: 0,
+          bearing: 0,
           duration: 1200,
           essential: true
         });

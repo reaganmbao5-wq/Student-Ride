@@ -458,17 +458,18 @@ const StudentDashboard = () => {
       });
     }
 
-    const isSharedRide = activeRide.ride_type === 'shared';
+    const isSharedRide = activeRide.ride_mode === 'shared' || activeRide.ride_type === 'shared' || Boolean(passengerBriefing?.is_shared);
     const stopsRemaining = passengerBriefing?.stops_remaining ?? 0;
-    const isPriorStopsActive = isSharedRide && isBriefingForThisRide && stopsRemaining > 0 && ['accepted', 'driver_accepted', 'driver_en_route_to_pickup'].includes(currentStatus);
+    const briefingMentionsAnother = passengerBriefing?.briefing_text && /another/i.test(passengerBriefing.briefing_text);
+    const isPriorStopsActive = (isSharedRide || briefingMentionsAnother) && (stopsRemaining > 0 || briefingMentionsAnother) && ['accepted', 'driver_accepted', 'driver_en_route_to_pickup', 'ongoing', 'ride_started'].includes(currentStatus);
 
     let bounds = [];
     if (driverPos) bounds.push([driverPos.lat, driverPos.lng]);
     
     if (isPriorStopsActive) {
-      // Driver is picking up / dropping off other students first: frame Driver + Pickup + Intermediate Stops in 2D Overview
+      // Driver is visiting other students first: Frame Driver + Student Pickup + Intermediate Stops in 2D Overview
       if (activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
-      if (Array.isArray(passengerBriefing?.intermediate_stops)) {
+      if (isBriefingForThisRide && Array.isArray(passengerBriefing?.intermediate_stops)) {
         const myPickupIdx = passengerBriefing.intermediate_stops.findIndex(st => st.is_my_stop && st.stop_type === 'pickup');
         const limitIdx = myPickupIdx !== -1 ? myPickupIdx : passengerBriefing.intermediate_stops.length;
         passengerBriefing.intermediate_stops.slice(0, limitIdx).forEach(st => {
@@ -480,7 +481,7 @@ const StudentDashboard = () => {
       if (activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
       if (activeRide.dropoff_location) bounds.push([activeRide.dropoff_location.lat, activeRide.dropoff_location.lng]);
       
-      // Include the closest discovered driver within 3.0km stably
+      // Include nearby drivers within 3.0km stably
       if (activeRide.pickup_location && nearbyDrivers && nearbyDrivers.length > 0) {
         const pLat = activeRide.pickup_location.lat;
         const pLng = activeRide.pickup_location.lng;
@@ -503,9 +504,9 @@ const StudentDashboard = () => {
       }
     }
 
-    // Final Bounds Logic
-    // In shared rides when prior stops are active, pass bounds so map stays in 2D Overview.
-    // When it is this student's turn or in private rides, bounds is null so camera is 45° 3D Follow!
+    // Bounds Assignment:
+    // If prior stops are active OR requested state: provide bounds for 2D Overview framing.
+    // When it's this student's turn or in private rides: bounds is null so FOLLOW_DRIVER drives 45° 3D camera.
     if (isPriorStopsActive || currentStatus === 'requested') {
       bounds = bounds.length > 1 ? bounds : null;
     } else {
