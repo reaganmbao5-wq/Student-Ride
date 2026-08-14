@@ -353,8 +353,73 @@ export const PlatformMap = ({
   useEffect(() => {
     if (!mapRef.current || !mapLoaded) return;
 
-    mapRef.current.setPadding({ top: 0, bottom: 0, left: 0, right: 0 });
+    // 1. ACTIVE DRIVER FOLLOW MODE (Directional, Smooth, Tied to Driver)
+    if (cameraMode === CAMERA_MODES.FOLLOW_DRIVER && driverLocation) {
+      const rawLat = driverLocation.lat ?? driverLocation.latitude;
+      const rawLng = driverLocation.lng ?? driverLocation.longitude;
+      const heading = driverLocation.heading !== undefined && driverLocation.heading !== null ? Number(driverLocation.heading) : 0;
 
+      if (rawLat !== undefined && rawLng !== undefined) {
+        let lat = Number(rawLat);
+        let lng = Number(rawLng);
+
+        if (!isNaN(lat) && !isNaN(lng)) {
+          // Calculate distance to target (pickup or dropoff) for adaptive approach tightening (< 400m)
+          let targetCoord = null;
+          if (markers && Array.isArray(markers)) {
+            const activeTargetMarker = markers.find(m => m.iconType === 'pickup' || m.iconType === 'dropoff');
+            if (activeTargetMarker) {
+              targetCoord = {
+                lat: Number(activeTargetMarker.lat),
+                lng: Number(activeTargetMarker.lng)
+              };
+            }
+          }
+
+          let dynamicZoom = 17.5;
+          if (targetCoord && !isNaN(targetCoord.lat) && !isNaN(targetCoord.lng)) {
+            const dLat = (targetCoord.lat - lat) * (Math.PI / 180);
+            const dLon = (targetCoord.lng - lng) * (Math.PI / 180);
+            const a =
+              Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat * (Math.PI / 180)) * Math.cos(targetCoord.lat * (Math.PI / 180)) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const distMeters = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            if (distMeters < 400) {
+              // Smoothly tighten from 17.2 -> 18.5 as driver closes in within 400m
+              dynamicZoom = Math.min(18.5, Math.max(17.2, 18.5 - (distMeters / 400) * 1.3));
+            } else {
+              dynamicZoom = 17.0;
+            }
+          }
+
+          // Offset the center slightly along the driver's heading vector and compensate for bottom sheet
+          // This keeps the driver in the lower-third of the screen, with the route extending ahead towards the top of the phone
+          const LOOK_AHEAD = 0.00028; // ~30m forward look ahead
+          const headingRad = heading * (Math.PI / 180);
+          lat += Math.cos(headingRad) * LOOK_AHEAD;
+          lng += Math.sin(headingRad) * LOOK_AHEAD;
+
+          const containerRect = mapContainerRef.current?.getBoundingClientRect();
+          const containerHeight = containerRect?.height || 600;
+          const effBottom = (typeof bottomPadding === 'number' && bottomPadding > 0) ? Math.max(bottomPadding, 240) : 240;
+          lat -= (effBottom / Math.max(containerHeight, 400)) * 0.00065;
+
+          mapRef.current.easeTo({
+            center: [lng, lat],
+            bearing: heading,
+            pitch: 35, // 35 degree forward perspective showing the road ahead
+            zoom: dynamicZoom,
+            duration: 800,
+            essential: true
+          });
+          return;
+        }
+      }
+    }
+
+    // 2. OVERVIEW / BOUNDS MODE (Finding a Driver / Requested State / Route Preview)
     const targetArray = routeBounds || bounds;
     const hasMultipleBounds = Array.isArray(targetArray) && targetArray.length >= 2;
 
@@ -394,47 +459,21 @@ export const PlatformMap = ({
           : 240);
         const calcSide = isMiniMap ? 14 : Math.max(60, Math.min(85, Math.round((containerRect?.width || 400) * 0.14)));
 
-        // Policy B: Adaptive distance-scaled zoom tightening during driver approach (< 400m)
-        let dynamicMaxZoom = 18.0;
-        if (cameraMode === CAMERA_MODES.FOLLOW_DRIVER && targetArray.length === 2) {
-          const pt1 = targetArray[0];
-          const pt2 = targetArray[1];
-          const lat1 = Number(pt1?.lat ?? pt1?.[0] ?? pt1?.latitude);
-          const lon1 = Number(pt1?.lng ?? pt1?.[1] ?? pt1?.longitude);
-          const lat2 = Number(pt2?.lat ?? pt2?.[0] ?? pt2?.latitude);
-          const lon2 = Number(pt2?.lng ?? pt2?.[1] ?? pt2?.longitude);
-          if (!isNaN(lat1) && !isNaN(lon1) && !isNaN(lat2) && !isNaN(lon2)) {
-            const dLat = (lat2 - lat1) * (Math.PI / 180);
-            const dLon = (lon2 - lon1) * (Math.PI / 180);
-            const a =
-              Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
-              Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            const distMeters = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            if (distMeters < 400) {
-              // Smooth tightening: 400m -> 17.5, 200m -> 18.5, 50m -> 19.5
-              dynamicMaxZoom = Math.min(19.5, Math.max(17.5, 19.5 - (distMeters / 400) * 2.0));
-            }
-          }
-        }
-
-        // Skip re-fitting if coordinates & padding haven't shifted significantly (prevents up/down bouncing during live driver tracking)
+        // Skip re-fitting if bounds haven't shifted significantly (prevents shaking)
         const prev = lastFittedBoundsRef.current;
-        const coordThreshold = cameraMode === CAMERA_MODES.FOLLOW_DRIVER ? 0.0001 : 0.00045;
         const isSameBounds = prev &&
-          Math.abs(prev.minLat - minLat) < coordThreshold &&
-          Math.abs(prev.maxLat - maxLat) < coordThreshold &&
-          Math.abs(prev.minLng - minLng) < coordThreshold &&
-          Math.abs(prev.maxLng - maxLng) < coordThreshold &&
+          Math.abs(prev.minLat - minLat) < 0.0001 &&
+          Math.abs(prev.maxLat - maxLat) < 0.0001 &&
+          Math.abs(prev.minLng - minLng) < 0.0001 &&
+          Math.abs(prev.maxLng - maxLng) < 0.0001 &&
           Math.abs(prev.calcBottom - calcBottom) < 20 &&
-          Math.abs((prev.dynamicMaxZoom || 18.0) - dynamicMaxZoom) < 0.25 &&
           prev.calcTop === calcTop;
 
         if (isSameBounds) {
           return;
         }
 
-        lastFittedBoundsRef.current = { minLat, maxLat, minLng, maxLng, calcTop, calcBottom, dynamicMaxZoom };
+        lastFittedBoundsRef.current = { minLat, maxLat, minLng, maxLng, calcTop, calcBottom };
 
         try {
           mapRef.current.fitBounds([
@@ -447,8 +486,10 @@ export const PlatformMap = ({
               left: calcSide,
               right: calcSide
             },
-            maxZoom: dynamicMaxZoom,
-            duration: 600,
+            bearing: 0,
+            pitch: 0,
+            maxZoom: 17.5,
+            duration: 800,
             essential: true
           });
         } catch (e) {}
@@ -456,33 +497,8 @@ export const PlatformMap = ({
       }
     }
 
-    if (cameraMode === CAMERA_MODES.FOLLOW_DRIVER && driverLocation) {
-      let lat = Number(driverLocation.lat ?? driverLocation.latitude);
-      let lng = Number(driverLocation.lng ?? driverLocation.longitude);
-      const heading = driverLocation.heading !== undefined && driverLocation.heading !== null ? Number(driverLocation.heading) : 0;
-
-      if (!isNaN(lat) && !isNaN(lng)) {
-        // 1. Heading Look-Ahead Vector: offset camera ahead of the vehicle in the direction of motion
-        if (driverLocation.heading !== undefined && driverLocation.heading !== null) {
-          const LOOK_AHEAD = 0.00035; // ~40m look-ahead
-          const headingRad = heading * (Math.PI / 180);
-          lat += Math.cos(headingRad) * LOOK_AHEAD;
-          lng += Math.sin(headingRad) * LOOK_AHEAD;
-        }
-
-        // 2. Bottom Sheet Compensation Offset
-        const containerHeight = mapContainerRef.current?.getBoundingClientRect()?.height || 600;
-        const effBottom = (typeof bottomPadding === 'number' && bottomPadding > 0) ? Math.max(bottomPadding, 240) : 240;
-        lat -= (effBottom / Math.max(containerHeight, 400)) * 0.00075;
-
-        mapRef.current.easeTo({
-          center: [lng, lat],
-          zoom: 18,
-          duration: 600,
-          essential: true
-        });
-      }
-    } else if (center && center.lat !== undefined && center.lng !== undefined) {
+    // 3. STATIC CENTER & ZOOM (Pickup Selection / Destination Selection / Idle)
+    if (center && center.lat !== undefined && center.lng !== undefined) {
       const defaultStepZoom = cameraMode === CAMERA_MODES.PICKUP_SELECTION
         ? CAMERA_CONFIG.ZOOM.PICKUP_SELECTION
         : cameraMode === CAMERA_MODES.DESTINATION_SELECTION
@@ -503,13 +519,15 @@ export const PlatformMap = ({
         lastFlownCenterRef.current = { lat: center.lat, lng: center.lng, zoom: targetZoom };
         mapRef.current.flyTo({
           center: [center.lng, center.lat],
+          bearing: 0,
+          pitch: 0,
           zoom: targetZoom,
           duration: 1200,
           essential: true
         });
       }
     }
-  }, [center, zoom, bounds, routeBounds, cameraMode, driverLocation, mapLoaded, bottomPadding]);
+  }, [center, zoom, bounds, routeBounds, cameraMode, driverLocation, mapLoaded, bottomPadding, markers]);
 
 
 

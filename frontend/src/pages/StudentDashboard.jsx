@@ -522,12 +522,12 @@ const StudentDashboard = () => {
     }
 
     // Final Bounds Logic
-    // For en-route and ongoing destination approach states, frame driver + target (pickup or destination).
-    // For driver_arrived/passenger_boarding, clear bounds so FOLLOW_DRIVER centers directly on driver at Zoom 18.
-    if (['accepted', 'driver_accepted', 'driver_en_route_to_pickup', 'ongoing', 'ride_started', 'ride_in_progress', 'arriving_destination'].includes(currentStatus)) {
-      bounds = bounds.length > 1 ? bounds : null; // Frame driver + target
-    } else if (['driver_arrived', 'passenger_boarding'].includes(currentStatus)) {
-      bounds = null; // Let FOLLOW_DRIVER lock directly onto driver marker at Zoom 18
+    // During active ride/follow states, bounds is null so camera is strictly tied to driver with directional rotation!
+    // During requested/overview state, frame Pickup + Dropoff.
+    if (['accepted', 'driver_accepted', 'driver_en_route_to_pickup', 'ongoing', 'ride_started', 'ride_in_progress', 'arriving_destination', 'driver_arrived', 'passenger_boarding'].includes(currentStatus)) {
+      bounds = null;
+    } else if (currentStatus === 'requested') {
+      bounds = bounds.length > 1 ? bounds : null;
     } else {
       bounds = bounds.length > 1 ? bounds : null;
     }
