@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { UsersThree, SteeringWheel, MapPin, Clock, TrendUp, Warning, Shield } from '@phosphor-icons/react';
+import { TrendingUp } from 'lucide-react';
 import { GlassCard, LoadingSpinner, StatusBadge } from '../components/common/GlassComponents';
 import { RideMap } from '../map/components/RideMap';
 import { Layout } from '../components/layout/Layout';
