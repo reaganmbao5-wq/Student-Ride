@@ -4055,6 +4055,11 @@ async def estimate_fare(data: dict, user: dict = Depends(get_current_user)):
         },
         "verified_distance": round(distance_km, 2),
         "verified_duration": round(duration_min, 1),
+        "duration_min": round(duration_min, 1),
+        "duration": round(duration_min, 1),
+        "duration_minutes": round(duration_min, 1),
+        "eta_seconds": int(duration_min * 60),
+        "eta_text": f"{max(1, int(round(duration_min)))} min",
         "geometry": verified_geometry
     }
 
