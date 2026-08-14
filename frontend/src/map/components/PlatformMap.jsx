@@ -353,7 +353,7 @@ export const PlatformMap = ({
   useEffect(() => {
     if (!mapRef.current || !mapLoaded) return;
 
-    // 1. ACTIVE DRIVER FOLLOW MODE (Directional, Smooth, Tied to Driver)
+    // 1. ACTIVE DRIVER FOLLOW MODE (Directional 45-deg Perspective, Smooth, Tied to Driver)
     if (cameraMode === CAMERA_MODES.FOLLOW_DRIVER && driverLocation) {
       const rawLat = driverLocation.lat ?? driverLocation.latitude;
       const rawLng = driverLocation.lng ?? driverLocation.longitude;
@@ -376,7 +376,7 @@ export const PlatformMap = ({
             }
           }
 
-          let dynamicZoom = 17.5;
+          let dynamicZoom = 17.2;
           if (targetCoord && !isNaN(targetCoord.lat) && !isNaN(targetCoord.lng)) {
             const dLat = (targetCoord.lat - lat) * (Math.PI / 180);
             const dLon = (targetCoord.lng - lng) * (Math.PI / 180);
@@ -387,29 +387,20 @@ export const PlatformMap = ({
             const distMeters = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
             if (distMeters < 400) {
-              // Smoothly tighten from 17.2 -> 18.5 as driver closes in within 400m
-              dynamicZoom = Math.min(18.5, Math.max(17.2, 18.5 - (distMeters / 400) * 1.3));
+              // Smoothly scale zoom from 16.0 at 400m up to 18.2 at 30m so both vehicle and pin stay visible
+              dynamicZoom = Math.min(18.2, Math.max(16.0, 18.2 - Math.log2(Math.max(distMeters, 30) / 30) * 0.6));
             } else {
               dynamicZoom = 17.0;
             }
           }
 
-          // Offset the center slightly along the driver's heading vector and compensate for bottom sheet
-          // This keeps the driver in the lower-third of the screen, with the route extending ahead towards the top of the phone
-          const LOOK_AHEAD = 0.00028; // ~30m forward look ahead
-          const headingRad = heading * (Math.PI / 180);
-          lat += Math.cos(headingRad) * LOOK_AHEAD;
-          lng += Math.sin(headingRad) * LOOK_AHEAD;
-
-          const containerRect = mapContainerRef.current?.getBoundingClientRect();
-          const containerHeight = containerRect?.height || 600;
-          const effBottom = (typeof bottomPadding === 'number' && bottomPadding > 0) ? Math.max(bottomPadding, 240) : 240;
-          lat -= (effBottom / Math.max(containerHeight, 400)) * 0.00065;
+          const effBottom = (typeof bottomPadding === 'number' && bottomPadding > 0) ? Math.max(bottomPadding, 220) : 220;
 
           mapRef.current.easeTo({
             center: [lng, lat],
+            offset: [0, -Math.round(effBottom * 0.35)], // Places vehicle comfortably in lower-third
             bearing: heading,
-            pitch: 35, // 35 degree forward perspective showing the road ahead
+            pitch: 45, // 45 degree navigation perspective
             zoom: dynamicZoom,
             duration: 800,
             essential: true
