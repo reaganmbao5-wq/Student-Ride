@@ -13,7 +13,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://student-ride-b
 
 const slideVariants = {
   enter: (direction) => ({
-    x: direction > 0 ? 40 : -40,
+    x: direction > 0 ? 50 : -50,
     opacity: 0,
   }),
   center: {
@@ -22,7 +22,7 @@ const slideVariants = {
     transition: { duration: 0.35, ease: [0.16, 1, 0.3, 1] }
   },
   exit: (direction) => ({
-    x: direction < 0 ? 40 : -40,
+    x: direction < 0 ? 50 : -50,
     opacity: 0,
     transition: { duration: 0.25, ease: [0.16, 1, 0.3, 1] }
   })
@@ -303,26 +303,26 @@ const LandingPage = () => {
   };
 
   return (
-    <div className="fixed inset-0 w-full h-full bg-[#0B0B0E] text-white flex flex-col justify-between overflow-hidden select-none font-sans">
+    <div className="fixed inset-0 w-screen h-screen bg-[#0B0B0E] text-white flex flex-col justify-between overflow-hidden select-none font-sans">
       
-      {/* Top Header / Back Navigation (Visible for steps 2 to 5) */}
+      {/* Top Header / Back Navigation (Visible for steps 2 to 5 across entire width) */}
       {step > 1 && (
-        <div className="relative z-20 w-full max-w-4xl lg:max-w-6xl mx-auto flex items-center justify-between px-6 sm:px-10 pt-5 pb-2">
+        <div className="relative z-20 w-full flex items-center justify-between px-6 sm:px-12 md:px-16 lg:px-24 pt-6 pb-2">
           <button
             onClick={handleBack}
-            className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-zinc-900/80 border border-zinc-800 flex items-center justify-center text-zinc-300 hover:text-white active:scale-95 transition-transform"
+            className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-zinc-900/90 border border-zinc-800 flex items-center justify-center text-zinc-300 hover:text-white active:scale-95 transition-transform cursor-pointer shadow-lg"
             aria-label="Back"
           >
-            <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+            <ArrowLeft className="w-6 h-6 sm:w-7 sm:h-7" />
           </button>
 
           {/* Progress Indicator dots */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-4">
             {[2, 3, 4, 5].map((s) => (
               <div
                 key={s}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  s === step ? 'w-10 sm:w-14 bg-blue-500' : s < step ? 'w-3 sm:w-4 bg-zinc-600' : 'w-3 sm:w-4 bg-zinc-800'
+                className={`h-2 sm:h-2.5 rounded-full transition-all duration-300 ${
+                  s === step ? 'w-10 sm:w-16 bg-blue-500' : s < step ? 'w-3 sm:w-4 bg-zinc-600' : 'w-3 sm:w-4 bg-zinc-800'
                 }`}
                 style={s === step ? { backgroundColor: activeAccentHex } : {}}
               />
@@ -336,7 +336,7 @@ const LandingPage = () => {
         <AnimatePresence mode="wait" custom={direction}>
           
           {/* ========================================================================= */}
-          {/* STEP 1: HERO PAGE (Giant Logo Left, Jaey Ride Right, Responsive Width) */}
+          {/* STEP 1: HERO PAGE (Edge-to-Edge Split Header, Responsive Text & Wide Button) */}
           {/* ========================================================================= */}
           {step === 1 && (
             <motion.div
@@ -346,7 +346,7 @@ const LandingPage = () => {
               initial="enter"
               animate="center"
               exit="exit"
-              className="absolute inset-0 flex flex-col justify-between w-full h-full p-6 sm:p-10 md:p-14 lg:p-16 z-10"
+              className="absolute inset-0 flex flex-col justify-between w-full h-full p-6 sm:p-10 md:p-14 lg:p-20 z-10"
             >
               {/* Full-Bleed Background Media Container */}
               <div className="absolute inset-0 w-full h-full overflow-hidden bg-[#0B0B0E] -z-10">
@@ -377,18 +377,18 @@ const LandingPage = () => {
                 <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/85" />
               </div>
 
-              {/* Split Top Branding: Giant Logo on Left, Jaey Ride Text on Right */}
-              <div className="w-full max-w-6xl mx-auto pt-2 sm:pt-4 flex items-center justify-between">
-                {/* Giant Logo (3.5x larger, filling space) */}
+              {/* Edge-to-Edge Split Top Header (Logo on far left, Text on far right) */}
+              <div className="w-full flex items-center justify-between pt-1 sm:pt-4">
+                {/* Giant Logo (3.5x size on left edge) */}
                 <img
                   src="/assets/images/Jaey-logo.png"
                   alt="Jaey Ride Logo"
-                  className="h-20 sm:h-28 md:h-36 lg:h-40 w-auto object-contain drop-shadow-2xl select-none"
+                  className="h-20 sm:h-28 md:h-36 lg:h-44 w-auto object-contain drop-shadow-2xl select-none"
                 />
                 
-                {/* Sleek Right-Aligned Text */}
+                {/* Right-Aligned Text on right edge */}
                 <div className="text-right">
-                  <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-wider text-white leading-tight">
+                  <h2 className="text-lg sm:text-2xl md:text-3xl font-extrabold tracking-wider text-white leading-tight">
                     Jaey Ride
                   </h2>
                   <p className="text-[10px] sm:text-xs md:text-sm font-bold text-zinc-300 uppercase tracking-widest mt-0.5">
@@ -397,31 +397,31 @@ const LandingPage = () => {
                 </div>
               </div>
 
-              {/* Bottom Content & Wide Dynamic CTA */}
-              <div className="w-full max-w-6xl mx-auto pb-4 sm:pb-8 flex flex-col items-start gap-6">
-                <div className="space-y-3 max-w-2xl text-left">
-                  <h1 className="text-4xl sm:text-6xl md:text-7xl font-serif font-medium tracking-tight text-white leading-tight">
+              {/* Bottom Hero Content & Wide Dynamic CTA */}
+              <div className="w-full pb-2 sm:pb-6 flex flex-col items-start gap-6">
+                <div className="space-y-3 text-left">
+                  <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-serif font-medium tracking-tight text-white leading-tight">
                     From Campus <br />
                     To Your Door Step
                   </h1>
-                  <p className="text-sm sm:text-base md:text-lg text-zinc-200 leading-relaxed max-w-xl">
+                  <p className="text-sm sm:text-lg md:text-xl text-zinc-200 leading-relaxed max-w-2xl">
                     The platform that always moves in your hands. Request rides, share seats, and travel comfortably around campus.
                   </p>
                 </div>
 
-                <div className="w-full max-w-md md:max-w-xl lg:max-w-2xl space-y-3.5 pt-2">
+                <div className="w-full max-w-xl md:max-w-2xl lg:max-w-3xl space-y-4 pt-2">
                   <button
                     onClick={goToNextStep}
-                    className="w-full py-4 sm:py-5 px-8 rounded-2xl font-bold text-base sm:text-lg md:text-xl text-white shadow-2xl active:scale-[0.98] transition-all flex items-center justify-center cursor-pointer"
+                    className="w-full py-4 sm:py-5 px-10 rounded-2xl font-bold text-lg sm:text-xl md:text-2xl text-white shadow-2xl active:scale-[0.98] transition-all flex items-center justify-center cursor-pointer"
                     style={{
                       backgroundColor: activeAccentHex,
-                      boxShadow: `0 14px 35px -5px ${activeAccentHex}60`
+                      boxShadow: `0 16px 40px -5px ${activeAccentHex}70`
                     }}
                   >
                     Get Started
                   </button>
 
-                  <p className="text-center text-xs sm:text-sm text-zinc-300">
+                  <p className="text-left sm:text-center text-xs sm:text-sm text-zinc-300">
                     By proceeding, you agree to all our{' '}
                     <span onClick={openTerms} className="text-white underline cursor-pointer hover:text-blue-300">terms and conditions</span>
                     {' '}~{' '}
@@ -433,7 +433,7 @@ const LandingPage = () => {
           )}
 
           {/* ========================================================================= */}
-          {/* STEP 2: NAME & MANDATORY PHONE INPUT (Fluid Responsive Width) */}
+          {/* STEP 2: NAME & MANDATORY PHONE INPUT (Edge-to-Edge Responsive Form) */}
           {/* ========================================================================= */}
           {step === 2 && (
             <motion.div
@@ -443,11 +443,11 @@ const LandingPage = () => {
               initial="enter"
               animate="center"
               exit="exit"
-              className="w-full max-w-lg md:max-w-2xl lg:max-w-3xl mx-auto flex flex-col justify-between h-full px-6 sm:px-10 pt-6 pb-8"
+              className="w-full max-w-xl md:max-w-2xl lg:max-w-4xl mx-auto flex flex-col justify-between h-full px-6 sm:px-12 md:px-16 pt-4 pb-8"
             >
               <div className="space-y-6 overflow-y-auto pr-1">
                 <div>
-                  <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white mb-3">
+                  <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white mb-3">
                     What is your first name?
                   </h1>
                   <input
@@ -459,7 +459,7 @@ const LandingPage = () => {
                       if (e.key === 'Enter') goToNextStep();
                     }}
                     placeholder="Your name"
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-4 sm:py-5 text-base sm:text-lg text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-700 transition-all mt-2"
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-4 sm:py-6 text-lg sm:text-xl md:text-2xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-700 transition-all mt-2 shadow-inner"
                   />
                 </div>
 
@@ -473,7 +473,7 @@ const LandingPage = () => {
                       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                       className="overflow-hidden pt-2"
                     >
-                      <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white mb-3">
+                      <h2 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white mb-3">
                         What is your last name?
                       </h2>
                       <input
@@ -485,7 +485,7 @@ const LandingPage = () => {
                           if (e.key === 'Enter') goToNextStep();
                         }}
                         placeholder="Your surname"
-                        className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-4 sm:py-5 text-base sm:text-lg text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-700 transition-all mt-2"
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-4 sm:py-6 text-lg sm:text-xl md:text-2xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-700 transition-all mt-2 shadow-inner"
                       />
                     </motion.div>
                   )}
@@ -501,7 +501,7 @@ const LandingPage = () => {
                       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                       className="overflow-hidden pt-2"
                     >
-                      <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white mb-3">
+                      <h2 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white mb-3">
                         What is your phone number?
                       </h2>
                       <input
@@ -513,22 +513,22 @@ const LandingPage = () => {
                           if (e.key === 'Enter') goToNextStep();
                         }}
                         placeholder="e.g. 0971234567"
-                        className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-4 sm:py-5 text-base sm:text-lg text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-700 transition-all mt-2"
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-4 sm:py-6 text-lg sm:text-xl md:text-2xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-700 transition-all mt-2 shadow-inner"
                       />
                     </motion.div>
                   )}
                 </AnimatePresence>
               </div>
 
-              {/* Bottom Actions */}
+              {/* Bottom Actions (Wide Responsive Button) */}
               <div className="space-y-4 pt-6">
                 <button
                   onClick={goToNextStep}
                   disabled={!firstName.trim() || (showLastNameInput && !lastName.trim()) || (showPhoneInput && !phone.trim())}
-                  className="w-full py-4 sm:py-5 px-8 rounded-2xl font-bold text-base sm:text-lg text-white disabled:opacity-40 disabled:pointer-events-none active:scale-[0.98] transition-all shadow-xl cursor-pointer"
+                  className="w-full py-4 sm:py-5 px-10 rounded-2xl font-bold text-lg sm:text-xl md:text-2xl text-white disabled:opacity-40 disabled:pointer-events-none active:scale-[0.98] transition-all shadow-2xl cursor-pointer"
                   style={{
                     backgroundColor: activeAccentHex,
-                    boxShadow: `0 12px 30px -5px ${activeAccentHex}50`
+                    boxShadow: `0 14px 35px -5px ${activeAccentHex}60`
                   }}
                 >
                   Continue
@@ -537,7 +537,7 @@ const LandingPage = () => {
                 <div className="text-center">
                   <button
                     onClick={() => navigate('/auth?mode=login')}
-                    className="text-sm sm:text-base font-medium hover:underline text-zinc-400 hover:text-white transition-colors"
+                    className="text-sm sm:text-base md:text-lg font-medium hover:underline text-zinc-400 hover:text-white transition-colors"
                   >
                     Already have an account? <span className="font-bold underline" style={{ color: activeAccentHex }}>Sign in</span>
                   </button>
@@ -547,7 +547,7 @@ const LandingPage = () => {
           )}
 
           {/* ========================================================================= */}
-          {/* STEP 3: GENDER SELECTION (Fluid Responsive Layout) */}
+          {/* STEP 3: GENDER SELECTION (Fluid Responsive Wide Cards) */}
           {/* ========================================================================= */}
           {step === 3 && (
             <motion.div
@@ -557,30 +557,30 @@ const LandingPage = () => {
               initial="enter"
               animate="center"
               exit="exit"
-              className="w-full max-w-lg md:max-w-2xl lg:max-w-3xl mx-auto flex flex-col justify-between h-full px-6 sm:px-10 pt-8 pb-8"
+              className="w-full max-w-xl md:max-w-2xl lg:max-w-4xl mx-auto flex flex-col justify-between h-full px-6 sm:px-12 md:px-16 pt-6 pb-8"
             >
               <div>
-                <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white mb-8">
+                <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white mb-8">
                   Select your gender
                 </h1>
 
-                <div className="space-y-4 sm:space-y-6">
+                <div className="space-y-5 sm:space-y-7">
                   {/* Male Card */}
                   <div
                     onClick={() => setGender('male')}
-                    className={`p-6 sm:p-7 rounded-2xl border cursor-pointer flex items-center gap-5 transition-all ${
+                    className={`p-6 sm:p-8 rounded-2xl border cursor-pointer flex items-center gap-6 transition-all ${
                       gender === 'male'
-                        ? 'bg-zinc-800/90 border-blue-500 shadow-2xl shadow-blue-500/10 scale-[1.01]'
+                        ? 'bg-zinc-800/90 border-blue-500 shadow-2xl shadow-blue-500/20 scale-[1.01]'
                         : 'bg-zinc-900/60 border-zinc-800 hover:bg-zinc-900 text-zinc-300'
                     }`}
                     style={gender === 'male' ? { borderColor: activeAccentHex } : {}}
                   >
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-zinc-800 flex items-center justify-center text-3xl border border-zinc-700">
+                    <div className="w-14 h-14 sm:w-18 sm:h-18 rounded-full bg-zinc-800 flex items-center justify-center text-3xl sm:text-4xl border border-zinc-700">
                       👨
                     </div>
-                    <div className="flex-1 font-bold text-xl sm:text-2xl text-white">Male</div>
+                    <div className="flex-1 font-bold text-xl sm:text-3xl text-white">Male</div>
                     {gender === 'male' && (
-                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-white" style={{ backgroundColor: activeAccentHex }}>
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-white" style={{ backgroundColor: activeAccentHex }}>
                         <Check className="w-5 h-5 stroke-[3]" />
                       </div>
                     )}
@@ -589,19 +589,19 @@ const LandingPage = () => {
                   {/* Female Card */}
                   <div
                     onClick={() => setGender('female')}
-                    className={`p-6 sm:p-7 rounded-2xl border cursor-pointer flex items-center gap-5 transition-all ${
+                    className={`p-6 sm:p-8 rounded-2xl border cursor-pointer flex items-center gap-6 transition-all ${
                       gender === 'female'
-                        ? 'bg-zinc-800/90 border-blue-500 shadow-2xl shadow-blue-500/10 scale-[1.01]'
+                        ? 'bg-zinc-800/90 border-blue-500 shadow-2xl shadow-blue-500/20 scale-[1.01]'
                         : 'bg-zinc-900/60 border-zinc-800 hover:bg-zinc-900 text-zinc-300'
                     }`}
                     style={gender === 'female' ? { borderColor: activeAccentHex } : {}}
                   >
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-zinc-800 flex items-center justify-center text-3xl border border-zinc-700">
+                    <div className="w-14 h-14 sm:w-18 sm:h-18 rounded-full bg-zinc-800 flex items-center justify-center text-3xl sm:text-4xl border border-zinc-700">
                       👩
                     </div>
-                    <div className="flex-1 font-bold text-xl sm:text-2xl text-white">Female</div>
+                    <div className="flex-1 font-bold text-xl sm:text-3xl text-white">Female</div>
                     {gender === 'female' && (
-                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-white" style={{ backgroundColor: activeAccentHex }}>
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-white" style={{ backgroundColor: activeAccentHex }}>
                         <Check className="w-5 h-5 stroke-[3]" />
                       </div>
                     )}
@@ -609,14 +609,14 @@ const LandingPage = () => {
                 </div>
               </div>
 
-              {/* Bottom Actions */}
+              {/* Bottom Actions (Wide Responsive Button) */}
               <div className="space-y-4 pt-8">
                 <button
                   onClick={goToNextStep}
-                  className="w-full py-4 sm:py-5 px-8 rounded-2xl font-bold text-base sm:text-lg text-white active:scale-[0.98] transition-all shadow-xl cursor-pointer"
+                  className="w-full py-4 sm:py-5 px-10 rounded-2xl font-bold text-lg sm:text-xl md:text-2xl text-white active:scale-[0.98] transition-all shadow-2xl cursor-pointer"
                   style={{
                     backgroundColor: activeAccentHex,
-                    boxShadow: `0 12px 30px -5px ${activeAccentHex}50`
+                    boxShadow: `0 14px 35px -5px ${activeAccentHex}60`
                   }}
                 >
                   Continue
@@ -625,7 +625,7 @@ const LandingPage = () => {
                 <div className="text-center">
                   <button
                     onClick={() => navigate('/auth?mode=login')}
-                    className="text-sm sm:text-base font-medium hover:underline text-zinc-400 hover:text-white transition-colors"
+                    className="text-sm sm:text-base md:text-lg font-medium hover:underline text-zinc-400 hover:text-white transition-colors"
                   >
                     Already have an account? <span className="font-bold underline" style={{ color: activeAccentHex }}>Sign in</span>
                   </button>
@@ -645,14 +645,14 @@ const LandingPage = () => {
               initial="enter"
               animate="center"
               exit="exit"
-              className="w-full max-w-lg md:max-w-2xl lg:max-w-3xl mx-auto flex flex-col justify-between h-full px-6 sm:px-10 pt-3 pb-6"
+              className="w-full max-w-xl md:max-w-2xl lg:max-w-4xl mx-auto flex flex-col justify-between h-full px-6 sm:px-12 md:px-16 pt-2 pb-6"
             >
               {/* Header */}
               <div className="text-center space-y-1">
                 <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white">
                   Now, let's customize your app experience
                 </h1>
-                <p className="text-xs sm:text-sm text-zinc-400">It will only take a minute</p>
+                <p className="text-xs sm:text-base text-zinc-400">It will only take a minute</p>
               </div>
 
               {/* Dynamic Center Customization Content */}
@@ -679,25 +679,25 @@ const LandingPage = () => {
                     exit={{ opacity: 0, scale: 0.95 }}
                     className="space-y-6 w-full"
                   >
-                    <p className="text-sm text-center font-bold uppercase tracking-widest text-zinc-400 mb-2">
+                    <p className="text-sm sm:text-base text-center font-bold uppercase tracking-widest text-zinc-400 mb-2">
                       Choose Your Accent Color
                     </p>
 
-                    <div className="grid grid-cols-4 gap-4 sm:gap-6 max-w-md mx-auto">
+                    <div className="grid grid-cols-4 gap-4 sm:gap-6 max-w-lg mx-auto">
                       {Object.entries(ACCENT_COLORS).map(([key, item]) => {
                         const isSelected = accentColor === key || (key === 'default' && accentColor === 'blue');
                         return (
                           <button
                             key={key}
                             onClick={() => setAccentColor(key)}
-                            className={`flex flex-col items-center gap-2 p-4 sm:p-5 rounded-2xl border transition-all ${
+                            className={`flex flex-col items-center gap-2 p-4 sm:p-6 rounded-2xl border transition-all ${
                               isSelected
                                 ? 'bg-zinc-800 border-white/60 shadow-2xl scale-105 ring-2 ring-white/30'
                                 : 'bg-zinc-900/70 border-zinc-800/80 hover:bg-zinc-900'
                             }`}
                           >
                             <div
-                              className="w-11 h-11 sm:w-14 sm:h-14 rounded-full shadow-lg flex items-center justify-center text-white"
+                              className="w-11 h-11 sm:w-16 sm:h-16 rounded-full shadow-xl flex items-center justify-center text-white"
                               style={{ backgroundColor: item.hex }}
                             >
                               {isSelected && <Check className="w-6 h-6 stroke-[3]" />}
@@ -734,10 +734,10 @@ const LandingPage = () => {
 
                 <button
                   onClick={goToNextStep}
-                  className="w-full py-4 sm:py-5 px-8 rounded-2xl font-bold text-base sm:text-lg text-white active:scale-[0.98] transition-all shadow-xl cursor-pointer"
+                  className="w-full py-4 sm:py-5 px-10 rounded-2xl font-bold text-lg sm:text-xl md:text-2xl text-white active:scale-[0.98] transition-all shadow-2xl cursor-pointer"
                   style={{
                     backgroundColor: activeAccentHex,
-                    boxShadow: `0 12px 30px -5px ${activeAccentHex}50`
+                    boxShadow: `0 14px 35px -5px ${activeAccentHex}60`
                   }}
                 >
                   Continue
@@ -746,7 +746,7 @@ const LandingPage = () => {
                 <div className="text-center">
                   <button
                     onClick={() => navigate('/auth?mode=login')}
-                    className="text-sm sm:text-base font-medium hover:underline text-zinc-400 hover:text-white transition-colors"
+                    className="text-sm sm:text-base md:text-lg font-medium hover:underline text-zinc-400 hover:text-white transition-colors"
                   >
                     Already have an account? <span className="font-bold underline" style={{ color: activeAccentHex }}>Sign in</span>
                   </button>
@@ -766,36 +766,36 @@ const LandingPage = () => {
               initial="enter"
               animate="center"
               exit="exit"
-              className="w-full max-w-lg md:max-w-2xl lg:max-w-3xl mx-auto flex flex-col justify-between h-full px-6 sm:px-10 pt-4 pb-8"
+              className="w-full max-w-xl md:max-w-2xl lg:max-w-4xl mx-auto flex flex-col justify-between h-full px-6 sm:px-12 md:px-16 pt-2 pb-8"
             >
               {/* Giant Logo Display (4.5x larger, filling upper space) */}
-              <div className="flex flex-col items-center text-center space-y-6 pt-2">
+              <div className="flex flex-col items-center text-center space-y-4 pt-1">
                 <img
                   src="/assets/images/Jaey-logo.png"
                   alt="Jaey Ride Logo"
-                  className="h-36 sm:h-48 md:h-60 lg:h-64 w-auto object-contain drop-shadow-2xl select-none"
+                  className="h-36 sm:h-52 md:h-64 lg:h-72 w-auto object-contain drop-shadow-2xl select-none"
                 />
 
                 {/* Relocated Lower Description (in green circle area) */}
-                <div className="space-y-2 max-w-md pt-4">
+                <div className="space-y-2 max-w-lg pt-2">
                   <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white">
                     Save Your Progress
                   </h1>
-                  <p className="text-sm sm:text-base text-zinc-400 leading-relaxed">
+                  <p className="text-sm sm:text-base md:text-lg text-zinc-400 leading-relaxed">
                     Create an account to save your setup and access JRide anywhere across campus.
                   </p>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="space-y-3.5 pt-6">
+              <div className="space-y-3.5 pt-4">
                 {/* Continue with Google */}
                 <button
                   onClick={handleGoogleClick}
                   disabled={googleLoading}
-                  className="w-full py-4 sm:py-5 px-8 rounded-2xl bg-white text-zinc-900 font-bold text-sm sm:text-base flex items-center justify-center gap-3 shadow-2xl active:scale-[0.98] transition-all hover:bg-zinc-100 disabled:opacity-50 cursor-pointer"
+                  className="w-full py-4 sm:py-5 px-10 rounded-2xl bg-white text-zinc-900 font-bold text-base sm:text-lg md:text-xl flex items-center justify-center gap-4 shadow-2xl active:scale-[0.98] transition-all hover:bg-zinc-100 disabled:opacity-50 cursor-pointer"
                 >
-                  <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24">
                     <path
                       fill="#4285F4"
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -819,9 +819,9 @@ const LandingPage = () => {
                 {/* Continue with Email */}
                 <button
                   onClick={handleEmailClick}
-                  className="w-full py-4 sm:py-5 px-8 rounded-2xl bg-zinc-900 border border-zinc-800 text-white font-bold text-sm sm:text-base flex items-center justify-center gap-3 shadow-xl active:scale-[0.98] transition-all hover:bg-zinc-800/80 cursor-pointer"
+                  className="w-full py-4 sm:py-5 px-10 rounded-2xl bg-zinc-900 border border-zinc-800 text-white font-bold text-base sm:text-lg md:text-xl flex items-center justify-center gap-4 shadow-xl active:scale-[0.98] transition-all hover:bg-zinc-800/80 cursor-pointer"
                 >
-                  <Mail className="w-5 h-5 sm:w-6 sm:h-6 text-zinc-400" />
+                  <Mail className="w-6 h-6 sm:w-7 sm:h-7 text-zinc-400" />
                   Continue with Email
                 </button>
 
@@ -837,7 +837,7 @@ const LandingPage = () => {
                 <div className="text-center pt-2">
                   <button
                     onClick={() => navigate('/auth?mode=login')}
-                    className="text-sm sm:text-base font-medium hover:underline text-zinc-400 hover:text-white transition-colors"
+                    className="text-sm sm:text-base md:text-lg font-medium hover:underline text-zinc-400 hover:text-white transition-colors"
                   >
                     Already have an account? <span className="font-bold underline" style={{ color: activeAccentHex }}>Sign in</span>
                   </button>
