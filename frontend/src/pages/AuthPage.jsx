@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { PermissionsService } from '../services/PermissionsService';
 import { compressImage } from '../utils/imageCompressor';
 import { getOnlineWebUrl, openExternalUrl } from '../utils/urlHelpers';
+import { LoadingSpinner } from '../components/common/GlassComponents';
 
 const GlassInput = React.forwardRef(({ className, ...props }, ref) => (
   <input

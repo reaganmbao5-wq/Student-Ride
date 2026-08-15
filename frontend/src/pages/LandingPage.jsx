@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Mail, Check } from 'lucide-react';
@@ -86,6 +86,21 @@ const LandingPage = () => {
 
   const [googleLoading, setGoogleLoading] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
+  const videoRef = useRef(null);
+
+  // Auto-play / resume video on step 1 mount and remount
+  useEffect(() => {
+    if (step === 1 && videoRef.current) {
+      videoRef.current.defaultMuted = true;
+      videoRef.current.muted = true;
+      const playPromise = videoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.warn("Video auto-play warning:", err);
+        });
+      }
+    }
+  }, [step]);
 
   // Initialize native Google Auth for Capacitor
   useEffect(() => {
@@ -359,14 +374,19 @@ const LandingPage = () => {
 
                 {/* Mobile Looping Portrait Video with no-flash fade-in */}
                 <video
+                  ref={videoRef}
                   autoPlay
                   loop
                   muted
                   playsInline
+                  webkit-playsinline="true"
+                  x5-playsinline="true"
                   preload="auto"
+                  onLoadedData={() => setVideoLoaded(true)}
+                  onCanPlay={() => setVideoLoaded(true)}
                   onPlaying={() => setVideoLoaded(true)}
-                  className={`block md:hidden w-full h-full object-cover scale-105 transition-opacity duration-500 ${
-                    videoLoaded ? 'opacity-100' : 'opacity-0'
+                  className={`block md:hidden w-full h-full object-cover scale-105 pointer-events-none transition-opacity duration-500 ${
+                    videoLoaded ? 'opacity-100' : 'opacity-90'
                   }`}
                 >
                   <source src="/assets/videos/Firstpage.mp4" type="video/mp4" />

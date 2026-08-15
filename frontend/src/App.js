@@ -103,9 +103,7 @@ const AppRoutes = () => {
         <Route
           path="/auth"
           element={
-            <PublicRoute>
-              <AuthPage />
-            </PublicRoute>
+            <AuthPage />
           }
         />
         <Route
