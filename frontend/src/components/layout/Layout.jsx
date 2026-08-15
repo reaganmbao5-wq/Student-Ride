@@ -72,12 +72,18 @@ export const Layout = ({ children }) => {
         {/* Logo */}
         <div className="p-4 border-b border-border h-20 flex items-center">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-12 h-12 min-w-[48px] rounded-xl bg-gold flex items-center justify-center">
-              <Car weight="duotone" className="w-7 h-7 text-black" />
-            </div>
+            <img
+              src="/assets/images/Jaey-logo.png"
+              alt="Jaey Ride Logo"
+              className="w-11 h-11 min-w-[44px] object-contain drop-shadow-md"
+            />
             <div className="sidebar-label-transition opacity-0 group-hover:opacity-100 whitespace-nowrap">
-              <h1 className="font-heading font-bold text-foreground text-lg">JRide</h1>
-              <p className="text-[10px] text-muted-foreground">Student Transport</p>
+              <img
+                src={theme === 'light' ? '/assets/images/jride_text_black.png' : '/assets/images/jride_text_white.png'}
+                alt="JRIDE"
+                className="h-5 w-auto object-contain"
+              />
+              <p className="text-[10px] text-muted-foreground font-semibold tracking-wider">MULUNGUSHI</p>
             </div>
           </div>
         </div>
@@ -151,11 +157,17 @@ export const Layout = ({ children }) => {
 
       {/* Mobile Header */}
       <header className="md:hidden fixed top-0 left-0 right-0 h-16 bg-background/80 backdrop-blur-xl border-b border-border z-40 flex items-center justify-between px-4 safe-top">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gold flex items-center justify-center">
-            <Car weight="duotone" className="w-5 h-5 text-black" />
-          </div>
-          <h1 className="font-heading font-bold text-foreground">JRide</h1>
+        <div className="flex items-center gap-2.5">
+          <img
+            src="/assets/images/Jaey-logo.png"
+            alt="Jaey Ride Logo"
+            className="w-9 h-9 object-contain drop-shadow-md"
+          />
+          <img
+            src={theme === 'light' ? '/assets/images/jride_text_black.png' : '/assets/images/jride_text_white.png'}
+            alt="JRIDE"
+            className="h-5 w-auto object-contain"
+          />
         </div>
         <div className="flex items-center gap-2">
           <button
