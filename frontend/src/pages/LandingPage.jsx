@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Car, Mail, Check, Sparkles } from 'lucide-react';
+import { ArrowLeft, Mail, Check } from 'lucide-react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { GoogleAuth } from '@daniele-rolli/capacitor-google-auth';
 import { Capacitor } from '@capacitor/core';
@@ -32,7 +32,7 @@ const LandingPage = () => {
   const navigate = useNavigate();
   const { theme, themeMode, setThemeMode, accentColor, setAccentColor, ACCENT_COLORS } = useTheme();
 
-  // Navigation state: step 1 (hero), 2 (name), 3 (gender), 4 (customization), 5 (save progress)
+  // Navigation state: step 1 (hero), 2 (name & phone), 3 (gender), 4 (customization), 5 (save progress)
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState(1);
 
@@ -42,7 +42,9 @@ const LandingPage = () => {
   // Form State
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
   const [showLastNameInput, setShowLastNameInput] = useState(false);
+  const [showPhoneInput, setShowPhoneInput] = useState(false);
   const [gender, setGender] = useState('male'); // 'male' | 'female'
   const [mapStylePreference, setMapStylePreference] = useState('auto'); // 'day' | 'night' | 'auto'
 
@@ -88,6 +90,14 @@ const LandingPage = () => {
         toast.error('Please enter your last name');
         return;
       }
+      if (!showPhoneInput) {
+        setShowPhoneInput(true);
+        return;
+      }
+      if (!phone.trim()) {
+        toast.error('Please enter your phone number');
+        return;
+      }
       setStep(3);
     } else if (step === 3) {
       setStep(4);
@@ -98,7 +108,6 @@ const LandingPage = () => {
       } else if (customSubStep === 'accent') {
         setCustomSubStep('map');
       } else if (customSubStep === 'map') {
-        // Save map style preference
         localStorage.setItem('map_theme_mode', mapStylePreference);
         setStep(5);
       }
@@ -121,7 +130,9 @@ const LandingPage = () => {
     } else if (step === 3) {
       setStep(2);
     } else if (step === 2) {
-      if (showLastNameInput) {
+      if (showPhoneInput) {
+        setShowPhoneInput(false);
+      } else if (showLastNameInput) {
         setShowLastNameInput(false);
       } else {
         setStep(1);
@@ -152,6 +163,7 @@ const LandingPage = () => {
           state: {
             name: data.user.name || `${firstName} ${lastName}`.trim(),
             email: data.user.email,
+            phone: phone,
             token: data.access_token,
             gender: gender,
             themeMode: themeMode,
@@ -175,7 +187,6 @@ const LandingPage = () => {
 
   const loginWithGoogleWeb = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
-      // In @react-oauth/google, credential / id_token can be sent or access_token exchange
       if (tokenResponse.credential) {
         await handleGoogleSuccessBackend(tokenResponse.credential);
       } else if (tokenResponse.access_token) {
@@ -184,11 +195,11 @@ const LandingPage = () => {
             headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
           }).then(res => res.json());
 
-          // For complete-profile fallback with Google state
           navigate('/complete-profile', {
             state: {
               name: userInfo.name || `${firstName} ${lastName}`.trim(),
               email: userInfo.email,
+              phone: phone,
               token: tokenResponse.access_token,
               gender: gender,
               themeMode: themeMode,
@@ -227,9 +238,24 @@ const LandingPage = () => {
         name: `${firstName} ${lastName}`.trim(),
         firstName,
         lastName,
-        gender
+        phone,
+        gender,
+        themeMode,
+        accentColor,
+        mapThemeMode: mapStylePreference
       }
     });
+  };
+
+  // Helper for opening terms/privacy without destroying onboarding state
+  const openTerms = (e) => {
+    e.preventDefault();
+    window.open('/terms', '_blank');
+  };
+
+  const openPrivacy = (e) => {
+    e.preventDefault();
+    window.open('/privacy', '_blank');
   };
 
   // Get active accent hex for custom dynamic button color
@@ -240,7 +266,7 @@ const LandingPage = () => {
       
       {/* Top Header / Back Navigation (Visible for steps 2 to 5) */}
       {step > 1 && (
-        <div className="relative z-20 flex items-center justify-between px-6 pt-6 pb-2">
+        <div className="relative z-20 flex items-center justify-between px-6 pt-5 pb-2">
           <button
             onClick={handleBack}
             className="w-10 h-10 rounded-full bg-zinc-900/80 border border-zinc-800 flex items-center justify-center text-zinc-300 hover:text-white active:scale-95 transition-transform"
@@ -269,7 +295,7 @@ const LandingPage = () => {
         <AnimatePresence mode="wait" custom={direction}>
           
           {/* ========================================================================= */}
-          {/* STEP 1: HERO PAGE (Video Background + Frosted Glass Overlay) */}
+          {/* STEP 1: HERO PAGE (Desktop Image / Mobile Video + 35% Frosted Glass) */}
           {/* ========================================================================= */}
           {step === 1 && (
             <motion.div
@@ -281,41 +307,56 @@ const LandingPage = () => {
               exit="exit"
               className="absolute inset-0 flex flex-col justify-between p-6 z-10"
             >
-              {/* Background Video */}
+              {/* Background Media Container */}
               <div className="absolute inset-0 overflow-hidden -z-10">
+                {/* Desktop/Tablet Horizontal Static Image */}
+                <img
+                  src="/assets/images/desktop_hero_car.jpg"
+                  alt="JRide Car"
+                  className="hidden md:block w-full h-full object-cover"
+                />
+
+                {/* Mobile Looping Portrait Video */}
                 <video
                   autoPlay
                   loop
                   muted
                   playsInline
-                  className="w-full h-full object-cover scale-105"
+                  className="block md:hidden w-full h-full object-cover scale-105"
                 >
                   <source src="/assets/videos/Firstpage.mp4" type="video/mp4" />
                 </video>
-                {/* Frosted Glass Blur Overlay */}
-                <div className="absolute inset-0 bg-black/55 backdrop-blur-md backdrop-filter" />
-                <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/90" />
+
+                {/* 35% Frosted Glass Overlay (Crystal-clear visibility with soft blur) */}
+                <div className="absolute inset-0 bg-black/35 backdrop-blur-[5px] backdrop-filter" />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/85" />
               </div>
 
-              {/* Top Branding Card */}
-              <div className="pt-8 flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-blue-500/20 border border-white/10">
-                  <Car className="w-6 h-6 text-white" />
-                </div>
+              {/* Top Branding Section (Moved high up, almost touching the top) */}
+              <div className="pt-2 sm:pt-4 flex items-center gap-3.5">
+                <img
+                  src="/assets/images/Jaey-logo.png"
+                  alt="JRide Logo"
+                  className="h-12 sm:h-16 w-auto object-contain drop-shadow-lg"
+                />
                 <div>
-                  <h2 className="text-xl font-bold tracking-wider text-white">JRIDE</h2>
-                  <p className="text-[10px] text-zinc-400 uppercase tracking-widest">Mulungushi University</p>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold tracking-wider text-white leading-tight">
+                    JRIDE
+                  </h2>
+                  <p className="text-[11px] font-semibold text-zinc-300 uppercase tracking-widest">
+                    MULUNGUSHI UNIVERSITY
+                  </p>
                 </div>
               </div>
 
               {/* Bottom Content & CTA */}
-              <div className="pb-6 space-y-6">
+              <div className="pb-6 space-y-5">
                 <div>
                   <h1 className="text-4xl sm:text-5xl font-serif font-medium tracking-tight text-white leading-tight mb-3">
                     From Campus <br />
                     To Your Door Step
                   </h1>
-                  <p className="text-sm sm:text-base text-zinc-300 leading-relaxed max-w-sm">
+                  <p className="text-sm sm:text-base text-zinc-200 leading-relaxed max-w-sm">
                     The platform that always moves in your hands. Request rides, share seats, and travel comfortably around campus.
                   </p>
                 </div>
@@ -332,11 +373,11 @@ const LandingPage = () => {
                     Get Started
                   </button>
 
-                  <p className="text-center text-[11px] text-zinc-400">
+                  <p className="text-center text-[11px] text-zinc-300">
                     By proceeding, you agree to all our{' '}
-                    <span onClick={() => navigate('/terms')} className="text-zinc-300 underline cursor-pointer">terms and conditions</span>
+                    <span onClick={openTerms} className="text-white underline cursor-pointer hover:text-blue-300">terms and conditions</span>
                     {' '}~{' '}
-                    <span onClick={() => navigate('/privacy')} className="text-zinc-300 underline cursor-pointer">about us</span>
+                    <span onClick={openPrivacy} className="text-white underline cursor-pointer hover:text-blue-300">about us</span>
                   </p>
                 </div>
               </div>
@@ -344,7 +385,7 @@ const LandingPage = () => {
           )}
 
           {/* ========================================================================= */}
-          {/* STEP 2: NAME ENTRY (First Name -> Smooth in-page Last Name expansion) */}
+          {/* STEP 2: NAME & MANDATORY PHONE INPUT */}
           {/* ========================================================================= */}
           {step === 2 && (
             <motion.div
@@ -354,9 +395,9 @@ const LandingPage = () => {
               initial="enter"
               animate="center"
               exit="exit"
-              className="flex flex-col justify-between h-full pt-10 pb-6"
+              className="flex flex-col justify-between h-full pt-8 pb-6"
             >
-              <div className="space-y-6">
+              <div className="space-y-5 overflow-y-auto pr-1">
                 <div>
                   <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-2">
                     What is your first name?
@@ -370,8 +411,7 @@ const LandingPage = () => {
                       if (e.key === 'Enter') goToNextStep();
                     }}
                     placeholder="Your name"
-                    className="w-full bg-zinc-900/90 border border-zinc-800 rounded-2xl px-5 py-4 text-base text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:border-transparent transition-all mt-4"
-                    style={{ focusRingColor: activeAccentHex }}
+                    className="w-full bg-zinc-900/90 border border-zinc-800 rounded-2xl px-5 py-4 text-base text-white placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:border-zinc-700 transition-all mt-2"
                   />
                 </div>
 
@@ -383,7 +423,7 @@ const LandingPage = () => {
                       animate={{ opacity: 1, height: 'auto', y: 0 }}
                       exit={{ opacity: 0, height: 0, y: 15 }}
                       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                      className="pt-2 overflow-hidden"
+                      className="overflow-hidden pt-1"
                     >
                       <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-2">
                         What is your last name?
@@ -397,8 +437,35 @@ const LandingPage = () => {
                           if (e.key === 'Enter') goToNextStep();
                         }}
                         placeholder="Your surname"
-                        className="w-full bg-zinc-900/90 border border-zinc-800 rounded-2xl px-5 py-4 text-base text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:border-transparent transition-all mt-4"
-                        style={{ focusRingColor: activeAccentHex }}
+                        className="w-full bg-zinc-900/90 border border-zinc-800 rounded-2xl px-5 py-4 text-base text-white placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:border-zinc-700 transition-all mt-2"
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Smooth In-Page Reveal for Phone Number */}
+                <AnimatePresence>
+                  {showPhoneInput && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0, y: 15 }}
+                      animate={{ opacity: 1, height: 'auto', y: 0 }}
+                      exit={{ opacity: 0, height: 0, y: 15 }}
+                      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                      className="overflow-hidden pt-1"
+                    >
+                      <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-2">
+                        What is your phone number?
+                      </h2>
+                      <input
+                        type="tel"
+                        autoFocus
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') goToNextStep();
+                        }}
+                        placeholder="e.g. 0971234567"
+                        className="w-full bg-zinc-900/90 border border-zinc-800 rounded-2xl px-5 py-4 text-base text-white placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:border-zinc-700 transition-all mt-2"
                       />
                     </motion.div>
                   )}
@@ -406,10 +473,10 @@ const LandingPage = () => {
               </div>
 
               {/* Bottom Actions */}
-              <div className="space-y-4 pt-8">
+              <div className="space-y-4 pt-6">
                 <button
                   onClick={goToNextStep}
-                  disabled={!firstName.trim() || (showLastNameInput && !lastName.trim())}
+                  disabled={!firstName.trim() || (showLastNameInput && !lastName.trim()) || (showPhoneInput && !phone.trim())}
                   className="w-full py-4 px-6 rounded-2xl font-bold text-base text-white disabled:opacity-40 disabled:pointer-events-none active:scale-[0.98] transition-all shadow-lg"
                   style={{
                     backgroundColor: activeAccentHex,
@@ -466,7 +533,7 @@ const LandingPage = () => {
                     <div className="flex-1 font-semibold text-lg text-white">Male</div>
                     {gender === 'male' && (
                       <div className="w-6 h-6 rounded-full flex items-center justify-center text-white" style={{ backgroundColor: activeAccentHex }}>
-                        <Check className="w-4 h-4" />
+                        <Check className="w-4 h-4 stroke-[3]" />
                       </div>
                     )}
                   </div>
@@ -487,7 +554,7 @@ const LandingPage = () => {
                     <div className="flex-1 font-semibold text-lg text-white">Female</div>
                     {gender === 'female' && (
                       <div className="w-6 h-6 rounded-full flex items-center justify-center text-white" style={{ backgroundColor: activeAccentHex }}>
-                        <Check className="w-4 h-4" />
+                        <Check className="w-4 h-4 stroke-[3]" />
                       </div>
                     )}
                   </div>
@@ -530,23 +597,20 @@ const LandingPage = () => {
               initial="enter"
               animate="center"
               exit="exit"
-              className="flex flex-col justify-between h-full pt-8 pb-6"
+              className="flex flex-col justify-between h-full pt-6 pb-6"
             >
-              {/* Fixed Header */}
+              {/* Fixed Header (Higher up) */}
               <div className="text-center space-y-1">
                 <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
                   Now, let's customize your app experience
                 </h1>
                 <p className="text-sm text-zinc-400">It will only take a minute</p>
-                <p className="text-[11px] text-zinc-500 font-medium pt-1">
-                  ✨ You can always customize this later in settings
-                </p>
               </div>
 
               {/* Dynamic Center Customization Content */}
-              <div className="my-auto py-4">
+              <div className="my-auto py-2">
                 
-                {/* 4A: App Theme Selection (3 Circular Rings) */}
+                {/* 4A: App Theme Selection (Enlarged 3 Circular Rings) */}
                 {customSubStep === 'theme' && (
                   <motion.div
                     key="substep-theme"
@@ -555,24 +619,24 @@ const LandingPage = () => {
                     exit={{ opacity: 0, scale: 0.95 }}
                     className="space-y-4"
                   >
-                    <p className="text-xs text-center font-medium uppercase tracking-widest text-zinc-400 mb-4">
+                    <p className="text-xs text-center font-medium uppercase tracking-widest text-zinc-400 mb-2">
                       Select App Theme
                     </p>
 
-                    <div className="flex items-center justify-center gap-4 sm:gap-6">
+                    <div className="flex items-center justify-center gap-3 sm:gap-6">
                       
                       {/* Dark Mode Ring */}
                       <div
                         onClick={() => setThemeMode('dark')}
-                        className="flex flex-col items-center gap-2 cursor-pointer group"
+                        className="flex flex-col items-center gap-2.5 cursor-pointer group"
                       >
                         <div
-                          className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full p-1 border-2 transition-all overflow-hidden ${
+                          className={`w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full p-1.5 border-4 transition-all overflow-hidden ${
                             themeMode === 'dark'
-                              ? 'border-blue-500 scale-105 shadow-xl shadow-blue-500/20'
+                              ? 'border-blue-500 scale-105 shadow-2xl shadow-blue-500/30 ring-4 ring-blue-500/20'
                               : 'border-zinc-800 opacity-60 hover:opacity-90'
                           }`}
-                          style={themeMode === 'dark' ? { borderColor: activeAccentHex } : {}}
+                          style={themeMode === 'dark' ? { borderColor: activeAccentHex, ringColor: `${activeAccentHex}40` } : {}}
                         >
                           <div className="w-full h-full rounded-full overflow-hidden bg-zinc-950">
                             <img
@@ -582,7 +646,7 @@ const LandingPage = () => {
                             />
                           </div>
                         </div>
-                        <span className={`text-xs font-semibold ${themeMode === 'dark' ? 'text-white' : 'text-zinc-400'}`}>
+                        <span className={`text-xs sm:text-sm font-semibold ${themeMode === 'dark' ? 'text-white' : 'text-zinc-400'}`}>
                           Dark
                         </span>
                       </div>
@@ -590,15 +654,15 @@ const LandingPage = () => {
                       {/* Light Mode Ring */}
                       <div
                         onClick={() => setThemeMode('light')}
-                        className="flex flex-col items-center gap-2 cursor-pointer group"
+                        className="flex flex-col items-center gap-2.5 cursor-pointer group"
                       >
                         <div
-                          className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full p-1 border-2 transition-all overflow-hidden ${
+                          className={`w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full p-1.5 border-4 transition-all overflow-hidden ${
                             themeMode === 'light'
-                              ? 'border-blue-500 scale-105 shadow-xl shadow-blue-500/20'
+                              ? 'border-blue-500 scale-105 shadow-2xl shadow-blue-500/30 ring-4 ring-blue-500/20'
                               : 'border-zinc-800 opacity-60 hover:opacity-90'
                           }`}
-                          style={themeMode === 'light' ? { borderColor: activeAccentHex } : {}}
+                          style={themeMode === 'light' ? { borderColor: activeAccentHex, ringColor: `${activeAccentHex}40` } : {}}
                         >
                           <div className="w-full h-full rounded-full overflow-hidden bg-white">
                             <img
@@ -608,7 +672,7 @@ const LandingPage = () => {
                             />
                           </div>
                         </div>
-                        <span className={`text-xs font-semibold ${themeMode === 'light' ? 'text-white' : 'text-zinc-400'}`}>
+                        <span className={`text-xs sm:text-sm font-semibold ${themeMode === 'light' ? 'text-white' : 'text-zinc-400'}`}>
                           Light
                         </span>
                       </div>
@@ -616,15 +680,15 @@ const LandingPage = () => {
                       {/* Auto Mode Ring (Smooth Cross-fade) */}
                       <div
                         onClick={() => setThemeMode('system')}
-                        className="flex flex-col items-center gap-2 cursor-pointer group"
+                        className="flex flex-col items-center gap-2.5 cursor-pointer group"
                       >
                         <div
-                          className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full p-1 border-2 transition-all overflow-hidden relative ${
+                          className={`w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full p-1.5 border-4 transition-all overflow-hidden relative ${
                             themeMode === 'system'
-                              ? 'border-blue-500 scale-105 shadow-xl shadow-blue-500/20'
+                              ? 'border-blue-500 scale-105 shadow-2xl shadow-blue-500/30 ring-4 ring-blue-500/20'
                               : 'border-zinc-800 opacity-60 hover:opacity-90'
                           }`}
-                          style={themeMode === 'system' ? { borderColor: activeAccentHex } : {}}
+                          style={themeMode === 'system' ? { borderColor: activeAccentHex, ringColor: `${activeAccentHex}40` } : {}}
                         >
                           <div className="w-full h-full rounded-full overflow-hidden relative">
                             <img
@@ -643,7 +707,7 @@ const LandingPage = () => {
                             />
                           </div>
                         </div>
-                        <span className={`text-xs font-semibold ${themeMode === 'system' ? 'text-white' : 'text-zinc-400'}`}>
+                        <span className={`text-xs sm:text-sm font-semibold ${themeMode === 'system' ? 'text-white' : 'text-zinc-400'}`}>
                           Auto (System)
                         </span>
                       </div>
@@ -652,7 +716,7 @@ const LandingPage = () => {
                   </motion.div>
                 )}
 
-                {/* 4B: Accent Color Selection (Live Instant UI Color Application) */}
+                {/* 4B: Accent Color Selection (Higher up with enlarged padded tiles) */}
                 {customSubStep === 'accent' && (
                   <motion.div
                     key="substep-accent"
@@ -661,30 +725,30 @@ const LandingPage = () => {
                     exit={{ opacity: 0, scale: 0.95 }}
                     className="space-y-4"
                   >
-                    <p className="text-xs text-center font-medium uppercase tracking-widest text-zinc-400 mb-3">
+                    <p className="text-xs text-center font-medium uppercase tracking-widest text-zinc-400 mb-2">
                       Choose Your Accent Color
                     </p>
 
-                    <div className="grid grid-cols-4 gap-3 max-w-xs mx-auto">
+                    <div className="grid grid-cols-4 gap-3.5 max-w-sm mx-auto">
                       {Object.entries(ACCENT_COLORS).map(([key, item]) => {
                         const isSelected = accentColor === key || (key === 'default' && accentColor === 'blue');
                         return (
                           <button
                             key={key}
                             onClick={() => setAccentColor(key)}
-                            className={`flex flex-col items-center gap-1.5 p-2 rounded-2xl border transition-all ${
+                            className={`flex flex-col items-center gap-2 p-3 sm:p-4 rounded-2xl border transition-all ${
                               isSelected
-                                ? 'bg-zinc-800 border-white/40 shadow-lg scale-105'
-                                : 'bg-zinc-900/60 border-zinc-800/80 hover:bg-zinc-900'
+                                ? 'bg-zinc-800 border-white/50 shadow-xl scale-105 ring-2 ring-white/20'
+                                : 'bg-zinc-900/70 border-zinc-800/80 hover:bg-zinc-900'
                             }`}
                           >
                             <div
-                              className="w-8 h-8 rounded-full shadow-md flex items-center justify-center text-white"
+                              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full shadow-md flex items-center justify-center text-white"
                               style={{ backgroundColor: item.hex }}
                             >
-                              {isSelected && <Check className="w-4 h-4 stroke-[3]" />}
+                              {isSelected && <Check className="w-5 h-5 stroke-[3]" />}
                             </div>
-                            <span className="text-[10px] font-medium text-zinc-400 truncate w-full text-center">
+                            <span className="text-[11px] font-semibold text-zinc-300 truncate w-full text-center">
                               {item.label.split(' ')[0]}
                             </span>
                           </button>
@@ -694,7 +758,7 @@ const LandingPage = () => {
                   </motion.div>
                 )}
 
-                {/* 4C: Map Style Selection (3 Real Mapbox Circular Mini-Maps) */}
+                {/* 4C: Map Style Selection (Enlarged 3 Circular Real Mapbox Maps) */}
                 {customSubStep === 'map' && (
                   <motion.div
                     key="substep-map"
@@ -703,28 +767,28 @@ const LandingPage = () => {
                     exit={{ opacity: 0, scale: 0.95 }}
                     className="space-y-4"
                   >
-                    <p className="text-xs text-center font-medium uppercase tracking-widest text-zinc-400 mb-3">
+                    <p className="text-xs text-center font-medium uppercase tracking-widest text-zinc-400 mb-2">
                       Choose Map Style (Mulungushi View)
                     </p>
 
-                    <div className="flex items-center justify-center gap-4 sm:gap-6">
+                    <div className="flex items-center justify-center gap-3 sm:gap-6">
                       
                       {/* Day Map Circle */}
                       <div
                         onClick={() => setMapStylePreference('day')}
-                        className="flex flex-col items-center gap-2 cursor-pointer group"
+                        className="flex flex-col items-center gap-2.5 cursor-pointer group"
                       >
                         <div
-                          className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full p-1 border-2 transition-all relative ${
+                          className={`w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full p-1.5 border-4 transition-all relative ${
                             mapStylePreference === 'day'
-                              ? 'border-blue-500 scale-105 shadow-xl shadow-blue-500/20'
+                              ? 'border-blue-500 scale-105 shadow-2xl shadow-blue-500/30 ring-4 ring-blue-500/20'
                               : 'border-zinc-800 opacity-60 hover:opacity-90'
                           }`}
-                          style={mapStylePreference === 'day' ? { borderColor: activeAccentHex } : {}}
+                          style={mapStylePreference === 'day' ? { borderColor: activeAccentHex, ringColor: `${activeAccentHex}40` } : {}}
                         >
                           <MapboxPreviewCircle styleMode="day" />
                         </div>
-                        <span className={`text-xs font-semibold ${mapStylePreference === 'day' ? 'text-white' : 'text-zinc-400'}`}>
+                        <span className={`text-xs sm:text-sm font-semibold ${mapStylePreference === 'day' ? 'text-white' : 'text-zinc-400'}`}>
                           Day Map
                         </span>
                       </div>
@@ -732,19 +796,19 @@ const LandingPage = () => {
                       {/* Night Map Circle */}
                       <div
                         onClick={() => setMapStylePreference('night')}
-                        className="flex flex-col items-center gap-2 cursor-pointer group"
+                        className="flex flex-col items-center gap-2.5 cursor-pointer group"
                       >
                         <div
-                          className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full p-1 border-2 transition-all relative ${
+                          className={`w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full p-1.5 border-4 transition-all relative ${
                             mapStylePreference === 'night'
-                              ? 'border-blue-500 scale-105 shadow-xl shadow-blue-500/20'
+                              ? 'border-blue-500 scale-105 shadow-2xl shadow-blue-500/30 ring-4 ring-blue-500/20'
                               : 'border-zinc-800 opacity-60 hover:opacity-90'
                           }`}
-                          style={mapStylePreference === 'night' ? { borderColor: activeAccentHex } : {}}
+                          style={mapStylePreference === 'night' ? { borderColor: activeAccentHex, ringColor: `${activeAccentHex}40` } : {}}
                         >
                           <MapboxPreviewCircle styleMode="night" />
                         </div>
-                        <span className={`text-xs font-semibold ${mapStylePreference === 'night' ? 'text-white' : 'text-zinc-400'}`}>
+                        <span className={`text-xs sm:text-sm font-semibold ${mapStylePreference === 'night' ? 'text-white' : 'text-zinc-400'}`}>
                           Night Map
                         </span>
                       </div>
@@ -752,19 +816,19 @@ const LandingPage = () => {
                       {/* Auto Map Circle */}
                       <div
                         onClick={() => setMapStylePreference('auto')}
-                        className="flex flex-col items-center gap-2 cursor-pointer group"
+                        className="flex flex-col items-center gap-2.5 cursor-pointer group"
                       >
                         <div
-                          className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full p-1 border-2 transition-all relative ${
+                          className={`w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full p-1.5 border-4 transition-all relative ${
                             mapStylePreference === 'auto'
-                              ? 'border-blue-500 scale-105 shadow-xl shadow-blue-500/20'
+                              ? 'border-blue-500 scale-105 shadow-2xl shadow-blue-500/30 ring-4 ring-blue-500/20'
                               : 'border-zinc-800 opacity-60 hover:opacity-90'
                           }`}
-                          style={mapStylePreference === 'auto' ? { borderColor: activeAccentHex } : {}}
+                          style={mapStylePreference === 'auto' ? { borderColor: activeAccentHex, ringColor: `${activeAccentHex}40` } : {}}
                         >
                           <MapboxPreviewCircle styleMode="day" isAuto={true} />
                         </div>
-                        <span className={`text-xs font-semibold ${mapStylePreference === 'auto' ? 'text-white' : 'text-zinc-400'}`}>
+                        <span className={`text-xs sm:text-sm font-semibold ${mapStylePreference === 'auto' ? 'text-white' : 'text-zinc-400'}`}>
                           Auto Map
                         </span>
                       </div>
@@ -775,8 +839,12 @@ const LandingPage = () => {
 
               </div>
 
-              {/* Bottom Actions */}
-              <div className="space-y-4 pt-6">
+              {/* Bottom Actions with Relocated "Customize Later" Text */}
+              <div className="space-y-3 pt-4">
+                <p className="text-center text-xs text-zinc-400 font-medium pb-1">
+                  ✨ You can always customize this later in settings
+                </p>
+
                 <button
                   onClick={goToNextStep}
                   className="w-full py-4 px-6 rounded-2xl font-bold text-base text-white active:scale-[0.98] transition-all shadow-lg"
@@ -801,7 +869,7 @@ const LandingPage = () => {
           )}
 
           {/* ========================================================================= */}
-          {/* STEP 5: SAVE PROGRESS & REGISTRATION (Reference: Screenshot 5) */}
+          {/* STEP 5: SAVE PROGRESS & REGISTRATION */}
           {/* ========================================================================= */}
           {step === 5 && (
             <motion.div
@@ -811,18 +879,15 @@ const LandingPage = () => {
               initial="enter"
               animate="center"
               exit="exit"
-              className="flex flex-col justify-between h-full pt-10 pb-6"
+              className="flex flex-col justify-between h-full pt-8 pb-6"
             >
-              {/* Illustration Badge */}
-              <div className="flex flex-col items-center text-center space-y-6 pt-4">
-                <div className="relative">
-                  <div className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-blue-400 flex items-center justify-center shadow-2xl shadow-blue-500/30 border border-white/20">
-                    <Car className="w-12 h-12 text-white" />
-                  </div>
-                  <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-emerald-500 border-4 border-[#0B0B0E] flex items-center justify-center shadow-md">
-                    <Sparkles className="w-4 h-4 text-white" />
-                  </div>
-                </div>
+              {/* Clean Transparent Logo Display */}
+              <div className="flex flex-col items-center text-center space-y-5 pt-4">
+                <img
+                  src="/assets/images/Jaey-logo.png"
+                  alt="JRide Logo"
+                  className="h-20 sm:h-24 w-auto object-contain drop-shadow-2xl"
+                />
 
                 <div className="space-y-2 max-w-sm">
                   <h1 className="text-3xl font-bold tracking-tight text-white">
@@ -835,7 +900,7 @@ const LandingPage = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="space-y-3 pt-8">
+              <div className="space-y-3 pt-6">
                 {/* Continue with Google */}
                 <button
                   onClick={handleGoogleClick}
@@ -872,12 +937,12 @@ const LandingPage = () => {
                   Continue with Email
                 </button>
 
-                {/* Disclaimer */}
+                {/* Disclaimer with External Links */}
                 <p className="text-center text-[11px] text-zinc-500 pt-2 leading-tight">
                   By continuing you accept the{' '}
-                  <span onClick={() => navigate('/terms')} className="text-blue-400 underline cursor-pointer">terms of use</span>
+                  <span onClick={openTerms} className="text-blue-400 underline cursor-pointer hover:text-blue-300">terms of use</span>
                   {' '}and{' '}
-                  <span onClick={() => navigate('/privacy')} className="text-blue-400 underline cursor-pointer">privacy policy</span>
+                  <span onClick={openPrivacy} className="text-blue-400 underline cursor-pointer hover:text-blue-300">privacy policy</span>
                 </p>
 
                 {/* Sign in redirect */}

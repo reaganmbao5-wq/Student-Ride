@@ -1,272 +1,685 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, useMap, useMapEvents, Tooltip } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-import 'leaflet-rotatedmarker';
-import { useTheme } from '../../context/ThemeContext';
-import { toast } from 'sonner';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
+
+import mapboxgl from 'mapbox-gl';
+
+import 'mapbox-gl/dist/mapbox-gl.css';
+
+import '../styles/map.css';
+
+import { POILayer } from '../layers/POILayer';
+
+import { getAutoMapStyle, isNightTheme } from '../styles/MapboxStyles';
+
 import VehicleEngine from '../vehicle/VehicleEngine';
-import CameraEngine from '../camera/CameraEngine';
-import { CAMERA_MODES } from '../camera/CameraConfig';
+
+import { CAMERA_MODES, CAMERA_CONFIG } from '../camera/CameraConfig';
+
 import { RouteEngine } from '../route/RouteEngine';
-import { haptics } from '../../utils/haptics';
 
-// Standardize default icons
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+import { MarkerLayer } from '../layers/MarkerLayer';
 
-let DefaultIcon = L.icon({
-  iconUrl: icon,
-  shadowUrl: iconShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41]
-});
-L.Marker.prototype.options.icon = DefaultIcon;
-
-const createCustomIcon = (color, svgPath) =>
-  L.divIcon({
-    className: 'custom-marker',
-    html: `<div style="filter:drop-shadow(0 2px 4px rgba(0,0,0,.35))">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="${color}" stroke="white" stroke-width="2">${svgPath}</svg>
-    </div>`,
-    iconSize: [32, 32],
-    iconAnchor: [16, 30],
-    popupAnchor: [0, -30],
-  });
-
-export const userIcon = L.divIcon({
-  className: 'marker-user',
-  html: `<div style="width:16px;height:16px;background:#3B82F6;border:3px solid white;border-radius:50%;box-shadow:0 0 0 8px rgba(59,130,246,.2)"></div>`,
-  iconSize: [16, 16],
-  iconAnchor: [8, 8],
-});
-
-export const pickupIcon = L.divIcon({
-  className: 'custom-marker',
-  html: `<div style="position:relative; display:flex; flex-direction:column; align-items:center;">
-           <div style="width:40px; height:40px; border-radius:50%; background-color:black; display:flex; align-items:center; justify-content:center; color:white; box-shadow:0 10px 15px -3px rgba(0,0,0,0.2);">
-             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-           </div>
-           <div style="width:4px; height:16px; background-color:black;"></div>
-           <div style="width:12px; height:6px; background-color:rgba(0,0,0,0.3); border-radius:50%; margin-top:-2px; filter:blur(1px);"></div>
-         </div>`,
-  iconSize: [40, 60],
-  iconAnchor: [20, 58],
-  popupAnchor: [0, -60]
-});
-
-export const dropoffIcon = L.divIcon({
-  className: 'custom-marker',
-  html: `<div style="position:relative; display:flex; flex-direction:column; align-items:center;">
-           <div style="width:40px; height:40px; border-radius:50%; background-color:#dc2626; display:flex; align-items:center; justify-content:center; color:white; box-shadow:0 10px 15px -3px rgba(0,0,0,0.2);">
-             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>
-           </div>
-           <div style="width:4px; height:16px; background-color:#dc2626;"></div>
-           <div style="width:12px; height:6px; background-color:rgba(0,0,0,0.3); border-radius:50%; margin-top:-2px; filter:blur(1px);"></div>
-         </div>`,
-  iconSize: [40, 60],
-  iconAnchor: [20, 58],
-  popupAnchor: [0, -60]
-});
+import { Sun, Moon, Clock } from 'lucide-react';
 
 
 
-// ─── Tile layer definitions ─────────────────────────────────────────
-const TILES = {
-  // Google Maps Standard — full Google Maps look for light mode
-  light: {
-    url: 'https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&scale=2',
-    subdomains: ['0', '1', '2', '3'],
-    attribution: '© Google Maps',
-  },
-  // CartoDB Dark Matter — excellent dark map style for dark mode
-  dark: {
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
-    subdomains: 'abcd',
-    attribution: '© CartoDB',
-  },
-  // Google Maps Hybrid — full-colour satellite + labels globally
-  satellite: {
-    url: 'https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&scale=2',
-    subdomains: ['0', '1', '2', '3'],
-    attribution: '© Google Maps',
-  },
-};
+// Configure Mapbox Access Token
 
-// ─── Map mode button ─────────────────────────────────────────────────
-const MapBtn = ({ active, onClick, icon, label, accentColor }) => (
-  <button
-    onClick={onClick}
-    title={label}
-    style={{
-      background: active ? accentColor : 'rgba(255,255,255,0.95)',
-      border: active ? `2px solid ${accentColor}` : '2px solid transparent',
-      borderRadius: '12px',
-      padding: '8px 12px',
-      boxShadow: active
-        ? `0 4px 14px ${accentColor}55`
-        : '0 2px 10px rgba(0,0,0,0.18)',
-      cursor: 'pointer',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '7px',
-      fontSize: '12px',
-      fontWeight: 700,
-      color: active ? 'white' : '#1a1a1a',
-      whiteSpace: 'nowrap',
-      backdropFilter: 'blur(8px)',
-      transition: 'all 0.18s ease',
-      letterSpacing: '0.01em',
-    }}
-  >
-    {icon}
-    {label}
-  </button>
-);
+mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1IjoiamFleSIsImEiOiJjbXNocmV5ZXAwM3JlMnhzZ29raTB3eGc5In0.riXZQNEurCaETWjZt02R6A';
 
-// ─── Main PlatformMap component ─────────────────────────────────────
-/**
- * PlatformMap Abstraction Layer
- * Uses react-leaflet. Native @capacitor/google-maps will replace this once an Android API key is provided.
- */
-export const PlatformMap = ({
-  center,
-  zoom = 15,
-  bounds = null,
-  onCenterChanged,
-  onDragStart,
-  onDragEnd,
-  markers = [],
-  drivers = [],
-  routes = [],
-  routeGeometry = null,
-  showRouteLine = false,
-  interactive = true,
-  className = '',
-  // Phase 3.2.2 Camera Engine Props
-  cameraMode = CAMERA_MODES.FREE,
-  driverLocation = null,
-  routeBounds = null,
-  selectionLocation = null,
-  bottomPadding = null,
-  rideStatus = null,
-  onRouteAnimationChange = null,
-}) => {
-  const { theme } = useTheme();
 
-  // Always use standard Google Maps (light mode) tiles per user request
-  const tileUrl = TILES.light.url;
-  const tileSubdomains = TILES.light.subdomains;
-  const tileAttribution = TILES.light.attribution;
 
-  const getIcon = (type) => {
-    switch (type) {
-      case 'pickup':  return pickupIcon;
-      case 'dropoff': return dropoffIcon;
-      case 'user':    return userIcon;
-      default:        return pickupIcon;
+if (typeof window !== 'undefined') {
+
+  try {
+
+    const workerScript = "importScripts('https://api.mapbox.com/mapbox-gl-js/v3.28.1/mapbox-gl-csp-worker.js');";
+
+    const blob = new Blob([workerScript], { type: 'application/javascript' });
+
+    const blobUrl = URL.createObjectURL(blob);
+
+
+
+    class ClassicMapboxWorker extends window.Worker {
+
+      constructor(url, options) {
+
+        super(blobUrl, { ...options, type: 'classic' });
+
+      }
+
     }
-  };
 
-  const MapEvents = () => {
-    useMapEvents({
-      dragstart: () => {
-        if (onDragStart) onDragStart();
-      },
-      dragend: (e) => {
-        haptics.pinDrop();
-        if (onDragEnd) onDragEnd();
-        const c = e.target.getCenter();
+    mapboxgl.workerClass = ClassicMapboxWorker;
+
+  } catch (err) {
+
+    console.warn('Mapbox ClassicMapboxWorker init error:', err);
+
+  }
+
+}
+
+
+
+export const PlatformMap = ({
+
+  center = { lat: -14.294896, lng: 28.559798 }, // Default Mulungushi University
+
+  zoom = 15,
+
+  bounds = null,
+
+  onCenterChanged,
+
+  onDragStart,
+
+  onDragEnd,
+
+  markers = [],
+
+  drivers = [],
+
+  routes = [],
+
+  routeGeometry = null,
+
+  interactive = true,
+
+  className = '',
+
+  cameraMode = CAMERA_MODES.FREE,
+
+  driverLocation = null,
+
+  routeBounds = null,
+
+  selectionLocation = null,
+
+  bottomPadding = null,
+
+  rideStatus = null,
+
+  onRouteAnimationChange = null,
+
+}) => {
+
+  const mapContainerRef = useRef(null);
+
+  const mapRef = useRef(null);
+
+  const targetCenterRef = useRef(center);
+
+  const currentStyleRef = useRef('');
+
+  const isUserInteractingRef = useRef(false);
+
+  const isUserDraggingRef = useRef(false);
+  const hasManuallyInteractedRef = useRef(false);
+  const lastFittedBoundsRef = useRef(null);
+
+  const [mapLoaded, setMapLoaded] = useState(false);
+
+  // Map Appearance Mode: 'auto' (default), 'light', 'dark'
+  const [themeMode, setThemeMode] = useState(() => localStorage.getItem('map_theme_mode') || 'auto');
+
+  useEffect(() => {
+    const handleThemeEvent = (e) => {
+      if (e?.detail) {
+        setThemeMode(e.detail);
+      } else {
+        setThemeMode(localStorage.getItem('map_theme_mode') || 'auto');
+      }
+    };
+    window.addEventListener('map-theme-change', handleThemeEvent);
+    window.addEventListener('storage', handleThemeEvent);
+    return () => {
+      window.removeEventListener('map-theme-change', handleThemeEvent);
+      window.removeEventListener('storage', handleThemeEvent);
+    };
+  }, []);
+
+  useEffect(() => {
+    hasManuallyInteractedRef.current = false;
+    lastFittedBoundsRef.current = null;
+  }, [cameraMode]);
+
+
+
+  // Stable Style Calculation
+
+  const activeStyle = useMemo(() => {
+
+    return getAutoMapStyle(themeMode === 'auto' ? null : themeMode);
+
+  }, [themeMode]);
+
+
+
+  const isNight = useMemo(() => {
+
+    return isNightTheme(themeMode === 'auto' ? null : themeMode);
+
+  }, [themeMode]);
+
+
+
+  // Initialize Mapbox Map once
+
+  useEffect(() => {
+
+    if (!mapContainerRef.current) return;
+
+
+
+    const initialCenter = (bounds && bounds.length >= 2)
+      ? [(bounds[0][1] + bounds[1][1]) / 2, (bounds[0][0] + bounds[1][0]) / 2]
+      : (center ? [center.lng, center.lat] : [28.559798, -14.294896]);
+
+    currentStyleRef.current = activeStyle;
+
+
+
+    const map = new mapboxgl.Map({
+
+      container: mapContainerRef.current,
+
+      style: activeStyle,
+
+      center: initialCenter,
+
+      zoom: zoom,
+
+      pitch: 0,
+
+      bearing: 0,
+
+      interactive: interactive,
+
+      attributionControl: false,
+
+      pixelRatio: window.devicePixelRatio || 1
+
+    });
+
+
+
+    map.on('load', () => {
+
+      setMapLoaded(true);
+
+      map.resize();
+
+    });
+
+
+
+    map.on('dragstart', () => {
+
+      isUserDraggingRef.current = true;
+
+      isUserInteractingRef.current = true;
+      hasManuallyInteractedRef.current = true;
+
+      if (onDragStart) onDragStart();
+
+    });
+
+
+
+    map.on('zoomstart', () => {
+
+      isUserInteractingRef.current = true;
+      hasManuallyInteractedRef.current = true;
+
+    });
+
+
+
+    map.on('dragend', () => {
+
+      if (onDragEnd) onDragEnd();
+
+    });
+
+
+
+    map.on('zoomend', () => {
+
+      setTimeout(() => {
+
+        isUserInteractingRef.current = false;
+
+      }, 500);
+
+    });
+
+
+
+    // ONLY notify parent on moveend IF the user was manually dragging!
+
+    // Preserves updated mapCenter while preventing circular flyTo loops (React Error #185)
+
+    map.on('moveend', () => {
+
+      if (isUserDraggingRef.current) {
+
+        isUserDraggingRef.current = false;
+
+        setTimeout(() => {
+
+          isUserInteractingRef.current = false;
+
+        }, 500);
+
         if (onCenterChanged) {
+
+          const c = map.getCenter();
+
           onCenterChanged({ lat: c.lat, lng: c.lng });
+
+        }
+
+      }
+
+    });
+
+
+
+    // Re-anchor canvas size safely without forcing jumpTo stale center
+    map.on('resize', () => {
+      // Mapbox automatically resizes viewport without jumping camera
+    });
+
+
+
+    mapRef.current = map;
+
+    window.map = map;
+
+
+
+    const resizeObserver = new ResizeObserver(() => {
+
+      if (mapRef.current) mapRef.current.resize();
+
+    });
+
+    resizeObserver.observe(mapContainerRef.current);
+
+
+
+    return () => {
+
+      resizeObserver.disconnect();
+
+      map.remove();
+
+      mapRef.current = null;
+
+    };
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+  }, []);
+
+
+
+  // Handle Dynamic Theme Switching safely
+
+  useEffect(() => {
+
+    if (mapRef.current && mapLoaded && currentStyleRef.current !== activeStyle) {
+
+      currentStyleRef.current = activeStyle;
+
+      mapRef.current.setStyle(activeStyle);
+
+      mapRef.current.once('style.load', () => {
+
+        if (mapRef.current) mapRef.current.resize();
+
+      });
+
+    }
+
+  }, [activeStyle, mapLoaded]);
+
+
+
+  const lastFlownCenterRef = useRef(null);
+  const prevCameraModeRef = useRef(cameraMode);
+
+  // Clear fitted bounds when camera mode changes so mode transitions always animate smoothly
+  useEffect(() => {
+    if (prevCameraModeRef.current !== cameraMode) {
+      prevCameraModeRef.current = cameraMode;
+      lastFittedBoundsRef.current = null;
+      lastFlownCenterRef.current = null;
+      hasManuallyInteractedRef.current = false;
+    }
+  }, [cameraMode]);
+
+  const markersRef = useRef(markers);
+  useEffect(() => {
+    markersRef.current = markers;
+  }, [markers]);
+
+  // Handle Smooth Center / Bounds / Driver Follow with zero twitching
+  useEffect(() => {
+    if (!mapRef.current || !mapLoaded) return;
+
+    isUserInteractingRef.current = false;
+    isUserDraggingRef.current = false;
+
+    // 1. DRIVER FOLLOW MODE (Active in-progress trip)
+    if (cameraMode === CAMERA_MODES.FOLLOW_DRIVER && driverLocation) {
+      const lat = Number(driverLocation.lat ?? driverLocation.latitude);
+      const lng = Number(driverLocation.lng ?? driverLocation.longitude);
+      const heading = Number(driverLocation.heading || 0);
+
+      if (!isNaN(lat) && !isNaN(lng)) {
+        let isPannedAway = false;
+        if (hasManuallyInteractedRef.current && typeof mapRef.current.getCenter === 'function') {
+          const currentMapCenter = mapRef.current.getCenter();
+          const distFromDriver = Math.hypot(currentMapCenter.lat - lat, currentMapCenter.lng - lng);
+          if (distFromDriver > 0.0035) {
+            isPannedAway = true;
+          }
+        }
+
+        if (!isPannedAway) {
+          let targetCoord = null;
+          if (Array.isArray(markersRef.current) && markersRef.current.length > 0) {
+            const activeTargetMarker = markersRef.current.find(m => m.iconType === 'dropoff' || m.iconType === 'pickup');
+            if (activeTargetMarker && activeTargetMarker.lat && activeTargetMarker.lng) {
+              targetCoord = {
+                lat: Number(activeTargetMarker.lat),
+                lng: Number(activeTargetMarker.lng)
+              };
+            }
+          }
+
+          let dynamicZoom = 18.0;
+          if (targetCoord && !isNaN(targetCoord.lat) && !isNaN(targetCoord.lng)) {
+            const dLat = (targetCoord.lat - lat) * (Math.PI / 180);
+            const dLon = (targetCoord.lng - lng) * (Math.PI / 180);
+            const a =
+              Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat * (Math.PI / 180)) * Math.cos(targetCoord.lat * (Math.PI / 180)) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const distMeters = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            if (distMeters < 400) {
+              // Smoothly scale zoom from 17.8 at 400m up to 19.5 at 20m for tight, detailed street-level framing
+              dynamicZoom = Math.min(19.5, Math.max(17.8, 19.5 - Math.log2(Math.max(distMeters, 20) / 20) * 0.39));
+            } else {
+              dynamicZoom = 18.0;
+            }
+          }
+
+          const effBottom = (typeof bottomPadding === 'number' && bottomPadding > 0) ? Math.max(bottomPadding, 220) : 220;
+
+          mapRef.current.easeTo({
+            center: [lng, lat],
+            offset: [0, -Math.round(effBottom * 0.35)], // Places vehicle comfortably in lower-third
+            bearing: heading,
+            pitch: 45, // 45 degree navigation perspective
+            zoom: dynamicZoom,
+            duration: 800,
+            essential: true
+          });
+          return;
         }
       }
-    });
-    return null;
-  };
+    }
+
+    // 2. OVERVIEW / BOUNDS MODE (Confirm Ride / Finding a Driver / Shared Ride with Other Stops Ahead / Route Preview)
+    const targetArray = routeBounds || bounds;
+    const hasMultipleBounds = Array.isArray(targetArray) && targetArray.length >= 2;
+
+    if (hasMultipleBounds) {
+      const lats = [];
+      const lngs = [];
+      targetArray.forEach(pt => {
+        if (Array.isArray(pt) && pt.length >= 2) {
+          let lat, lng;
+          const val0 = Number(pt[0]);
+          const val1 = Number(pt[1]);
+          if (val0 < 0 && val1 > 0) {
+            // [lat, lng] format (Zambia latitude is negative, longitude is positive)
+            lat = val0;
+            lng = val1;
+          } else if (val0 > 0 && val1 < 0) {
+            // [lng, lat] GeoJSON standard format
+            lng = val0;
+            lat = val1;
+          } else {
+            lat = val0;
+            lng = val1;
+          }
+          if (!isNaN(lat) && !isNaN(lng)) {
+            lats.push(lat);
+            lngs.push(lng);
+          }
+        } else if (pt && typeof pt === 'object') {
+          const lat = Number(pt.lat ?? pt.latitude);
+          const lng = Number(pt.lng ?? pt.longitude);
+          if (!isNaN(lat) && !isNaN(lng)) {
+            lats.push(lat);
+            lngs.push(lng);
+          }
+        }
+      });
+
+      if (lats.length >= 2 && lngs.length >= 2) {
+        const minLat = Math.min(...lats);
+        const maxLat = Math.max(...lats);
+        const minLng = Math.min(...lngs);
+        const maxLng = Math.max(...lngs);
+
+        const containerRect = mapContainerRef.current?.getBoundingClientRect();
+        const containerHeight = containerRect?.height || (typeof window !== 'undefined' ? window.innerHeight : 600);
+        const containerWidth = containerRect?.width || (typeof window !== 'undefined' ? window.innerWidth : 400);
+        const isMiniMap = !interactive || containerHeight < 250;
+
+        // Top clearance for header and back button
+        const calcTop = isMiniMap ? 14 : 90;
+        // Dynamic bottom padding to place route safely above the bottom sheet card
+        const calcBottom = isMiniMap ? 14 : ((typeof bottomPadding === 'number' && bottomPadding > 0)
+          ? Math.min(bottomPadding + 20, Math.round(containerHeight * 0.48))
+          : Math.max(220, Math.round(containerHeight * 0.38)));
+        // Generous side margins so pins with labels/icons on far edges are NEVER clipped (15% width clearance)
+        const calcSide = isMiniMap ? 14 : Math.max(55, Math.min(95, Math.round(containerWidth * 0.15)));
+
+        // Skip re-fitting if coordinates haven't shifted significantly (eliminates jerking on landing/polling)
+        const prev = lastFittedBoundsRef.current;
+        const isInitialFit = !prev;
+        const isSameBounds = prev &&
+          Math.abs(prev.minLat - minLat) < 0.00025 &&
+          Math.abs(prev.maxLat - maxLat) < 0.00025 &&
+          Math.abs(prev.minLng - minLng) < 0.00025 &&
+          Math.abs(prev.maxLng - maxLng) < 0.00025 &&
+          Math.abs(prev.calcBottom - calcBottom) < 15 &&
+          prev.calcTop === calcTop;
+
+        if (isSameBounds) {
+          return;
+        }
+
+        lastFittedBoundsRef.current = { minLat, maxLat, minLng, maxLng, calcTop, calcBottom };
+
+        try {
+          mapRef.current.fitBounds([
+            [minLng, minLat],
+            [maxLng, maxLat]
+          ], {
+            padding: {
+              top: calcTop,
+              bottom: calcBottom,
+              left: calcSide,
+              right: calcSide
+            },
+            pitch: 0, // Flat 2D overview for multi-point framing
+            bearing: 0,
+            maxZoom: 16.2, // Clean balanced zoom preventing pin clipping
+            duration: isInitialFit ? 1800 : 800,
+            essential: true
+          });
+        } catch (e) {}
+        return;
+      }
+    }
+
+    if (center && center.lat !== undefined && center.lng !== undefined) {
+      const defaultStepZoom = cameraMode === CAMERA_MODES.PICKUP_SELECTION
+        ? (CAMERA_CONFIG.ZOOM.PICKUP_SELECTION || 18.5)
+        : cameraMode === CAMERA_MODES.DESTINATION_SELECTION
+        ? (CAMERA_CONFIG.ZOOM.DESTINATION_SELECTION || 17.0)
+        : (typeof mapRef.current.getZoom === 'function' ? mapRef.current.getZoom() : zoom);
+
+      const targetZoom = (hasManuallyInteractedRef.current && typeof mapRef.current.getZoom === 'function')
+        ? mapRef.current.getZoom()
+        : defaultStepZoom;
+
+      const prevCenter = lastFlownCenterRef.current;
+      const centerChanged = !prevCenter ||
+        Math.abs(prevCenter.lat - center.lat) > 0.00005 ||
+        Math.abs(prevCenter.lng - center.lng) > 0.00005 ||
+        Math.abs(prevCenter.zoom - targetZoom) > 0.1;
+
+      if (centerChanged) {
+        lastFlownCenterRef.current = { lat: center.lat, lng: center.lng, zoom: targetZoom };
+        mapRef.current.flyTo({
+          center: [center.lng, center.lat],
+          zoom: targetZoom,
+          pitch: 0,
+          bearing: 0,
+          speed: 0.15,
+          duration: 2400,
+          essential: true
+        });
+      }
+    }
+  }, [center, zoom, bounds, routeBounds, cameraMode, driverLocation, mapLoaded, bottomPadding]);
+
+
 
   return (
-    <div className={`relative z-0 w-full h-full ${className}`} style={{ isolation: 'isolate' }}>
+
+    <div className={`relative z-0 w-full h-full min-h-[300px] ${className}`} style={{ isolation: 'isolate' }}>
+
+      
+
+      {/* MAPBOX CONTAINER - Identical to Student-Ride container styling */}
+
+      <div ref={mapContainerRef} className="w-full h-full absolute inset-0 bg-[#e4e2dc] dark:bg-[#191a1a] transition-colors" />
 
 
-      {/* ─── LEAFLET MAP ─── */}
-      <MapContainer
-        center={center ? [center.lat, center.lng] : [-14.42, 28.45]}
-        zoom={zoom}
-        maxZoom={20}
-        style={{ height: '100%', width: '100%' }}
-        zoomControl={false}
-        dragging={interactive}
-        touchZoom={interactive}
-        doubleClickZoom={interactive}
-        scrollWheelZoom={interactive}
-        attributionControl={false}
-      >
-        {/*
-          `key` forces TileLayer to fully remount when the URL changes.
-          Without this, Leaflet keeps the old tiles and doesn't swap the layer.
-        */}
-        <TileLayer
-          key={tileUrl}
-          url={tileUrl}
-          subdomains={tileSubdomains}
-          attribution={tileAttribution}
-          maxZoom={20}
-        />
 
-        {/* Phase 3.2.2 Camera Engine */}
-        <CameraEngine 
-          mode={cameraMode}
-          driverLocation={driverLocation}
-          routeBounds={routeBounds || bounds}
-          selectionLocation={selectionLocation}
-          bottomPadding={bottomPadding}
-        />
 
-        <MapEvents />
 
-        {/* Static pickup/dropoff markers */}
-        {markers.map((m, idx) => (
-          <Marker key={m.key || idx} position={[m.lat, m.lng]} icon={getIcon(m.iconType)}>
-            {m.pIndex && (
-              <Tooltip permanent direction="top" offset={[0, -30]} className="passenger-badge">
-                <div style={{ color: m.color, fontWeight: 'bold', fontSize: '14px' }}>{m.pIndex}</div>
-              </Tooltip>
-            )}
-          </Marker>
-        ))}
 
-        {/* Nearby driver markers handled by the new Vehicle Engine */}
-        {drivers.length > 0 && (
-          <VehicleEngine drivers={drivers} />
-        )}
 
-        {/* Route Engine Phase 3.2.3 */}
-        {routes && routes.length > 0 ? (
+      {/* 659 POIS CATEGORY LAYER */}
+
+      {mapLoaded && mapRef.current && (
+
+        <POILayer map={mapRef.current} isNight={isNight} />
+
+      )}
+
+
+
+
+
+
+
+      {/* STATIC PICKUP / DROPOFF / USER MARKERS */}
+
+      {mapLoaded && mapRef.current && markers && markers.length > 0 && (
+
+        <MarkerLayer map={mapRef.current} markers={markers} />
+
+      )}
+
+
+
+      {/* VEHICLE ENGINE */}
+
+      {mapLoaded && mapRef.current && drivers.length > 0 && (
+
+        <VehicleEngine map={mapRef.current} drivers={drivers} />
+
+      )}
+
+
+
+      {/* ROUTE ENGINE */}
+
+      {mapLoaded && mapRef.current && (
+
+        routes && routes.length > 0 ? (
+
           routes.map((route, idx) => (
-             <RouteEngine 
-               key={`route-${route.rideId || idx}`}
-               geometry={route.geometry}
-               color={route.color}
-               driverLocation={driverLocation}
-               status={route.status || rideStatus}
-               onAnimationChange={onRouteAnimationChange}
-             />
-          ))
-        ) : (
-          routeGeometry && routeGeometry.length > 0 && (
-            <RouteEngine 
-              geometry={routeGeometry}
-              driverLocation={driverLocation}
-              status={rideStatus}
-              onAnimationChange={onRouteAnimationChange}
-            />
-          )
-        )}
 
-      </MapContainer>
+             <RouteEngine 
+
+               key={`route-${route.rideId || idx}`}
+
+               id={`route-${route.rideId || idx}`}
+
+               map={mapRef.current}
+
+               geometry={route.geometry}
+
+               color={route.color}
+
+               driverLocation={driverLocation}
+
+               status={route.status || rideStatus}
+
+               onAnimationChange={onRouteAnimationChange}
+
+             />
+
+          ))
+
+        ) : (
+
+          routeGeometry && routeGeometry.length > 0 && (
+
+            <RouteEngine 
+
+              id="main-route"
+
+              map={mapRef.current}
+
+              geometry={routeGeometry}
+
+              driverLocation={driverLocation}
+
+              status={rideStatus}
+
+              onAnimationChange={onRouteAnimationChange}
+
+            />
+
+          )
+
+        )
+
+      )}
+
+
+
     </div>
+
   );
+
 };
 
+
+
 export default PlatformMap;
+

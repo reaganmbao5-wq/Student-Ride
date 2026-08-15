@@ -1,101 +1,218 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Polyline } from 'react-leaflet';
+import React, { useEffect, useRef } from 'react';
 
 /**
- * RouteRenderer.jsx
- * Professional polyline rendering component.
- * Renders the travelled path in a muted style, and the remaining path in a bright, prominent style.
- * Includes smooth animation for initial route drawing and high accuracy rendering.
+ * Universal Coordinate Normalizer for Mapbox (GeoJSON requires [lng, lat])
  */
-export const RouteRenderer = ({ travelledPath, remainingPath, status, onAnimationChange, color }) => {
+const normalizePointToLngLat = (pt) => {
+  if (!pt) return null;
+  if (Array.isArray(pt) && pt.length >= 2) {
+    const val0 = Number(pt[0]);
+    const val1 = Number(pt[1]);
+    if (val0 < 0 && val1 > 0) {
+      // [lat, lng] format (Zambia latitude is negative, longitude is positive)
+      return [val1, val0]; // convert to [lng, lat]
+    } else if (val0 > 0 && val1 < 0) {
+      // Already [lng, lat]
+      return [val0, val1];
+    }
+    return [val1, val0];
+  } else if (typeof pt === 'object') {
+    const lat = Number(pt.lat ?? pt.latitude);
+    const lng = Number(pt.lng ?? pt.longitude);
+    if (!isNaN(lat) && !isNaN(lng)) return [lng, lat];
+  }
+  return null;
+};
+
+export const RouteRenderer = ({ id = 'default', map, remainingPath = [], status, color, onAnimationChange }) => {
   const normalizedStatus = status ? String(status).toLowerCase() : '';
   const isHeadingToPickup = ['accepted', 'driver_accepted', 'driver_en_route_to_pickup', 'driver_arrived'].includes(normalizedStatus);
-  
-  // Style config
-  const remainingColor = color || (isHeadingToPickup ? '#10B981' : '#3B82F6'); // Use provided color, else fallback
-  const remainingWeight = 5;
-  const remainingOpacity = 0.9;
-  
-  const travelledColor = '#4B5563'; // Darker gray for better visibility
-  const travelledWeight = 5;
-  const travelledOpacity = 0.8;
+  const strokeColor = color || (isHeadingToPickup ? '#10B981' : '#3B82F6');
+  const strokeColorRef = useRef(strokeColor);
 
-  const [animatedRemainingPath, setAnimatedRemainingPath] = useState([]);
-  
-  const routePhase = status === 'accepted' ? 'pickup' : 'dropoff';
-  const destinationSignature = remainingPath && remainingPath.length > 0 
-    ? `${remainingPath[remainingPath.length-1][0]},${remainingPath[remainingPath.length-1][1]}-${routePhase}`
-    : '';
+  const cleanId = String(id).replace(/[^a-zA-Z0-9_-]/g, '_');
+  const sourceId = `mulu-route-src-${cleanId}`;
+  const layerId = `mulu-route-ln-${cleanId}`;
 
-  const animatedDestinationRef = useRef('');
-  const intervalRef = useRef(null);
+  const animatedSignatureRef = useRef('');
+  const animationFrameRef = useRef(null);
+  const animationTimeoutRef = useRef(null);
 
+  // Keep stroke color ref in sync
   useEffect(() => {
-    if (!remainingPath || remainingPath.length === 0) {
-      setAnimatedRemainingPath([]);
-      if (onAnimationChange) onAnimationChange(false);
-      return;
-    }
+    strokeColorRef.current = strokeColor;
+    if (!map || !map.style) return;
+    try {
+      if (map.getLayer(layerId)) {
+        map.setPaintProperty(layerId, 'line-color', strokeColor);
+      }
+    } catch (err) {}
+  }, [map, strokeColor, layerId]);
 
-    // If we already have a path or destination animated, update instantly to avoid polyline flickering!
-    if (animatedRemainingPath.length > 0 || animatedDestinationRef.current === destinationSignature) {
-      animatedDestinationRef.current = destinationSignature;
-      setAnimatedRemainingPath(remainingPath);
-      if (onAnimationChange) onAnimationChange(false);
-      return;
-    }
+  // 1. Source and layer lifecycle: Add ONCE when map is ready, remove ONLY on component unmount
+  useEffect(() => {
+    if (!map) return;
 
-    // New destination detected! Animate the drawing of the route.
-    animatedDestinationRef.current = destinationSignature;
-    setAnimatedRemainingPath([]); // Reset before initial draw
-    if (onAnimationChange) onAnimationChange(true);
-    
-    let currentIndex = 0;
-    const totalPoints = remainingPath.length;
-    // Calculate speed: aim for ~3000ms total animation time for a very slow, dramatic draw
-    const pointsPerFrame = Math.max(1, Math.ceil(totalPoints / 150)); 
-    
-    // Delay the start by 800ms to allow Leaflet's flyTo/fitBounds camera animation to finish
-    const timeout = setTimeout(() => {
-      const interval = setInterval(() => {
-        currentIndex += pointsPerFrame;
-        if (currentIndex >= remainingPath.length) {
-          clearInterval(interval);
-          setAnimatedRemainingPath(remainingPath);
-          if (onAnimationChange) onAnimationChange(false);
-        } else {
-          setAnimatedRemainingPath(remainingPath.slice(0, currentIndex + 1));
+    const initLayer = () => {
+      if (!map.style) return;
+      try {
+        if (!map.getSource(sourceId)) {
+          map.addSource(sourceId, {
+            type: 'geojson',
+            data: {
+              type: 'Feature',
+              properties: {},
+              geometry: { type: 'LineString', coordinates: [] }
+            }
+          });
         }
-      }, 20);
-      
-      // Store interval so we can clear it if unmounted
-      intervalRef.current = interval;
-    }, 800);
+        if (!map.getLayer(layerId)) {
+          map.addLayer({
+            id: layerId,
+            type: 'line',
+            source: sourceId,
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round'
+            },
+            paint: {
+              'line-color': strokeColorRef.current || '#3B82F6',
+              'line-width': 6,
+              'line-opacity': 0.95
+            }
+          });
+        }
+      } catch (err) {
+        console.warn('Error initializing route layer:', err);
+      }
+    };
+
+    const handleStyleLoad = () => {
+      initLayer();
+    };
+
+    map.on('style.load', handleStyleLoad);
+    if (map.style) {
+      initLayer();
+    }
 
     return () => {
-      clearTimeout(timeout);
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      map.off('style.load', handleStyleLoad);
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);
+      try {
+        if (map && map.style) {
+          if (map.getLayer(layerId)) map.removeLayer(layerId);
+          if (map.getSource(sourceId)) map.removeSource(sourceId);
+        }
+      } catch (err) {}
     };
-  }, [remainingPath, destinationSignature, onAnimationChange]);
+  }, [map, sourceId, layerId]);
 
-  return (
-    <>
-      {/* Travelled Path behind driver is completely erased in real-time */}
+  // 2. Progressive Animated Drawing & Live Coordinate Updates
+  useEffect(() => {
+    if (!map || !map.style) return;
 
-      {/* Remaining Path (ahead of driver - animated) */}
-      {animatedRemainingPath && animatedRemainingPath.length > 1 && (
-        <Polyline
-          positions={animatedRemainingPath}
-          pathOptions={{ 
-            color: remainingColor, 
-            weight: remainingWeight, 
-            opacity: remainingOpacity, 
-            lineCap: 'round', 
-            lineJoin: 'round',
-            smoothFactor: 0.1 // Higher accuracy rendering
-          }}
-        />
-      )}
-    </>
-  );
+    const formattedCoords = (remainingPath || []).map(normalizePointToLngLat).filter(Boolean);
+    const src = map.getSource(sourceId);
+
+    if (formattedCoords.length < 2) {
+      if (src) {
+        src.setData({
+          type: 'Feature',
+          properties: {},
+          geometry: { type: 'LineString', coordinates: [] }
+        });
+      }
+      animatedSignatureRef.current = '';
+      if (onAnimationChange) onAnimationChange(false);
+      return;
+    }
+
+    const firstPt = formattedCoords[0];
+    const lastPt = formattedCoords[formattedCoords.length - 1];
+    const destinationSignature = `${firstPt[0].toFixed(5)},${firstPt[1].toFixed(5)}->${lastPt[0].toFixed(5)},${lastPt[1].toFixed(5)}-${normalizedStatus}`;
+
+    // If this route has already animated its entry, update coordinates directly (real-time driver progress with zero flicker)
+    if (animatedSignatureRef.current === destinationSignature) {
+      if (src) {
+        src.setData({
+          type: 'Feature',
+          properties: {},
+          geometry: { type: 'LineString', coordinates: formattedCoords }
+        });
+      }
+      return;
+    }
+
+    // New destination or route detected! Run the dramatic progressive draw animation
+    animatedSignatureRef.current = destinationSignature;
+    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);
+
+    // Initial empty start
+    if (src) {
+      src.setData({
+        type: 'Feature',
+        properties: {},
+        geometry: { type: 'LineString', coordinates: [formattedCoords[0], formattedCoords[0]] }
+      });
+    }
+
+    if (onAnimationChange) onAnimationChange(true);
+
+    // Duration: 5.0s for requested (finding driver), 2.2s for confirm ride, 1.8s for default
+    const isRequestedState = normalizedStatus === 'requested';
+    const totalDuration = isRequestedState ? 5000 : 2200;
+    const startDelay = isRequestedState ? 500 : 350;
+
+    animationTimeoutRef.current = setTimeout(() => {
+      const startTime = performance.now();
+      const totalPoints = formattedCoords.length;
+
+      const animate = (currentTime) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(1, elapsed / totalDuration);
+        
+        // Easing: easeOutCubic (1 - Math.pow(1 - progress, 3))
+        const easeProgress = 1 - Math.pow(1 - progress, 3);
+        const pointCount = Math.max(2, Math.min(totalPoints, Math.ceil(easeProgress * totalPoints)));
+        const currentSlice = formattedCoords.slice(0, pointCount);
+
+        const activeSrc = map.getSource(sourceId);
+        if (activeSrc) {
+          activeSrc.setData({
+            type: 'Feature',
+            properties: {},
+            geometry: { type: 'LineString', coordinates: currentSlice }
+          });
+        }
+
+        if (progress < 1) {
+          animationFrameRef.current = requestAnimationFrame(animate);
+        } else {
+          // Animation complete
+          if (activeSrc) {
+            activeSrc.setData({
+              type: 'Feature',
+              properties: {},
+              geometry: { type: 'LineString', coordinates: formattedCoords }
+            });
+          }
+          if (onAnimationChange) onAnimationChange(false);
+        }
+      };
+
+      animationFrameRef.current = requestAnimationFrame(animate);
+    }, startDelay);
+
+    return () => {
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);
+    };
+  }, [map, remainingPath, normalizedStatus, sourceId, onAnimationChange]);
+
+  return null;
 };
+
+export default RouteRenderer;

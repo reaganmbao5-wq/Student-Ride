@@ -40,6 +40,14 @@ export class RouteProgress {
     ];
   }
 
+  static getPointCoord(pt) {
+    if (!pt) return [0, 0];
+    if (Array.isArray(pt) && pt.length >= 2) {
+      return [Number(pt[0]), Number(pt[1])];
+    }
+    return [Number(pt.lat ?? pt.latitude ?? 0), Number(pt.lng ?? pt.longitude ?? 0)];
+  }
+
   /**
    * Analyzes the route geometry to split it into "travelled" and "remaining" segments.
    * Returns distances and the split coordinate arrays for rendering.
@@ -58,16 +66,24 @@ export class RouteProgress {
       };
     }
 
-    const driverPt = [driverLocation.lat, driverLocation.lng];
+    const driverPt = this.getPointCoord(driverLocation);
+    if (isNaN(driverPt[0]) || isNaN(driverPt[1])) {
+      return {
+        travelledPath: [],
+        remainingPath: geometry || [],
+        distanceLeftKm: 0,
+        percentageComplete: 0
+      };
+    }
     
     let minDistance = Infinity;
     let closestSegmentIdx = 0;
-    let closestPoint = geometry[0];
+    let closestPoint = this.getPointCoord(geometry[0]);
 
     // Find the nearest segment to the driver
     for (let i = 0; i < geometry.length - 1; i++) {
-      const A = geometry[i];
-      const B = geometry[i + 1];
+      const A = this.getPointCoord(geometry[i]);
+      const B = this.getPointCoord(geometry[i + 1]);
       const ptOnSegment = this.getClosestPointOnSegment(driverPt, A, B);
       const dist = this.getDistance(driverPt, ptOnSegment);
       
@@ -93,12 +109,12 @@ export class RouteProgress {
     // Calculate total distances
     let travelledDist = 0;
     for (let i = 0; i < travelledPath.length - 1; i++) {
-      travelledDist += this.getDistance(travelledPath[i], travelledPath[i+1]);
+      travelledDist += this.getDistance(this.getPointCoord(travelledPath[i]), this.getPointCoord(travelledPath[i+1]));
     }
 
     let remainingDist = 0;
     for (let i = 0; i < remainingPath.length - 1; i++) {
-      remainingDist += this.getDistance(remainingPath[i], remainingPath[i+1]);
+      remainingDist += this.getDistance(this.getPointCoord(remainingPath[i]), this.getPointCoord(remainingPath[i+1]));
     }
 
     const totalDist = travelledDist + remainingDist;
@@ -145,13 +161,13 @@ export class RouteProgress {
     if (!routeQueue || routeQueue.length === 0) return 'SOFT';
     if (!driverLocation) return 'SOFT';
 
-    const driverPt = [driverLocation.lat, driverLocation.lng];
+    const driverPt = this.getPointCoord(driverLocation);
     let minDistance = Infinity;
     let closestStopIndex = -1;
 
     routeQueue.forEach((stop, index) => {
       if (stop.coordinates) {
-        const stopPt = [stop.coordinates.lat, stop.coordinates.lng];
+        const stopPt = this.getPointCoord(stop.coordinates);
         const dist = this.getDistance(driverPt, stopPt);
         if (dist < minDistance) {
           minDistance = dist;

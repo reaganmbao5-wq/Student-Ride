@@ -8,7 +8,7 @@ import { RouteProgress } from './RouteProgress';
  * Takes the raw geometry and driver location, computes the dynamic split,
  * and passes the segments to RouteRenderer.
  */
-export const RouteEngine = ({ geometry, driverLocation, status, onAnimationChange, color }) => {
+export const RouteEngine = ({ id = 'default', map, geometry, driverLocation, status, onAnimationChange, color }) => {
 
   const { travelledPath, remainingPath } = useMemo(() => {
     // If no driver location or ride hasn't started active tracking, 
@@ -33,6 +33,8 @@ export const RouteEngine = ({ geometry, driverLocation, status, onAnimationChang
 
   return (
     <RouteRenderer 
+      id={id}
+      map={map}
       travelledPath={travelledPath}
       remainingPath={remainingPath}
       status={status}
@@ -41,3 +43,5 @@ export const RouteEngine = ({ geometry, driverLocation, status, onAnimationChang
     />
   );
 };
+
+export default RouteEngine;

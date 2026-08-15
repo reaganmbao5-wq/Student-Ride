@@ -1,16 +1,18 @@
 import React from 'react';
-import VehicleAnimator from './VehicleAnimator';
+import VehicleRenderer from './VehicleRenderer';
 
 /**
  * VehicleEngine.jsx
- * The top-level manager for all vehicles on the map.
- * Receives the array of drivers from WebSockets/API and renders an Animator for each.
+ * Native Mapbox GL JS 3D Vehicle Pool Manager.
+ * Renders high-performance Mapbox vehicle markers for all active drivers.
  */
-const VehicleEngine = ({ drivers = [] }) => {
+const VehicleEngine = ({ map, drivers = [] }) => {
+  if (!map) return null;
+
   return (
     <>
       {drivers.map((driver) => (
-        <VehicleAnimator key={driver.id} driver={driver} />
+        <VehicleRenderer key={driver.id || driver._id} map={map} driver={driver} />
       ))}
     </>
   );

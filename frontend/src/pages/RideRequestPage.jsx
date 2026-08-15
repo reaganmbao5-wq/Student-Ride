@@ -66,22 +66,17 @@ const RideRequestPage = () => {
     }
     // Continuous micro-haptics while dragging
     const now = Date.now();
-    if (now - lastHapticTime.current > 120) {
-      haptics.selection();
+    if (now - lastHapticTime.current > 60) {
+      haptics.swipeProgress();
       lastHapticTime.current = now;
     }
   };
 
   const handleTouchEnd = (e) => {
-    const touchEndY = e.changedTouches[0].clientY;
-    const diff = touchStartY.current - touchEndY;
-    // Threshold for swipe gesture (50px)
-    if (diff > 50) {
-      haptics.buttonClick();
-      setIsSheetExpanded(true);
-    } else if (diff < -50) {
-      haptics.buttonClick();
-      setIsSheetExpanded(false);
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+    if (Math.abs(deltaY) > 20) {
+      setRideMode(prev => prev === 'shared' ? 'private' : 'shared');
+      haptics.swipeSnap();
     }
   };
 
@@ -164,7 +159,7 @@ const RideRequestPage = () => {
     const dlon = (lon2 - lon1) * Math.PI / 180;
     const a = Math.sin(dlat/2) * Math.sin(dlat/2) + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dlon/2) * Math.sin(dlon/2);
     const estDist = Math.max(0.5, R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
-    const estDuration = Math.max(2, Math.round(estDist * 3));
+    const estDuration = Math.max(2, Math.round(estDist * 2.2 + 1));
     
     const estPrivateFare = Math.max(20, Math.round(15 + estDist * 5));
     const estSharedFare = Math.max(15, Math.round(estPrivateFare * 0.7));
@@ -173,7 +168,10 @@ const RideRequestPage = () => {
       private_fare: estPrivateFare,
       shared_fare: estSharedFare,
       distance_km: parseFloat(estDist.toFixed(1)),
-      duration_mins: estDuration
+      distance: parseFloat(estDist.toFixed(1)),
+      duration_mins: estDuration,
+      duration_min: estDuration,
+      duration: estDuration
     });
 
     try {
@@ -191,6 +189,9 @@ const RideRequestPage = () => {
           shared_fare: data.shared?.estimated_fare || data.shared?.fare || estSharedFare,
           distance_km: data.verified_distance || data.distance_km || parseFloat(estDist.toFixed(1)),
           duration_mins: data.verified_duration || data.duration_mins || estDuration,
+          duration_min: data.duration_min || data.verified_duration || data.duration_mins || estDuration,
+          duration: data.duration || data.verified_duration || data.duration_mins || estDuration,
+          distance: data.distance || data.verified_distance || data.distance_km || parseFloat(estDist.toFixed(1)),
           private_surge: data.private?.surge_reason,
           shared_surge: data.shared?.surge_reason
         });
@@ -217,6 +218,8 @@ const RideRequestPage = () => {
   }, [step, pickup, dropoff, routeGeometry, calculateFare]);
 
 
+  const confirmedLocationsRef = useRef({ pickup: null, dropoff: null });
+
   const handleConfirmLocation = () => {
     // Suppress confirm clicks within 600ms of selecting a place from search (prevents touch tap-through auto-advance)
     if (Date.now() < suppressConfirmUntilRef.current) {
@@ -242,17 +245,21 @@ const RideRequestPage = () => {
 
     if (step === 'pickup') {
       setPickup(loc);
+      confirmedLocationsRef.current.pickup = loc;
       setStep('dropoff');
       isExplicitSelectionRef.current = false;
       explicitSelectedLocationRef.current = null;
+      // Offset destination map center slightly south (-0.0006 lat) so destination pin drops cleanly below pickup pin
+      setMapCenter({ lat: loc.lat - 0.0006, lng: loc.lng });
       setCurrentAddress('');
     } else if (step === 'dropoff') {
       setDropoff(loc);
+      confirmedLocationsRef.current.dropoff = loc;
       setStep('confirm');
       isExplicitSelectionRef.current = false;
       explicitSelectedLocationRef.current = null;
       // Pass loc directly to avoid stale closure — dropoff state won't be set yet
-      calculateFare(pickup, loc);
+      calculateFare(pickup || confirmedLocationsRef.current.pickup, loc);
     }
   };
 
@@ -268,18 +275,20 @@ const RideRequestPage = () => {
   const [isCollapsing, setIsCollapsing] = useState(false);
 
   const handleRequestRide = async () => {
-    if (!pickup || !dropoff || !fareEstimate) return;
+    const activePickup = pickup || confirmedLocationsRef.current.pickup;
+    const activeDropoff = dropoff || confirmedLocationsRef.current.dropoff;
+    if (!activePickup || !activeDropoff || !fareEstimate) return;
 
     setRequesting(true);
     try {
       const activeFare = rideMode === 'shared' ? fareEstimate.shared_fare : fareEstimate.private_fare;
       const res = await api.post('/rides/request', {
-        pickup_location: pickup,
-        dropoff_location: dropoff,
+        pickup_location: activePickup,
+        dropoff_location: activeDropoff,
         ride_mode: rideMode,
         estimated_fare: activeFare,
-        estimated_distance: fareEstimate.distance,
-        estimated_duration: fareEstimate.duration
+        estimated_distance: fareEstimate.distance || fareEstimate.distance_km,
+        estimated_duration: fareEstimate.duration || fareEstimate.duration_mins
       });
 
       toast.success('Ride requested! Finding a driver...');
@@ -298,12 +307,20 @@ const RideRequestPage = () => {
     if (step === 'dropoff') {
       setStep('pickup');
       setDropoff(null);
-      if (pickup) setMapCenter({ lat: pickup.lat, lng: pickup.lng });
+      const activePickup = pickup || confirmedLocationsRef.current.pickup;
+      if (activePickup) {
+        setMapCenter({ lat: activePickup.lat, lng: activePickup.lng });
+        setCurrentAddress(activePickup.address || '');
+      }
     } else if (step === 'confirm') {
       setStep('dropoff');
       setFareEstimate(null);
       setRouteGeometry(null);
-      if (dropoff) setMapCenter({ lat: dropoff.lat, lng: dropoff.lng });
+      const activeDropoff = dropoff || confirmedLocationsRef.current.dropoff;
+      if (activeDropoff) {
+        setMapCenter({ lat: activeDropoff.lat, lng: activeDropoff.lng });
+        setCurrentAddress(activeDropoff.address || '');
+      }
     } else {
       navigate('/dashboard');
     }
@@ -311,28 +328,38 @@ const RideRequestPage = () => {
 
   // Build the markers array based on step
   const markers = [];
-  if (step === 'dropoff' && pickup) {
-    markers.push({ lat: pickup.lat, lng: pickup.lng, iconType: 'pickup', key: 'fixed-pickup' });
+  const activePickup = pickup || confirmedLocationsRef.current.pickup;
+  const activeDropoff = dropoff || confirmedLocationsRef.current.dropoff;
+
+  if (step === 'dropoff' && activePickup) {
+    markers.push({ lat: activePickup.lat, lng: activePickup.lng, iconType: 'pickup', key: 'fixed-pickup' });
   }
   if (step === 'confirm') {
-    if (pickup) markers.push({ lat: pickup.lat, lng: pickup.lng, iconType: 'pickup', key: 'final-pickup' });
-    if (dropoff) markers.push({ lat: dropoff.lat, lng: dropoff.lng, iconType: 'dropoff', key: 'final-dropoff' });
+    if (activePickup) markers.push({ lat: activePickup.lat, lng: activePickup.lng, iconType: 'pickup', key: 'final-pickup' });
+    if (activeDropoff) markers.push({ lat: activeDropoff.lat, lng: activeDropoff.lng, iconType: 'dropoff', key: 'final-dropoff' });
   }
 
-  // Memoized bounds logic for confirm step (strictly pickup and dropoff points, matching StudentDashboard.jsx for perfect framing)
+  // Memoized bounds logic for confirm step (Includes full route curvature vertices + pickup & dropoff)
   const bounds = useMemo(() => {
-    if (step === 'confirm' && pickup && dropoff) {
-      return [
-        [pickup.lat, pickup.lng],
-        [dropoff.lat, dropoff.lng]
-      ];
+    if (step === 'confirm') {
+      const p = pickup || confirmedLocationsRef.current.pickup;
+      const d = dropoff || confirmedLocationsRef.current.dropoff;
+      if (p && d) {
+        if (routeGeometry && Array.isArray(routeGeometry) && routeGeometry.length > 2) {
+          return routeGeometry;
+        }
+        return [
+          [p.lat, p.lng],
+          [d.lat, d.lng]
+        ];
+      }
     }
     return null;
-  }, [step, pickup, dropoff]);
+  }, [step, pickup, dropoff, routeGeometry]);
 
 
   const sheetRef = useRef(null);
-  const [sheetHeight, setSheetHeight] = useState(380);
+  const [sheetHeight, setSheetHeight] = useState(320);
 
   // Measure live bottom sheet rendered height for dynamic visible safe region camera framing
   useEffect(() => {
@@ -369,7 +396,7 @@ const RideRequestPage = () => {
           center={mapCenter}
           selectionLocation={selectionTarget}
           bounds={bounds}
-          bottomPadding={step === 'confirm' ? 140 : 0}
+          bottomPadding={step === 'confirm' ? (sheetHeight || 320) : 0}
           cameraMode={
             step === 'pickup' ? CAMERA_MODES.PICKUP_SELECTION :
             step === 'dropoff' ? CAMERA_MODES.DESTINATION_SELECTION :
