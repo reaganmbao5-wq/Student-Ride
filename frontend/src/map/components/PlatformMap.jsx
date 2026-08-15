@@ -369,8 +369,6 @@ export const PlatformMap = ({
   useEffect(() => {
     if (!mapRef.current || !mapLoaded) return;
 
-    // Reset Mapbox transform padding to 0 so center coordinates align properly
-    mapRef.current.setPadding({ top: 0, bottom: 0, left: 0, right: 0 });
     isUserInteractingRef.current = false;
     isUserDraggingRef.current = false;
 
@@ -489,19 +487,19 @@ export const PlatformMap = ({
         const calcTop = isMiniMap ? 14 : 90;
         // Dynamic bottom padding to place route safely above the bottom sheet card
         const calcBottom = isMiniMap ? 14 : ((typeof bottomPadding === 'number' && bottomPadding > 0)
-          ? Math.max(bottomPadding + 25, Math.round(containerHeight * 0.45))
-          : Math.max(260, Math.round(containerHeight * 0.40)));
-        // Generous side margins so pins with labels/icons on far edges are NEVER clipped (18% width clearance)
-        const calcSide = isMiniMap ? 14 : Math.max(65, Math.min(110, Math.round(containerWidth * 0.18)));
+          ? Math.min(bottomPadding + 20, Math.round(containerHeight * 0.48))
+          : Math.max(220, Math.round(containerHeight * 0.38)));
+        // Generous side margins so pins with labels/icons on far edges are NEVER clipped (15% width clearance)
+        const calcSide = isMiniMap ? 14 : Math.max(55, Math.min(95, Math.round(containerWidth * 0.15)));
 
         // Skip re-fitting if coordinates haven't shifted significantly (eliminates jerking on landing/polling)
         const prev = lastFittedBoundsRef.current;
         const isInitialFit = !prev;
         const isSameBounds = prev &&
-          Math.abs(prev.minLat - minLat) < 0.00035 &&
-          Math.abs(prev.maxLat - maxLat) < 0.00035 &&
-          Math.abs(prev.minLng - minLng) < 0.00035 &&
-          Math.abs(prev.maxLng - maxLng) < 0.00035 &&
+          Math.abs(prev.minLat - minLat) < 0.00025 &&
+          Math.abs(prev.maxLat - maxLat) < 0.00025 &&
+          Math.abs(prev.minLng - minLng) < 0.00025 &&
+          Math.abs(prev.maxLng - maxLng) < 0.00025 &&
           Math.abs(prev.calcBottom - calcBottom) < 15 &&
           prev.calcTop === calcTop;
 
@@ -511,37 +509,6 @@ export const PlatformMap = ({
 
         lastFittedBoundsRef.current = { minLat, maxLat, minLng, maxLng, calcTop, calcBottom };
 
-        try {
-          // Compute exact camera viewport using cameraForBounds
-          const targetCamera = mapRef.current.cameraForBounds([
-            [minLng, minLat],
-            [maxLng, maxLat]
-          ], {
-            padding: {
-              top: calcTop,
-              bottom: calcBottom,
-              left: calcSide,
-              right: calcSide
-            },
-            maxZoom: 16.8
-          });
-
-          if (targetCamera) {
-            // Apply balanced comfort zoom (-0.35 zoom) to ensure generous breathing room matching Leaflet / SYNCHRONIZATION
-            const balancedZoom = Math.max(13.0, Math.min(targetCamera.zoom - 0.35, 16.5));
-            mapRef.current.flyTo({
-              center: targetCamera.center,
-              zoom: balancedZoom,
-              pitch: 0,
-              bearing: 0,
-              duration: isInitialFit ? 1800 : 800,
-              essential: true
-            });
-            return;
-          }
-        } catch (e) {}
-
-        // Fallback fitBounds if cameraForBounds throws
         try {
           mapRef.current.fitBounds([
             [minLng, minLat],
@@ -555,7 +522,7 @@ export const PlatformMap = ({
             },
             pitch: 0, // Flat 2D overview for multi-point framing
             bearing: 0,
-            maxZoom: 16.5,
+            maxZoom: 16.2, // Clean balanced zoom preventing pin clipping
             duration: isInitialFit ? 1800 : 800,
             essential: true
           });
