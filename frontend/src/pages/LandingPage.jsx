@@ -105,9 +105,42 @@ const LandingPage = () => {
     localStorage.setItem('onboarding_gender', gender);
   }, [step, customSubStep, firstName, lastName, phone, showLastNameInput, showPhoneInput, gender]);
 
+  // Fetch video as Blob URL for instant native Android playback without HTTP 206 Range errors
+  useEffect(() => {
+    let isMounted = true;
+    let objectUrl = null;
+
+    fetch('/assets/videos/Firstpage.mp4')
+      .then((res) => {
+        if (!res.ok) throw new Error('Video fetch status: ' + res.status);
+        return res.blob();
+      })
+      .then((blob) => {
+        if (isMounted && videoRef.current) {
+          objectUrl = URL.createObjectURL(blob);
+          videoRef.current.src = objectUrl;
+          videoRef.current.defaultMuted = true;
+          videoRef.current.muted = true;
+          videoRef.current.play().then(() => {
+            if (isMounted) setVideoLoaded(true);
+          }).catch(() => {});
+        }
+      })
+      .catch((err) => {
+        console.warn("Video blob load error:", err);
+      });
+
+    return () => {
+      isMounted = false;
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, []);
+
   // Auto-play / resume video on step 1 mount and remount
   useEffect(() => {
-    if (step === 1 && videoRef.current) {
+    if (step === 1 && videoRef.current && videoRef.current.src) {
       videoRef.current.defaultMuted = true;
       videoRef.current.muted = true;
       const playPromise = videoRef.current.play();
@@ -442,28 +475,33 @@ const LandingPage = () => {
                   playsInline
                   webkit-playsinline="true"
                   x5-playsinline="true"
-                  preload="auto"
-                  onLoadedData={() => setVideoLoaded(true)}
-                  onCanPlay={() => setVideoLoaded(true)}
-                  onPlaying={() => setVideoLoaded(true)}
-                  className={`block md:hidden w-full h-full object-cover scale-105 pointer-events-none transition-opacity duration-500 ${
-                    videoLoaded ? 'opacity-100' : 'opacity-90'
+                  controls={false}
+                  controlsList="nodownload nofullscreen noremoteplayback"
+                  disablePictureInPicture
+                  className={`block md:hidden w-full h-full object-cover scale-105 pointer-events-none transition-opacity duration-700 ${
+                    videoLoaded ? 'opacity-100' : 'opacity-0'
                   }`}
-                >
-                  <source src="/assets/videos/Firstpage.mp4" type="video/mp4" />
-                </video>
+                />
 
-                {/* 35% Frosted Glass Overlay */}
-                <div className="absolute inset-0 bg-black/35 backdrop-blur-[5px] backdrop-filter" />
-                <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/85" />
+                {/* Frosted Glass Overlay (15% reduced intensity) */}
+                <div className="absolute inset-0 bg-black/20 backdrop-blur-[3.5px] backdrop-filter" />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/75" />
               </div>
 
-              {/* Top Header (Transparent White JRIDE Logo) */}
-              <div className="w-full flex items-center justify-start pt-1 sm:pt-4">
+              {/* Frosted Glass Top Header with subtle border line and JRIDE + Jaey car logo */}
+              <div className="w-full -mx-6 sm:-mx-10 md:-mx-14 lg:-mx-20 -mt-6 sm:-mt-10 md:-mt-14 lg:-mt-20 px-6 sm:px-10 md:px-14 lg:px-20 py-4 sm:py-5 flex items-center justify-between bg-black/45 backdrop-blur-xl border-b border-white/15 shadow-2xl z-20">
+                {/* Left: JRIDE Text Logo */}
                 <img
                   src="/assets/images/jride_text_white.png"
                   alt="JRide"
-                  className="h-10 sm:h-14 md:h-16 lg:h-20 w-auto object-contain drop-shadow-2xl select-none"
+                  className="h-8 sm:h-11 md:h-13 lg:h-16 w-auto object-contain drop-shadow-xl select-none"
+                />
+
+                {/* Right: Golden Car Asset Logo */}
+                <img
+                  src="/assets/images/Jaey-logo.png"
+                  alt="Jaey Logo"
+                  className="h-10 sm:h-14 md:h-16 lg:h-20 w-auto object-contain drop-shadow-xl select-none"
                 />
               </div>
 
