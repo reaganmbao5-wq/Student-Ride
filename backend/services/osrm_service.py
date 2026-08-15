@@ -87,9 +87,20 @@ async def get_route(pickup_lat: float, pickup_lng: float, drop_lat: float, drop_
                 raw_geometry = route["geometry"]["coordinates"]
                 geometry = [[coord[1], coord[0]] for coord in raw_geometry]
                 
+                distance_km = distance_meters / 1000.0
+                
+                # Realistic Campus & Urban Speed Calculation:
+                # Mapbox driving duration uses theoretical open-highway speeds (80-100 km/h) on trunk roads.
+                # In campus & local town environments, realistic speed is 25-35 km/h + 1.0 min starting/turning buffer.
+                realistic_duration_min = max(
+                    2.0,
+                    (duration_seconds / 60.0),
+                    (distance_km * 2.2) + 1.0
+                )
+                
                 return {
-                    "distance_km": distance_meters / 1000.0,
-                    "duration_minutes": duration_seconds / 60.0,
+                    "distance_km": round(distance_km, 2),
+                    "duration_minutes": round(realistic_duration_min, 1),
                     "geometry": geometry,
                     "source": "mapbox"
                 }
@@ -240,15 +251,18 @@ async def calculate_eta(pickup_lat: float, pickup_lng: float, drop_lat: float, d
         if response.status_code == 200:
             data = response.json()
             if data.get("routes") and len(data["routes"]) > 0:
-                eta = int(data["routes"][0]["duration"])
+                raw_duration_sec = data["routes"][0]["duration"]
+                dist_km = data["routes"][0]["distance"] / 1000.0
+                # Realistic local transit ETA: minimum 2 mins, ~25-35 km/h local driving speed
+                realistic_eta_sec = int(max(120, raw_duration_sec, (dist_km * 2.2 + 1.0) * 60))
                 _eta_cache[cache_key] = {
                     "pickup_lat": pickup_lat, 
                     "pickup_lng": pickup_lng, 
-                    "eta": eta, 
+                    "eta": realistic_eta_sec, 
                     "timestamp": current_time
                 }
                 _metrics["total_latency_ms"] += (time.time() - start_time) * 1000
-                return eta
+                return realistic_eta_sec
     except Exception as e:
         _metrics["osrm_errors"] += 1
         logger.warning(f"Mapbox ETA failed, falling back: {e}")
