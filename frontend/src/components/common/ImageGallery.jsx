@@ -115,15 +115,15 @@ export function ImageGallery({
     <div className={`relative flex flex-col items-center justify-center w-full select-none ${className}`}>
       {/* Top Absolute Solid White Badge */}
       {items[opened] && (
-        <div className="mb-3 text-center">
-          <span className="inline-block bg-white text-zinc-950 font-black text-xs sm:text-sm px-5 py-1.5 rounded-full shadow-xl tracking-wider uppercase border border-white">
+        <div className="mb-4 text-center">
+          <span className="inline-block bg-white text-zinc-950 font-black text-xs sm:text-sm md:text-base lg:text-lg px-6 sm:px-8 py-2 sm:py-2.5 rounded-full shadow-2xl tracking-wider uppercase border-2 border-white">
             {items[opened].title}
           </span>
         </div>
       )}
 
-      {/* Enlarged Gallery Card with Liquid Clip-Path */}
-      <div className="relative w-[320px] h-[340px] sm:w-[360px] sm:h-[380px] md:w-[400px] md:h-[420px] max-w-[92vw] overflow-hidden rounded-[24px] border border-white/15 shadow-[0_16px_50px_rgba(0,0,0,0.6)] bg-zinc-950">
+      {/* Enlarged Fluid Responsive Gallery Card */}
+      <div className="relative w-[310px] h-[340px] sm:w-[400px] sm:h-[440px] md:w-[480px] md:h-[520px] lg:w-[560px] lg:h-[580px] xl:w-[620px] xl:h-[620px] max-w-[95vw] overflow-hidden rounded-[28px] border border-white/20 shadow-[0_25px_70px_rgba(0,0,0,0.8)] bg-zinc-950">
         {gsapReady ? (
           items.map((image, i) => (
             <div
@@ -144,7 +144,7 @@ export function ImageGallery({
             </div>
           ))
         ) : (
-          /* Fallback static preview while GSAP loads */
+          /* Fallback static preview */
           <div className="w-full h-full">
             {items[opened] && (
               <img
@@ -156,24 +156,24 @@ export function ImageGallery({
           </div>
         )}
 
-        {/* Bottom Interactive Thumbnail Tab Dots inside the card */}
+        {/* Bottom Interactive Thumbnail Tab Dots */}
         <div className="absolute left-0 top-0 z-[100] h-full w-full pointer-events-none">
           <Tabs images={items} selectedIndex={opened} onSelect={onClick} accentColor={accentColor} />
         </div>
       </div>
 
-      {/* Relocated Side-by-Side Navigation Arrows Centered Below Image */}
-      <div className="flex items-center justify-center gap-6 pt-3.5 z-[101]">
+      {/* Side-by-Side Navigation Arrows Centered Below Image */}
+      <div className="flex items-center justify-center gap-8 sm:gap-12 pt-5 z-[101]">
         <button
           type="button"
-          className="flex h-11 w-11 sm:h-12 sm:w-12 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-zinc-900/90 text-white backdrop-blur-md shadow-xl outline-none transition-all duration-200 hover:scale-105 hover:bg-zinc-800 active:scale-95 disabled:opacity-40"
+          className="flex h-12 w-12 sm:h-16 sm:w-16 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-zinc-900/90 text-white backdrop-blur-md shadow-2xl outline-none transition-all duration-200 hover:scale-110 hover:bg-zinc-800 active:scale-95 disabled:opacity-40"
           onClick={prev}
           disabled={disabled}
           aria-label="Previous Preview"
         >
           <svg
-            width="22"
-            height="22"
+            width="26"
+            height="26"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -187,14 +187,14 @@ export function ImageGallery({
 
         <button
           type="button"
-          className="flex h-11 w-11 sm:h-12 sm:w-12 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-zinc-900/90 text-white backdrop-blur-md shadow-xl outline-none transition-all duration-200 hover:scale-105 hover:bg-zinc-800 active:scale-95 disabled:opacity-40"
+          className="flex h-12 w-12 sm:h-16 sm:w-16 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-zinc-900/90 text-white backdrop-blur-md shadow-2xl outline-none transition-all duration-200 hover:scale-110 hover:bg-zinc-800 active:scale-95 disabled:opacity-40"
           onClick={next}
           disabled={disabled}
           aria-label="Next Preview"
         >
           <svg
-            width="22"
-            height="22"
+            width="26"
+            height="26"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -214,8 +214,8 @@ function GalleryImage({ url, title, open, inPlace, id, onInPlace, total }) {
   const [firstLoad, setLoaded] = useState(true);
   const clip = useRef(null);
 
-  const gap = 12;
-  const circleRadius = 8;
+  const gap = 14;
+  const circleRadius = 9;
   const defaults = { transformOrigin: "center center" };
   const duration = 0.45;
   const width = 400;
@@ -315,8 +315,8 @@ function GalleryImage({ url, title, open, inPlace, id, onInPlace, total }) {
 }
 
 function Tabs({ images, selectedIndex, onSelect, accentColor }) {
-  const gap = 12;
-  const circleRadius = 8;
+  const gap = 14;
+  const circleRadius = 9;
   const width = 400;
   const height = 400;
 
@@ -354,12 +354,12 @@ function Tabs({ images, selectedIndex, onSelect, accentColor }) {
             <circle
               onClick={() => onSelect(i)}
               className="cursor-pointer transition-all duration-200"
-              fill={isSelected ? `${accentColor}35` : "transparent"}
-              stroke={isSelected ? accentColor : "rgba(255,255,255,0.75)"}
-              strokeWidth={isSelected ? "2.5" : "1.5"}
+              fill={isSelected ? `${accentColor}40` : "transparent"}
+              stroke={isSelected ? accentColor : "rgba(255,255,255,0.8)"}
+              strokeWidth={isSelected ? "3" : "1.5"}
               cx={getPosX(i)}
               cy={getPosY()}
-              r={circleRadius + 2.5}
+              r={circleRadius + 3}
             />
           </g>
         );

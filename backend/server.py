@@ -2800,7 +2800,8 @@ async def complete_ride(ride_id: str, background_tasks: BackgroundTasks, user: d
         manager.send_personal_message,
         {
             "type": "wallet_updated",
-            "wallet_balance": new_balance,
+            "wallet_balance": -total_due,
+            "total_commission_due": total_due,
             "wallet_status": wallet_status
         },
         user["id"]
