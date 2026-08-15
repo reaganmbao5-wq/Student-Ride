@@ -348,6 +348,17 @@ export const PlatformMap = ({
 
 
   const lastFlownCenterRef = useRef(null);
+  const prevCameraModeRef = useRef(cameraMode);
+
+  // Clear fitted bounds when camera mode changes so mode transitions always animate smoothly
+  useEffect(() => {
+    if (prevCameraModeRef.current !== cameraMode) {
+      prevCameraModeRef.current = cameraMode;
+      lastFittedBoundsRef.current = null;
+      lastFlownCenterRef.current = null;
+      hasManuallyInteractedRef.current = false;
+    }
+  }, [cameraMode]);
 
   const markersRef = useRef(markers);
   useEffect(() => {
@@ -358,25 +369,32 @@ export const PlatformMap = ({
   useEffect(() => {
     if (!mapRef.current || !mapLoaded) return;
 
+    // Reset Mapbox transform padding to 0 so center coordinates align properly
     mapRef.current.setPadding({ top: 0, bottom: 0, left: 0, right: 0 });
+    isUserInteractingRef.current = false;
+    isUserDraggingRef.current = false;
 
-    // 1. ACTIVE DRIVER FOLLOW MODE (Directional 45-deg Perspective, Smooth, Tied to Driver)
+    // 1. DRIVER FOLLOW MODE (Active in-progress trip)
     if (cameraMode === CAMERA_MODES.FOLLOW_DRIVER && driverLocation) {
-      const rawLat = driverLocation.lat ?? driverLocation.latitude;
-      const rawLng = driverLocation.lng ?? driverLocation.longitude;
-      const heading = driverLocation.heading !== undefined && driverLocation.heading !== null ? Number(driverLocation.heading) : 0;
+      const lat = Number(driverLocation.lat ?? driverLocation.latitude);
+      const lng = Number(driverLocation.lng ?? driverLocation.longitude);
+      const heading = Number(driverLocation.heading || 0);
 
-      if (rawLat !== undefined && rawLng !== undefined) {
-        let lat = Number(rawLat);
-        let lng = Number(rawLng);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        let isPannedAway = false;
+        if (hasManuallyInteractedRef.current && typeof mapRef.current.getCenter === 'function') {
+          const currentMapCenter = mapRef.current.getCenter();
+          const distFromDriver = Math.hypot(currentMapCenter.lat - lat, currentMapCenter.lng - lng);
+          if (distFromDriver > 0.0035) {
+            isPannedAway = true;
+          }
+        }
 
-        if (!isNaN(lat) && !isNaN(lng)) {
-          // Calculate distance to target (pickup or dropoff) for adaptive approach tightening (< 400m)
+        if (!isPannedAway) {
           let targetCoord = null;
-          const currentMarkers = markersRef.current;
-          if (currentMarkers && Array.isArray(currentMarkers)) {
-            const activeTargetMarker = currentMarkers.find(m => m.iconType === 'pickup' || m.iconType === 'dropoff');
-            if (activeTargetMarker) {
+          if (Array.isArray(markersRef.current) && markersRef.current.length > 0) {
+            const activeTargetMarker = markersRef.current.find(m => m.iconType === 'dropoff' || m.iconType === 'pickup');
+            if (activeTargetMarker && activeTargetMarker.lat && activeTargetMarker.lng) {
               targetCoord = {
                 lat: Number(activeTargetMarker.lat),
                 lng: Number(activeTargetMarker.lng)
@@ -418,7 +436,7 @@ export const PlatformMap = ({
       }
     }
 
-    // 2. OVERVIEW / BOUNDS MODE (Finding a Driver / Shared Ride with Other Stops Ahead / Route Preview)
+    // 2. OVERVIEW / BOUNDS MODE (Confirm Ride / Finding a Driver / Shared Ride with Other Stops Ahead / Route Preview)
     const targetArray = routeBounds || bounds;
     const hasMultipleBounds = Array.isArray(targetArray) && targetArray.length >= 2;
 
@@ -467,11 +485,14 @@ export const PlatformMap = ({
         const containerWidth = containerRect?.width || (typeof window !== 'undefined' ? window.innerWidth : 400);
         const isMiniMap = !interactive || containerHeight < 250;
 
-        const calcTop = isMiniMap ? 14 : 75;
+        // Top clearance for header and back button
+        const calcTop = isMiniMap ? 14 : 90;
+        // Dynamic bottom padding to place route safely above the bottom sheet card
         const calcBottom = isMiniMap ? 14 : ((typeof bottomPadding === 'number' && bottomPadding > 0)
-          ? Math.min(bottomPadding + 20, Math.round(containerHeight * 0.55))
-          : Math.max(160, Math.round(containerHeight * 0.25)));
-        const calcSide = isMiniMap ? 14 : Math.max(45, Math.min(80, Math.round(containerWidth * 0.12)));
+          ? Math.max(bottomPadding + 25, Math.round(containerHeight * 0.45))
+          : Math.max(260, Math.round(containerHeight * 0.40)));
+        // Generous side margins so pins with labels/icons on far edges are NEVER clipped (18% width clearance)
+        const calcSide = isMiniMap ? 14 : Math.max(65, Math.min(110, Math.round(containerWidth * 0.18)));
 
         // Skip re-fitting if coordinates haven't shifted significantly (eliminates jerking on landing/polling)
         const prev = lastFittedBoundsRef.current;
@@ -491,6 +512,37 @@ export const PlatformMap = ({
         lastFittedBoundsRef.current = { minLat, maxLat, minLng, maxLng, calcTop, calcBottom };
 
         try {
+          // Compute exact camera viewport using cameraForBounds
+          const targetCamera = mapRef.current.cameraForBounds([
+            [minLng, minLat],
+            [maxLng, maxLat]
+          ], {
+            padding: {
+              top: calcTop,
+              bottom: calcBottom,
+              left: calcSide,
+              right: calcSide
+            },
+            maxZoom: 16.8
+          });
+
+          if (targetCamera) {
+            // Apply balanced comfort zoom (-0.35 zoom) to ensure generous breathing room matching Leaflet / SYNCHRONIZATION
+            const balancedZoom = Math.max(13.0, Math.min(targetCamera.zoom - 0.35, 16.5));
+            mapRef.current.flyTo({
+              center: targetCamera.center,
+              zoom: balancedZoom,
+              pitch: 0,
+              bearing: 0,
+              duration: isInitialFit ? 1800 : 800,
+              essential: true
+            });
+            return;
+          }
+        } catch (e) {}
+
+        // Fallback fitBounds if cameraForBounds throws
+        try {
           mapRef.current.fitBounds([
             [minLng, minLat],
             [maxLng, maxLat]
@@ -503,7 +555,7 @@ export const PlatformMap = ({
             },
             pitch: 0, // Flat 2D overview for multi-point framing
             bearing: 0,
-            maxZoom: 18.0,
+            maxZoom: 16.5,
             duration: isInitialFit ? 1800 : 800,
             essential: true
           });

@@ -215,6 +215,8 @@ const RideRequestPage = () => {
   }, [step, pickup, dropoff, routeGeometry, calculateFare]);
 
 
+  const confirmedLocationsRef = useRef({ pickup: null, dropoff: null });
+
   const handleConfirmLocation = () => {
     // Suppress confirm clicks within 600ms of selecting a place from search (prevents touch tap-through auto-advance)
     if (Date.now() < suppressConfirmUntilRef.current) {
@@ -240,6 +242,7 @@ const RideRequestPage = () => {
 
     if (step === 'pickup') {
       setPickup(loc);
+      confirmedLocationsRef.current.pickup = loc;
       setStep('dropoff');
       isExplicitSelectionRef.current = false;
       explicitSelectedLocationRef.current = null;
@@ -248,11 +251,12 @@ const RideRequestPage = () => {
       setCurrentAddress('');
     } else if (step === 'dropoff') {
       setDropoff(loc);
+      confirmedLocationsRef.current.dropoff = loc;
       setStep('confirm');
       isExplicitSelectionRef.current = false;
       explicitSelectedLocationRef.current = null;
       // Pass loc directly to avoid stale closure — dropoff state won't be set yet
-      calculateFare(pickup, loc);
+      calculateFare(pickup || confirmedLocationsRef.current.pickup, loc);
     }
   };
 
@@ -268,14 +272,16 @@ const RideRequestPage = () => {
   const [isCollapsing, setIsCollapsing] = useState(false);
 
   const handleRequestRide = async () => {
-    if (!pickup || !dropoff || !fareEstimate) return;
+    const activePickup = pickup || confirmedLocationsRef.current.pickup;
+    const activeDropoff = dropoff || confirmedLocationsRef.current.dropoff;
+    if (!activePickup || !activeDropoff || !fareEstimate) return;
 
     setRequesting(true);
     try {
       const activeFare = rideMode === 'shared' ? fareEstimate.shared_fare : fareEstimate.private_fare;
       const res = await api.post('/rides/request', {
-        pickup_location: pickup,
-        dropoff_location: dropoff,
+        pickup_location: activePickup,
+        dropoff_location: activeDropoff,
         ride_mode: rideMode,
         estimated_fare: activeFare,
         estimated_distance: fareEstimate.distance || fareEstimate.distance_km,
@@ -298,17 +304,19 @@ const RideRequestPage = () => {
     if (step === 'dropoff') {
       setStep('pickup');
       setDropoff(null);
-      if (pickup) {
-        setMapCenter({ lat: pickup.lat, lng: pickup.lng });
-        setCurrentAddress(pickup.address || '');
+      const activePickup = pickup || confirmedLocationsRef.current.pickup;
+      if (activePickup) {
+        setMapCenter({ lat: activePickup.lat, lng: activePickup.lng });
+        setCurrentAddress(activePickup.address || '');
       }
     } else if (step === 'confirm') {
       setStep('dropoff');
       setFareEstimate(null);
       setRouteGeometry(null);
-      if (dropoff) {
-        setMapCenter({ lat: dropoff.lat, lng: dropoff.lng });
-        setCurrentAddress(dropoff.address || '');
+      const activeDropoff = dropoff || confirmedLocationsRef.current.dropoff;
+      if (activeDropoff) {
+        setMapCenter({ lat: activeDropoff.lat, lng: activeDropoff.lng });
+        setCurrentAddress(activeDropoff.address || '');
       }
     } else {
       navigate('/dashboard');
@@ -317,24 +325,29 @@ const RideRequestPage = () => {
 
   // Build the markers array based on step
   const markers = [];
-  if (step === 'dropoff' && pickup) {
-    markers.push({ lat: pickup.lat, lng: pickup.lng, iconType: 'pickup', key: 'fixed-pickup' });
+  const activePickup = pickup || confirmedLocationsRef.current.pickup;
+  const activeDropoff = dropoff || confirmedLocationsRef.current.dropoff;
+
+  if (step === 'dropoff' && activePickup) {
+    markers.push({ lat: activePickup.lat, lng: activePickup.lng, iconType: 'pickup', key: 'fixed-pickup' });
   }
   if (step === 'confirm') {
-    if (pickup) markers.push({ lat: pickup.lat, lng: pickup.lng, iconType: 'pickup', key: 'final-pickup' });
-    if (dropoff) markers.push({ lat: dropoff.lat, lng: dropoff.lng, iconType: 'dropoff', key: 'final-dropoff' });
+    if (activePickup) markers.push({ lat: activePickup.lat, lng: activePickup.lng, iconType: 'pickup', key: 'final-pickup' });
+    if (activeDropoff) markers.push({ lat: activeDropoff.lat, lng: activeDropoff.lng, iconType: 'dropoff', key: 'final-dropoff' });
   }
 
   // Memoized bounds logic for confirm step (Includes full route curvature vertices + pickup & dropoff)
   const bounds = useMemo(() => {
     if (step === 'confirm') {
-      if (routeGeometry && Array.isArray(routeGeometry) && routeGeometry.length > 2) {
-        return routeGeometry;
-      }
-      if (pickup && dropoff) {
+      const p = pickup || confirmedLocationsRef.current.pickup;
+      const d = dropoff || confirmedLocationsRef.current.dropoff;
+      if (p && d) {
+        if (routeGeometry && Array.isArray(routeGeometry) && routeGeometry.length > 2) {
+          return routeGeometry;
+        }
         return [
-          [pickup.lat, pickup.lng],
-          [dropoff.lat, dropoff.lng]
+          [p.lat, p.lng],
+          [d.lat, d.lng]
         ];
       }
     }
