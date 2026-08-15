@@ -129,12 +129,20 @@ export const RouteRenderer = ({ id = 'default', map, remainingPath = [], status,
       return;
     }
 
-    const firstPt = formattedCoords[0];
     const lastPt = formattedCoords[formattedCoords.length - 1];
-    const destinationSignature = `${firstPt[0].toFixed(5)},${firstPt[1].toFixed(5)}->${lastPt[0].toFixed(5)},${lastPt[1].toFixed(5)}-${normalizedStatus}`;
+    // Destination signature is locked to the final destination point (NOT the moving driver start point)
+    const destinationSignature = `${cleanId}-${lastPt[0].toFixed(4)},${lastPt[1].toFixed(4)}`;
 
-    // If this route has already animated its entry, update coordinates directly (real-time driver progress with zero flicker)
-    if (animatedSignatureRef.current === destinationSignature) {
+    const isActiveTripState = [
+      'accepted', 'driver_accepted', 'driver_en_route_to_pickup', 
+      'driver_arrived', 'passenger_boarding', 'ride_started', 
+      'ongoing', 'ride_in_progress', 'arriving_destination'
+    ].includes(normalizedStatus);
+
+    // If this route has already animated its entry, or during active trip GPS progression:
+    // Update coordinates directly (real-time driver progress with zero flicker and zero redraw loops)
+    if (animatedSignatureRef.current === destinationSignature || (isActiveTripState && animatedSignatureRef.current)) {
+      animatedSignatureRef.current = destinationSignature;
       if (src) {
         src.setData({
           type: 'Feature',
@@ -145,12 +153,25 @@ export const RouteRenderer = ({ id = 'default', map, remainingPath = [], status,
       return;
     }
 
-    // New destination or route detected! Run the dramatic progressive draw animation
+    // New destination or route detected!
     animatedSignatureRef.current = destinationSignature;
     if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);
 
-    // Initial empty start
+    // If active trip is already in progress, render line immediately without replay delay
+    if (isActiveTripState) {
+      if (src) {
+        src.setData({
+          type: 'Feature',
+          properties: {},
+          geometry: { type: 'LineString', coordinates: formattedCoords }
+        });
+      }
+      if (onAnimationChange) onAnimationChange(false);
+      return;
+    }
+
+    // Initial empty start for preview animations (Confirm Ride / Finding Driver)
     if (src) {
       src.setData({
         type: 'Feature',
@@ -161,7 +182,7 @@ export const RouteRenderer = ({ id = 'default', map, remainingPath = [], status,
 
     if (onAnimationChange) onAnimationChange(true);
 
-    // Duration: 5.0s for requested (finding driver), 2.2s for confirm ride, 1.8s for default
+    // Duration: 5.0s for requested (finding driver), 2.2s for confirm ride
     const isRequestedState = normalizedStatus === 'requested';
     const totalDuration = isRequestedState ? 5000 : 2200;
     const startDelay = isRequestedState ? 500 : 350;
@@ -210,7 +231,7 @@ export const RouteRenderer = ({ id = 'default', map, remainingPath = [], status,
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
       if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);
     };
-  }, [map, remainingPath, normalizedStatus, sourceId, onAnimationChange]);
+  }, [map, remainingPath, normalizedStatus, sourceId, cleanId, onAnimationChange]);
 
   return null;
 };

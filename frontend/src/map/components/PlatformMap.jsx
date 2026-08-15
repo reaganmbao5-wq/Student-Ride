@@ -102,6 +102,8 @@ export const PlatformMap = ({
 
   onRouteAnimationChange = null,
 
+  isDriverView = false,
+
 }) => {
 
   const mapContainerRef = useRef(null);
@@ -400,7 +402,9 @@ export const PlatformMap = ({
             }
           }
 
-          let dynamicZoom = 18.0;
+          // Student Zoom: 18.0 (scaling to 19.5 within 400m)
+          // Driver Zoom: Student Zoom - 4 = 14.0 (scaling to 15.5 within 400m) for realistic Google Maps driving view
+          let dynamicZoom = isDriverView ? 14.0 : 18.0;
           if (targetCoord && !isNaN(targetCoord.lat) && !isNaN(targetCoord.lng)) {
             const dLat = (targetCoord.lat - lat) * (Math.PI / 180);
             const dLon = (targetCoord.lng - lng) * (Math.PI / 180);
@@ -411,10 +415,15 @@ export const PlatformMap = ({
             const distMeters = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
             if (distMeters < 400) {
-              // Smoothly scale zoom from 17.8 at 400m up to 19.5 at 20m for tight, detailed street-level framing
-              dynamicZoom = Math.min(19.5, Math.max(17.8, 19.5 - Math.log2(Math.max(distMeters, 20) / 20) * 0.39));
+              if (isDriverView) {
+                // Driver: Smoothly scale zoom from 14.0 at 400m up to 15.5 at 20m (Google Maps realistic driving view)
+                dynamicZoom = Math.min(15.5, Math.max(14.0, 15.5 - Math.log2(Math.max(distMeters, 20) / 20) * 0.35));
+              } else {
+                // Student: Smoothly scale zoom from 17.8 at 400m up to 19.5 at 20m
+                dynamicZoom = Math.min(19.5, Math.max(17.8, 19.5 - Math.log2(Math.max(distMeters, 20) / 20) * 0.39));
+              }
             } else {
-              dynamicZoom = 18.0;
+              dynamicZoom = isDriverView ? 14.0 : 18.0;
             }
           }
 
