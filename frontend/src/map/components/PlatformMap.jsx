@@ -349,6 +349,11 @@ export const PlatformMap = ({
 
   const lastFlownCenterRef = useRef(null);
 
+  const markersRef = useRef(markers);
+  useEffect(() => {
+    markersRef.current = markers;
+  }, [markers]);
+
   // Handle Smooth Center / Bounds / Driver Follow with zero twitching
   useEffect(() => {
     if (!mapRef.current || !mapLoaded) return;
@@ -368,8 +373,9 @@ export const PlatformMap = ({
         if (!isNaN(lat) && !isNaN(lng)) {
           // Calculate distance to target (pickup or dropoff) for adaptive approach tightening (< 400m)
           let targetCoord = null;
-          if (markers && Array.isArray(markers)) {
-            const activeTargetMarker = markers.find(m => m.iconType === 'pickup' || m.iconType === 'dropoff');
+          const currentMarkers = markersRef.current;
+          if (currentMarkers && Array.isArray(currentMarkers)) {
+            const activeTargetMarker = currentMarkers.find(m => m.iconType === 'pickup' || m.iconType === 'dropoff');
             if (activeTargetMarker) {
               targetCoord = {
                 lat: Number(activeTargetMarker.lat),
@@ -519,7 +525,7 @@ export const PlatformMap = ({
         });
       }
     }
-  }, [center, zoom, bounds, routeBounds, cameraMode, driverLocation, mapLoaded, bottomPadding, markers]);
+  }, [center, zoom, bounds, routeBounds, cameraMode, driverLocation, mapLoaded, bottomPadding]);
 
 
 

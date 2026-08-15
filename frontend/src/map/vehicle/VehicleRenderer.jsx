@@ -11,6 +11,11 @@ const ANIMATION_DURATION_MS = 800;
  * Smoothly interpolates vehicle position and heading on Mapbox map without snapping.
  */
 export const VehicleRenderer = ({ map, driver }) => {
+  const driverId = driver?.id || driver?.driver_id || driver?.user_id || 'active-driver';
+  const driverLat = driver?.lat ?? driver?.latitude;
+  const driverLng = driver?.lng ?? driver?.longitude;
+  const driverHeading = driver?.heading;
+
   const markerRef = useRef(null);
   const animFrameRef = useRef(null);
   const animStateRef = useRef({
@@ -27,21 +32,23 @@ export const VehicleRenderer = ({ map, driver }) => {
     isAnimating: false
   });
 
+  // 1. Lifecycle: Create and destroy Mapbox Marker ONCE per driver identity (Never destroy on coordinate update!)
   useEffect(() => {
-    if (!map || !driver || markerRef.current) return;
+    if (!map) return;
 
-    const lat = Number(driver.lat ?? driver.latitude);
-    const lng = Number(driver.lng ?? driver.longitude);
-    const heading = Number(driver.heading || 0);
+    const lat = Number(driverLat);
+    const lng = Number(driverLng);
+    const heading = Number(driverHeading || 0);
 
-    if (isNaN(lat) || isNaN(lng)) return;
+    const initLat = !isNaN(lat) ? lat : -14.4087;
+    const initLng = !isNaN(lng) ? lng : 28.2849;
 
     const animState = animStateRef.current;
-    animState.currentLat = lat;
-    animState.currentLng = lng;
+    animState.currentLat = initLat;
+    animState.currentLng = initLng;
     animState.currentHeading = heading;
-    animState.targetLat = lat;
-    animState.targetLng = lng;
+    animState.targetLat = initLat;
+    animState.targetLng = initLng;
     animState.targetHeading = heading;
 
     // Create custom vehicle element
@@ -70,7 +77,7 @@ export const VehicleRenderer = ({ map, driver }) => {
       anchor: 'center',
       rotationAlignment: 'map'
     })
-      .setLngLat([lng, lat])
+      .setLngLat([initLng, initLat])
       .setRotation(heading)
       .addTo(map);
 
@@ -79,19 +86,20 @@ export const VehicleRenderer = ({ map, driver }) => {
     return () => {
       if (animFrameRef.current) {
         cancelAnimationFrame(animFrameRef.current);
+        animFrameRef.current = null;
       }
       marker.remove();
       markerRef.current = null;
     };
-  }, [map, driver]);
+  }, [map, driverId]);
 
-  // High-performance 60/120 FPS requestAnimationFrame gliding loop
+  // 2. High-performance 60/120 FPS requestAnimationFrame gliding loop across incoming GPS coordinates
   useEffect(() => {
-    if (!markerRef.current || !driver) return;
+    if (!markerRef.current || driverLat === undefined || driverLng === undefined) return;
 
-    const newLat = Number(driver.lat ?? driver.latitude);
-    const newLng = Number(driver.lng ?? driver.longitude);
-    const newHeading = Number(driver.heading !== undefined && driver.heading !== null ? driver.heading : animStateRef.current.currentHeading);
+    const newLat = Number(driverLat);
+    const newLng = Number(driverLng);
+    const newHeading = Number(driverHeading !== undefined && driverHeading !== null ? driverHeading : animStateRef.current.currentHeading);
 
     if (isNaN(newLat) || isNaN(newLng)) return;
 
@@ -147,7 +155,7 @@ export const VehicleRenderer = ({ map, driver }) => {
     animState.isAnimating = true;
     animFrameRef.current = requestAnimationFrame(animate);
 
-  }, [driver]);
+  }, [driverLat, driverLng, driverHeading]);
 
   return null;
 };
