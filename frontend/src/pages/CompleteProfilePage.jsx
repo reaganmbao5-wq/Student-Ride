@@ -70,8 +70,15 @@ export default function CompleteProfilePage() {
 
         setLoading(true);
         try {
-            // Update the user profile with phone and optionally role
-            const updateBody = { phone };
+            // Update the user profile with phone, gender and preferences
+            const updateBody = { 
+                phone,
+                ...(state.gender ? { gender: state.gender } : {})
+            };
+            if (state.themeMode) localStorage.setItem('mulu_theme_mode', state.themeMode);
+            if (state.accentColor) localStorage.setItem('mulu_accent_color', state.accentColor);
+            if (state.mapThemeMode) localStorage.setItem('map_theme_mode', state.mapThemeMode);
+
             // DO NOT pre-emptively strictly set role to driver here.
             // The DriverRegisterPage requires the user to be a 'student' to fill out the form,
             // which THEN upgrades their role to 'driver'.

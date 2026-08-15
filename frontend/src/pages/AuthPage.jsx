@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { Car, Eye, EyeOff, ArrowLeft, Mail, Phone, User as UserIcon, Lock, UploadCloud, FileText, CheckCircle2, Camera as CameraIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -60,6 +60,7 @@ Checkbox.displayName = 'Checkbox';
 
 const AuthPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const { login, register, signupDriver, api } = useAuth();
 
@@ -98,7 +99,7 @@ const AuthPage = () => {
   const [uploadingDocs, setUploadingDocs] = useState(false);
 
   const [formData, setFormData] = useState({
-    name: '',
+    name: location.state?.name || '',
     email: '',
     phone: '',
     password: '',
