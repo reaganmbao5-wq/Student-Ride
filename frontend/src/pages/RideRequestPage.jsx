@@ -298,12 +298,18 @@ const RideRequestPage = () => {
     if (step === 'dropoff') {
       setStep('pickup');
       setDropoff(null);
-      if (pickup) setMapCenter({ lat: pickup.lat, lng: pickup.lng });
+      if (pickup) {
+        setMapCenter({ lat: pickup.lat, lng: pickup.lng });
+        setCurrentAddress(pickup.address || '');
+      }
     } else if (step === 'confirm') {
       setStep('dropoff');
       setFareEstimate(null);
       setRouteGeometry(null);
-      if (dropoff) setMapCenter({ lat: dropoff.lat, lng: dropoff.lng });
+      if (dropoff) {
+        setMapCenter({ lat: dropoff.lat, lng: dropoff.lng });
+        setCurrentAddress(dropoff.address || '');
+      }
     } else {
       navigate('/dashboard');
     }
@@ -337,7 +343,7 @@ const RideRequestPage = () => {
 
 
   const sheetRef = useRef(null);
-  const [sheetHeight, setSheetHeight] = useState(380);
+  const [sheetHeight, setSheetHeight] = useState(320);
 
   // Measure live bottom sheet rendered height for dynamic visible safe region camera framing
   useEffect(() => {
@@ -374,7 +380,7 @@ const RideRequestPage = () => {
           center={mapCenter}
           selectionLocation={selectionTarget}
           bounds={bounds}
-          bottomPadding={step === 'confirm' ? 140 : 0}
+          bottomPadding={step === 'confirm' ? (sheetHeight || 320) : 0}
           cameraMode={
             step === 'pickup' ? CAMERA_MODES.PICKUP_SELECTION :
             step === 'dropoff' ? CAMERA_MODES.DESTINATION_SELECTION :

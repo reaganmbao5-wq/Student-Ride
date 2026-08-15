@@ -427,8 +427,21 @@ export const PlatformMap = ({
       const lngs = [];
       targetArray.forEach(pt => {
         if (Array.isArray(pt) && pt.length >= 2) {
-          const lat = Number(pt[0]);
-          const lng = Number(pt[1]);
+          let lat, lng;
+          const val0 = Number(pt[0]);
+          const val1 = Number(pt[1]);
+          if (val0 < 0 && val1 > 0) {
+            // [lat, lng] format (Zambia latitude is negative, longitude is positive)
+            lat = val0;
+            lng = val1;
+          } else if (val0 > 0 && val1 < 0) {
+            // [lng, lat] GeoJSON standard format
+            lng = val0;
+            lat = val1;
+          } else {
+            lat = val0;
+            lng = val1;
+          }
           if (!isNaN(lat) && !isNaN(lng)) {
             lats.push(lat);
             lngs.push(lng);
@@ -450,13 +463,15 @@ export const PlatformMap = ({
         const maxLng = Math.max(...lngs);
 
         const containerRect = mapContainerRef.current?.getBoundingClientRect();
-        const isMiniMap = !interactive || (containerRect && containerRect.height < 250);
+        const containerHeight = containerRect?.height || (typeof window !== 'undefined' ? window.innerHeight : 600);
+        const containerWidth = containerRect?.width || (typeof window !== 'undefined' ? window.innerWidth : 400);
+        const isMiniMap = !interactive || containerHeight < 250;
 
         const calcTop = isMiniMap ? 14 : 75;
         const calcBottom = isMiniMap ? 14 : ((typeof bottomPadding === 'number' && bottomPadding > 0)
-          ? Math.min(bottomPadding, 220)
-          : 160);
-        const calcSide = isMiniMap ? 14 : Math.max(35, Math.min(60, Math.round((containerRect?.width || 400) * 0.08)));
+          ? Math.min(bottomPadding + 20, Math.round(containerHeight * 0.55))
+          : Math.max(160, Math.round(containerHeight * 0.25)));
+        const calcSide = isMiniMap ? 14 : Math.max(45, Math.min(80, Math.round(containerWidth * 0.12)));
 
         // Skip re-fitting if coordinates haven't shifted significantly (eliminates jerking on landing/polling)
         const prev = lastFittedBoundsRef.current;
