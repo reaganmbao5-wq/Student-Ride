@@ -44,7 +44,7 @@ export default function CompleteProfilePage() {
 
     const [name] = useState(state.name || '');
     const [email] = useState(state.email || '');
-    const [phone, setPhone] = useState('');
+    const [phone, setPhone] = useState(state.phone || '');
     const [isDriver, setIsDriver] = useState(false);
     const [loading, setLoading] = useState(false);
     const [agreedToTerms, setAgreedToTerms] = useState(false);

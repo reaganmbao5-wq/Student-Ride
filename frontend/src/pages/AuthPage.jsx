@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { Car, Eye, EyeOff, ArrowLeft, Mail, Phone, User as UserIcon, Lock, UploadCloud, FileText, CheckCircle2, Camera as CameraIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -15,17 +15,22 @@ import { getOnlineWebUrl, openExternalUrl } from '../utils/urlHelpers';
 const GlassInput = React.forwardRef(({ className, ...props }, ref) => (
   <input
     ref={ref}
-    className={`w-full bg-zinc-900/50 border border-zinc-800/80 rounded-xl px-4 py-3 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 transition-all ${className}`}
+    className={`w-full bg-zinc-900/60 border border-zinc-800 rounded-xl px-4 py-3.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/50 transition-all ${className}`}
     {...props}
   />
 ));
 GlassInput.displayName = 'GlassInput';
 
-const LoadingSpinner = ({ className = "" }) => (
-  <svg className={`animate-spin h-5 w-5 text-gold ${className}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-  </svg>
+const GoldButton = ({ children, className, loading, ...props }) => (
+  <button
+    disabled={loading}
+    className={`w-full bg-gold hover:bg-gold/90 text-zinc-950 font-semibold py-3.5 px-6 rounded-xl transition-all shadow-gold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${className}`}
+    {...props}
+  >
+    {loading ? (
+      <div className="w-5 h-5 border-2 border-zinc-950 border-t-transparent rounded-full animate-spin" />
+    ) : children}
+  </button>
 );
 
 const Checkbox = React.forwardRef(({ className, checked, onChange, ...props }, ref) => (
@@ -34,7 +39,7 @@ const Checkbox = React.forwardRef(({ className, checked, onChange, ...props }, r
     role="checkbox"
     aria-checked={checked}
     onClick={() => onChange && onChange(!checked)}
-    className={`peer size-4 shrink-0 rounded border border-zinc-700 shadow-sm shadow-black/5 outline-offset-2 focus-visible:outline focus-visible:outline-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+    className={`peer size-4 shrink-0 rounded border border-zinc-700 shadow-sm outline-offset-2 focus-visible:outline focus-visible:outline-2 disabled:cursor-not-allowed disabled:opacity-50 ${
       checked ? 'border-gold bg-gold text-zinc-950' : 'bg-zinc-900 text-transparent hover:border-gold/50'
     } ${className}`}
     {...props}
@@ -60,11 +65,13 @@ Checkbox.displayName = 'Checkbox';
 
 const AuthPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const { login, register, signupDriver, api } = useAuth();
 
-  const [mode, setMode] = useState(searchParams.get('mode') === 'driver' ? 'register' : 'login');
-  const [direction, setDirection] = useState(searchParams.get('mode') === 'driver' ? 1 : -1);
+  const isRegisterParam = searchParams.get('mode') === 'register' || searchParams.get('mode') === 'driver';
+  const [mode, setMode] = useState(isRegisterParam ? 'register' : 'login');
+  const [direction, setDirection] = useState(isRegisterParam ? 1 : -1);
   const [isDriver, setIsDriver] = useState(searchParams.get('mode') === 'driver');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -98,9 +105,9 @@ const AuthPage = () => {
   const [uploadingDocs, setUploadingDocs] = useState(false);
 
   const [formData, setFormData] = useState({
-    name: '',
+    name: location.state?.name || '',
     email: '',
-    phone: '',
+    phone: location.state?.phone || '',
     password: '',
     confirmPassword: '',
     vehicle_type: 'car',

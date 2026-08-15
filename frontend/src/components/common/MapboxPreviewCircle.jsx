@@ -22,13 +22,25 @@ export const MapboxPreviewCircle = ({ styleMode = 'day', isAuto = false }) => {
         container: mapContainerRef.current,
         style: initialStyle,
         center: [28.549662, -14.294646], // Mulungushi University Main Campus
-        zoom: 14.2,
-        pitch: 45,
+        zoom: 14.8,
+        pitch: 35,
         interactive: false,
         attributionControl: false
       });
 
       mapInstanceRef.current = map;
+
+      map.on('load', () => {
+        try {
+          map.resize();
+        } catch (e) {}
+      });
+
+      const resizeTimer = setTimeout(() => {
+        try {
+          if (mapInstanceRef.current) mapInstanceRef.current.resize();
+        } catch (e) {}
+      }, 350);
 
       // Handle Auto mode transitioning every 3.5 seconds
       let interval = null;
@@ -46,6 +58,7 @@ export const MapboxPreviewCircle = ({ styleMode = 'day', isAuto = false }) => {
       }
 
       return () => {
+        clearTimeout(resizeTimer);
         if (interval) clearInterval(interval);
         try {
           map.remove();
@@ -59,6 +72,19 @@ export const MapboxPreviewCircle = ({ styleMode = 'day', isAuto = false }) => {
 
   return (
     <div className="w-full h-full rounded-full overflow-hidden pointer-events-none relative">
+      <style>
+        {`
+          .mapboxgl-ctrl-bottom-left,
+          .mapboxgl-ctrl-bottom-right,
+          .mapboxgl-ctrl-logo,
+          .mapboxgl-ctrl-attrib,
+          .mapboxgl-compact {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+          }
+        `}
+      </style>
       <div ref={mapContainerRef} className="w-full h-full" />
     </div>
   );
