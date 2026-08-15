@@ -66,22 +66,17 @@ const RideRequestPage = () => {
     }
     // Continuous micro-haptics while dragging
     const now = Date.now();
-    if (now - lastHapticTime.current > 120) {
-      haptics.selection();
+    if (now - lastHapticTime.current > 60) {
+      haptics.swipeProgress();
       lastHapticTime.current = now;
     }
   };
 
   const handleTouchEnd = (e) => {
-    const touchEndY = e.changedTouches[0].clientY;
-    const diff = touchStartY.current - touchEndY;
-    // Threshold for swipe gesture (50px)
-    if (diff > 50) {
-      haptics.buttonClick();
-      setIsSheetExpanded(true);
-    } else if (diff < -50) {
-      haptics.buttonClick();
-      setIsSheetExpanded(false);
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+    if (Math.abs(deltaY) > 20) {
+      setRideMode(prev => prev === 'shared' ? 'private' : 'shared');
+      haptics.swipeSnap();
     }
   };
 
@@ -191,6 +186,9 @@ const RideRequestPage = () => {
           shared_fare: data.shared?.estimated_fare || data.shared?.fare || estSharedFare,
           distance_km: data.verified_distance || data.distance_km || parseFloat(estDist.toFixed(1)),
           duration_mins: data.verified_duration || data.duration_mins || estDuration,
+          duration_min: data.duration_min || data.verified_duration || data.duration_mins || estDuration,
+          duration: data.duration || data.verified_duration || data.duration_mins || estDuration,
+          distance: data.distance || data.verified_distance || data.distance_km || parseFloat(estDist.toFixed(1)),
           private_surge: data.private?.surge_reason,
           shared_surge: data.shared?.surge_reason
         });
@@ -245,6 +243,8 @@ const RideRequestPage = () => {
       setStep('dropoff');
       isExplicitSelectionRef.current = false;
       explicitSelectedLocationRef.current = null;
+      // Offset destination map center slightly south (-0.0006 lat) so destination pin drops cleanly below pickup pin
+      setMapCenter({ lat: loc.lat - 0.0006, lng: loc.lng });
       setCurrentAddress('');
     } else if (step === 'dropoff') {
       setDropoff(loc);
@@ -278,8 +278,8 @@ const RideRequestPage = () => {
         dropoff_location: dropoff,
         ride_mode: rideMode,
         estimated_fare: activeFare,
-        estimated_distance: fareEstimate.distance,
-        estimated_duration: fareEstimate.duration
+        estimated_distance: fareEstimate.distance || fareEstimate.distance_km,
+        estimated_duration: fareEstimate.duration || fareEstimate.duration_mins
       });
 
       toast.success('Ride requested! Finding a driver...');
@@ -319,16 +319,21 @@ const RideRequestPage = () => {
     if (dropoff) markers.push({ lat: dropoff.lat, lng: dropoff.lng, iconType: 'dropoff', key: 'final-dropoff' });
   }
 
-  // Memoized bounds logic for confirm step (strictly pickup and dropoff points, matching StudentDashboard.jsx for perfect framing)
+  // Memoized bounds logic for confirm step (Includes full route curvature vertices + pickup & dropoff)
   const bounds = useMemo(() => {
-    if (step === 'confirm' && pickup && dropoff) {
-      return [
-        [pickup.lat, pickup.lng],
-        [dropoff.lat, dropoff.lng]
-      ];
+    if (step === 'confirm') {
+      if (routeGeometry && Array.isArray(routeGeometry) && routeGeometry.length > 2) {
+        return routeGeometry;
+      }
+      if (pickup && dropoff) {
+        return [
+          [pickup.lat, pickup.lng],
+          [dropoff.lat, dropoff.lng]
+        ];
+      }
     }
     return null;
-  }, [step, pickup, dropoff]);
+  }, [step, pickup, dropoff, routeGeometry]);
 
 
   const sheetRef = useRef(null);

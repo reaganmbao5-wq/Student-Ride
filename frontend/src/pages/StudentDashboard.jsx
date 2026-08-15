@@ -481,26 +481,20 @@ const StudentDashboard = () => {
       if (activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
       if (activeRide.dropoff_location) bounds.push([activeRide.dropoff_location.lat, activeRide.dropoff_location.lng]);
       
-      // Include nearby drivers within 3.0km stably
+      // Include nearby drivers within 3.0km radius so camera frames all active roaming drivers cleanly
       if (activeRide.pickup_location && nearbyDrivers && nearbyDrivers.length > 0) {
         const pLat = activeRide.pickup_location.lat;
         const pLng = activeRide.pickup_location.lng;
-        let closestDriverCoord = null;
-        let minDistanceSq = Infinity;
         nearbyDrivers.forEach(d => {
           const dLat = d.latitude || d.lat;
           const dLng = d.longitude || d.lng;
           if (dLat && dLng) {
             const distSq = Math.pow(dLat - pLat, 2) + Math.pow(dLng - pLng, 2);
-            if (distSq <= 0.00075 && distSq < minDistanceSq) {
-              minDistanceSq = distSq;
-              closestDriverCoord = [dLat, dLng];
+            if (distSq <= 0.00075) { // ~3.0 km radius threshold
+              bounds.push([dLat, dLng]);
             }
           }
         });
-        if (closestDriverCoord) {
-          bounds.push(closestDriverCoord);
-        }
       }
     }
 

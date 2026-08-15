@@ -454,18 +454,19 @@ export const PlatformMap = ({
 
         const calcTop = isMiniMap ? 14 : 75;
         const calcBottom = isMiniMap ? 14 : ((typeof bottomPadding === 'number' && bottomPadding > 0)
-          ? Math.min(bottomPadding, 180)
-          : 150);
-        const calcSide = isMiniMap ? 14 : 25;
+          ? Math.min(bottomPadding, 220)
+          : 160);
+        const calcSide = isMiniMap ? 14 : Math.max(35, Math.min(60, Math.round((containerRect?.width || 400) * 0.08)));
 
-        // Skip re-fitting if coordinates haven't shifted significantly
+        // Skip re-fitting if coordinates haven't shifted significantly (eliminates jerking on landing/polling)
         const prev = lastFittedBoundsRef.current;
+        const isInitialFit = !prev;
         const isSameBounds = prev &&
-          Math.abs(prev.minLat - minLat) < 0.00045 &&
-          Math.abs(prev.maxLat - maxLat) < 0.00045 &&
-          Math.abs(prev.minLng - minLng) < 0.00045 &&
-          Math.abs(prev.maxLng - maxLng) < 0.00045 &&
-          Math.abs(prev.calcBottom - calcBottom) < 20 &&
+          Math.abs(prev.minLat - minLat) < 0.00035 &&
+          Math.abs(prev.maxLat - maxLat) < 0.00035 &&
+          Math.abs(prev.minLng - minLng) < 0.00035 &&
+          Math.abs(prev.maxLng - maxLng) < 0.00035 &&
+          Math.abs(prev.calcBottom - calcBottom) < 15 &&
           prev.calcTop === calcTop;
 
         if (isSameBounds) {
@@ -488,7 +489,7 @@ export const PlatformMap = ({
             pitch: 0, // Flat 2D overview for multi-point framing
             bearing: 0,
             maxZoom: 18.0,
-            duration: 800,
+            duration: isInitialFit ? 1800 : 800,
             essential: true
           });
         } catch (e) {}
@@ -498,9 +499,9 @@ export const PlatformMap = ({
 
     if (center && center.lat !== undefined && center.lng !== undefined) {
       const defaultStepZoom = cameraMode === CAMERA_MODES.PICKUP_SELECTION
-        ? CAMERA_CONFIG.ZOOM.PICKUP_SELECTION
+        ? (CAMERA_CONFIG.ZOOM.PICKUP_SELECTION || 18.5)
         : cameraMode === CAMERA_MODES.DESTINATION_SELECTION
-        ? CAMERA_CONFIG.ZOOM.DESTINATION_SELECTION
+        ? (CAMERA_CONFIG.ZOOM.DESTINATION_SELECTION || 17.0)
         : (typeof mapRef.current.getZoom === 'function' ? mapRef.current.getZoom() : zoom);
 
       const targetZoom = (hasManuallyInteractedRef.current && typeof mapRef.current.getZoom === 'function')
@@ -520,7 +521,8 @@ export const PlatformMap = ({
           zoom: targetZoom,
           pitch: 0,
           bearing: 0,
-          duration: 1200,
+          speed: 0.15,
+          duration: 2400,
           essential: true
         });
       }
