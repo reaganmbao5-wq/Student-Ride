@@ -5,6 +5,7 @@ import { CurrencyCircleDollar, Wallet, Car, Star as PhosphorStar } from '@phosph
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard, GoldButton, StatusBadge, LoadingSpinner, EmptyState } from '../components/common/GlassComponents';
 import { PlatformMap } from '../map/components/PlatformMap';
+import { CAMERA_MODES } from '../map/camera/CameraConfig';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
 import { DriverDashboardSkeleton } from '../components/common/PageSkeletons';
@@ -838,10 +839,12 @@ const DriverDashboard = () => {
           )}
 
           <PlatformMap
-            driverLocation={currentLocation}
-            center={currentLocation || { lat: -14.294532832852411, lng: 28.54970049702143 }}
-            bounds={bounds.length > 1 ? bounds : null}
-            zoom={16}
+            isDriverView={true}
+            cameraMode={CAMERA_MODES.FOLLOW_DRIVER}
+            driverLocation={activeDriverLoc}
+            center={activeDriverLoc || { lat: -14.294532832852411, lng: 28.54970049702143 }}
+            bounds={null}
+            zoom={14}
             markers={mapMarkers}
             drivers={driversArray}
             routes={routesData}

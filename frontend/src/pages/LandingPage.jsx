@@ -7,7 +7,7 @@ import { GoogleAuth } from '@daniele-rolli/capacitor-google-auth';
 import { Capacitor } from '@capacitor/core';
 import { toast } from 'sonner';
 import { useTheme } from '../context/ThemeContext';
-import { MapboxPreviewCircle } from '../components/common/MapboxPreviewCircle';
+import { ImageGallery } from '../components/common/ImageGallery';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://student-ride-backend-manual.onrender.com';
 
@@ -27,6 +27,42 @@ const slideVariants = {
     transition: { duration: 0.25, ease: [0.16, 1, 0.3, 1] }
   })
 };
+
+const THEME_GALLERY_ITEMS = [
+  {
+    title: "Dark Mode",
+    url: "/assets/previews/dark_theme_preview.png",
+    mode: "dark"
+  },
+  {
+    title: "Light Mode",
+    url: "/assets/previews/light_theme_preview.png",
+    mode: "light"
+  },
+  {
+    title: "Auto (System)",
+    url: "/assets/previews/dark_theme_preview.png",
+    mode: "system"
+  }
+];
+
+const MAP_GALLERY_ITEMS = [
+  {
+    title: "Night Map",
+    url: "/assets/previews/night_map_preview.png",
+    mode: "night"
+  },
+  {
+    title: "Day Map",
+    url: "/assets/previews/day_map_preview.png",
+    mode: "day"
+  },
+  {
+    title: "Auto Map",
+    url: "/assets/previews/night_map_preview.png",
+    mode: "auto"
+  }
+];
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -48,16 +84,8 @@ const LandingPage = () => {
   const [gender, setGender] = useState('male'); // 'male' | 'female'
   const [mapStylePreference, setMapStylePreference] = useState('auto'); // 'day' | 'night' | 'auto'
 
-  // Auto mode crossfade animation for theme preview
-  const [autoThemeToggle, setAutoThemeToggle] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setAutoThemeToggle(prev => !prev);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
+  const [videoLoaded, setVideoLoaded] = useState(false);
 
   // Initialize native Google Auth for Capacitor
   useEffect(() => {
@@ -158,7 +186,6 @@ const LandingPage = () => {
       localStorage.setItem('token', data.access_token);
 
       if (data.is_new_user) {
-        // Case B: Redirect to Complete Profile with Google locked info + Onboarding Choices
         navigate('/complete-profile', {
           state: {
             name: data.user.name || `${firstName} ${lastName}`.trim(),
@@ -250,23 +277,37 @@ const LandingPage = () => {
   // Helper for opening terms/privacy without destroying onboarding state
   const openTerms = (e) => {
     e.preventDefault();
-    window.open('/terms', '_blank');
+    window.open('/terms', '_blank', 'noopener,noreferrer');
   };
 
   const openPrivacy = (e) => {
     e.preventDefault();
-    window.open('/privacy', '_blank');
+    window.open('/privacy', '_blank', 'noopener,noreferrer');
   };
 
   // Get active accent hex for custom dynamic button color
   const activeAccentHex = ACCENT_COLORS[accentColor]?.hex || '#3B82F6';
 
+  // Theme Gallery selection helper
+  const currentThemeIndex = themeMode === 'dark' ? 0 : themeMode === 'light' ? 1 : 2;
+  const handleThemeSelect = (index) => {
+    const selected = THEME_GALLERY_ITEMS[index];
+    if (selected) setThemeMode(selected.mode);
+  };
+
+  // Map Gallery selection helper
+  const currentMapIndex = mapStylePreference === 'night' ? 0 : mapStylePreference === 'day' ? 1 : 2;
+  const handleMapSelect = (index) => {
+    const selected = MAP_GALLERY_ITEMS[index];
+    if (selected) setMapStylePreference(selected.mode);
+  };
+
   return (
-    <div className="fixed inset-0 bg-[#0B0B0E] text-white flex flex-col justify-between overflow-hidden select-none font-sans">
+    <div className="fixed inset-0 w-full h-full bg-[#0B0B0E] text-white flex flex-col justify-between overflow-hidden select-none font-sans">
       
       {/* Top Header / Back Navigation (Visible for steps 2 to 5) */}
       {step > 1 && (
-        <div className="relative z-20 flex items-center justify-between px-6 pt-5 pb-2">
+        <div className="relative z-20 w-full max-w-4xl mx-auto flex items-center justify-between px-6 pt-5 pb-2">
           <button
             onClick={handleBack}
             className="w-10 h-10 rounded-full bg-zinc-900/80 border border-zinc-800 flex items-center justify-center text-zinc-300 hover:text-white active:scale-95 transition-transform"
@@ -276,12 +317,12 @@ const LandingPage = () => {
           </button>
 
           {/* Progress Indicator dots */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             {[2, 3, 4, 5].map((s) => (
               <div
                 key={s}
                 className={`h-1.5 rounded-full transition-all duration-300 ${
-                  s === step ? 'w-6 bg-blue-500' : s < step ? 'w-2 bg-zinc-600' : 'w-2 bg-zinc-800'
+                  s === step ? 'w-8 bg-blue-500' : s < step ? 'w-2.5 bg-zinc-600' : 'w-2.5 bg-zinc-800'
                 }`}
                 style={s === step ? { backgroundColor: activeAccentHex } : {}}
               />
@@ -291,11 +332,11 @@ const LandingPage = () => {
       )}
 
       {/* Main Content Carousel */}
-      <div className="flex-1 flex flex-col justify-center px-6 relative z-10 w-full max-w-md mx-auto">
+      <div className="flex-1 flex flex-col justify-center relative z-10 w-full">
         <AnimatePresence mode="wait" custom={direction}>
           
           {/* ========================================================================= */}
-          {/* STEP 1: HERO PAGE (Desktop Image / Mobile Video + 35% Frosted Glass) */}
+          {/* STEP 1: HERO PAGE (Enlarged Logo, Jaey Ride, Full-Bleed Desktop/Mobile) */}
           {/* ========================================================================= */}
           {step === 1 && (
             <motion.div
@@ -305,75 +346,79 @@ const LandingPage = () => {
               initial="enter"
               animate="center"
               exit="exit"
-              className="absolute inset-0 flex flex-col justify-between p-6 z-10"
+              className="absolute inset-0 flex flex-col justify-between w-full h-full p-6 sm:p-10 md:p-14 z-10"
             >
-              {/* Background Media Container */}
-              <div className="absolute inset-0 overflow-hidden -z-10">
+              {/* Full-Bleed Background Media Container */}
+              <div className="absolute inset-0 w-full h-full overflow-hidden bg-[#0B0B0E] -z-10">
                 {/* Desktop/Tablet Horizontal Static Image */}
                 <img
                   src="/assets/images/desktop_hero_car.jpg"
-                  alt="JRide Car"
+                  alt="JRide Background"
                   className="hidden md:block w-full h-full object-cover"
                 />
 
-                {/* Mobile Looping Portrait Video */}
+                {/* Mobile Looping Portrait Video with no-flash fade-in */}
                 <video
                   autoPlay
                   loop
                   muted
                   playsInline
-                  className="block md:hidden w-full h-full object-cover scale-105"
+                  preload="auto"
+                  onPlaying={() => setVideoLoaded(true)}
+                  className={`block md:hidden w-full h-full object-cover scale-105 transition-opacity duration-500 ${
+                    videoLoaded ? 'opacity-100' : 'opacity-0'
+                  }`}
                 >
                   <source src="/assets/videos/Firstpage.mp4" type="video/mp4" />
                 </video>
 
-                {/* 35% Frosted Glass Overlay (Crystal-clear visibility with soft blur) */}
+                {/* 35% Frosted Glass Overlay */}
                 <div className="absolute inset-0 bg-black/35 backdrop-blur-[5px] backdrop-filter" />
                 <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/85" />
               </div>
 
-              {/* Top Branding Section (Moved high up, almost touching the top) */}
-              <div className="pt-2 sm:pt-4 flex items-center gap-3.5">
+              {/* Top Branding Section (Enlarged Logo + Full Name "Jaey Ride") */}
+              <div className="w-full max-w-4xl mx-auto pt-2 sm:pt-4 flex items-center gap-4 sm:gap-6">
                 <img
                   src="/assets/images/Jaey-logo.png"
-                  alt="JRide Logo"
-                  className="h-12 sm:h-16 w-auto object-contain drop-shadow-lg"
+                  alt="Jaey Ride Logo"
+                  className="h-16 sm:h-20 md:h-24 w-auto object-contain drop-shadow-2xl"
                 />
                 <div>
-                  <h2 className="text-2xl sm:text-3xl font-extrabold tracking-wider text-white leading-tight">
-                    JRIDE
+                  <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-wider text-white leading-tight">
+                    Jaey Ride
                   </h2>
-                  <p className="text-[11px] font-semibold text-zinc-300 uppercase tracking-widest">
+                  <p className="text-xs sm:text-sm font-bold text-zinc-300 uppercase tracking-widest mt-0.5">
                     MULUNGUSHI UNIVERSITY
                   </p>
                 </div>
               </div>
 
               {/* Bottom Content & CTA */}
-              <div className="pb-6 space-y-5">
-                <div>
-                  <h1 className="text-4xl sm:text-5xl font-serif font-medium tracking-tight text-white leading-tight mb-3">
+              <div className="w-full max-w-4xl mx-auto pb-4 sm:pb-8 space-y-6">
+                <div className="space-y-3 max-w-xl">
+                  <h1 className="text-4xl sm:text-5xl md:text-6xl font-serif font-medium tracking-tight text-white leading-tight">
                     From Campus <br />
                     To Your Door Step
                   </h1>
-                  <p className="text-sm sm:text-base text-zinc-200 leading-relaxed max-w-sm">
+                  <p className="text-sm sm:text-base md:text-lg text-zinc-200 leading-relaxed">
                     The platform that always moves in your hands. Request rides, share seats, and travel comfortably around campus.
                   </p>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-3.5 max-w-md">
                   <button
                     onClick={goToNextStep}
-                    className="w-full py-4 px-6 rounded-2xl font-bold text-base text-white shadow-xl active:scale-[0.98] transition-all flex items-center justify-center"
+                    className="w-full py-4 sm:py-4.5 px-8 rounded-2xl font-bold text-base sm:text-lg text-white shadow-2xl active:scale-[0.98] transition-all flex items-center justify-center"
                     style={{
                       backgroundColor: activeAccentHex,
-                      boxShadow: `0 10px 25px -5px ${activeAccentHex}50`
+                      boxShadow: `0 12px 30px -5px ${activeAccentHex}60`
                     }}
                   >
                     Get Started
                   </button>
 
-                  <p className="text-center text-[11px] text-zinc-300">
+                  <p className="text-center text-xs text-zinc-300">
                     By proceeding, you agree to all our{' '}
                     <span onClick={openTerms} className="text-white underline cursor-pointer hover:text-blue-300">terms and conditions</span>
                     {' '}~{' '}
@@ -385,7 +430,7 @@ const LandingPage = () => {
           )}
 
           {/* ========================================================================= */}
-          {/* STEP 2: NAME & MANDATORY PHONE INPUT */}
+          {/* STEP 2: NAME & MANDATORY PHONE INPUT (No blue highlight) */}
           {/* ========================================================================= */}
           {step === 2 && (
             <motion.div
@@ -395,7 +440,7 @@ const LandingPage = () => {
               initial="enter"
               animate="center"
               exit="exit"
-              className="flex flex-col justify-between h-full pt-8 pb-6"
+              className="w-full max-w-md md:max-w-lg mx-auto flex flex-col justify-between h-full px-6 pt-6 pb-8"
             >
               <div className="space-y-5 overflow-y-auto pr-1">
                 <div>
@@ -411,7 +456,7 @@ const LandingPage = () => {
                       if (e.key === 'Enter') goToNextStep();
                     }}
                     placeholder="Your name"
-                    className="w-full bg-zinc-900/90 border border-zinc-800 rounded-2xl px-5 py-4 text-base text-white placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:border-zinc-700 transition-all mt-2"
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-4 text-base text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-700 transition-all mt-2"
                   />
                 </div>
 
@@ -437,7 +482,7 @@ const LandingPage = () => {
                           if (e.key === 'Enter') goToNextStep();
                         }}
                         placeholder="Your surname"
-                        className="w-full bg-zinc-900/90 border border-zinc-800 rounded-2xl px-5 py-4 text-base text-white placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:border-zinc-700 transition-all mt-2"
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-4 text-base text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-700 transition-all mt-2"
                       />
                     </motion.div>
                   )}
@@ -465,7 +510,7 @@ const LandingPage = () => {
                           if (e.key === 'Enter') goToNextStep();
                         }}
                         placeholder="e.g. 0971234567"
-                        className="w-full bg-zinc-900/90 border border-zinc-800 rounded-2xl px-5 py-4 text-base text-white placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:border-zinc-700 transition-all mt-2"
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-4 text-base text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-700 transition-all mt-2"
                       />
                     </motion.div>
                   )}
@@ -509,7 +554,7 @@ const LandingPage = () => {
               initial="enter"
               animate="center"
               exit="exit"
-              className="flex flex-col justify-between h-full pt-10 pb-6"
+              className="w-full max-w-md md:max-w-lg mx-auto flex flex-col justify-between h-full px-6 pt-8 pb-8"
             >
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-6">
@@ -522,7 +567,7 @@ const LandingPage = () => {
                     onClick={() => setGender('male')}
                     className={`p-5 rounded-2xl border cursor-pointer flex items-center gap-4 transition-all ${
                       gender === 'male'
-                        ? 'bg-zinc-800/90 border-blue-500 shadow-lg shadow-blue-500/10'
+                        ? 'bg-zinc-800/90 border-blue-500 shadow-xl shadow-blue-500/10 scale-[1.01]'
                         : 'bg-zinc-900/60 border-zinc-800 hover:bg-zinc-900 text-zinc-300'
                     }`}
                     style={gender === 'male' ? { borderColor: activeAccentHex } : {}}
@@ -543,7 +588,7 @@ const LandingPage = () => {
                     onClick={() => setGender('female')}
                     className={`p-5 rounded-2xl border cursor-pointer flex items-center gap-4 transition-all ${
                       gender === 'female'
-                        ? 'bg-zinc-800/90 border-blue-500 shadow-lg shadow-blue-500/10'
+                        ? 'bg-zinc-800/90 border-blue-500 shadow-xl shadow-blue-500/10 scale-[1.01]'
                         : 'bg-zinc-900/60 border-zinc-800 hover:bg-zinc-900 text-zinc-300'
                     }`}
                     style={gender === 'female' ? { borderColor: activeAccentHex } : {}}
@@ -587,7 +632,7 @@ const LandingPage = () => {
           )}
 
           {/* ========================================================================= */}
-          {/* STEP 4: EXPERIENCE CUSTOMIZATION (Theme -> Accent Color -> Map Style) */}
+          {/* STEP 4: EXPERIENCE CUSTOMIZATION WITH ENLARGED 21st.dev GSAP GALLERY */}
           {/* ========================================================================= */}
           {step === 4 && (
             <motion.div
@@ -597,133 +642,39 @@ const LandingPage = () => {
               initial="enter"
               animate="center"
               exit="exit"
-              className="flex flex-col justify-between h-full pt-6 pb-6"
+              className="w-full max-w-md md:max-w-lg mx-auto flex flex-col justify-between h-full px-6 pt-3 pb-5"
             >
-              {/* Fixed Header (Higher up) */}
+              {/* Header */}
               <div className="text-center space-y-1">
                 <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
                   Now, let's customize your app experience
                 </h1>
-                <p className="text-sm text-zinc-400">It will only take a minute</p>
+                <p className="text-xs text-zinc-400">It will only take a minute</p>
               </div>
 
               {/* Dynamic Center Customization Content */}
-              <div className="my-auto py-2">
+              <div className="my-auto py-1 flex flex-col items-center justify-center w-full">
                 
-                {/* 4A: App Theme Selection (Enlarged 3 Circular Rings) */}
+                {/* 4A: App Theme Selection with 21st.dev Liquid Gallery */}
                 {customSubStep === 'theme' && (
-                  <motion.div
-                    key="substep-theme"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="space-y-4"
-                  >
-                    <p className="text-xs text-center font-medium uppercase tracking-widest text-zinc-400 mb-2">
-                      Select App Theme
-                    </p>
-
-                    <div className="flex items-center justify-center gap-3 sm:gap-6">
-                      
-                      {/* Dark Mode Ring */}
-                      <div
-                        onClick={() => setThemeMode('dark')}
-                        className="flex flex-col items-center gap-2.5 cursor-pointer group"
-                      >
-                        <div
-                          className={`w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full p-1.5 border-4 transition-all overflow-hidden ${
-                            themeMode === 'dark'
-                              ? 'border-blue-500 scale-105 shadow-2xl shadow-blue-500/30 ring-4 ring-blue-500/20'
-                              : 'border-zinc-800 opacity-60 hover:opacity-90'
-                          }`}
-                          style={themeMode === 'dark' ? { borderColor: activeAccentHex, ringColor: `${activeAccentHex}40` } : {}}
-                        >
-                          <div className="w-full h-full rounded-full overflow-hidden bg-zinc-950">
-                            <img
-                              src="/assets/previews/dark_theme_preview.png"
-                              alt="Dark Theme"
-                              className="w-full h-full object-cover object-top"
-                            />
-                          </div>
-                        </div>
-                        <span className={`text-xs sm:text-sm font-semibold ${themeMode === 'dark' ? 'text-white' : 'text-zinc-400'}`}>
-                          Dark
-                        </span>
-                      </div>
-
-                      {/* Light Mode Ring */}
-                      <div
-                        onClick={() => setThemeMode('light')}
-                        className="flex flex-col items-center gap-2.5 cursor-pointer group"
-                      >
-                        <div
-                          className={`w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full p-1.5 border-4 transition-all overflow-hidden ${
-                            themeMode === 'light'
-                              ? 'border-blue-500 scale-105 shadow-2xl shadow-blue-500/30 ring-4 ring-blue-500/20'
-                              : 'border-zinc-800 opacity-60 hover:opacity-90'
-                          }`}
-                          style={themeMode === 'light' ? { borderColor: activeAccentHex, ringColor: `${activeAccentHex}40` } : {}}
-                        >
-                          <div className="w-full h-full rounded-full overflow-hidden bg-white">
-                            <img
-                              src="/assets/previews/light_theme_preview.png"
-                              alt="Light Theme"
-                              className="w-full h-full object-cover object-top"
-                            />
-                          </div>
-                        </div>
-                        <span className={`text-xs sm:text-sm font-semibold ${themeMode === 'light' ? 'text-white' : 'text-zinc-400'}`}>
-                          Light
-                        </span>
-                      </div>
-
-                      {/* Auto Mode Ring (Smooth Cross-fade) */}
-                      <div
-                        onClick={() => setThemeMode('system')}
-                        className="flex flex-col items-center gap-2.5 cursor-pointer group"
-                      >
-                        <div
-                          className={`w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full p-1.5 border-4 transition-all overflow-hidden relative ${
-                            themeMode === 'system'
-                              ? 'border-blue-500 scale-105 shadow-2xl shadow-blue-500/30 ring-4 ring-blue-500/20'
-                              : 'border-zinc-800 opacity-60 hover:opacity-90'
-                          }`}
-                          style={themeMode === 'system' ? { borderColor: activeAccentHex, ringColor: `${activeAccentHex}40` } : {}}
-                        >
-                          <div className="w-full h-full rounded-full overflow-hidden relative">
-                            <img
-                              src="/assets/previews/dark_theme_preview.png"
-                              alt="Auto Dark"
-                              className={`w-full h-full object-cover object-top absolute inset-0 transition-opacity duration-1000 ${
-                                autoThemeToggle ? 'opacity-100' : 'opacity-0'
-                              }`}
-                            />
-                            <img
-                              src="/assets/previews/light_theme_preview.png"
-                              alt="Auto Light"
-                              className={`w-full h-full object-cover object-top absolute inset-0 transition-opacity duration-1000 ${
-                                autoThemeToggle ? 'opacity-0' : 'opacity-100'
-                              }`}
-                            />
-                          </div>
-                        </div>
-                        <span className={`text-xs sm:text-sm font-semibold ${themeMode === 'system' ? 'text-white' : 'text-zinc-400'}`}>
-                          Auto (System)
-                        </span>
-                      </div>
-
-                    </div>
-                  </motion.div>
+                  <div className="w-full">
+                    <ImageGallery
+                      items={THEME_GALLERY_ITEMS}
+                      selectedIndex={currentThemeIndex}
+                      onSelect={handleThemeSelect}
+                      accentColor={activeAccentHex}
+                    />
+                  </div>
                 )}
 
-                {/* 4B: Accent Color Selection (Higher up with enlarged padded tiles) */}
+                {/* 4B: Accent Color Picker (Elevated and Padded) */}
                 {customSubStep === 'accent' && (
                   <motion.div
                     key="substep-accent"
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="space-y-4"
+                    className="space-y-4 w-full"
                   >
                     <p className="text-xs text-center font-medium uppercase tracking-widest text-zinc-400 mb-2">
                       Choose Your Accent Color
@@ -736,7 +687,7 @@ const LandingPage = () => {
                           <button
                             key={key}
                             onClick={() => setAccentColor(key)}
-                            className={`flex flex-col items-center gap-2 p-3 sm:p-4 rounded-2xl border transition-all ${
+                            className={`flex flex-col items-center gap-2 p-3.5 sm:p-4 rounded-2xl border transition-all ${
                               isSelected
                                 ? 'bg-zinc-800 border-white/50 shadow-xl scale-105 ring-2 ring-white/20'
                                 : 'bg-zinc-900/70 border-zinc-800/80 hover:bg-zinc-900'
@@ -758,91 +709,24 @@ const LandingPage = () => {
                   </motion.div>
                 )}
 
-                {/* 4C: Map Style Selection (Enlarged 3 Circular Real Mapbox Maps) */}
+                {/* 4C: Map Style Selection with 21st.dev Liquid Gallery */}
                 {customSubStep === 'map' && (
-                  <motion.div
-                    key="substep-map"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="space-y-4"
-                  >
-                    <p className="text-xs text-center font-medium uppercase tracking-widest text-zinc-400 mb-2">
-                      Choose Map Style (Mulungushi View)
-                    </p>
-
-                    <div className="flex items-center justify-center gap-3 sm:gap-6">
-                      
-                      {/* Day Map Circle */}
-                      <div
-                        onClick={() => setMapStylePreference('day')}
-                        className="flex flex-col items-center gap-2.5 cursor-pointer group"
-                      >
-                        <div
-                          className={`w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full p-1.5 border-4 transition-all relative ${
-                            mapStylePreference === 'day'
-                              ? 'border-blue-500 scale-105 shadow-2xl shadow-blue-500/30 ring-4 ring-blue-500/20'
-                              : 'border-zinc-800 opacity-60 hover:opacity-90'
-                          }`}
-                          style={mapStylePreference === 'day' ? { borderColor: activeAccentHex, ringColor: `${activeAccentHex}40` } : {}}
-                        >
-                          <MapboxPreviewCircle styleMode="day" />
-                        </div>
-                        <span className={`text-xs sm:text-sm font-semibold ${mapStylePreference === 'day' ? 'text-white' : 'text-zinc-400'}`}>
-                          Day Map
-                        </span>
-                      </div>
-
-                      {/* Night Map Circle */}
-                      <div
-                        onClick={() => setMapStylePreference('night')}
-                        className="flex flex-col items-center gap-2.5 cursor-pointer group"
-                      >
-                        <div
-                          className={`w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full p-1.5 border-4 transition-all relative ${
-                            mapStylePreference === 'night'
-                              ? 'border-blue-500 scale-105 shadow-2xl shadow-blue-500/30 ring-4 ring-blue-500/20'
-                              : 'border-zinc-800 opacity-60 hover:opacity-90'
-                          }`}
-                          style={mapStylePreference === 'night' ? { borderColor: activeAccentHex, ringColor: `${activeAccentHex}40` } : {}}
-                        >
-                          <MapboxPreviewCircle styleMode="night" />
-                        </div>
-                        <span className={`text-xs sm:text-sm font-semibold ${mapStylePreference === 'night' ? 'text-white' : 'text-zinc-400'}`}>
-                          Night Map
-                        </span>
-                      </div>
-
-                      {/* Auto Map Circle */}
-                      <div
-                        onClick={() => setMapStylePreference('auto')}
-                        className="flex flex-col items-center gap-2.5 cursor-pointer group"
-                      >
-                        <div
-                          className={`w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full p-1.5 border-4 transition-all relative ${
-                            mapStylePreference === 'auto'
-                              ? 'border-blue-500 scale-105 shadow-2xl shadow-blue-500/30 ring-4 ring-blue-500/20'
-                              : 'border-zinc-800 opacity-60 hover:opacity-90'
-                          }`}
-                          style={mapStylePreference === 'auto' ? { borderColor: activeAccentHex, ringColor: `${activeAccentHex}40` } : {}}
-                        >
-                          <MapboxPreviewCircle styleMode="day" isAuto={true} />
-                        </div>
-                        <span className={`text-xs sm:text-sm font-semibold ${mapStylePreference === 'auto' ? 'text-white' : 'text-zinc-400'}`}>
-                          Auto Map
-                        </span>
-                      </div>
-
-                    </div>
-                  </motion.div>
+                  <div className="w-full">
+                    <ImageGallery
+                      items={MAP_GALLERY_ITEMS}
+                      selectedIndex={currentMapIndex}
+                      onSelect={handleMapSelect}
+                      accentColor={activeAccentHex}
+                    />
+                  </div>
                 )}
 
               </div>
 
-              {/* Bottom Actions with Relocated "Customize Later" Text */}
-              <div className="space-y-3 pt-4">
-                <p className="text-center text-xs text-zinc-400 font-medium pb-1">
-                  ✨ You can always customize this later in settings
+              {/* Bottom Actions with Clean "Customize Later" Text (No Stars) */}
+              <div className="space-y-3 pt-2">
+                <p className="text-center text-xs text-zinc-400 font-medium pb-0.5">
+                  You can always customize this later in settings
                 </p>
 
                 <button
@@ -869,7 +753,7 @@ const LandingPage = () => {
           )}
 
           {/* ========================================================================= */}
-          {/* STEP 5: SAVE PROGRESS & REGISTRATION */}
+          {/* STEP 5: SAVE PROGRESS & REGISTRATION (Extra Large Logo, Relocated Text) */}
           {/* ========================================================================= */}
           {step === 5 && (
             <motion.div
@@ -879,18 +763,19 @@ const LandingPage = () => {
               initial="enter"
               animate="center"
               exit="exit"
-              className="flex flex-col justify-between h-full pt-8 pb-6"
+              className="w-full max-w-md md:max-w-lg mx-auto flex flex-col justify-between h-full px-6 pt-4 pb-8"
             >
-              {/* Clean Transparent Logo Display */}
-              <div className="flex flex-col items-center text-center space-y-5 pt-4">
+              {/* Extra Large Logo Display */}
+              <div className="flex flex-col items-center text-center space-y-6 pt-4">
                 <img
                   src="/assets/images/Jaey-logo.png"
-                  alt="JRide Logo"
-                  className="h-20 sm:h-24 w-auto object-contain drop-shadow-2xl"
+                  alt="Jaey Ride Logo"
+                  className="h-28 sm:h-36 md:h-44 w-auto object-contain drop-shadow-2xl"
                 />
 
-                <div className="space-y-2 max-w-sm">
-                  <h1 className="text-3xl font-bold tracking-tight text-white">
+                {/* Relocated Lower Description */}
+                <div className="space-y-2 max-w-sm pt-2">
+                  <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white">
                     Save Your Progress
                   </h1>
                   <p className="text-sm text-zinc-400 leading-relaxed">
