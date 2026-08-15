@@ -414,6 +414,41 @@ const LandingPage = () => {
   return (
     <div className="fixed inset-0 w-screen h-screen bg-[#0B0B0E] text-white flex flex-col justify-between overflow-hidden select-none font-sans">
       
+      {/* Permanent Background Media (Mounted ONCE, never unmounted across step changes) */}
+      <div
+        className={`absolute inset-0 w-full h-full overflow-hidden bg-[#0B0B0E] transition-opacity duration-500 pointer-events-none ${
+          step === 1 ? 'opacity-100 z-0' : 'opacity-0 -z-10'
+        }`}
+      >
+        {/* Desktop/Tablet Horizontal Static Image */}
+        <img
+          src="/assets/images/desktop_hero_car.jpg"
+          alt="JRide Background"
+          className="hidden md:block w-full h-full object-cover"
+        />
+
+        {/* Mobile Looping Portrait Video with smooth fade-in */}
+        <video
+          ref={videoRef}
+          autoPlay
+          loop
+          muted
+          playsInline
+          webkit-playsinline="true"
+          x5-playsinline="true"
+          controls={false}
+          controlsList="nodownload nofullscreen noremoteplayback"
+          disablePictureInPicture
+          className={`block md:hidden w-full h-full object-cover scale-105 pointer-events-none transition-opacity duration-700 ${
+            videoLoaded ? 'opacity-100' : 'opacity-0'
+          }`}
+        />
+
+        {/* Frosted Glass Overlay (15% reduced intensity) */}
+        <div className="absolute inset-0 bg-black/20 backdrop-blur-[3.5px] backdrop-filter" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/75" />
+      </div>
+
       {/* Top Header / Back Navigation across all viewports */}
       {step > 1 && (
         <div className="relative z-20 w-full flex items-center justify-between px-6 sm:px-12 md:px-16 lg:px-24 pt-6 pb-2">
@@ -455,58 +490,27 @@ const LandingPage = () => {
               initial="enter"
               animate="center"
               exit="exit"
-              className="absolute inset-0 flex flex-col justify-between w-full h-full p-6 sm:p-10 md:p-14 lg:p-20 z-10"
+              className="absolute inset-0 flex flex-col justify-between w-full h-full z-10"
             >
-              {/* Full-Bleed Background Media Container */}
-              <div className="absolute inset-0 w-full h-full overflow-hidden bg-[#0B0B0E] -z-10">
-                {/* Desktop/Tablet Horizontal Static Image */}
-                <img
-                  src="/assets/images/desktop_hero_car.jpg"
-                  alt="JRide Background"
-                  className="hidden md:block w-full h-full object-cover"
-                />
-
-                {/* Mobile Looping Portrait Video with no-flash fade-in */}
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  webkit-playsinline="true"
-                  x5-playsinline="true"
-                  controls={false}
-                  controlsList="nodownload nofullscreen noremoteplayback"
-                  disablePictureInPicture
-                  className={`block md:hidden w-full h-full object-cover scale-105 pointer-events-none transition-opacity duration-700 ${
-                    videoLoaded ? 'opacity-100' : 'opacity-0'
-                  }`}
-                />
-
-                {/* Frosted Glass Overlay (15% reduced intensity) */}
-                <div className="absolute inset-0 bg-black/20 backdrop-blur-[3.5px] backdrop-filter" />
-                <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/75" />
-              </div>
-
-              {/* Frosted Glass Top Header with subtle border line and JRIDE + Jaey car logo */}
-              <div className="w-full -mx-6 sm:-mx-10 md:-mx-14 lg:-mx-20 -mt-6 sm:-mt-10 md:-mt-14 lg:-mt-20 px-6 sm:px-10 md:px-14 lg:px-20 py-4 sm:py-5 flex items-center justify-between bg-black/45 backdrop-blur-xl border-b border-white/15 shadow-2xl z-20">
-                {/* Left: JRIDE Text Logo */}
+              {/* Frosted Glass Top Header Bar with 2x thickness and lighter frost */}
+              <div className="w-full px-7 sm:px-12 md:px-16 py-6 sm:py-8 md:py-10 flex items-center justify-between bg-white/[0.08] backdrop-blur-2xl border-b border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] z-20">
+                {/* Left: JRIDE Text Logo (Larger) */}
                 <img
                   src="/assets/images/jride_text_white.png"
                   alt="JRide"
-                  className="h-8 sm:h-11 md:h-13 lg:h-16 w-auto object-contain drop-shadow-xl select-none"
+                  className="h-12 sm:h-16 md:h-20 lg:h-24 w-auto object-contain drop-shadow-xl select-none"
                 />
 
-                {/* Right: Golden Car Asset Logo */}
+                {/* Right: Golden Car Asset Logo (Big, but slightly smaller than JRIDE) */}
                 <img
                   src="/assets/images/Jaey-logo.png"
                   alt="Jaey Logo"
-                  className="h-10 sm:h-14 md:h-16 lg:h-20 w-auto object-contain drop-shadow-xl select-none"
+                  className="h-10 sm:h-13 md:h-16 lg:h-18 w-auto object-contain drop-shadow-xl select-none"
                 />
               </div>
 
               {/* Bottom Hero Content & Wide Dynamic CTA */}
-              <div className="w-full pb-2 sm:pb-6 flex flex-col items-start gap-6">
+              <div className="w-full p-6 sm:p-10 md:p-14 lg:p-20 pb-6 sm:pb-10 flex flex-col items-start gap-6">
                 <div className="space-y-3 text-left max-w-4xl">
                   <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-serif font-medium tracking-tight text-white leading-tight">
                     From Campus <br />
