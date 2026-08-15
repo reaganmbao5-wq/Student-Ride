@@ -483,11 +483,11 @@ export const PlatformMap = ({
         const containerWidth = containerRect?.width || (typeof window !== 'undefined' ? window.innerWidth : 400);
         const isMiniMap = !interactive || containerHeight < 250;
 
-        // Top clearance for header and back button
-        const calcTop = isMiniMap ? 14 : 90;
+        // Top clearance for header and back button (110px on mobile to clear top status bar and back button)
+        const calcTop = isMiniMap ? 14 : 110;
         // Dynamic bottom padding to place route safely above the bottom sheet card
         const calcBottom = isMiniMap ? 14 : ((typeof bottomPadding === 'number' && bottomPadding > 0)
-          ? Math.min(bottomPadding + 20, Math.round(containerHeight * 0.48))
+          ? Math.min(bottomPadding + 25, Math.round(containerHeight * 0.48))
           : Math.max(220, Math.round(containerHeight * 0.38)));
         // Generous side margins so pins with labels/icons on far edges are NEVER clipped (15% width clearance)
         const calcSide = isMiniMap ? 14 : Math.max(55, Math.min(95, Math.round(containerWidth * 0.15)));
@@ -510,7 +510,7 @@ export const PlatformMap = ({
         lastFittedBoundsRef.current = { minLat, maxLat, minLng, maxLng, calcTop, calcBottom };
 
         try {
-          mapRef.current.fitBounds([
+          const targetCamera = mapRef.current.cameraForBounds([
             [minLng, minLat],
             [maxLng, maxLat]
           ], {
@@ -519,10 +519,39 @@ export const PlatformMap = ({
               bottom: calcBottom,
               left: calcSide,
               right: calcSide
+            }
+          });
+
+          if (targetCamera && typeof targetCamera.zoom === 'number') {
+            // Compromise zoom out slightly (-0.45 zoom) as requested by user for comfortable framing on all distances
+            const balancedZoom = Math.min(16.0, targetCamera.zoom - 0.45);
+            mapRef.current.flyTo({
+              center: targetCamera.center,
+              zoom: balancedZoom,
+              pitch: 0,
+              bearing: 0,
+              duration: isInitialFit ? 1800 : 800,
+              essential: true
+            });
+            return;
+          }
+        } catch (e) {}
+
+        // Fallback fitBounds if cameraForBounds throws or returns undefined
+        try {
+          mapRef.current.fitBounds([
+            [minLng, minLat],
+            [maxLng, maxLat]
+          ], {
+            padding: {
+              top: calcTop + 25,
+              bottom: calcBottom + 25,
+              left: calcSide + 25,
+              right: calcSide + 25
             },
             pitch: 0, // Flat 2D overview for multi-point framing
             bearing: 0,
-            maxZoom: 16.2, // Clean balanced zoom preventing pin clipping
+            maxZoom: 15.8,
             duration: isInitialFit ? 1800 : 800,
             essential: true
           });
