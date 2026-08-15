@@ -444,9 +444,9 @@ const LandingPage = () => {
           }`}
         />
 
-        {/* Frosted Glass Overlay (15% reduced intensity) */}
-        <div className="absolute inset-0 bg-black/20 backdrop-blur-[3.5px] backdrop-filter" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/75" />
+        {/* 6% Ultra-Subtle Frosted Glass Overlay (Matches Peculiar Shop inspiration) */}
+        <div className="absolute inset-0 bg-black/10 backdrop-blur-[1.5px] backdrop-filter" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-black/85" />
       </div>
 
       {/* Top Header / Back Navigation across all viewports */}
@@ -480,7 +480,7 @@ const LandingPage = () => {
         <AnimatePresence mode="wait" custom={direction}>
           
           {/* ========================================================================= */}
-          {/* STEP 1: HERO PAGE (Edge-to-Edge Split Header, Responsive Text & Wide Button) */}
+          {/* STEP 1: HERO PAGE (Peculiar Shop Style Badge Header, Playfair Serif & CTA) */}
           {/* ========================================================================= */}
           {step === 1 && (
             <motion.div
@@ -492,31 +492,34 @@ const LandingPage = () => {
               exit="exit"
               className="absolute inset-0 flex flex-col justify-between w-full h-full z-10"
             >
-              {/* Frosted Glass Top Header Bar with 2x thickness and lighter frost */}
-              <div className="w-full px-7 sm:px-12 md:px-16 py-6 sm:py-8 md:py-10 flex items-center justify-between bg-white/[0.08] backdrop-blur-2xl border-b border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] z-20">
-                {/* Left: JRIDE Text Logo (Larger) */}
-                <img
-                  src="/assets/images/jride_text_white.png"
-                  alt="JRide"
-                  className="h-12 sm:h-16 md:h-20 lg:h-24 w-auto object-contain drop-shadow-xl select-none"
-                />
+              {/* Top Brand Header (Aligned Left: Brand Badge + Geometric Text Header) */}
+              <div className="w-full pt-8 sm:pt-12 px-6 sm:px-10 md:px-14 lg:px-20 flex items-center justify-start gap-4 z-20">
+                {/* Brand Badge Squircle */}
+                <div className="w-13 h-13 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-[#181D2B]/90 via-[#0F1420]/95 to-black border border-white/20 p-2 shadow-[0_8px_24px_rgba(0,0,0,0.5)] backdrop-blur-xl flex items-center justify-center flex-shrink-0">
+                  <img
+                    src="/assets/images/Jaey-logo.png"
+                    alt="JRide Car Logo"
+                    className="w-full h-full object-contain drop-shadow"
+                  />
+                </div>
 
-                {/* Right: Golden Car Asset Logo (Big, but slightly smaller than JRIDE) */}
-                <img
-                  src="/assets/images/Jaey-logo.png"
-                  alt="Jaey Logo"
-                  className="h-10 sm:h-13 md:h-16 lg:h-18 w-auto object-contain drop-shadow-xl select-none"
-                />
+                {/* JRIDE Text */}
+                <div className="flex flex-col">
+                  <span className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-[0.2em] text-white uppercase font-sans drop-shadow-md">
+                    JRIDE
+                  </span>
+                </div>
               </div>
 
               {/* Bottom Hero Content & Wide Dynamic CTA */}
-              <div className="w-full p-6 sm:p-10 md:p-14 lg:p-20 pb-6 sm:pb-10 flex flex-col items-start gap-6">
-                <div className="space-y-3 text-left max-w-4xl">
-                  <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-serif font-medium tracking-tight text-white leading-tight">
+              <div className="w-full p-6 sm:p-10 md:p-14 lg:p-20 pb-8 sm:pb-12 flex flex-col items-start gap-6">
+                <div className="space-y-3.5 text-left max-w-4xl">
+                  {/* Headline in Playfair Display serif font */}
+                  <h1 className="font-serif-hero text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-normal text-white leading-[1.12] tracking-normal drop-shadow-lg">
                     From Campus <br />
                     To Your Door Step
                   </h1>
-                  <p className="text-sm sm:text-lg md:text-xl lg:text-2xl text-zinc-200 leading-relaxed max-w-3xl">
+                  <p className="font-sans-clean text-sm sm:text-base md:text-lg lg:text-xl text-zinc-300 font-normal leading-relaxed max-w-2xl drop-shadow">
                     The platform that always moves in your hands. Request rides, share seats, and travel comfortably around campus.
                   </p>
                 </div>
@@ -524,7 +527,7 @@ const LandingPage = () => {
                 <div className="w-full max-w-xl md:max-w-2xl lg:max-w-4xl space-y-4 pt-2">
                   <button
                     onClick={goToNextStep}
-                    className="w-full py-4 sm:py-5 md:py-6 px-10 rounded-2xl font-bold text-lg sm:text-xl md:text-2xl text-white shadow-2xl active:scale-[0.98] transition-all flex items-center justify-center cursor-pointer"
+                    className="w-full py-4 sm:py-5 md:py-6 px-10 rounded-2xl font-bold text-lg sm:text-xl md:text-2xl text-white shadow-2xl active:scale-[0.98] transition-all flex items-center justify-center cursor-pointer font-sans"
                     style={{
                       backgroundColor: activeAccentHex,
                       boxShadow: `0 16px 40px -5px ${activeAccentHex}70`
@@ -533,7 +536,7 @@ const LandingPage = () => {
                     Get Started
                   </button>
 
-                  <p className="text-left sm:text-center text-xs sm:text-sm md:text-base text-zinc-300">
+                  <p className="font-sans-clean text-left sm:text-center text-xs sm:text-sm text-zinc-400">
                     By proceeding, you agree to all our{' '}
                     <span onClick={openTerms} className="text-white underline cursor-pointer hover:text-blue-300">terms and conditions</span>
                     {' '}~{' '}
