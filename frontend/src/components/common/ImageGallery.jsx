@@ -113,20 +113,17 @@ export function ImageGallery({
 
   return (
     <div className={`relative flex flex-col items-center justify-center w-full select-none ${className}`}>
-      {/* Title / Label Header */}
+      {/* Top Absolute Solid White Badge */}
       {items[opened] && (
         <div className="mb-3 text-center">
-          <span
-            className="inline-block text-xs uppercase tracking-widest font-bold px-3 py-1 rounded-full border border-white/10 shadow-sm"
-            style={{ backgroundColor: `${accentColor}20`, color: accentColor }}
-          >
+          <span className="inline-block bg-white text-zinc-950 font-black text-xs sm:text-sm px-5 py-1.5 rounded-full shadow-xl tracking-wider uppercase border border-white">
             {items[opened].title}
           </span>
         </div>
       )}
 
-      {/* Main Gallery Card with Liquid Clip-Path */}
-      <div className="relative w-[280px] h-[280px] sm:w-[320px] sm:h-[320px] md:w-[360px] md:h-[360px] max-w-full overflow-hidden rounded-[24px] border border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.4)] bg-zinc-950">
+      {/* Enlarged Gallery Card with Liquid Clip-Path */}
+      <div className="relative w-[320px] h-[340px] sm:w-[360px] sm:h-[380px] md:w-[400px] md:h-[420px] max-w-[92vw] overflow-hidden rounded-[24px] border border-white/15 shadow-[0_16px_50px_rgba(0,0,0,0.6)] bg-zinc-950">
         {gsapReady ? (
           items.map((image, i) => (
             <div
@@ -147,7 +144,7 @@ export function ImageGallery({
             </div>
           ))
         ) : (
-          /* Fallback static render while GSAP scripts initialize */
+          /* Fallback static preview while GSAP loads */
           <div className="w-full h-full">
             {items[opened] && (
               <img
@@ -159,54 +156,56 @@ export function ImageGallery({
           </div>
         )}
 
-        {/* Bottom Interactive Thumbnail Tab Dots */}
+        {/* Bottom Interactive Thumbnail Tab Dots inside the card */}
         <div className="absolute left-0 top-0 z-[100] h-full w-full pointer-events-none">
           <Tabs images={items} selectedIndex={opened} onSelect={onClick} accentColor={accentColor} />
         </div>
       </div>
 
-      {/* Prev / Next Navigation Arrow Buttons */}
-      <button
-        type="button"
-        className="absolute left-1 sm:-left-4 top-1/2 z-[101] flex h-10 w-10 sm:h-12 sm:w-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-zinc-900/90 text-white backdrop-blur-md shadow-xl outline-none transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-40"
-        onClick={prev}
-        disabled={disabled}
-        aria-label="Previous Preview"
-      >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+      {/* Relocated Side-by-Side Navigation Arrows Centered Below Image */}
+      <div className="flex items-center justify-center gap-6 pt-3.5 z-[101]">
+        <button
+          type="button"
+          className="flex h-11 w-11 sm:h-12 sm:w-12 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-zinc-900/90 text-white backdrop-blur-md shadow-xl outline-none transition-all duration-200 hover:scale-105 hover:bg-zinc-800 active:scale-95 disabled:opacity-40"
+          onClick={prev}
+          disabled={disabled}
+          aria-label="Previous Preview"
         >
-          <path d="M15 18l-6-6 6-6" />
-        </svg>
-      </button>
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
 
-      <button
-        type="button"
-        className="absolute right-1 sm:-right-4 top-1/2 z-[101] flex h-10 w-10 sm:h-12 sm:w-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-zinc-900/90 text-white backdrop-blur-md shadow-xl outline-none transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-40"
-        onClick={next}
-        disabled={disabled}
-        aria-label="Next Preview"
-      >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+        <button
+          type="button"
+          className="flex h-11 w-11 sm:h-12 sm:w-12 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-zinc-900/90 text-white backdrop-blur-md shadow-xl outline-none transition-all duration-200 hover:scale-105 hover:bg-zinc-800 active:scale-95 disabled:opacity-40"
+          onClick={next}
+          disabled={disabled}
+          aria-label="Next Preview"
         >
-          <path d="M9 18l6-6-6-6" />
-        </svg>
-      </button>
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M9 18l6-6-6-6" />
+          </svg>
+        </button>
+      </div>
     </div>
   );
 }
@@ -228,7 +227,7 @@ function GalleryImage({ url, title, open, inPlace, id, onInPlace, total }) {
 
   const getPosSmall = () => ({
     cx: width / 2 - (total * (circleRadius * 2 + gap) - gap) / 2 + id * (circleRadius * 2 + gap),
-    cy: height - 32,
+    cy: height - 30,
     r: circleRadius,
   });
   const getPosSmallAbove = () => ({
@@ -323,7 +322,7 @@ function Tabs({ images, selectedIndex, onSelect, accentColor }) {
 
   const getPosX = (i) =>
     width / 2 - (images.length * (circleRadius * 2 + gap) - gap) / 2 + i * (circleRadius * 2 + gap);
-  const getPosY = () => height - 32;
+  const getPosY = () => height - 30;
 
   return (
     <svg
@@ -355,8 +354,8 @@ function Tabs({ images, selectedIndex, onSelect, accentColor }) {
             <circle
               onClick={() => onSelect(i)}
               className="cursor-pointer transition-all duration-200"
-              fill={isSelected ? `${accentColor}30` : "transparent"}
-              stroke={isSelected ? accentColor : "rgba(255,255,255,0.7)"}
+              fill={isSelected ? `${accentColor}35` : "transparent"}
+              stroke={isSelected ? accentColor : "rgba(255,255,255,0.75)"}
               strokeWidth={isSelected ? "2.5" : "1.5"}
               cx={getPosX(i)}
               cy={getPosY()}

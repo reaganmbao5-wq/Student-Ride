@@ -336,7 +336,7 @@ const LandingPage = () => {
         <AnimatePresence mode="wait" custom={direction}>
           
           {/* ========================================================================= */}
-          {/* STEP 1: HERO PAGE (Full-Bleed Desktop Image / Mobile Video + 35% Frost) */}
+          {/* STEP 1: HERO PAGE (Enlarged Logo, Jaey Ride, Full-Bleed Desktop/Mobile) */}
           {/* ========================================================================= */}
           {step === 1 && (
             <motion.div
@@ -372,23 +372,23 @@ const LandingPage = () => {
                   <source src="/assets/videos/Firstpage.mp4" type="video/mp4" />
                 </video>
 
-                {/* 35% Frosted Glass Overlay (Crystal-clear visibility with soft glass blur) */}
+                {/* 35% Frosted Glass Overlay */}
                 <div className="absolute inset-0 bg-black/35 backdrop-blur-[5px] backdrop-filter" />
                 <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/85" />
               </div>
 
-              {/* Top Branding Section (Moved high up, almost touching top) */}
-              <div className="w-full max-w-4xl mx-auto pt-2 sm:pt-4 flex items-center gap-3.5 sm:gap-4">
+              {/* Top Branding Section (Enlarged Logo + Full Name "Jaey Ride") */}
+              <div className="w-full max-w-4xl mx-auto pt-2 sm:pt-4 flex items-center gap-4 sm:gap-6">
                 <img
                   src="/assets/images/Jaey-logo.png"
-                  alt="JRide Logo"
-                  className="h-12 sm:h-16 md:h-20 w-auto object-contain drop-shadow-lg"
+                  alt="Jaey Ride Logo"
+                  className="h-16 sm:h-20 md:h-24 w-auto object-contain drop-shadow-2xl"
                 />
                 <div>
-                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-wider text-white leading-tight">
-                    JRIDE
+                  <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-wider text-white leading-tight">
+                    Jaey Ride
                   </h2>
-                  <p className="text-[11px] sm:text-xs font-semibold text-zinc-300 uppercase tracking-widest">
+                  <p className="text-xs sm:text-sm font-bold text-zinc-300 uppercase tracking-widest mt-0.5">
                     MULUNGUSHI UNIVERSITY
                   </p>
                 </div>
@@ -632,7 +632,7 @@ const LandingPage = () => {
           )}
 
           {/* ========================================================================= */}
-          {/* STEP 4: EXPERIENCE CUSTOMIZATION WITH 21st.dev GSAP GALLERY */}
+          {/* STEP 4: EXPERIENCE CUSTOMIZATION WITH ENLARGED 21st.dev GSAP GALLERY */}
           {/* ========================================================================= */}
           {step === 4 && (
             <motion.div
@@ -642,18 +642,18 @@ const LandingPage = () => {
               initial="enter"
               animate="center"
               exit="exit"
-              className="w-full max-w-md md:max-w-lg mx-auto flex flex-col justify-between h-full px-6 pt-4 pb-6"
+              className="w-full max-w-md md:max-w-lg mx-auto flex flex-col justify-between h-full px-6 pt-3 pb-5"
             >
               {/* Header */}
               <div className="text-center space-y-1">
                 <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
                   Now, let's customize your app experience
                 </h1>
-                <p className="text-xs sm:text-sm text-zinc-400">It will only take a minute</p>
+                <p className="text-xs text-zinc-400">It will only take a minute</p>
               </div>
 
               {/* Dynamic Center Customization Content */}
-              <div className="my-auto py-2 flex flex-col items-center justify-center">
+              <div className="my-auto py-1 flex flex-col items-center justify-center w-full">
                 
                 {/* 4A: App Theme Selection with 21st.dev Liquid Gallery */}
                 {customSubStep === 'theme' && (
@@ -723,10 +723,10 @@ const LandingPage = () => {
 
               </div>
 
-              {/* Bottom Actions with Relocated "Customize Later" Text */}
-              <div className="space-y-3 pt-3">
+              {/* Bottom Actions with Clean "Customize Later" Text (No Stars) */}
+              <div className="space-y-3 pt-2">
                 <p className="text-center text-xs text-zinc-400 font-medium pb-0.5">
-                  ✨ You can always customize this later in settings
+                  You can always customize this later in settings
                 </p>
 
                 <button
@@ -753,7 +753,7 @@ const LandingPage = () => {
           )}
 
           {/* ========================================================================= */}
-          {/* STEP 5: SAVE PROGRESS & REGISTRATION */}
+          {/* STEP 5: SAVE PROGRESS & REGISTRATION (Extra Large Logo, Relocated Text) */}
           {/* ========================================================================= */}
           {step === 5 && (
             <motion.div
@@ -763,18 +763,19 @@ const LandingPage = () => {
               initial="enter"
               animate="center"
               exit="exit"
-              className="w-full max-w-md md:max-w-lg mx-auto flex flex-col justify-between h-full px-6 pt-6 pb-8"
+              className="w-full max-w-md md:max-w-lg mx-auto flex flex-col justify-between h-full px-6 pt-4 pb-8"
             >
-              {/* Clean Transparent Logo Display */}
-              <div className="flex flex-col items-center text-center space-y-4 pt-2">
+              {/* Extra Large Logo Display */}
+              <div className="flex flex-col items-center text-center space-y-6 pt-4">
                 <img
                   src="/assets/images/Jaey-logo.png"
-                  alt="JRide Logo"
-                  className="h-20 sm:h-24 md:h-28 w-auto object-contain drop-shadow-2xl"
+                  alt="Jaey Ride Logo"
+                  className="h-28 sm:h-36 md:h-44 w-auto object-contain drop-shadow-2xl"
                 />
 
-                <div className="space-y-2 max-w-sm">
-                  <h1 className="text-3xl font-bold tracking-tight text-white">
+                {/* Relocated Lower Description */}
+                <div className="space-y-2 max-w-sm pt-2">
+                  <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white">
                     Save Your Progress
                   </h1>
                   <p className="text-sm text-zinc-400 leading-relaxed">
