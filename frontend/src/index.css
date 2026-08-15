@@ -4,6 +4,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Suppress all native Android / WebKit video play buttons, controls, and overlays */
+video::-webkit-media-controls,
+video::-webkit-media-controls-start-playback-button,
+video::-webkit-media-controls-play-button,
+video::-webkit-media-controls-panel,
+video::-webkit-media-controls-enclosure {
+  display: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 @layer base {
   :root {
     /* Dynamic Display & Headers (Brand heavy: Ginto / Apple SF Display / Android) */

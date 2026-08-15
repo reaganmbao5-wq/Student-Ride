@@ -69,24 +69,41 @@ const LandingPage = () => {
   const { theme, themeMode, setThemeMode, accentColor, setAccentColor, ACCENT_COLORS } = useTheme();
 
   // Navigation state: step 1 (hero), 2 (name & phone), 3 (gender), 4 (customization), 5 (save progress)
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(() => {
+    const saved = parseInt(localStorage.getItem('onboarding_step') || '1', 10);
+    return saved >= 1 && saved <= 5 ? saved : 1;
+  });
   const [direction, setDirection] = useState(1);
 
   // Sub-steps for step 4: 'theme' -> 'accent' -> 'map'
-  const [customSubStep, setCustomSubStep] = useState('theme');
+  const [customSubStep, setCustomSubStep] = useState(() => {
+    return localStorage.getItem('onboarding_substep') || 'theme';
+  });
 
-  // Form State
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [showLastNameInput, setShowLastNameInput] = useState(false);
-  const [showPhoneInput, setShowPhoneInput] = useState(false);
-  const [gender, setGender] = useState('male'); // 'male' | 'female'
-  const [mapStylePreference, setMapStylePreference] = useState('auto'); // 'day' | 'night' | 'auto'
+  // Form State with local storage persistence
+  const [firstName, setFirstName] = useState(() => localStorage.getItem('onboarding_firstname') || '');
+  const [lastName, setLastName] = useState(() => localStorage.getItem('onboarding_lastname') || '');
+  const [phone, setPhone] = useState(() => localStorage.getItem('onboarding_phone') || '');
+  const [showLastNameInput, setShowLastNameInput] = useState(() => localStorage.getItem('onboarding_show_lastname') === 'true');
+  const [showPhoneInput, setShowPhoneInput] = useState(() => localStorage.getItem('onboarding_show_phone') === 'true');
+  const [gender, setGender] = useState(() => localStorage.getItem('onboarding_gender') || 'male'); // 'male' | 'female'
+  const [mapStylePreference, setMapStylePreference] = useState(() => localStorage.getItem('map_theme_mode') || 'auto'); // 'day' | 'night' | 'auto'
 
   const [googleLoading, setGoogleLoading] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
   const videoRef = useRef(null);
+
+  // Sync state changes to localStorage
+  useEffect(() => {
+    localStorage.setItem('onboarding_step', step.toString());
+    localStorage.setItem('onboarding_substep', customSubStep);
+    localStorage.setItem('onboarding_firstname', firstName);
+    localStorage.setItem('onboarding_lastname', lastName);
+    localStorage.setItem('onboarding_phone', phone);
+    localStorage.setItem('onboarding_show_lastname', showLastNameInput ? 'true' : 'false');
+    localStorage.setItem('onboarding_show_phone', showPhoneInput ? 'true' : 'false');
+    localStorage.setItem('onboarding_gender', gender);
+  }, [step, customSubStep, firstName, lastName, phone, showLastNameInput, showPhoneInput, gender]);
 
   // Auto-play / resume video on step 1 mount and remount
   useEffect(() => {
@@ -183,6 +200,49 @@ const LandingPage = () => {
     }
   };
 
+  // Capacitor Android Hardware Back Button Listener & Browser popstate
+  useEffect(() => {
+    let backListener = null;
+    if (Capacitor.isNativePlatform()) {
+      try {
+        import('@capacitor/app').then(({ App: CapApp }) => {
+          CapApp.addListener('backButton', () => {
+            setStep((currStep) => {
+              if (currStep > 1) {
+                handleBack();
+                return currStep;
+              } else {
+                CapApp.exitApp();
+                return currStep;
+              }
+            }).then((handle) => {
+              backListener = handle;
+            }).catch(() => {});
+          }).catch(() => {});
+        }).catch(() => {});
+      } catch (e) {
+        console.warn("Capacitor backButton error:", e);
+      }
+    }
+
+    return () => {
+      if (backListener && typeof backListener.remove === 'function') {
+        backListener.remove();
+      }
+    };
+  }, []);
+
+  const clearOnboardingCache = () => {
+    localStorage.removeItem('onboarding_step');
+    localStorage.removeItem('onboarding_substep');
+    localStorage.removeItem('onboarding_firstname');
+    localStorage.removeItem('onboarding_lastname');
+    localStorage.removeItem('onboarding_phone');
+    localStorage.removeItem('onboarding_show_lastname');
+    localStorage.removeItem('onboarding_show_phone');
+    localStorage.removeItem('onboarding_gender');
+  };
+
   // Google OAuth Auth Handlers
   const handleGoogleSuccessBackend = async (idToken) => {
     setGoogleLoading(true);
@@ -198,6 +258,7 @@ const LandingPage = () => {
         throw new Error(data.detail || 'Google authentication failed');
       }
 
+      clearOnboardingCache();
       localStorage.setItem('token', data.access_token);
 
       if (data.is_new_user) {
@@ -397,24 +458,13 @@ const LandingPage = () => {
                 <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/85" />
               </div>
 
-              {/* Edge-to-Edge Split Top Header (Logo on far left, Text on far right) */}
-              <div className="w-full flex items-center justify-between pt-1 sm:pt-4">
-                {/* Giant Logo (3.5x size on left edge) */}
+              {/* Top Header (Transparent White JRIDE Logo) */}
+              <div className="w-full flex items-center justify-start pt-1 sm:pt-4">
                 <img
-                  src="/assets/images/Jaey-logo.png"
-                  alt="Jaey Ride Logo"
-                  className="h-20 sm:h-28 md:h-36 lg:h-44 w-auto object-contain drop-shadow-2xl select-none"
+                  src="/assets/images/jride_text_white.png"
+                  alt="JRide"
+                  className="h-10 sm:h-14 md:h-16 lg:h-20 w-auto object-contain drop-shadow-2xl select-none"
                 />
-                
-                {/* Right-Aligned Text on right edge */}
-                <div className="text-right">
-                  <h2 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-extrabold tracking-wider text-white leading-tight">
-                    Jaey Ride
-                  </h2>
-                  <p className="text-[10px] sm:text-xs md:text-sm lg:text-base font-bold text-zinc-300 uppercase tracking-widest mt-0.5">
-                    MULUNGUSHI UNIVERSITY
-                  </p>
-                </div>
               </div>
 
               {/* Bottom Hero Content & Wide Dynamic CTA */}
@@ -788,16 +838,16 @@ const LandingPage = () => {
               exit="exit"
               className="w-full max-w-xl md:max-w-3xl lg:max-w-5xl xl:max-w-6xl mx-auto flex flex-col justify-between h-full px-6 sm:px-12 md:px-16 pt-2 pb-8"
             >
-              {/* Giant Logo Display (Huge prominence in upper viewport) */}
-              <div className="flex flex-col items-center text-center space-y-4 pt-1">
+              {/* Big JRide Logo Display with Generous Vertical Spacing */}
+              <div className="flex flex-col items-center text-center space-y-6 sm:space-y-8 pt-4 sm:pt-8">
                 <img
-                  src="/assets/images/Jaey-logo.png"
-                  alt="Jaey Ride Logo"
-                  className="h-36 sm:h-56 md:h-72 lg:h-84 xl:h-96 w-auto object-contain drop-shadow-2xl select-none"
+                  src="/assets/images/jride_text_white.png"
+                  alt="JRide Logo"
+                  className="h-20 sm:h-28 md:h-36 lg:h-44 xl:h-52 w-auto object-contain drop-shadow-2xl select-none"
                 />
 
-                {/* Relocated Lower Description (in green circle area) */}
-                <div className="space-y-3 max-w-2xl pt-2">
+                {/* Description with ample breathing space before action buttons */}
+                <div className="space-y-3 max-w-2xl pt-2 sm:pt-4">
                   <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white">
                     Save Your Progress
                   </h1>
