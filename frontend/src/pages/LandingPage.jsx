@@ -490,22 +490,23 @@ const LandingPage = () => {
               initial="enter"
               animate="center"
               exit="exit"
-              className="absolute inset-0 flex flex-col justify-between w-full h-full z-10"
+              className="absolute inset-0 flex flex-col justify-between w-full h-full z-10 overflow-hidden"
             >
               {/* Top Brand Header (Aligned Left: Brand Badge + Geometric Text Header) */}
-              <div className="w-full pt-8 sm:pt-12 px-6 sm:px-10 md:px-14 lg:px-20 flex items-center justify-start gap-4 z-20">
+              <div className="w-full pt-8 sm:pt-12 px-6 sm:px-10 md:px-14 lg:px-20 flex items-center justify-start gap-3.5 z-20 overflow-hidden">
                 {/* Brand Badge Squircle */}
-                <div className="w-13 h-13 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-[#181D2B]/90 via-[#0F1420]/95 to-black border border-white/20 p-2 shadow-[0_8px_24px_rgba(0,0,0,0.5)] backdrop-blur-xl flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-black/70 border border-white/20 p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.5)] backdrop-blur-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
                   <img
-                    src="/assets/images/Jaey-logo.png"
+                    src="/assets/images/jride_app_icon.png"
                     alt="JRide Car Logo"
-                    className="w-full h-full object-contain drop-shadow"
+                    className="w-full h-full object-contain rounded-xl select-none"
+                    onError={(e) => { e.currentTarget.src = '/assets/images/Jaey-logo.png'; }}
                   />
                 </div>
 
                 {/* JRIDE Text */}
-                <div className="flex flex-col">
-                  <span className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-[0.2em] text-white uppercase font-sans drop-shadow-md">
+                <div className="flex flex-col justify-center">
+                  <span className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-[0.18em] text-white uppercase font-sans drop-shadow-md select-none">
                     JRIDE
                   </span>
                 </div>
