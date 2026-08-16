@@ -616,8 +616,8 @@ const RideRequestPage = () => {
                             style={{ touchAction: 'none' }}
                             className={`flex-1 p-3.5 rounded-2xl cursor-pointer select-none transition-colors duration-300 relative overflow-hidden flex flex-col justify-between border-2 touch-none ${
                               rideMode === 'shared' 
-                                ? 'bg-black text-white dark:bg-zinc-900 border-blue-500 shadow-md' 
-                                : 'bg-black text-white dark:bg-zinc-900 border-zinc-700 shadow-md'
+                                ? 'bg-card text-card-foreground border-blue-500 shadow-md' 
+                                : 'bg-card text-card-foreground border-border shadow-md'
                             }`}
                           >
                             {/* Original embedded Save Badge flush on top-right corner */}
@@ -638,25 +638,25 @@ const RideRequestPage = () => {
                               >
                                 <div className="flex items-start justify-between gap-2 mb-1">
                                   <div>
-                                    <span className={`text-[10px] font-extrabold uppercase tracking-wider ${rideMode === 'shared' ? 'text-blue-400' : 'text-zinc-400'}`}>
+                                    <span className={`text-[10px] font-extrabold uppercase tracking-wider ${rideMode === 'shared' ? 'text-blue-500 dark:text-blue-400' : 'text-muted-foreground'}`}>
                                       {rideMode} FARE
                                     </span>
-                                    <div className="text-xl font-bold font-heading">
+                                    <div className="text-xl font-bold font-heading text-foreground">
                                       K{rideMode === 'shared' ? fareEstimate.shared_fare?.toFixed(2) : fareEstimate.private_fare?.toFixed(2)}
                                     </div>
                                   </div>
                                   {/* Shifted ETA & Distance comfortably below Save badge */}
                                   <div className={`flex flex-col items-end shrink-0 ${rideMode === 'shared' ? 'pt-3.5' : 'pt-0.5'}`}>
-                                    <p className="text-xs text-zinc-300 font-semibold">
+                                    <p className="text-xs text-foreground font-semibold">
                                       {Math.ceil(fareEstimate.duration_min ?? fareEstimate.duration ?? fareEstimate.verified_duration ?? 1)} min
                                     </p>
-                                    <p className="text-[10px] text-zinc-400">
+                                    <p className="text-[10px] text-muted-foreground">
                                       {(fareEstimate.distance_km ?? fareEstimate.verified_distance ?? fareEstimate.distance ?? 0.8).toFixed(2)} km
                                     </p>
                                   </div>
                                 </div>
 
-                                <p className="text-[10px] text-zinc-400 leading-tight mt-1">
+                                <p className="text-[10px] text-muted-foreground leading-tight mt-1">
                                   {rideMode === 'shared'
                                     ? 'Lower fare. Ride may include other passengers.'
                                     : 'Entire vehicle reserved. No additional platform passengers.'}

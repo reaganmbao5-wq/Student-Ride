@@ -65,10 +65,11 @@ const ResetPasswordPage = () => {
             {/* Background elements */}
             <div className="absolute top-[-10%] left-[-5%] w-96 h-96 bg-gold/20 rounded-full blur-[100px] animate-pulse-slow" />
 
-            <GlassCard className="w-full max-w-md p-8 relative z-10 border-white/10">
+            <GlassCard className="w-full max-w-md p-8 relative z-10 border-border">
                 <div className="text-center mb-8">
                     <div className="flex items-center justify-center gap-3 mb-6">
-                        <img src="/assets/images/jride_text_white.png" alt="JRide" className="h-9 w-auto object-contain" />
+                        <img src="/assets/images/jride_text_white.png" alt="JRide" className="h-9 w-auto object-contain hidden dark:block" />
+                        <img src="/assets/images/jride_text_black.png" alt="JRide" className="h-9 w-auto object-contain block dark:hidden" />
                     </div>
                     <h1 className="text-2xl font-bold text-foreground mb-2 tracking-tight">
                         Create New Password

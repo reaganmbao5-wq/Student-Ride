@@ -909,12 +909,12 @@ const StudentDashboard = () => {
           </GlassCard>
           <GlassCard className="p-4 cursor-pointer hover:border-gold/30 transition-all" hover={false} onClick={() => navigate('/ride')}>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                <MapPin className="w-5 h-5 text-emerald-400" />
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                <Clock className="w-5 h-5 text-amber-400" />
               </div>
               <div className="min-w-0">
-                <p className="text-lg md:text-xl font-heading font-bold text-foreground truncate">Main Campus</p>
-                <p className="text-xs text-muted-foreground truncate">Campus Transit Hub</p>
+                <p className="text-xl md:text-2xl font-heading font-bold text-foreground truncate">~3 min</p>
+                <p className="text-xs text-muted-foreground truncate">Avg. Campus Wait</p>
               </div>
             </div>
           </GlassCard>

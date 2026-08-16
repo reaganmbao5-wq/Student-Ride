@@ -7,7 +7,7 @@ export const GlassCard = React.forwardRef(({ className, children, hover = true, 
     <div
       ref={ref}
       className={cn(
-        "bg-white/5 dark:bg-white/5 bg-black/5 backdrop-blur-xl border border-border rounded-3xl p-6 shadow-glass transition-all duration-300",
+        "bg-card text-card-foreground border border-border rounded-3xl p-6 backdrop-blur-xl shadow-glass transition-all duration-300",
         hover && "hover:border-gold/30",
         className
       )}
@@ -25,7 +25,7 @@ export const GlassInput = React.forwardRef(({ className, ...props }, ref) => {
     <input
       ref={ref}
       className={cn(
-        "w-full bg-black/30 dark:bg-black/30 bg-white/50 border border-border rounded-xl h-12 px-4 text-foreground placeholder:text-muted-foreground",
+        "w-full bg-muted/50 dark:bg-black/30 border border-border rounded-xl h-12 px-4 text-foreground placeholder:text-muted-foreground",
         "focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none transition-all",
         "backdrop-blur-md",
         className

@@ -321,22 +321,22 @@ const ProfilePage = () => {
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 380, damping: 28 }}
-            className="relative z-10 w-full max-w-xl mx-auto bg-zinc-950 border-t border-zinc-800 rounded-t-[32px] p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+            className="relative z-10 w-full max-w-xl mx-auto bg-card text-card-foreground border-t border-border rounded-t-[32px] p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
           >
             {/* Top Drag Handle Bar */}
             <div className="w-full flex justify-center pb-2">
-              <div className="w-12 h-1.5 bg-zinc-700 rounded-full" />
+              <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full" />
             </div>
 
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
                 <User className="w-5 h-5 text-gold" /> Edit Profile
               </h3>
               <button
                 type="button"
                 onClick={() => setIsEditing(false)}
-                className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-white"
+                className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -344,16 +344,16 @@ const ProfilePage = () => {
 
             <form onSubmit={handleSaveProfile} className="space-y-4">
               {/* Profile Photo Row */}
-              <div className="flex items-center gap-4 p-3 rounded-2xl bg-zinc-900 border border-zinc-800">
-                <div className="w-14 h-14 rounded-full bg-zinc-800 overflow-hidden border border-gold/30 shrink-0">
+              <div className="flex items-center gap-4 p-3 rounded-2xl bg-muted/40 border border-border">
+                <div className="w-14 h-14 rounded-full bg-muted overflow-hidden border border-gold/30 shrink-0">
                   {editAvatar || user?.avatar_url ? (
                     <img src={editAvatar || user?.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
-                    <User className="w-7 h-7 text-zinc-400 m-3" />
+                    <User className="w-7 h-7 text-muted-foreground m-3" />
                   )}
                 </div>
                 <div className="flex-1">
-                  <p className="text-xs font-semibold text-white">Profile Photo</p>
+                  <p className="text-xs font-semibold text-foreground">Profile Photo</p>
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
@@ -366,14 +366,14 @@ const ProfilePage = () => {
 
               {/* Full Name */}
               <div>
-                <label className="block text-xs text-zinc-400 mb-1 font-medium">Full Name</label>
+                <label className="block text-xs text-muted-foreground mb-1 font-medium">Full Name</label>
                 <div className="relative">
-                  <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+                  <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <input
                     type="text"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    className="w-full bg-zinc-900 text-white rounded-2xl pl-10 pr-4 py-3 text-sm border border-zinc-800 focus:outline-none focus:border-gold"
+                    className="w-full bg-muted/50 text-foreground rounded-2xl pl-10 pr-4 py-3 text-sm border border-border focus:outline-none focus:border-gold"
                     required
                   />
                 </div>
@@ -381,14 +381,14 @@ const ProfilePage = () => {
 
               {/* Phone Number */}
               <div>
-                <label className="block text-xs text-zinc-400 mb-1 font-medium">Phone Number</label>
+                <label className="block text-xs text-muted-foreground mb-1 font-medium">Phone Number</label>
                 <div className="relative">
-                  <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+                  <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <input
                     type="tel"
                     value={editPhone}
                     onChange={(e) => setEditPhone(e.target.value)}
-                    className="w-full bg-zinc-900 text-white rounded-2xl pl-10 pr-4 py-3 text-sm border border-zinc-800 focus:outline-none focus:border-gold"
+                    className="w-full bg-muted/50 text-foreground rounded-2xl pl-10 pr-4 py-3 text-sm border border-border focus:outline-none focus:border-gold"
                     required
                   />
                 </div>
@@ -396,14 +396,14 @@ const ProfilePage = () => {
 
               {/* Email Address */}
               <div>
-                <label className="block text-xs text-zinc-400 mb-1 font-medium">Email Address</label>
+                <label className="block text-xs text-muted-foreground mb-1 font-medium">Email Address</label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+                  <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <input
                     type="email"
                     value={editEmail}
                     onChange={(e) => setEditEmail(e.target.value)}
-                    className="w-full bg-zinc-900 text-white rounded-2xl pl-10 pr-4 py-3 text-sm border border-zinc-800 focus:outline-none focus:border-gold"
+                    className="w-full bg-muted/50 text-foreground rounded-2xl pl-10 pr-4 py-3 text-sm border border-border focus:outline-none focus:border-gold"
                     required
                   />
                 </div>
@@ -413,7 +413,7 @@ const ProfilePage = () => {
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)}
-                  className="flex-1 py-3.5 rounded-2xl bg-zinc-900 text-zinc-300 text-xs font-bold border border-zinc-800"
+                  className="flex-1 py-3.5 rounded-2xl bg-muted text-foreground text-xs font-bold border border-border"
                 >
                   Cancel
                 </button>
@@ -482,7 +482,7 @@ const ProfilePage = () => {
           </div>
 
           <div>
-            <h1 className="font-heading text-2xl font-bold text-white tracking-tight">
+            <h1 className="font-heading text-2xl font-bold text-foreground tracking-tight">
               {user?.name || 'User Name'}
             </h1>
             <p className="text-xs font-medium text-gold/90 bg-gold/10 px-3 py-1 rounded-full border border-gold/20 inline-block mt-1 capitalize">
@@ -498,33 +498,33 @@ const ProfilePage = () => {
         {/* GROUP 1: ACCOUNT CATEGORY (ChatGPT Style Group Card) */}
         {/* ==================================================== */}
         <div className="space-y-2">
-          <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-2">Account</p>
-          <div className="bg-[#2A2A2A] border border-white/10 rounded-3xl overflow-hidden divide-y divide-white/5">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2">Account</p>
+          <div className="bg-card border border-border rounded-3xl overflow-hidden divide-y divide-border">
             {/* Edit Profile Row */}
             <div 
               onClick={() => {
                 haptics.tap();
                 setIsEditing(true);
               }}
-              className="flex items-center justify-between p-4 hover:bg-zinc-800/50 transition-colors cursor-pointer"
+              className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors cursor-pointer"
             >
               <div className="flex items-center gap-3.5">
-                <User weight="duotone" className="w-5 h-5 text-zinc-400" />
+                <User weight="duotone" className="w-5 h-5 text-muted-foreground" />
                 <div>
-                  <p className="text-sm font-semibold text-white">Full Name</p>
-                  <p className="text-xs text-zinc-400">{user?.name || 'Not set'}</p>
+                  <p className="text-sm font-semibold text-foreground">Full Name</p>
+                  <p className="text-xs text-muted-foreground">{user?.name || 'Not set'}</p>
                 </div>
               </div>
-              <ChevronRight className="w-4 h-4 text-zinc-500" />
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </div>
 
             {/* Email Row */}
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3.5">
-                <EnvelopeSimple weight="duotone" className="w-5 h-5 text-zinc-400" />
+                <EnvelopeSimple weight="duotone" className="w-5 h-5 text-muted-foreground" />
                 <div>
-                  <p className="text-sm font-semibold text-white">Email</p>
-                  <p className="text-xs text-zinc-400">{user?.email || 'Not set'}</p>
+                  <p className="text-sm font-semibold text-foreground">Email</p>
+                  <p className="text-xs text-muted-foreground">{user?.email || 'Not set'}</p>
                 </div>
               </div>
             </div>
@@ -532,10 +532,10 @@ const ProfilePage = () => {
             {/* Phone Row */}
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3.5">
-                <Phone weight="duotone" className="w-5 h-5 text-zinc-400" />
+                <Phone weight="duotone" className="w-5 h-5 text-muted-foreground" />
                 <div>
-                  <p className="text-sm font-semibold text-white">Phone Number</p>
-                  <p className="text-xs text-zinc-400">{user?.phone || 'Not set'}</p>
+                  <p className="text-sm font-semibold text-foreground">Phone Number</p>
+                  <p className="text-xs text-muted-foreground">{user?.phone || 'Not set'}</p>
                 </div>
               </div>
             </div>
@@ -546,16 +546,16 @@ const ProfilePage = () => {
         {/* GROUP 2: PREFERENCES, LOCATION & NOTIFICATIONS       */}
         {/* ==================================================== */}
         <div className="space-y-2">
-          <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-2">Preferences & Permissions</p>
-          <div className="bg-[#2A2A2A] border border-white/10 rounded-3xl overflow-hidden divide-y divide-white/5">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2">Preferences & Permissions</p>
+          <div className="bg-card border border-border rounded-3xl overflow-hidden divide-y divide-border">
             
             {/* Location Permission & Toggle Row */}
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3.5">
-                <MapPin weight="duotone" className={`w-5 h-5 ${isLocationEnabled ? 'text-emerald-400' : 'text-zinc-400'}`} />
+                <MapPin weight="duotone" className={`w-5 h-5 ${isLocationEnabled ? 'text-emerald-500' : 'text-muted-foreground'}`} />
                 <div>
-                  <p className="text-sm font-semibold text-white">Location Services</p>
-                  <p className="text-xs text-zinc-400">
+                  <p className="text-sm font-semibold text-foreground">Location Services</p>
+                  <p className="text-xs text-muted-foreground">
                     {isLocationEnabled ? 'GPS pickup & ETA tracking active' : 'Location disabled'}
                   </p>
                 </div>
@@ -565,7 +565,7 @@ const ProfilePage = () => {
                 type="button"
                 onClick={handleToggleLocation}
                 className={`relative w-12 h-7 rounded-full p-1 transition-colors duration-200 focus:outline-none cursor-pointer ${
-                  isLocationEnabled ? 'bg-emerald-500' : 'bg-zinc-700'
+                  isLocationEnabled ? 'bg-emerald-500' : 'bg-muted-foreground/30'
                 }`}
                 title={isLocationEnabled ? 'Location ON' : 'Location OFF'}
               >
@@ -580,10 +580,10 @@ const ProfilePage = () => {
             {/* Notifications Row with Authentic Native Mobile Toggle Switch */}
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3.5">
-                <Bell weight="duotone" className={`w-5 h-5 ${isPushEnabled ? 'text-emerald-400' : 'text-zinc-400'}`} />
+                <Bell weight="duotone" className={`w-5 h-5 ${isPushEnabled ? 'text-emerald-500' : 'text-muted-foreground'}`} />
                 <div>
-                  <p className="text-sm font-semibold text-white">Notifications</p>
-                  <p className="text-xs text-zinc-400">
+                  <p className="text-sm font-semibold text-foreground">Notifications</p>
+                  <p className="text-xs text-muted-foreground">
                     {isPushEnabled ? 'Driver arrival alerts & ride updates' : 'Notifications disabled'}
                   </p>
                 </div>
@@ -593,7 +593,7 @@ const ProfilePage = () => {
                 type="button"
                 onClick={handleToggleNotifications}
                 className={`relative w-12 h-7 rounded-full p-1 transition-colors duration-200 focus:outline-none cursor-pointer ${
-                  isPushEnabled ? 'bg-emerald-500' : 'bg-zinc-700'
+                  isPushEnabled ? 'bg-emerald-500' : 'bg-muted-foreground/30'
                 }`}
                 title={isPushEnabled ? 'Notifications ON' : 'Notifications OFF'}
               >
@@ -608,10 +608,10 @@ const ProfilePage = () => {
             {/* App Vibrations Row */}
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3.5">
-                <DeviceMobile weight="duotone" className={`w-5 h-5 ${vibrationsEnabled ? 'text-emerald-400' : 'text-zinc-400'}`} />
+                <DeviceMobile weight="duotone" className={`w-5 h-5 ${vibrationsEnabled ? 'text-emerald-500' : 'text-muted-foreground'}`} />
                 <div>
-                  <p className="text-sm font-semibold text-white">App Vibrations & Pocket Alerts</p>
-                  <p className="text-xs text-zinc-400">Vibrate on arrival & button taps</p>
+                  <p className="text-sm font-semibold text-foreground">App Vibrations & Pocket Alerts</p>
+                  <p className="text-xs text-muted-foreground">Vibrate on arrival & button taps</p>
                 </div>
               </div>
 
@@ -619,7 +619,7 @@ const ProfilePage = () => {
                 type="button"
                 onClick={handleToggleVibrations}
                 className={`relative w-12 h-7 rounded-full p-1 transition-colors duration-200 focus:outline-none cursor-pointer ${
-                  vibrationsEnabled ? 'bg-emerald-500' : 'bg-zinc-700'
+                  vibrationsEnabled ? 'bg-emerald-500' : 'bg-muted-foreground/30'
                 }`}
                 title={vibrationsEnabled ? 'App vibrations ON' : 'App vibrations OFF'}
               >
@@ -634,13 +634,13 @@ const ProfilePage = () => {
         </div>
 
         {/* ==================================================== */}
-        {/* APPEARANCE & ACCENT COLOR (Exact Clone of Screenshots 1, 2 & 3) */}
+        {/* APPEARANCE & ACCENT COLOR                            */}
         {/* ==================================================== */}
         <div className="space-y-2">
-          <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-2">Theme & Style</p>
-          <div className="bg-[#2A2A2A] border border-white/10 rounded-3xl divide-y divide-white/5 relative z-30">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2">Theme & Style</p>
+          <div className="bg-card border border-border rounded-3xl divide-y divide-border relative z-30">
             
-            {/* Appearance Card (Exact clone of Screenshot 1 & 2) */}
+            {/* Appearance Card */}
             <div className="relative">
               <button
                 type="button"
@@ -648,26 +648,28 @@ const ProfilePage = () => {
                   haptics.tap();
                   setAppearanceMenuOpen(!appearanceMenuOpen);
                   setAccentMenuOpen(false);
+                  setMapThemeMenuOpen(false);
+                  setAboutMenuOpen(false);
                 }}
-                className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors cursor-pointer text-left"
+                className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors cursor-pointer text-left"
               >
                 <div className="flex items-center gap-3.5">
-                  <Sun className="w-5 h-5 text-zinc-300 shrink-0" />
+                  <Sun className="w-5 h-5 text-muted-foreground shrink-0" />
                   <div>
-                    <p className="text-sm font-semibold text-white">Appearance</p>
-                    <p className="text-xs text-zinc-400 capitalize">
+                    <p className="text-sm font-semibold text-foreground">Appearance</p>
+                    <p className="text-xs text-muted-foreground capitalize">
                       {themeMode === 'system' ? 'System (Default)' : themeMode === 'light' ? 'Light' : 'Dark'}
                     </p>
                   </div>
                 </div>
                 {appearanceMenuOpen ? (
-                  <ChevronUp className="w-5 h-5 text-zinc-300 shrink-0" />
+                  <ChevronUp className="w-5 h-5 text-muted-foreground shrink-0" />
                 ) : (
-                  <ChevronDown className="w-5 h-5 text-zinc-300 shrink-0" />
+                  <ChevronDown className="w-5 h-5 text-muted-foreground shrink-0" />
                 )}
               </button>
 
-              {/* Appearance Popup Menu (Exact clone of Screenshot 2 - Opens UPWARDS) */}
+              {/* Appearance Popup Menu (Opens UPWARDS) */}
               <AnimatePresence>
                 {appearanceMenuOpen && (
                   <motion.div
@@ -675,7 +677,7 @@ const ProfilePage = () => {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute right-4 bottom-full mb-2 z-[100] w-56 bg-[#222222] border border-white/10 rounded-2xl shadow-2xl p-2 space-y-1"
+                    className="absolute right-4 bottom-full mb-2 z-[100] w-56 bg-card border border-border rounded-2xl shadow-2xl p-2 space-y-1"
                   >
                     {[
                       { id: 'system', label: 'System (Default)' },
@@ -691,11 +693,11 @@ const ProfilePage = () => {
                           setAppearanceMenuOpen(false);
                         }}
                         className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium flex items-center justify-between transition-colors ${
-                          themeMode === opt.id ? 'bg-white/10 text-white font-semibold' : 'text-zinc-300 hover:bg-white/5'
+                          themeMode === opt.id ? 'bg-muted text-foreground font-semibold' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
                         }`}
                       >
                         <span>{opt.label}</span>
-                        {themeMode === opt.id && <Check className="w-4 h-4 text-white shrink-0" />}
+                        {themeMode === opt.id && <Check className="w-4 h-4 text-foreground shrink-0" />}
                       </button>
                     ))}
                   </motion.div>
@@ -703,7 +705,7 @@ const ProfilePage = () => {
               </AnimatePresence>
             </div>
 
-            {/* Accent color Card (Exact clone of Screenshot 1 & 3) */}
+            {/* Accent color Card */}
             <div className="relative">
               <button
                 type="button"
@@ -711,16 +713,18 @@ const ProfilePage = () => {
                   haptics.tap();
                   setAccentMenuOpen(!accentMenuOpen);
                   setAppearanceMenuOpen(false);
+                  setMapThemeMenuOpen(false);
+                  setAboutMenuOpen(false);
                 }}
-                className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors cursor-pointer text-left"
+                className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors cursor-pointer text-left"
               >
                 <div className="flex items-center gap-3.5">
-                  <Paintbrush className="w-5 h-5 text-zinc-300 shrink-0" />
+                  <Paintbrush className="w-5 h-5 text-muted-foreground shrink-0" />
                   <div>
-                    <p className="text-sm font-semibold text-white">Accent color</p>
-                    <p className="text-xs text-zinc-400 flex items-center gap-1.5 capitalize mt-0.5">
+                    <p className="text-sm font-semibold text-foreground">Accent color</p>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1.5 capitalize mt-0.5">
                       <span
-                        className="w-3 h-3 rounded-full inline-block shrink-0 border border-white/20"
+                        className="w-3 h-3 rounded-full inline-block shrink-0 border border-border"
                         style={{ backgroundColor: ACCENT_COLORS[accentColor]?.hex || '#3B82F6' }}
                       />
                       <span>{ACCENT_COLORS[accentColor]?.label || 'Blue (Default)'}</span>
@@ -728,13 +732,13 @@ const ProfilePage = () => {
                   </div>
                 </div>
                 {accentMenuOpen ? (
-                  <ChevronUp className="w-5 h-5 text-zinc-300 shrink-0" />
+                  <ChevronUp className="w-5 h-5 text-muted-foreground shrink-0" />
                 ) : (
-                  <ChevronDown className="w-5 h-5 text-zinc-300 shrink-0" />
+                  <ChevronDown className="w-5 h-5 text-muted-foreground shrink-0" />
                 )}
               </button>
 
-              {/* Accent Color Popup Menu (Exact clone of Screenshot 3 - Opens UPWARDS) */}
+              {/* Accent Color Popup Menu (Opens UPWARDS) */}
               <AnimatePresence>
                 {accentMenuOpen && (
                   <motion.div
@@ -742,7 +746,7 @@ const ProfilePage = () => {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 0, scale: 1 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute right-4 bottom-full mb-2 z-[100] w-56 bg-[#222222] border border-white/10 rounded-2xl shadow-2xl p-2 space-y-1 max-h-72 overflow-y-auto"
+                    className="absolute right-4 bottom-full mb-2 z-[100] w-56 bg-card border border-border rounded-2xl shadow-2xl p-2 space-y-1 max-h-72 overflow-y-auto"
                   >
                     {Object.entries(ACCENT_COLORS).map(([key, opt]) => (
                       <button
@@ -754,17 +758,17 @@ const ProfilePage = () => {
                           setAccentMenuOpen(false);
                         }}
                         className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium flex items-center justify-between transition-colors ${
-                          accentColor === key ? 'bg-white/10 text-white font-semibold' : 'text-zinc-300 hover:bg-white/5'
+                          accentColor === key ? 'bg-muted text-foreground font-semibold' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
                         }`}
                       >
                         <div className="flex items-center gap-2.5">
                           <span
-                            className="w-3.5 h-3.5 rounded-full inline-block shrink-0 border border-white/20"
+                            className="w-3.5 h-3.5 rounded-full inline-block shrink-0 border border-border"
                             style={{ backgroundColor: opt.hex }}
                           />
                           <span>{opt.label}</span>
                         </div>
-                        {accentColor === key && <Check className="w-4 h-4 text-white shrink-0" />}
+                        {accentColor === key && <Check className="w-4 h-4 text-foreground shrink-0" />}
                       </button>
                     ))}
                   </motion.div>
@@ -772,7 +776,7 @@ const ProfilePage = () => {
               </AnimatePresence>
             </div>
 
-            {/* Map Theme Mode Card (Premium Expanding Popup Menu) */}
+            {/* Map Theme Mode Card */}
             <div className="relative">
               <button
                 type="button"
@@ -781,26 +785,27 @@ const ProfilePage = () => {
                   setMapThemeMenuOpen(!mapThemeMenuOpen);
                   setAppearanceMenuOpen(false);
                   setAccentMenuOpen(false);
+                  setAboutMenuOpen(false);
                 }}
-                className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors cursor-pointer text-left"
+                className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors cursor-pointer text-left"
               >
                 <div className="flex items-center gap-3.5">
                   <MapPin className="w-5 h-5 text-gold shrink-0" />
                   <div>
-                    <p className="text-sm font-semibold text-white">Map Theme</p>
-                    <p className="text-xs text-zinc-400 capitalize">
+                    <p className="text-sm font-semibold text-foreground">Map Theme</p>
+                    <p className="text-xs text-muted-foreground capitalize">
                       {mapThemeMode === 'auto' ? 'Auto (Follow Time)' : mapThemeMode === 'light' ? 'Light Mode' : 'Night Dark Mode'}
                     </p>
                   </div>
                 </div>
                 {mapThemeMenuOpen ? (
-                  <ChevronUp className="w-5 h-5 text-zinc-300 shrink-0" />
+                  <ChevronUp className="w-5 h-5 text-muted-foreground shrink-0" />
                 ) : (
-                  <ChevronDown className="w-5 h-5 text-zinc-300 shrink-0" />
+                  <ChevronDown className="w-5 h-5 text-muted-foreground shrink-0" />
                 )}
               </button>
 
-              {/* Map Theme Popup Menu (Opens UPWARDS) */}
+              {/* Map Theme Popup Menu */}
               <AnimatePresence>
                 {mapThemeMenuOpen && (
                   <motion.div
@@ -808,7 +813,7 @@ const ProfilePage = () => {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute right-4 bottom-full mb-2 z-[100] w-64 bg-[#222222] border border-white/10 rounded-2xl shadow-2xl p-2 space-y-1"
+                    className="absolute right-4 bottom-full mb-2 z-[100] w-64 bg-card border border-border rounded-2xl shadow-2xl p-2 space-y-1"
                   >
                     {[
                       { id: 'auto', label: 'Auto (Follow Time)' },
@@ -824,11 +829,11 @@ const ProfilePage = () => {
                           setMapThemeMenuOpen(false);
                         }}
                         className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium flex items-center justify-between transition-colors ${
-                          mapThemeMode === opt.id ? 'bg-white/10 text-white font-semibold' : 'text-zinc-300 hover:bg-white/5'
+                          mapThemeMode === opt.id ? 'bg-muted text-foreground font-semibold' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
                         }`}
                       >
                         <span>{opt.label}</span>
-                        {mapThemeMode === opt.id && <Check className="w-4 h-4 text-white shrink-0" />}
+                        {mapThemeMode === opt.id && <Check className="w-4 h-4 text-foreground shrink-0" />}
                       </button>
                     ))}
                   </motion.div>
@@ -836,7 +841,7 @@ const ProfilePage = () => {
               </AnimatePresence>
             </div>
 
-            {/* About Card (Expands DOWNWARDS with Terms & Privacy Policy) */}
+            {/* About Card */}
             <div className="relative">
               <button
                 type="button"
@@ -845,24 +850,25 @@ const ProfilePage = () => {
                   setAboutMenuOpen(!aboutMenuOpen);
                   setAppearanceMenuOpen(false);
                   setAccentMenuOpen(false);
+                  setMapThemeMenuOpen(false);
                 }}
-                className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors cursor-pointer text-left"
+                className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors cursor-pointer text-left"
               >
                 <div className="flex items-center gap-3.5">
-                  <Info weight="duotone" className="w-5 h-5 text-zinc-300 shrink-0" />
+                  <Info weight="duotone" className="w-5 h-5 text-muted-foreground shrink-0" />
                   <div>
-                    <p className="text-sm font-semibold text-white">About</p>
-                    <p className="text-xs text-zinc-400">Terms of service & privacy policy</p>
+                    <p className="text-sm font-semibold text-foreground">About</p>
+                    <p className="text-xs text-muted-foreground">Terms of service & privacy policy</p>
                   </div>
                 </div>
                 {aboutMenuOpen ? (
-                  <ChevronUp className="w-5 h-5 text-zinc-300 shrink-0" />
+                  <ChevronUp className="w-5 h-5 text-muted-foreground shrink-0" />
                 ) : (
-                  <ChevronDown className="w-5 h-5 text-zinc-300 shrink-0" />
+                  <ChevronDown className="w-5 h-5 text-muted-foreground shrink-0" />
                 )}
               </button>
 
-              {/* Expanded Content (Expands DOWNWARDS) */}
+              {/* Expanded Content */}
               <AnimatePresence>
                 {aboutMenuOpen && (
                   <motion.div
@@ -870,7 +876,7 @@ const ProfilePage = () => {
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="overflow-hidden bg-[#222222] border-t border-white/5 divide-y divide-white/5"
+                    className="overflow-hidden bg-muted/30 border-t border-border divide-y divide-border"
                   >
                     <button
                       type="button"
@@ -878,10 +884,10 @@ const ProfilePage = () => {
                         haptics.tap();
                         openExternalUrl('/terms');
                       }}
-                      className="w-full p-4 flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer text-left"
+                      className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer text-left"
                     >
-                      <span className="text-sm font-medium text-white">Terms of service</span>
-                      <ChevronRight className="w-4 h-4 text-zinc-400 shrink-0" />
+                      <span className="text-sm font-medium text-foreground">Terms of service</span>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
                     </button>
 
                     <button
@@ -890,10 +896,10 @@ const ProfilePage = () => {
                         haptics.tap();
                         openExternalUrl('/privacy');
                       }}
-                      className="w-full p-4 flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer text-left"
+                      className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer text-left"
                     >
-                      <span className="text-sm font-medium text-white">Privacy policy</span>
-                      <ChevronRight className="w-4 h-4 text-zinc-400 shrink-0" />
+                      <span className="text-sm font-medium text-foreground">Privacy policy</span>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
                     </button>
                   </motion.div>
                 )}
@@ -905,11 +911,11 @@ const ProfilePage = () => {
 
         {/* Blocked Permission Warning Notice */}
         {permissionState === 'denied' && (
-          <div className="p-4 rounded-3xl bg-red-500/10 border border-red-500/30 flex items-start gap-3 text-xs text-red-200">
-            <ShieldAlert className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+          <div className="p-4 rounded-3xl bg-red-500/10 border border-red-500/30 flex items-start gap-3 text-xs text-red-500">
+            <ShieldAlert className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold text-red-300">Notifications are blocked in browser settings</p>
-              <p className="text-red-200/80 mt-0.5">
+              <p className="font-bold text-red-500">Notifications are blocked in browser settings</p>
+              <p className="text-red-500/80 mt-0.5">
                 Tap the lock icon 🔒 next to the web address at the top of your browser to set Notification permission to "Allow".
               </p>
             </div>
@@ -921,23 +927,23 @@ const ProfilePage = () => {
         {/* ==================================================== */}
         {isDriver && driverProfile && (
           <div className="space-y-2">
-            <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-2">Vehicle Details</p>
-            <div className="bg-zinc-900 border border-zinc-800/90 rounded-3xl overflow-hidden divide-y divide-zinc-800/70">
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2">Vehicle Details</p>
+            <div className="bg-card border border-border rounded-3xl overflow-hidden divide-y divide-border">
               <div className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-3.5">
                   <Car weight="duotone" className="w-5 h-5 text-gold" />
                   <div>
-                    <p className="text-sm font-semibold text-white">Vehicle</p>
-                    <p className="text-xs text-zinc-400">{driverProfile.vehicle_color} {driverProfile.vehicle_model} ({driverProfile.vehicle_type})</p>
+                    <p className="text-sm font-semibold text-foreground">Vehicle</p>
+                    <p className="text-xs text-muted-foreground">{driverProfile.vehicle_color} {driverProfile.vehicle_model} ({driverProfile.vehicle_type})</p>
                   </div>
                 </div>
               </div>
 
               <div className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-3.5">
-                  <Shield weight="duotone" className="w-5 h-5 text-zinc-400" />
+                  <Shield weight="duotone" className="w-5 h-5 text-muted-foreground" />
                   <div>
-                    <p className="text-sm font-semibold text-white">Plate Number</p>
+                    <p className="text-sm font-semibold text-foreground">Plate Number</p>
                     <p className="text-xs text-gold font-mono font-bold">{driverProfile.plate_number}</p>
                   </div>
                 </div>
@@ -945,10 +951,10 @@ const ProfilePage = () => {
 
               <div className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-3.5">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                   <div>
-                    <p className="text-sm font-semibold text-white">Approval Status</p>
-                    <p className="text-xs text-emerald-400 font-medium">
+                    <p className="text-sm font-semibold text-foreground">Approval Status</p>
+                    <p className="text-xs text-emerald-500 font-medium">
                       {driverProfile.is_approved ? 'Approved Active Driver' : 'Pending Review'}
                     </p>
                   </div>
@@ -962,7 +968,7 @@ const ProfilePage = () => {
         {/* GROUP 4: APP & SYSTEM FEATURES                       */}
         {/* ==================================================== */}
         <div className="space-y-3">
-          <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-2">Support & App</p>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2">Support & App</p>
           <BugReportButton onClick={() => window.dispatchEvent(new CustomEvent('open-bug-report-modal', { detail: { isFromActiveRide: false } }))} />
           <MultiPlatformInstallSection />
         </div>
@@ -971,54 +977,54 @@ const ProfilePage = () => {
         {/* GROUP 5: ACTIONS (Log Out & Delete Account)          */}
         {/* ==================================================== */}
         <div className="space-y-2">
-          <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-2">Actions</p>
-          <div className="bg-[#2A2A2A] border border-white/10 rounded-3xl overflow-hidden divide-y divide-white/5">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2">Actions</p>
+          <div className="bg-card border border-border rounded-3xl overflow-hidden divide-y divide-border">
             {/* Log Out Row */}
             <div 
               onClick={handleLogout}
-              className="flex items-center justify-between p-4 hover:bg-zinc-800/50 transition-colors cursor-pointer"
+              className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors cursor-pointer"
             >
               <div className="flex items-center gap-3.5">
-                <LogOut className="w-5 h-5 text-red-400" />
-                <p className="text-sm font-semibold text-red-400">Log Out</p>
+                <LogOut className="w-5 h-5 text-red-500" />
+                <p className="text-sm font-semibold text-red-500">Log Out</p>
               </div>
-              <ChevronRight className="w-4 h-4 text-zinc-600" />
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </div>
 
             {/* Delete Account Row */}
             <div 
               onClick={() => setShowDeleteConfirm(true)}
-              className="flex items-center justify-between p-4 hover:bg-zinc-800/50 transition-colors cursor-pointer"
+              className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors cursor-pointer"
             >
               <div className="flex items-center gap-3.5">
-                <Trash2 className="w-5 h-5 text-zinc-500" />
-                <p className="text-sm font-semibold text-zinc-400">Delete Account</p>
+                <Trash2 className="w-5 h-5 text-muted-foreground" />
+                <p className="text-sm font-semibold text-muted-foreground">Delete Account</p>
               </div>
-              <ChevronRight className="w-4 h-4 text-zinc-600" />
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </div>
           </div>
         </div>
 
         {/* Delete Confirmation Modal */}
         <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-          <DialogContent className="bg-zinc-950 border border-zinc-800 text-white rounded-3xl p-6 max-w-sm">
+          <DialogContent className="bg-card border border-border text-foreground rounded-3xl p-6 max-w-sm">
             <DialogHeader>
-              <DialogTitle className="text-lg font-bold text-white">Delete Account?</DialogTitle>
+              <DialogTitle className="text-lg font-bold text-foreground">Delete Account?</DialogTitle>
             </DialogHeader>
-            <p className="text-xs text-zinc-400 mt-2">
+            <p className="text-xs text-muted-foreground mt-2">
               Are you sure you want to permanently delete your account? This action cannot be undone.
             </p>
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 py-2.5 rounded-xl bg-zinc-800 text-xs font-bold text-zinc-300"
+                className="flex-1 py-2.5 rounded-xl bg-muted text-xs font-bold text-foreground"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteAccount}
                 disabled={isDeleting}
-                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-xs font-bold text-white shadow-lg"
+                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-xs font-bold text-white shadow-lg cursor-pointer"
               >
                 {isDeleting ? 'Deleting...' : 'Delete'}
               </button>

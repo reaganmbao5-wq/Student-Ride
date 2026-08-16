@@ -77,8 +77,8 @@ export const SwipableRideCard = ({
         }}
         animate={{ x: swipeOffset }}
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-        className={`relative z-10 w-full bg-neutral-950/80 hover:bg-neutral-900/60 transition-colors ${
-          isExpanded ? 'bg-neutral-900/90' : ''
+        className={`relative z-10 w-full bg-card hover:bg-muted/50 text-card-foreground transition-colors ${
+          isExpanded ? 'bg-muted/40' : ''
         }`}
       >
         {/* Collapsed Item Summary View */}
@@ -96,7 +96,7 @@ export const SwipableRideCard = ({
           <div className="flex items-center justify-between gap-2 mb-2.5">
             <div className="flex items-center gap-2">
               <Clock weight="duotone" className="w-4 h-4 text-gold" />
-              <span className="text-xs md:text-sm font-medium text-neutral-300">
+              <span className="text-xs md:text-sm font-medium text-muted-foreground">
                 {formattedDate}
               </span>
             </div>
@@ -108,11 +108,11 @@ export const SwipableRideCard = ({
               )}
 
               {/* Chevron Collapse Indicator */}
-              <div className="p-0.5 text-neutral-400">
+              <div className="p-0.5 text-muted-foreground">
                 {isExpanded ? (
                   <CaretUp weight="bold" className="w-5 h-5 text-gold" />
                 ) : (
-                  <CaretDown weight="bold" className="w-5 h-5 text-neutral-400" />
+                  <CaretDown weight="bold" className="w-5 h-5 text-muted-foreground" />
                 )}
               </div>
             </div>
@@ -122,14 +122,14 @@ export const SwipableRideCard = ({
           <div className="flex items-center gap-3 mb-2.5 text-sm">
             <div className="flex items-center gap-1.5 flex-1 min-w-0">
               <div className="w-2 h-2 rounded-full bg-gold shrink-0" />
-              <span className="text-white font-medium truncate">
+              <span className="text-foreground font-medium truncate">
                 {ride.pickup_location?.address || 'Pickup Location'}
               </span>
             </div>
-            <ArrowRight weight="bold" className="w-4 h-4 text-neutral-500 shrink-0" />
+            <ArrowRight weight="bold" className="w-4 h-4 text-muted-foreground shrink-0" />
             <div className="flex items-center gap-1.5 flex-1 min-w-0">
               <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-              <span className="text-white font-medium truncate">
+              <span className="text-foreground font-medium truncate">
                 {ride.dropoff_location?.address || 'Dropoff Location'}
               </span>
             </div>
@@ -141,7 +141,7 @@ export const SwipableRideCard = ({
               <div className="w-7 h-7 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center text-gold">
                 <Car weight="duotone" className="w-4 h-4" />
               </div>
-              <span className="text-xs text-neutral-300 font-medium truncate max-w-[150px] md:max-w-[220px]">
+              <span className="text-xs text-muted-foreground font-medium truncate max-w-[150px] md:max-w-[220px]">
                 {isDriver ? ride.student?.name || 'Passenger' : ride.driver?.user?.name || 'Driver'}
               </span>
             </div>
@@ -169,26 +169,26 @@ export const SwipableRideCard = ({
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.25, ease: 'easeInOut' }}
-              className="overflow-hidden bg-black/40 border-t border-white/5"
+              className="overflow-hidden bg-muted/20 border-t border-border"
             >
               <div className="py-4 px-4 md:px-6 space-y-4">
                 {/* Complete Route Timeline */}
-                <div className="bg-white/5 p-4 rounded-2xl space-y-3">
-                  <h4 className="text-xs uppercase font-bold text-neutral-400 tracking-wider">
+                <div className="bg-muted/50 border border-border/50 p-4 rounded-2xl space-y-3">
+                  <h4 className="text-xs uppercase font-bold text-muted-foreground tracking-wider">
                     Full Trip Details
                   </h4>
-                  <div className="space-y-3 relative pl-4 border-l border-dashed border-white/20">
+                  <div className="space-y-3 relative pl-4 border-l border-dashed border-border">
                     <div className="relative">
                       <div className="absolute -left-[20px] top-1 w-3 h-3 rounded-full bg-gold" />
-                      <p className="text-[11px] text-neutral-400 font-medium">Pickup Location</p>
-                      <p className="text-sm font-semibold text-white mt-0.5">
+                      <p className="text-[11px] text-muted-foreground font-medium">Pickup Location</p>
+                      <p className="text-sm font-semibold text-foreground mt-0.5">
                         {ride.pickup_location?.address || 'N/A'}
                       </p>
                     </div>
                     <div className="relative pt-1">
                       <div className="absolute -left-[20px] top-2 w-3 h-3 rounded-full bg-emerald-500" />
-                      <p className="text-[11px] text-neutral-400 font-medium">Dropoff Location</p>
-                      <p className="text-sm font-semibold text-white mt-0.5">
+                      <p className="text-[11px] text-muted-foreground font-medium">Dropoff Location</p>
+                      <p className="text-sm font-semibold text-foreground mt-0.5">
                         {ride.dropoff_location?.address || 'N/A'}
                       </p>
                     </div>
@@ -197,9 +197,9 @@ export const SwipableRideCard = ({
 
                 {/* Driver / Ride Specs Grid */}
                 <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="bg-white/5 p-3.5 rounded-2xl">
-                    <p className="text-neutral-400 mb-1 text-[11px]">{isDriver ? 'Passenger' : 'Driver'}</p>
-                    <p className="font-semibold text-white text-sm truncate">
+                  <div className="bg-muted/50 border border-border/50 p-3.5 rounded-2xl">
+                    <p className="text-muted-foreground mb-1 text-[11px]">{isDriver ? 'Passenger' : 'Driver'}</p>
+                    <p className="font-semibold text-foreground text-sm truncate">
                       {isDriver ? ride.student?.name || 'Passenger' : ride.driver?.user?.name || 'N/A'}
                     </p>
                     {!isDriver && ride.driver?.plate_number && (
@@ -209,9 +209,9 @@ export const SwipableRideCard = ({
                     )}
                   </div>
 
-                  <div className="bg-white/5 p-3.5 rounded-2xl">
-                    <p className="text-neutral-400 mb-1 text-[11px]">Distance & Fare</p>
-                    <p className="font-semibold text-white text-sm">
+                  <div className="bg-muted/50 border border-border/50 p-3.5 rounded-2xl">
+                    <p className="text-muted-foreground mb-1 text-[11px]">Distance & Fare</p>
+                    <p className="font-semibold text-foreground text-sm">
                       {ride.distance ? ride.distance.toFixed(1) : '0'} km
                     </p>
                     <p className="text-gold font-bold text-[11px] mt-0.5">

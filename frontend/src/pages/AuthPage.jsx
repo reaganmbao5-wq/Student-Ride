@@ -505,7 +505,7 @@ const AuthPage = () => {
                       placeholder="Full Name"
                       value={formData.name}
                       onChange={handleChange}
-                      className="pl-11"
+                      className="pl-11 !bg-zinc-900/90 !text-white !border-zinc-800 placeholder:!text-zinc-500"
                       required
                     />
                   </div>
@@ -518,7 +518,7 @@ const AuthPage = () => {
                       placeholder="Phone Number"
                       value={formData.phone}
                       onChange={handleChange}
-                      className="pl-11"
+                      className="pl-11 !bg-zinc-900/90 !text-white !border-zinc-800 placeholder:!text-zinc-500"
                       required
                     />
                   </div>
@@ -534,7 +534,7 @@ const AuthPage = () => {
                 placeholder="Email Address"
                 value={formData.email}
                 onChange={handleChange}
-                className="pl-11"
+                className="pl-11 !bg-zinc-900/90 !text-white !border-zinc-800 placeholder:!text-zinc-500"
                 required
               />
             </div>
@@ -547,7 +547,7 @@ const AuthPage = () => {
                 placeholder="Password"
                 value={formData.password}
                 onChange={handleChange}
-                className="pl-11 pr-11"
+                className="pl-11 pr-11 !bg-zinc-900/90 !text-white !border-zinc-800 placeholder:!text-zinc-500"
                 required
               />
               <button
@@ -580,7 +580,7 @@ const AuthPage = () => {
                   placeholder="Confirm Password"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="pl-11"
+                  className="pl-11 !bg-zinc-900/90 !text-white !border-zinc-800 placeholder:!text-zinc-500"
                   required
                 />
               </div>
@@ -669,6 +669,7 @@ const AuthPage = () => {
                     placeholder="Model (e.g. Vitz)"
                     value={formData.vehicle_model}
                     onChange={handleChange}
+                    className="!bg-zinc-900/90 !text-white !border-zinc-800 placeholder:!text-zinc-500"
                     required
                   />
                   <GlassInput
@@ -677,6 +678,7 @@ const AuthPage = () => {
                     placeholder="Color (e.g. White)"
                     value={formData.vehicle_color}
                     onChange={handleChange}
+                    className="!bg-zinc-900/90 !text-white !border-zinc-800 placeholder:!text-zinc-500"
                     required
                   />
                 </div>
@@ -688,7 +690,7 @@ const AuthPage = () => {
                   value={formData.plate_number}
                   onChange={handleChange}
                   required
-                  className="uppercase"
+                  className="uppercase !bg-zinc-900/90 !text-white !border-zinc-800 placeholder:!text-zinc-500"
                 />
 
                 <div className="pt-2">

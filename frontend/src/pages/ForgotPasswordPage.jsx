@@ -49,16 +49,17 @@ const ForgotPasswordPage = () => {
             {/* Back Button */}
             <button
                 onClick={() => navigate('/auth?mode=login')}
-                className="absolute top-6 left-6 p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors z-10 
-                   border border-white/10 backdrop-blur-md"
+                className="absolute top-6 left-6 p-2 rounded-full bg-muted/60 hover:bg-muted transition-colors z-10 
+                   border border-border backdrop-blur-md"
             >
                 <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
 
-            <GlassCard className="w-full max-w-md p-8 relative z-10 border-white/10">
+            <GlassCard className="w-full max-w-md p-8 relative z-10 border-border">
                 <div className="text-center mb-8">
                     <div className="flex items-center justify-center gap-3 mb-6">
-                        <img src="/assets/images/jride_text_white.png" alt="JRide" className="h-9 w-auto object-contain" />
+                        <img src="/assets/images/jride_text_white.png" alt="JRide" className="h-9 w-auto object-contain hidden dark:block" />
+                        <img src="/assets/images/jride_text_black.png" alt="JRide" className="h-9 w-auto object-contain block dark:hidden" />
                     </div>
                     <h1 className="text-2xl font-bold text-foreground mb-2 tracking-tight">
                         Reset Password
