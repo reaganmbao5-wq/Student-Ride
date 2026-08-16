@@ -359,3 +359,25 @@ video::-webkit-media-controls-enclosure {
   max-width: 100% !important;
   max-height: 100% !important;
 }
+
+/* Animated multi-stop gradient text flow for student greeting name */
+@keyframes name-gradient-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-name-gradient {
+  background-size: 300% 300% !important;
+  animation: name-gradient-flow 5s ease-in-out infinite !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  display: inline-block !important;
+}

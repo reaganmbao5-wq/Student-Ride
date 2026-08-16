@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { AppCache } from '../utils/AppCache';
+import { getBackendUrl } from '../utils/urlHelpers';
 
 const AuthContext = createContext(null);
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "https://student-ride-backend-manual.onrender.com";
+const BACKEND_URL = getBackendUrl();
 const API_URL = `${BACKEND_URL}/api`;
 
 const urlBase64ToUint8Array = (base64String) => {
@@ -82,7 +83,12 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Auth error:', error);
-      logout();
+      // ONLY log out if the backend explicitly rejects the token with 401/403
+      if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+        logout();
+      } else {
+        console.warn('Backend temporarily unreachable or waking up; preserving login session.');
+      }
     } finally {
       setLoading(false);
     }

@@ -7,6 +7,8 @@ import { GoogleAuth } from '@daniele-rolli/capacitor-google-auth';
 import { Capacitor } from '@capacitor/core';
 import { toast } from 'sonner';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
+import { AppCache } from '../utils/AppCache';
 import { ImageGallery } from '../components/common/ImageGallery';
 import { getOnlineWebUrl, openExternalUrl, getBackendUrl } from '../utils/urlHelpers';
 import { showFriendlyError } from '../utils/errorHandler';
@@ -30,38 +32,29 @@ const slideVariants = {
   })
 };
 
-const THEME_GALLERY_ITEMS = [
-  {
-    title: "Dark Mode",
-    url: "/assets/previews/dark_theme_preview.png",
-    mode: "dark"
-  },
-  {
-    title: "Light Mode",
-    url: "/assets/previews/light_theme_preview.png",
-    mode: "light"
-  },
-  {
-    title: "Auto (System)",
-    url: "/assets/previews/dark_theme_preview.png",
-    mode: "system"
-  }
+const THEME_OPTIONS = [
+  { id: 'dark', label: 'Dark', desc: 'Sleek & high-contrast', icon: 'Moon' },
+  { id: 'light', label: 'Light', desc: 'Crisp & clear visibility', icon: 'Sun' },
+  { id: 'system', label: 'System Default', desc: 'Syncs with device settings', icon: 'Monitor' },
 ];
 
-const MAP_GALLERY_ITEMS = [
+const MAP_STYLES = [
   {
-    title: "Night Map",
-    url: "/assets/previews/night_map_preview.png",
-    mode: "night"
-  },
-  {
-    title: "Day Map",
-    url: "/assets/previews/day_map_preview.png",
+    id: 'day',
+    title: 'High-Contrast Daylight',
+    subtitle: 'Optimized for bright outdoor student transit',
     mode: "day"
   },
   {
-    title: "Auto Map",
-    url: "/assets/previews/night_map_preview.png",
+    id: 'night',
+    title: 'Midnight Vector Dark',
+    subtitle: 'Reduced glare for evening campus rides',
+    mode: "night"
+  },
+  {
+    id: 'auto',
+    title: 'Adaptive Smart Sync',
+    subtitle: 'Automatically mirrors your system theme',
     mode: "auto"
   }
 ];
@@ -69,12 +62,10 @@ const MAP_GALLERY_ITEMS = [
 const LandingPage = () => {
   const navigate = useNavigate();
   const { theme, themeMode, setThemeMode, accentColor, setAccentColor, ACCENT_COLORS } = useTheme();
+  const { user, token: authToken, driverProfile } = useAuth();
 
-  // Navigation state: step 1 (hero), 2 (name & phone), 3 (gender), 4 (customization), 5 (save progress)
-  const [step, setStep] = useState(() => {
-    const saved = parseInt(localStorage.getItem('onboarding_step') || '1', 10);
-    return saved >= 1 && saved <= 5 ? saved : 1;
-  });
+  // Navigation state: ALWAYS start on step 1 (hero "Get Started" page)
+  const [step, setStep] = useState(1);
   const [direction, setDirection] = useState(1);
 
   // Sub-steps for step 4: 'theme' -> 'accent' -> 'map'
@@ -95,9 +86,8 @@ const LandingPage = () => {
   const [videoLoaded, setVideoLoaded] = useState(false);
   const videoRef = useRef(null);
 
-  // Sync state changes to localStorage
+  // Sync form state changes to localStorage (excluding step so fresh open always shows Get Started)
   useEffect(() => {
-    localStorage.setItem('onboarding_step', step.toString());
     localStorage.setItem('onboarding_substep', customSubStep);
     localStorage.setItem('onboarding_firstname', firstName);
     localStorage.setItem('onboarding_lastname', lastName);
@@ -105,7 +95,7 @@ const LandingPage = () => {
     localStorage.setItem('onboarding_show_lastname', showLastNameInput ? 'true' : 'false');
     localStorage.setItem('onboarding_show_phone', showPhoneInput ? 'true' : 'false');
     localStorage.setItem('onboarding_gender', gender);
-  }, [step, customSubStep, firstName, lastName, phone, showLastNameInput, showPhoneInput, gender]);
+  }, [customSubStep, firstName, lastName, phone, showLastNameInput, showPhoneInput, gender]);
 
   // Fetch video as Blob URL for instant native Android playback without HTTP 206 Range errors
   useEffect(() => {
@@ -171,6 +161,27 @@ const LandingPage = () => {
   const goToNextStep = () => {
     setDirection(1);
     if (step === 1) {
+      const storedToken = localStorage.getItem('token') || authToken;
+      let cachedUser = user;
+      if (!cachedUser) {
+        try {
+          const raw = localStorage.getItem('mulu_user_cache');
+          if (raw) cachedUser = JSON.parse(raw);
+        } catch {}
+      }
+
+      if (storedToken && cachedUser) {
+        const role = cachedUser.role;
+        const driverProfileComplete = cachedUser.driver_profile_complete || AppCache.get('driver_profile_complete') || (driverProfile && driverProfile.id);
+        if (role === 'admin' || role === 'super_admin') {
+          navigate('/admin', { replace: true });
+        } else if (role === 'driver') {
+          navigate(driverProfileComplete ? '/driver' : '/driver/register', { replace: true });
+        } else {
+          navigate('/dashboard', { replace: true });
+        }
+        return;
+      }
       setStep(2);
     } else if (step === 2) {
       if (!firstName.trim()) {

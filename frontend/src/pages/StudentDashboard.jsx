@@ -11,6 +11,7 @@ import { PlatformMap } from '../map/components/PlatformMap';
 import { CAMERA_MODES } from '../map/camera/CameraConfig';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { useWebSocket } from '../context/WebSocketContext';
 import { useGeolocation } from '../map/hooks/useGeolocation';
 import { useDriverDiscovery } from '../map/discovery/DriverDiscoveryEngine';
@@ -23,12 +24,34 @@ import { StudentDashboardSkeleton } from '../components/common/PageSkeletons';
 import { systemNotification } from '../services/SystemNotificationService';
 import { DriverPhotoModal } from '../components/common/DriverPhotoModal';
 
+const getNameGradient = (accent) => {
+  switch (accent) {
+    case 'gold':
+      return 'linear-gradient(135deg, #FDE047 0%, #FACC15 25%, #FB923C 50%, #EAB308 75%, #FDE047 100%)';
+    case 'green':
+      return 'linear-gradient(135deg, #34D399 0%, #4ADE80 25%, #2DD4BF 50%, #22C55E 75%, #34D399 100%)';
+    case 'pink':
+      return 'linear-gradient(135deg, #F472B6 0%, #FB7185 25%, #E879F9 50%, #EC4899 75%, #F472B6 100%)';
+    case 'orange':
+      return 'linear-gradient(135deg, #FDBA74 0%, #FB923C 25%, #EF4444 50%, #F97316 75%, #FDBA74 100%)';
+    case 'purple':
+      return 'linear-gradient(135deg, #C084FC 0%, #A855F7 25%, #818CF8 50%, #E879F9 75%, #C084FC 100%)';
+    case 'black':
+      return 'linear-gradient(135deg, #F4F4F5 0%, #A1A1AA 25%, #E4E4E7 50%, #71717A 75%, #F4F4F5 100%)';
+    case 'default':
+    case 'blue':
+    default:
+      return 'linear-gradient(135deg, #38BDF8 0%, #60A5FA 25%, #818CF8 50%, #3B82F6 75%, #38BDF8 100%)';
+  }
+};
+
 const StudentDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const initialRideState = location.state?.initialRide || null;
 
   const { user, api } = useAuth();
+  const { accentColor } = useTheme();
   const { isConnected, rideUpdate, driverLocation, passengerBriefing, clearRideUpdate, setPassengerBriefing } = useWebSocket();
   const { location: userLocation } = useGeolocation();
   
@@ -816,12 +839,20 @@ const StudentDashboard = () => {
       <div className="p-4 md:p-6 space-y-5 max-w-4xl mx-auto" data-testid="student-dashboard">
         {/* Top Greeting & Hero Ride Request Feature matching Mockup */}
         <div className="flex flex-col items-center text-center space-y-2 pt-0 pb-1">
-          {/* Header Greeting (Clean spacing, zero overlap with hero car) */}
+          {/* Header Greeting (Bigger typography, clean Hello, smoothly animated gradient on name with !) */}
           <div className="w-full text-left font-heading pb-1">
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
-              Hello, {user?.name ? user.name.split(' ')[0] : 'Student'}
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-foreground tracking-tight leading-tight">
+              Hello,{' '}
+              <span
+                className="animate-name-gradient"
+                style={{
+                  backgroundImage: getNameGradient(accentColor)
+                }}
+              >
+                {user?.name ? user.name.split(' ')[0] : 'Student'}!
+              </span>
             </h1>
-            <p className="text-muted-foreground text-xs md:text-sm font-medium mt-0.5">
+            <p className="text-muted-foreground text-xs md:text-sm font-medium mt-1">
               Where Would You Like To Go ?
             </p>
           </div>
