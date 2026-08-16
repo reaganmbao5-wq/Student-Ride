@@ -92,9 +92,7 @@ const AdminDashboard = () => {
                   {stats?.total_users || 0}
                 </p>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                <UsersThree weight="duotone" className="w-5 h-5 text-blue-400" />
-              </div>
+              <UsersThree weight="duotone" className="w-7 h-7 text-blue-500 shrink-0" />
             </div>
           </GlassCard>
 
@@ -112,9 +110,7 @@ const AdminDashboard = () => {
                   </p>
                 )}
               </div>
-              <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
-                <SteeringWheel weight="duotone" className="w-5 h-5 text-green-400" />
-              </div>
+              <SteeringWheel weight="duotone" className="w-7 h-7 text-emerald-500 shrink-0" />
             </div>
           </GlassCard>
 
@@ -129,9 +125,7 @@ const AdminDashboard = () => {
                   {stats?.completed_rides || 0} completed
                 </p>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
-                <MapPin weight="duotone" className="w-5 h-5 text-purple-400" />
-              </div>
+              <MapPin weight="duotone" className="w-7 h-7 text-purple-500 shrink-0" />
             </div>
           </GlassCard>
 
@@ -143,9 +137,7 @@ const AdminDashboard = () => {
                   {stats?.active_rides || 0}
                 </p>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center">
-                <Clock weight="duotone" className="w-5 h-5 text-gold" />
-              </div>
+              <Clock weight="duotone" className="w-7 h-7 text-amber-500 shrink-0" />
             </div>
           </GlassCard>
         </div>

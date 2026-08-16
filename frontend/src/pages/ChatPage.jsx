@@ -98,17 +98,17 @@ const ChatPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0B0B] flex flex-col" data-testid="chat-page">
+    <div className="min-h-screen bg-background text-foreground flex flex-col" data-testid="chat-page">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-40 bg-[#0B0B0B]/80 backdrop-blur-xl border-b border-white/5">
+      <header className="fixed top-0 left-0 right-0 z-40 bg-card/80 backdrop-blur-xl border-b border-border">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate(-1)}
-              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
+              className="p-2 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
               data-testid="back-btn"
             >
-              <ArrowLeft className="w-5 h-5 text-white" />
+              <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gold/20 flex items-center justify-center">
@@ -117,8 +117,8 @@ const ChatPage = () => {
                 </span>
               </div>
               <div>
-                <p className="font-medium text-white">{otherParty?.name || 'Chat'}</p>
-                <p className="text-xs text-white/50">
+                <p className="font-medium text-foreground">{otherParty?.name || 'Chat'}</p>
+                <p className="text-xs text-muted-foreground">
                   {user?.role === 'driver' ? 'Passenger' : 'Driver'}
                 </p>
               </div>
@@ -142,8 +142,8 @@ const ChatPage = () => {
         <div className="max-w-2xl mx-auto space-y-4">
           {messages.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-white/40">No messages yet</p>
-              <p className="text-white/30 text-sm">Say hello to start the conversation</p>
+              <p className="text-muted-foreground font-medium">No messages yet</p>
+              <p className="text-muted-foreground/70 text-sm">Say hello to start the conversation</p>
             </div>
           ) : (
             messages.map((message, index) => {
@@ -156,17 +156,17 @@ const ChatPage = () => {
                   <div
                     className={`max-w-[80%] px-4 py-3 rounded-2xl ${
                       isOwn
-                        ? 'bg-gold text-black rounded-br-sm'
-                        : 'bg-white/10 text-white rounded-bl-sm'
+                        ? 'bg-amber-400 text-black font-medium rounded-br-sm shadow-md'
+                        : 'bg-muted text-foreground border border-border rounded-bl-sm shadow-sm'
                     }`}
                   >
                     {!isOwn && (
-                      <p className="text-xs font-medium mb-1 opacity-60">
+                      <p className="text-xs font-semibold mb-1 text-muted-foreground">
                         {message.sender_name}
                       </p>
                     )}
-                    <p className="text-sm">{message.content}</p>
-                    <p className={`text-xs mt-1 ${isOwn ? 'text-black/50' : 'text-white/40'}`}>
+                    <p className="text-sm leading-relaxed">{message.content}</p>
+                    <p className={`text-[10px] mt-1 ${isOwn ? 'text-black/60' : 'text-muted-foreground'}`}>
                       {new Date(message.created_at).toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit'
@@ -182,7 +182,7 @@ const ChatPage = () => {
       </div>
 
       {/* Input */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#0B0B0B]/80 backdrop-blur-xl border-t border-white/5">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-card/80 backdrop-blur-xl border-t border-border">
         <form onSubmit={handleSend} className="max-w-2xl mx-auto flex gap-3">
           <GlassInput
             type="text"

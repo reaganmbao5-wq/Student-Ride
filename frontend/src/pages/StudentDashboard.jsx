@@ -635,14 +635,14 @@ const StudentDashboard = () => {
           onTouchMove={handleSheetTouchMove}
           onTouchEnd={handleSheetTouchEnd}
           style={{ touchAction: 'none' }}
-          className="fixed bottom-0 left-0 right-0 bg-black text-white dark:bg-zinc-950 rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.4)] z-20 flex flex-col will-change-transform transform-gpu select-none"
+          className="fixed bottom-0 left-0 right-0 bg-card text-card-foreground border-t border-border rounded-t-[32px] shadow-[0_-8px_30px_rgba(0,0,0,0.25)] z-20 flex flex-col will-change-transform transform-gpu select-none"
         >
           {/* Drag Handle Zone */}
           <div 
             className="w-full pt-3.5 pb-1 flex justify-center cursor-pointer select-none"
             onClick={() => setIsSheetExpanded(!isSheetExpanded)}
           >
-            <div className="w-12 h-1.5 bg-zinc-600 dark:bg-zinc-700 rounded-full" />
+            <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full" />
           </div>
 
           <motion.div 
@@ -664,7 +664,7 @@ const StudentDashboard = () => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -6 }}
                       transition={{ duration: 0.2 }}
-                      className="font-heading text-base md:text-lg font-bold text-gold whitespace-normal break-words leading-tight"
+                      className="font-heading text-base md:text-lg font-bold text-foreground whitespace-normal break-words leading-tight"
                     >
                       {activeBriefingText}
                     </motion.h2>
@@ -672,7 +672,7 @@ const StudentDashboard = () => {
                 </div>
                 {activeRide.driver && (
                   <p className="text-xs md:text-sm text-muted-foreground font-medium truncate">
-                    {activeRide.driver.vehicle_color} {activeRide.driver.vehicle_model} • <span className="text-foreground uppercase bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">{activeRide.driver.plate_number}</span>
+                    {activeRide.driver.vehicle_color} {activeRide.driver.vehicle_model} • <span className="text-foreground uppercase bg-muted px-1.5 py-0.5 rounded border border-border">{activeRide.driver.plate_number}</span>
                   </p>
                 )}
               </div>
@@ -693,7 +693,7 @@ const StudentDashboard = () => {
                         {passengerBriefing.eta_text}
                       </span>
                     ) : (
-                      <span className="text-xs font-semibold text-gold/80 tracking-wider uppercase animate-pulse">
+                      <span className="text-xs font-semibold text-muted-foreground tracking-wider uppercase animate-pulse">
                         Calculating...
                       </span>
                     )}
@@ -712,7 +712,7 @@ const StudentDashboard = () => {
             >
                    {/* Driver Profile Card */}
                    {activeRide.driver && (
-                     <div className="flex items-center gap-4 bg-zinc-50 dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800">
+                     <div className="flex items-center gap-4 bg-muted/40 p-4 rounded-2xl border border-border">
                         {/* Static Prominent Round Driver Face Image */}
                         <div className="relative group shrink-0 rounded-full">
                           {(typeof activeRide.driver.user?.avatar_url === 'string' && activeRide.driver.user.avatar_url.trim()) ||
@@ -740,13 +740,13 @@ const StudentDashboard = () => {
                         {/* Quick Contact Icons */}
                         <div className="flex gap-2">
                            <button 
-                             className="w-10 h-10 rounded-full bg-black flex items-center justify-center active:scale-95 transition-transform"
+                             className="w-10 h-10 rounded-full bg-muted border border-border flex items-center justify-center text-foreground active:scale-95 transition-transform"
                              onClick={() => navigate(`/ride/chat/${activeRide.id}`)}
                            >
-                             <MessageCircle className="w-5 h-5 text-white" />
+                             <MessageCircle className="w-5 h-5 text-foreground" />
                            </button>
                            <button 
-                             className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center active:scale-95 transition-transform"
+                             className="w-10 h-10 rounded-full bg-muted border border-border flex items-center justify-center text-foreground active:scale-95 transition-transform"
                              onClick={() => window.location.href = `tel:${activeRide.driver.user?.phone}`}
                            >
                              <PhoneCall className="w-5 h-5 text-foreground" />
@@ -754,14 +754,14 @@ const StudentDashboard = () => {
                         </div>
                      </div>
                    )}
-                   <div className="bg-zinc-50 dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 flex flex-col gap-4">
+                   <div className="bg-muted/40 p-4 rounded-2xl border border-border flex flex-col gap-4">
                       <div className="flex items-start gap-3 relative">
-                         <div className="absolute left-[11px] top-6 bottom-[-20px] w-0.5 bg-zinc-300 dark:bg-zinc-700 border-dashed" />
-                         <div className="w-6 h-6 rounded-full bg-black flex items-center justify-center shrink-0 z-10 mt-1">
-                           <div className="w-2 h-2 rounded-full bg-white" />
+                         <div className="absolute left-[11px] top-6 bottom-[-20px] w-0.5 bg-border border-dashed" />
+                         <div className="w-6 h-6 rounded-full bg-black dark:bg-white flex items-center justify-center shrink-0 z-10 mt-1">
+                           <div className="w-2 h-2 rounded-full bg-white dark:bg-black" />
                          </div>
                          <div className="flex-1 min-w-0">
-                           <p className="font-medium text-sm line-clamp-1">{activeRide.pickup_location?.address}</p>
+                           <p className="font-medium text-sm text-foreground line-clamp-1">{activeRide.pickup_location?.address}</p>
                          </div>
                       </div>
                       
@@ -770,7 +770,7 @@ const StudentDashboard = () => {
                            <div className="w-2 h-2 rounded-full bg-white" />
                          </div>
                          <div className="flex-1 min-w-0">
-                           <p className="font-medium text-sm line-clamp-1">{activeRide.dropoff_location?.address}</p>
+                           <p className="font-medium text-sm text-foreground line-clamp-1">{activeRide.dropoff_location?.address}</p>
                          </div>
                          <div className="text-right shrink-0">
                            <p className="text-xs text-muted-foreground">Fare</p>
@@ -785,7 +785,7 @@ const StudentDashboard = () => {
                      {['requested', 'accepted', 'driver_accepted', 'driver_en_route_to_pickup', 'driver_arrived', 'passenger_boarding'].includes(activeRide.status) && (
                         <button 
                           onClick={handleCancelRide} 
-                          className="w-full py-4 bg-zinc-100 dark:bg-zinc-900 text-red-500 rounded-xl font-bold text-base active:scale-95 transition-transform"
+                          className="w-full py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-xl font-bold text-base active:scale-95 transition-transform cursor-pointer"
                         >
                           Cancel Ride
                         </button>
@@ -802,9 +802,9 @@ const StudentDashboard = () => {
                           </button>
                           <button
                             onClick={() => window.dispatchEvent(new CustomEvent('open-bug-report-modal', { detail: { isFromActiveRide: true, locationData: userLocation } }))}
-                            className="shrink-0 px-3 py-2 bg-[#2B2B2B] hover:bg-[#383838] border border-white/10 text-white rounded-xl font-medium text-xs active:scale-95 transition-all flex flex-col items-center justify-center gap-0.5 shadow-md"
+                            className="shrink-0 px-3 py-2 bg-muted hover:bg-muted/80 border border-border text-foreground rounded-xl font-medium text-xs active:scale-95 transition-all flex flex-col items-center justify-center gap-0.5 shadow-md"
                           >
-                            <Bug className="w-4 h-4 text-white" />
+                            <Bug className="w-4 h-4 text-foreground" />
                             <span className="text-[10px] leading-none">Report bug</span>
                           </button>
                         </div>
@@ -858,15 +858,19 @@ const StudentDashboard = () => {
           </div>
 
           {/* Hero Top-Down Car with Yellow Circle Background (Moved down with breathing room) */}
-          <div className="relative flex flex-col items-center justify-center w-full pt-8 sm:pt-10 md:pt-12 pb-2 overflow-hidden">
-            {/* Yellow/Gold Circle Background (Positioned comfortably below greeting) */}
-            <div className="relative w-56 h-56 md:w-64 md:h-64 rounded-full bg-amber-400 flex items-center justify-center mt-2 mb-2">
-              {/* Top-Down Transparent Car Image (Bigger than circle, overflowing cleanly) */}
+          <div className="relative w-full flex flex-col items-center justify-center pt-8 sm:pt-10 md:pt-12 pb-2">
+            {/* Top-Down Hero Car Image & Circle */}
+            <div className="relative w-64 h-64 md:w-80 md:h-80 flex items-center justify-center">
+              {/* Yellow circular backdrop */}
+              <div className="w-52 h-52 md:w-64 md:h-64 rounded-full bg-amber-400/90 shadow-2xl flex items-center justify-center" />
+
+              {/* Dynamic Top-Down Car Graphic */}
               <motion.img
-                src="/car_top.png"
-                alt="Ride Car"
-                initial={{ y: 0, scale: 1, opacity: 1 }}
-                animate={isDriving ? { y: 450, scale: 0.85, opacity: [1, 1, 0] } : { y: 0, scale: 1, opacity: 1 }}
+                src={heroCarImage}
+                alt="Selected Vehicle"
+                key={heroCarImage}
+                initial={{ opacity: 0, scale: 0.85 }}
+                animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.85, ease: [0.45, 0, 0.55, 1] }}
                 className="w-60 md:w-72 h-auto drop-shadow-xl z-10 select-none pointer-events-none absolute"
               />
@@ -892,29 +896,26 @@ const StudentDashboard = () => {
           </div>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 gap-4">
-          <GlassCard className="p-4" hover={false}>
+        {/* Quick Stats - Standalone Clean Icons without Background Boxes */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <GlassCard className="p-3.5 sm:p-4" hover={false}>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                <Car weight="duotone" className="w-5 h-5 text-blue-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-heading font-bold text-foreground">
+              <Car weight="duotone" className="w-7 h-7 text-blue-500 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xl sm:text-2xl font-heading font-bold text-foreground leading-tight">
                   {AppCache.get('history')?.length || recentRides.length}
                 </p>
-                <p className="text-xs text-muted-foreground">Total Rides</p>
+                <p className="text-[11px] sm:text-xs text-muted-foreground font-medium whitespace-nowrap mt-0.5">Total Rides</p>
               </div>
             </div>
           </GlassCard>
-          <GlassCard className="p-4 cursor-pointer hover:border-gold/30 transition-all" hover={false} onClick={() => navigate('/ride')}>
+
+          <GlassCard className="p-3.5 sm:p-4 cursor-pointer hover:border-gold/30 transition-all" hover={false} onClick={() => navigate('/ride')}>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                <Clock className="w-5 h-5 text-amber-400" />
-              </div>
+              <Clock className="w-7 h-7 text-amber-500 shrink-0" />
               <div className="min-w-0">
-                <p className="text-xl md:text-2xl font-heading font-bold text-foreground truncate">~3 min</p>
-                <p className="text-xs text-muted-foreground truncate">Avg. Campus Wait</p>
+                <p className="text-xl sm:text-2xl font-heading font-bold text-foreground leading-tight">~3 min</p>
+                <p className="text-[11px] sm:text-xs text-muted-foreground font-medium whitespace-nowrap mt-0.5">Avg. Wait Time</p>
               </div>
             </div>
           </GlassCard>

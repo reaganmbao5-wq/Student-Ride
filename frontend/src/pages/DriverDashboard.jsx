@@ -963,9 +963,9 @@ const DriverDashboard = () => {
                             >
                               {pIndex}
                             </span>
-                            <span className="font-bold text-lg">{ride.student?.name || 'Passenger'}</span>
+                            <span className="font-bold text-lg text-foreground">{ride.student?.name || 'Passenger'}</span>
                           </div>
-                          <span className={`text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ${rideStatusStr === 'ACTIVE' ? 'bg-blue-500/10 text-blue-600' : 'bg-zinc-100 dark:bg-zinc-800 text-muted-foreground'}`}>
+                          <span className={`text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ${rideStatusStr === 'ACTIVE' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' : 'bg-muted text-muted-foreground'}`}>
                             {rideStatusStr}
                           </span>
                         </div>
@@ -974,11 +974,11 @@ const DriverDashboard = () => {
                         <div className="flex flex-col gap-2">
                           <div className="flex justify-between items-start">
                             <span className="text-sm text-muted-foreground uppercase tracking-wider font-bold">Pickup:</span>
-                            <span className="text-sm font-medium text-right max-w-[60%] truncate">{ride.pickup_location?.address}</span>
+                            <span className="text-sm font-medium text-foreground text-right max-w-[60%] truncate">{ride.pickup_location?.address}</span>
                           </div>
                           <div className="flex justify-between items-start">
                             <span className="text-sm text-muted-foreground uppercase tracking-wider font-bold">Destination:</span>
-                            <span className="text-sm font-medium text-right max-w-[60%] truncate">{ride.dropoff_location?.address}</span>
+                            <span className="text-sm font-medium text-foreground text-right max-w-[60%] truncate">{ride.dropoff_location?.address}</span>
                           </div>
                           <div className="flex justify-between items-start mt-2">
                             <span className="text-lg font-bold text-gold uppercase tracking-wider">K{ride.driver_earning?.toFixed(2)}</span>
@@ -988,14 +988,14 @@ const DriverDashboard = () => {
                         {/* Quick Contact Icons */}
                         <div className="flex gap-2 mt-2">
                            <button 
-                             className="flex-1 py-3 rounded-xl bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center gap-2 active:scale-95 transition-transform"
+                             className="flex-1 py-3 rounded-xl bg-muted text-foreground border border-border flex items-center justify-center gap-2 active:scale-95 transition-transform"
                              onClick={() => navigate(`/ride/chat/${ride.id}`)}
                            >
                              <MessageCircle className="w-5 h-5" />
                              <span className="font-bold">Chat</span>
                            </button>
                            <button 
-                             className="flex-1 py-3 rounded-xl bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center gap-2 active:scale-95 transition-transform"
+                             className="flex-1 py-3 rounded-xl bg-muted text-foreground border border-border flex items-center justify-center gap-2 active:scale-95 transition-transform"
                              onClick={() => window.location.href = `tel:${ride.student?.phone}`}
                            >
                              <PhoneCall className="w-5 h-5" />
@@ -1007,10 +1007,10 @@ const DriverDashboard = () => {
                         <div className="flex flex-col gap-3 pt-2">
                            {['accepted', 'driver_accepted'].includes(ride.status) && (
                               <div className="flex gap-2">
-                                 <button onClick={() => handleCancelRide(ride)} className="w-1/3 py-4 bg-zinc-100 dark:bg-zinc-900 text-red-500 rounded-xl font-bold active:scale-95 transition-transform">
+                                 <button onClick={() => handleCancelRide(ride)} className="w-1/3 py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-xl font-bold active:scale-95 transition-transform">
                                    Cancel
                                  </button>
-                                 <button onClick={() => handleDriverArrived(ride)} className="w-2/3 py-4 bg-black text-white rounded-xl font-bold active:scale-95 transition-transform">
+                                 <button onClick={() => handleDriverArrived(ride)} className="w-2/3 py-4 bg-primary text-primary-foreground rounded-xl font-bold active:scale-95 transition-transform">
                                    I've Arrived
                                  </button>
                               </div>
@@ -1085,7 +1085,7 @@ const DriverDashboard = () => {
                 onClick={toggleSimulating}
                 className={`text-xs px-3 py-1.5 rounded-lg border transition-all shadow-sm ${isSimulating
                   ? 'bg-amber-500/10 border-amber-500 text-amber-600 font-bold'
-                  : 'bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50'
+                  : 'bg-muted border-border text-foreground hover:bg-muted/80'
                   }`}
                 title="When ON, your phone's real GPS is ignored so Python scripts can simulate movement smoothly."
               >
@@ -1138,47 +1138,39 @@ const DriverDashboard = () => {
           </p>
         </GlassCard>
 
-        {/* Earnings Summary */}
+        {/* Earnings Summary - Standalone Clean Icons without Background Boxes */}
         {earnings && (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <GlassCard className="p-4" hover={false}>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+            <GlassCard className="p-3.5 sm:p-4" hover={false}>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center">
-                  <CurrencyCircleDollar weight="duotone" className="w-5 h-5 text-gold" />
-                </div>
-                <div>
-                  <p className="text-lg font-heading font-bold text-foreground">
+                <CurrencyCircleDollar weight="duotone" className="w-7 h-7 text-amber-500 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xl sm:text-2xl font-heading font-bold text-foreground leading-tight">
                     K{earnings.today_earnings?.toFixed(2)}
                   </p>
-                  <p className="text-xs text-muted-foreground">Today</p>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground font-medium mt-0.5">Today</p>
                 </div>
               </div>
             </GlassCard>
 
-            <GlassCard className="p-4" hover={false}>
+            <GlassCard className="p-3.5 sm:p-4" hover={false}>
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${driverProfile?.wallet_status === 'restricted' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/10 text-blue-400'
-                  }`}>
-                  <Wallet weight="duotone" className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className={`text-lg font-heading font-bold ${driverProfile?.wallet_status === 'restricted' ? 'text-red-400' : 'text-foreground'
-                    }`}>
+                <Wallet weight="duotone" className={`w-7 h-7 shrink-0 ${driverProfile?.wallet_status === 'restricted' ? 'text-red-500' : 'text-blue-500'}`} />
+                <div className="min-w-0">
+                  <p className={`text-xl sm:text-2xl font-heading font-bold leading-tight ${driverProfile?.wallet_status === 'restricted' ? 'text-red-500' : 'text-foreground'}`}>
                     K{driverProfile?.wallet_balance?.toFixed(2)}
                   </p>
-                  <p className="text-xs text-muted-foreground">Wallet Bal</p>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground font-medium mt-0.5">Wallet Bal</p>
                 </div>
               </div>
             </GlassCard>
 
-            <GlassCard className="p-4 col-span-2 md:col-span-1" hover={false}>
+            <GlassCard className="p-3.5 sm:p-4 col-span-2 md:col-span-1" hover={false}>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                  <Car weight="duotone" className="w-5 h-5 text-emerald-400" />
-                </div>
-                <div>
-                  <p className="text-lg font-heading font-bold text-foreground">{earnings.total_rides}</p>
-                  <p className="text-xs text-muted-foreground">Total Rides</p>
+                <Car weight="duotone" className="w-7 h-7 text-emerald-500 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xl sm:text-2xl font-heading font-bold text-foreground leading-tight">{earnings.total_rides}</p>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground font-medium mt-0.5">Total Rides</p>
                 </div>
               </div>
             </GlassCard>
