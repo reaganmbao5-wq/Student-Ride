@@ -899,8 +899,8 @@ const StudentDashboard = () => {
 
           {/* Hero Top-Down Car with Yellow Circle Background (Moved down with breathing room) */}
           <div className="relative w-full flex flex-col items-center justify-center pt-8 sm:pt-10 md:pt-12 pb-2">
-            {/* Top-Down Hero Car Image & Circle */}
-            <div className="relative w-64 h-64 md:w-80 md:h-80 flex items-center justify-center">
+            {/* Top-Down Hero Car Image & Circle (Clipped to container boundary so driving animation vanishes cleanly) */}
+            <div className="relative w-64 h-64 md:w-80 md:h-80 flex items-center justify-center overflow-hidden">
               {/* Yellow circular backdrop */}
               <div className="w-52 h-52 md:w-64 md:h-64 rounded-full bg-amber-400/90 shadow-2xl flex items-center justify-center" />
 
@@ -909,7 +909,7 @@ const StudentDashboard = () => {
                 src="/car_top.png"
                 alt="Ride Car"
                 initial={{ y: 0, scale: 1, opacity: 1 }}
-                animate={isDriving ? { y: 450, scale: 0.85, opacity: [1, 1, 0] } : { y: 0, scale: 1, opacity: 1 }}
+                animate={isDriving ? { y: 350, scale: 0.85, opacity: [1, 1, 0] } : { y: 0, scale: 1, opacity: 1 }}
                 transition={{ duration: 0.85, ease: [0.45, 0, 0.55, 1] }}
                 className="w-60 md:w-72 h-auto drop-shadow-xl z-10 select-none pointer-events-none absolute"
               />
