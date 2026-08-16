@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { Car, Eye, EyeOff, ArrowLeft, Mail, Phone, User as UserIcon, Lock, UploadCloud, FileText, CheckCircle2, Camera as CameraIcon } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, Mail, Phone, User as UserIcon, Lock, UploadCloud, FileText, CheckCircle2, Camera as CameraIcon } from 'lucide-react';
+import { Car } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { GoogleLogin } from '@react-oauth/google';
@@ -388,7 +389,7 @@ const AuthPage = () => {
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <div className="flex items-center justify-between p-4 bg-zinc-900/50 rounded-xl mb-4 border border-zinc-800/50">
                   <div className="flex items-center gap-3">
-                    <Car className="w-5 h-5 text-gold" />
+                    <Car weight="duotone" className="w-5 h-5 text-gold" />
                     <span className="text-zinc-200 text-sm font-medium">Register as Driver</span>
                   </div>
                   <button

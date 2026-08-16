@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Car, ArrowLeft, Loader2, UploadCloud, FileText, CheckCircle2, Camera } from 'lucide-react';
+import { ArrowLeft, Loader2, UploadCloud, FileText, CheckCircle2, Camera } from 'lucide-react';
 import { GlassCard, GlassInput, GoldButton } from '../components/common/GlassComponents';
 import { useAuth } from '../context/AuthContext';
 import { compressImage } from '../utils/imageCompressor';
 import { toast } from 'sonner';
+import { showFriendlyError } from '../utils/errorHandler';
 
 const DriverRegisterPage = () => {
   const navigate = useNavigate();
@@ -99,17 +100,17 @@ const DriverRegisterPage = () => {
       }, 500);
     } catch (error) {
       console.error('Registration error:', error);
-      toast.error(error.response?.data?.detail || 'Registration failed. Please try again.');
+      showFriendlyError(error, 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0B0B] flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-[#0B0B0B] flex items-center justify-center p-4 relative overflow-y-auto overflow-x-hidden w-full max-w-full">
       {/* Background */}
-      <div className="absolute inset-0">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-gold/5 rounded-full blur-[150px]" />
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-gold/5 rounded-full blur-[100px]" />
       </div>
 
       {/* Back Button */}
@@ -122,12 +123,10 @@ const DriverRegisterPage = () => {
         <span>Back</span>
       </button>
 
-      <div className="relative z-10 w-full max-w-md">
+      <div className="relative z-10 w-full max-w-md mx-auto my-auto">
         {/* Logo */}
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-gold flex items-center justify-center shadow-gold">
-            <Car className="w-7 h-7 text-black" />
-          </div>
+        <div className="flex items-center justify-center gap-3 mb-6">
+          <img src="/assets/images/jride_text_white.png" alt="JRide" className="h-10 w-auto object-contain" />
         </div>
 
         <GlassCard className="p-8" data-testid="driver-register-card">

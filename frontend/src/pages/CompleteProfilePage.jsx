@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { GlassCard, GlassInput, GoldButton, LoadingSpinner } from '../components/common/GlassComponents';
-import { Car, Phone, Lock, User, Mail, CheckCircle } from 'lucide-react';
+import { Phone, Lock, User, Mail, CheckCircle } from 'lucide-react';
+import { Car } from '@phosphor-icons/react';
 import { toast } from 'sonner';
-import { getOnlineWebUrl, openExternalUrl } from '../utils/urlHelpers';
+import { getOnlineWebUrl, openExternalUrl, getBackendUrl } from '../utils/urlHelpers';
+import { showFriendlyError } from '../utils/errorHandler';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://student-ride-backend-manual.onrender.com';
+const BACKEND_URL = getBackendUrl();
 
 const Checkbox = React.forwardRef(({ className, checked, onChange, ...props }, ref) => (
   <button
@@ -93,7 +95,7 @@ export default function CompleteProfilePage() {
             });
 
             if (!res.ok) {
-                const err = await res.json();
+                const err = await res.json().catch(() => ({}));
                 throw new Error(err.detail || 'Failed to update profile');
             }
 
@@ -102,25 +104,23 @@ export default function CompleteProfilePage() {
             // Reload into the dashboard so AuthContext picks up the stored token
             window.location.href = isDriver ? '/driver/register' : '/dashboard';
         } catch (err) {
-            toast.error(err.message);
+            showFriendlyError(err, 'Failed to update profile. Please try again.');
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-background flex items-start justify-center p-4 pt-16 pb-8 relative overflow-y-auto transition-colors duration-300">
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 py-8 relative overflow-x-hidden w-full max-w-full transition-colors duration-300">
             {/* Background glow */}
-            <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-gold/5 rounded-full blur-[150px]" />
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-gold/5 rounded-full blur-[100px]" />
             </div>
 
-            <div className="relative z-10 w-full max-w-md my-auto">
+            <div className="relative z-10 w-full max-w-md mx-auto my-auto">
                 {/* Logo */}
-                <div className="flex flex-col items-center gap-3 mb-8">
-                    <div className="w-16 h-16 rounded-2xl bg-gold flex items-center justify-center shadow-gold">
-                        <Car className="w-8 h-8 text-black" />
-                    </div>
+                <div className="flex flex-col items-center gap-3 mb-6">
+                    <img src="/assets/images/jride_text_white.png" alt="JRide" className="h-10 w-auto object-contain mb-1" />
                     <div className="text-center">
                         <h1 className="font-heading text-2xl font-bold text-foreground">Almost there!</h1>
                         <p className="text-muted-foreground text-sm mt-1">Just a few more details to get you riding</p>
@@ -210,7 +210,7 @@ export default function CompleteProfilePage() {
                         {/* Driver toggle */}
                         <div className="flex items-center justify-between p-4 bg-muted rounded-xl">
                             <div className="flex items-center gap-3">
-                                <Car className="w-5 h-5 text-gold" />
+                                <Car weight="duotone" className="w-5 h-5 text-gold" />
                                 <div>
                                     <p className="text-foreground text-sm font-medium">Join as a Driver</p>
                                     <p className="text-muted-foreground text-xs">Earn money by driving students</p>

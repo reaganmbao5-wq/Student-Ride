@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Car, Search, Check, X, Star, AlertCircle, Wallet, Plus, Loader2, FileText, Eye } from 'lucide-react';
+import { Search, Check, X, Star, AlertCircle, Wallet, Plus, Loader2, FileText, Eye } from 'lucide-react';
+import { Car } from '@phosphor-icons/react';
 import { GlassCard, GlassInput, GoldButton, LoadingSpinner, EmptyState } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
@@ -274,7 +275,7 @@ const AdminDriversPage = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center shrink-0">
-                      <Car className="w-6 h-6 text-gold" />
+                      <Car weight="duotone" className="w-6 h-6 text-gold" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
@@ -420,7 +421,7 @@ const AdminDriversPage = () => {
             <div className="space-y-6 mt-4">
               <div className="flex items-center gap-4 p-4 bg-muted rounded-xl">
                 <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center">
-                  <Car className="w-6 h-6 text-gold" />
+                  <Car weight="duotone" className="w-6 h-6 text-gold" />
                 </div>
                 <div>
                   <p className="text-foreground font-bold">{selectedDriver?.user?.name}</p>

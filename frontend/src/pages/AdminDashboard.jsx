@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UsersThree, SteeringWheel, MapPin, Clock, TrendUp, Warning, Shield } from '@phosphor-icons/react';
+import { UsersThree, SteeringWheel, MapPin, Clock, TrendUp, Warning, Shield, Car } from '@phosphor-icons/react';
 import { TrendingUp } from 'lucide-react';
 import { GlassCard, LoadingSpinner, StatusBadge } from '../components/common/GlassComponents';
 import { RideMap } from '../map/components/RideMap';
@@ -261,7 +261,7 @@ const AdminDashboard = () => {
                   <div key={ride.id} className="flex items-center justify-between p-3 bg-muted rounded-xl border border-border">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-gold/10 flex items-center justify-center">
-                        <Car className="w-4 h-4 text-gold" />
+                        <Car weight="duotone" className="w-4 h-4 text-gold" />
                       </div>
                       <div>
                         <p className="text-foreground text-sm font-medium">

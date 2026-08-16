@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { GlassCard, GlassInput, GoldButton } from '../common/GlassComponents';
-import { Settings, Save, RefreshCw, ShieldAlert, Percent, Car } from 'lucide-react';
+import { Settings, Save, RefreshCw, ShieldAlert, Percent } from 'lucide-react';
+import { Car } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
 const PricingGlobalSettings = () => {
@@ -81,7 +82,7 @@ const PricingGlobalSettings = () => {
                     {/* Left Column: Base Rates */}
                     <div className="space-y-4">
                         <h3 className="text-foreground font-medium border-b border-border pb-2 flex items-center gap-2">
-                            <Car className="w-4 h-4 text-gold" />
+                            <Car weight="duotone" className="w-4 h-4 text-gold" />
                             Base Distance & Time Rates
                         </h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
