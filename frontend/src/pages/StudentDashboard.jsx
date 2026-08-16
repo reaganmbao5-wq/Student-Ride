@@ -897,37 +897,34 @@ const StudentDashboard = () => {
             </p>
           </div>
 
-          {/* Hero Top-Down Car with Yellow Circle Background (Moved down with breathing room) */}
-          <div className="relative w-full flex flex-col items-center justify-center pt-8 sm:pt-10 md:pt-12 pb-2">
-            {/* Top-Down Hero Car Image & Circle (Unclipped stationary look with smooth drive-under exit) */}
-            <div className="relative w-64 h-64 md:w-80 md:h-80 flex items-center justify-center">
-              {/* Yellow circular backdrop */}
-              <div className="w-52 h-52 md:w-64 md:h-64 rounded-full bg-amber-400/90 shadow-2xl flex items-center justify-center" />
-
-              {/* Dynamic Top-Down Car Graphic */}
+          {/* Hero Top-Down Car with Yellow Circle Background (Exact commit 546fe09 drive-under structure) */}
+          <div className="relative w-full flex flex-col items-center justify-center pt-8 sm:pt-10 md:pt-12 pb-2 overflow-hidden">
+            {/* Yellow/Gold Circle Background (Flat yellow circle with unclipped car) */}
+            <div className="relative w-56 h-56 md:w-64 md:h-64 rounded-full bg-amber-400 flex items-center justify-center my-2">
+              {/* Top-Down Transparent Car Image (Bigger than circle, overflowing circle cleanly) */}
               <motion.img
                 src="/car_top.png"
                 alt="Ride Car"
                 initial={{ y: 0, scale: 1, opacity: 1 }}
-                animate={isDriving ? { y: 220, scale: 0.92, opacity: [1, 0.5, 0] } : { y: 0, scale: 1, opacity: 1 }}
-                transition={{ duration: 0.65, ease: [0.45, 0, 0.55, 1] }}
+                animate={isDriving ? { y: 450, scale: 0.85, opacity: [1, 1, 0] } : { y: 0, scale: 1, opacity: 1 }}
+                transition={{ duration: 0.85, ease: [0.45, 0, 0.55, 1] }}
                 className="w-60 md:w-72 h-auto drop-shadow-xl z-10 select-none pointer-events-none absolute"
               />
             </div>
 
-            {/* Subtext Guidance (Positioned right below front of car) */}
-            <p className="text-xs md:text-sm text-muted-foreground font-medium mt-6 md:mt-8 mb-3 max-w-xs">
+            {/* Subtext Guidance (Positioned above car layer with z-20) */}
+            <p className="text-xs md:text-sm text-muted-foreground font-medium mt-10 md:mt-12 mb-4 max-w-xs relative z-20">
               Tap to set your pickup point and destination
             </p>
 
-            {/* Request a Ride Button */}
+            {/* Request a Ride Button (Positioned above car layer with z-20 so car drives under it) */}
             <motion.button
               type="button"
               onClick={handleRequestRideClick}
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.96 }}
               disabled={isDriving}
-              className="w-full max-w-xs py-4 px-8 rounded-2xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-black font-heading font-bold text-base md:text-lg shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 z-20"
+              className="w-full max-w-xs py-4 px-8 rounded-2xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-black font-heading font-bold text-base md:text-lg shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 relative z-20"
               data-testid="request-ride-card"
             >
               <span>Request a Ride</span>
