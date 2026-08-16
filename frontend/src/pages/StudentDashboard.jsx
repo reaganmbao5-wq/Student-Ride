@@ -973,7 +973,7 @@ const StudentDashboard = () => {
           </div>
 
           {recentRides.length > 0 ? (
-            <div className="bg-neutral-950/90 rounded-3xl overflow-hidden shadow-2xl border-0">
+            <div className="bg-card rounded-3xl overflow-hidden shadow-lg border border-border">
               {recentRides.slice(0, 3).map((ride) => (
                 <SwipableRideCard
                   key={ride.id}
@@ -1007,13 +1007,13 @@ const StudentDashboard = () => {
         {/* Delete Confirmation Popup Modal */}
         <AnimatePresence>
           {rideToDelete && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
               <motion.div
                 initial={{ opacity: 0, scale: 0.92, y: 15 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.92, y: 15 }}
                 transition={{ duration: 0.2 }}
-                className="w-full max-w-sm bg-neutral-900 border-0 rounded-3xl p-6 shadow-2xl backdrop-blur-2xl relative space-y-4"
+                className="w-full max-w-sm bg-card border border-border rounded-3xl p-6 shadow-2xl backdrop-blur-2xl relative space-y-4"
               >
                 <div className="flex flex-col items-center text-center space-y-3">
                   <div className="w-14 h-14 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500">
@@ -1021,15 +1021,15 @@ const StudentDashboard = () => {
                   </div>
 
                   <div>
-                    <h3 className="text-xl font-bold font-heading text-white">Delete Ride Record?</h3>
-                    <p className="text-xs text-neutral-400 mt-1">
+                    <h3 className="text-xl font-bold font-heading text-foreground">Delete Ride Record?</h3>
+                    <p className="text-xs text-muted-foreground mt-1">
                       Are you sure you want to delete this trip from your history?
                     </p>
                   </div>
 
                   {/* Ride Summary Preview */}
-                  <div className="w-full bg-white/5 rounded-2xl p-3.5 text-left space-y-1.5 text-xs text-neutral-300">
-                    <div className="flex justify-between font-semibold text-white">
+                  <div className="w-full bg-muted/40 border border-border rounded-2xl p-3.5 text-left space-y-1.5 text-xs text-foreground">
+                    <div className="flex justify-between font-semibold text-foreground">
                       <span>
                         {new Date(rideToDelete.created_at).toLocaleDateString('en-US', {
                           month: 'short',
@@ -1041,11 +1041,11 @@ const StudentDashboard = () => {
                         K{rideToDelete.fare?.toFixed(2) || '0.00'}
                       </span>
                     </div>
-                    <p className="truncate text-neutral-400">
+                    <p className="truncate text-muted-foreground">
                       <span className="text-gold font-medium">From:</span> {rideToDelete.pickup_location?.address || 'Pickup'}
                     </p>
-                    <p className="truncate text-neutral-400">
-                      <span className="text-emerald-400 font-medium">To:</span> {rideToDelete.dropoff_location?.address || 'Dropoff'}
+                    <p className="truncate text-muted-foreground">
+                      <span className="text-emerald-500 font-medium">To:</span> {rideToDelete.dropoff_location?.address || 'Dropoff'}
                     </p>
                   </div>
 
@@ -1054,7 +1054,7 @@ const StudentDashboard = () => {
                     <button
                       type="button"
                       onClick={() => setRideToDelete(null)}
-                      className="flex-1 py-3 px-4 rounded-xl border-0 bg-white/5 hover:bg-white/10 text-white text-xs font-semibold transition-colors cursor-pointer"
+                      className="flex-1 py-3 px-4 rounded-xl border border-border bg-muted hover:bg-muted/80 text-foreground text-xs font-semibold transition-colors cursor-pointer"
                     >
                       Cancel
                     </button>

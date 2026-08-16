@@ -3340,6 +3340,22 @@ async def get_ride_history(
                 created_at=student["created_at"],
                 is_active=student.get("is_active", True)
             )
+        if ride.get("driver_id"):
+            driver = await db.drivers.find_one({"id": ride["driver_id"]}, {"_id": 0})
+            if driver:
+                driver_user = await db.users.find_one({"id": driver["user_id"]}, {"_id": 0})
+                if driver_user:
+                    driver["user"] = UserResponse(
+                        id=driver_user["id"],
+                        email=driver_user["email"],
+                        name=driver_user["name"],
+                        phone=driver_user.get("phone", ""),
+                        avatar_url=driver_user.get("avatar_url"),
+                        role=UserRole(driver_user["role"]),
+                        created_at=driver_user.get("created_at", datetime.now().isoformat()),
+                        is_active=driver_user.get("is_active", True)
+                    )
+                ride["driver"] = DriverResponse(**driver)
         result.append(RideResponse(**ride))
     
     return result

@@ -79,19 +79,28 @@ GoldButton.displayName = "GoldButton";
 
 export const StatusBadge = ({ status }) => {
   const statusConfig = {
-    requested: { label: 'Requested', className: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' },
-    accepted: { label: 'Accepted', className: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
-    driver_arrived: { label: 'Driver Arrived', className: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },
-    ongoing: { label: 'Ongoing', className: 'bg-green-500/20 text-green-400 border-green-500/30' },
-    completed: { label: 'Completed', className: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' },
-    cancelled: { label: 'Cancelled', className: 'bg-red-500/20 text-red-400 border-red-500/30' }
+    requested: { label: 'Requested', className: 'text-amber-600 dark:text-amber-400 font-bold' },
+    accepted: { label: 'Accepted', className: 'text-blue-600 dark:text-blue-400 font-bold' },
+    driver_accepted: { label: 'Accepted', className: 'text-blue-600 dark:text-blue-400 font-bold' },
+    driver_en_route_to_pickup: { label: 'En Route', className: 'text-blue-600 dark:text-blue-400 font-bold' },
+    driver_arrived: { label: 'Driver Arrived', className: 'text-purple-600 dark:text-purple-400 font-bold' },
+    passenger_boarding: { label: 'Boarding', className: 'text-purple-600 dark:text-purple-400 font-bold' },
+    ride_started: { label: 'Ongoing', className: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+    ride_in_progress: { label: 'Ongoing', className: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+    ongoing: { label: 'Ongoing', className: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+    completed: { label: 'Completed', className: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+    ride_completed: { label: 'Completed', className: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+    cancelled: { label: 'Cancelled', className: 'text-red-600 dark:text-red-500 font-bold' }
   };
 
-  const config = statusConfig[status] || statusConfig.requested;
+  const config = statusConfig[status] || { 
+    label: status ? status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Active', 
+    className: 'text-muted-foreground font-bold' 
+  };
 
   return (
     <span className={cn(
-      "inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border",
+      "inline-flex items-center text-xs md:text-sm tracking-tight",
       config.className
     )}>
       {config.label}

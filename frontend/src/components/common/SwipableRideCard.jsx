@@ -34,7 +34,7 @@ export const SwipableRideCard = ({
 
   return (
     <div 
-      className="relative overflow-hidden border-b border-white/10 w-full transition-colors last:border-b-0" 
+      className="relative overflow-hidden border-b border-border w-full transition-colors last:border-b-0" 
       data-testid={`history-ride-${ride.id}`}
     >
       {/* Background Action: Revealed ONLY when sliding left */}
@@ -77,8 +77,8 @@ export const SwipableRideCard = ({
         }}
         animate={{ x: swipeOffset }}
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-        className={`relative z-10 w-full bg-card hover:bg-muted/50 text-card-foreground transition-colors ${
-          isExpanded ? 'bg-muted/40' : ''
+        className={`relative z-10 w-full bg-card hover:bg-muted/40 text-card-foreground transition-colors ${
+          isExpanded ? 'bg-muted/20' : ''
         }`}
       >
         {/* Collapsed Item Summary View */}
@@ -138,19 +138,17 @@ export const SwipableRideCard = ({
           {/* Collapsed Footer (Fare & Driver/Passenger Info) */}
           <div className="flex items-center justify-between pt-2">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center text-gold">
-                <Car weight="duotone" className="w-4 h-4" />
-              </div>
+              <Car weight="duotone" className="w-5 h-5 text-gold shrink-0" />
               <span className="text-xs text-muted-foreground font-medium truncate max-w-[150px] md:max-w-[220px]">
-                {isDriver ? ride.student?.name || 'Passenger' : ride.driver?.user?.name || 'Driver'}
+                {isDriver ? ride.student?.name || 'Passenger' : (ride.driver?.user?.name || ride.driver_name || (ride.status === 'cancelled' && !ride.driver_id ? 'No driver assigned' : 'Driver'))}
               </span>
             </div>
 
             <div className="flex items-center gap-3">
-              <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${
+              <span className={`text-[10px] uppercase font-bold tracking-wider ${
                 ride.ride_mode === 'shared' 
-                  ? 'bg-blue-500/10 text-blue-400' 
-                  : 'bg-amber-500/10 text-amber-400'
+                  ? 'text-blue-600 dark:text-blue-400' 
+                  : 'text-amber-600 dark:text-amber-400'
               }`}>
                 {ride.ride_mode === 'shared' ? 'Shared' : 'Private'}
               </span>
@@ -173,7 +171,7 @@ export const SwipableRideCard = ({
             >
               <div className="py-4 px-4 md:px-6 space-y-4">
                 {/* Complete Route Timeline */}
-                <div className="bg-muted/50 border border-border/50 p-4 rounded-2xl space-y-3">
+                <div className="bg-muted/40 border border-border p-4 rounded-2xl space-y-3">
                   <h4 className="text-xs uppercase font-bold text-muted-foreground tracking-wider">
                     Full Trip Details
                   </h4>
@@ -197,19 +195,19 @@ export const SwipableRideCard = ({
 
                 {/* Driver / Ride Specs Grid */}
                 <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="bg-muted/50 border border-border/50 p-3.5 rounded-2xl">
+                  <div className="bg-muted/40 border border-border p-3.5 rounded-2xl">
                     <p className="text-muted-foreground mb-1 text-[11px]">{isDriver ? 'Passenger' : 'Driver'}</p>
                     <p className="font-semibold text-foreground text-sm truncate">
-                      {isDriver ? ride.student?.name || 'Passenger' : ride.driver?.user?.name || 'N/A'}
+                      {isDriver ? ride.student?.name || 'Passenger' : (ride.driver?.user?.name || ride.driver_name || (ride.status === 'cancelled' && !ride.driver_id ? 'No driver assigned' : 'N/A'))}
                     </p>
-                    {!isDriver && ride.driver?.plate_number && (
-                      <p className="text-gold text-[11px] font-mono mt-0.5">
-                        Plate: {ride.driver.plate_number}
+                    {!isDriver && ride.driver && (
+                      <p className="text-muted-foreground text-[11px] font-medium mt-0.5 truncate">
+                        {[ride.driver.vehicle_color, ride.driver.vehicle_model, ride.driver.plate_number].filter(Boolean).join(' • ')}
                       </p>
                     )}
                   </div>
 
-                  <div className="bg-muted/50 border border-border/50 p-3.5 rounded-2xl">
+                  <div className="bg-muted/40 border border-border p-3.5 rounded-2xl">
                     <p className="text-muted-foreground mb-1 text-[11px]">Distance & Fare</p>
                     <p className="font-semibold text-foreground text-sm">
                       {ride.distance ? ride.distance.toFixed(1) : '0'} km
@@ -225,7 +223,7 @@ export const SwipableRideCard = ({
                   {ride.status === 'completed' ? (
                     <div className="flex items-center gap-2">
                       {ride.rating ? (
-                        <div className="flex items-center gap-1.5 bg-gold/10 px-3 py-1.5 rounded-xl">
+                        <div className="flex items-center gap-1.5 px-2 py-1">
                           <Star weight="duotone" className="w-4 h-4 text-gold fill-gold" />
                           <span className="text-xs font-bold text-gold">{ride.rating}.0 Rated</span>
                         </div>
@@ -246,7 +244,7 @@ export const SwipableRideCard = ({
                     <div />
                   )}
 
-                  {/* Red Delete Button in Expanded View */}
+                  {/* Red Delete Button in Expanded View - Clean Bold Text & Icon */}
                   {onDeleteClick && (
                     <button
                       type="button"
@@ -254,9 +252,9 @@ export const SwipableRideCard = ({
                         e.stopPropagation();
                         onDeleteClick(ride);
                       }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-colors cursor-pointer ml-auto"
+                      className="flex items-center gap-1.5 px-2 py-1 text-xs font-bold text-red-600 dark:text-red-500 hover:text-red-700 transition-colors cursor-pointer ml-auto"
                     >
-                      <Trash weight="duotone" className="w-3.5 h-3.5" />
+                      <Trash weight="duotone" className="w-4 h-4 text-red-600 dark:text-red-500" />
                       Delete Record
                     </button>
                   )}

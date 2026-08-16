@@ -100,7 +100,7 @@ const AdminRidesPage = () => {
                         </span>
                       </div>
                       <div className="flex gap-2 items-center">
-                        <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded ${ride.ride_mode === 'shared' ? 'bg-blue-500/20 text-blue-500' : 'bg-zinc-100 dark:bg-zinc-800 text-muted-foreground'}`}>
+                        <span className={`text-[10px] uppercase font-bold tracking-wider ${ride.ride_mode === 'shared' ? 'text-blue-600 dark:text-blue-400' : 'text-amber-600 dark:text-amber-400'}`}>
                           {ride.ride_mode === 'shared' ? 'Shared' : 'Private'}
                         </span>
                         <StatusBadge status={ride.status} />

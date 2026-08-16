@@ -47,7 +47,7 @@ const RideRequestPage = () => {
   
   const [loading, setLoading] = useState(false);
   const [requesting, setRequesting] = useState(false);
-  const [rideMode, setRideMode] = useState('private');
+  const [rideMode, setRideMode] = useState('shared');
 
   // Debounce ref for reverse geocoding & card touch gestures
   const geocodeTimeoutRef = useRef(null);

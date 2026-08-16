@@ -252,9 +252,7 @@ const AdminDashboard = () => {
                 {activeRides.slice(0, 5).map((ride) => (
                   <div key={ride.id} className="flex items-center justify-between p-3 bg-muted rounded-xl border border-border">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gold/10 flex items-center justify-center">
-                        <Car weight="duotone" className="w-4 h-4 text-gold" />
-                      </div>
+                      <Car weight="duotone" className="w-5 h-5 text-gold shrink-0" />
                       <div>
                         <p className="text-foreground text-sm font-medium">
                           {ride.student?.name} → {ride.driver?.user?.name || 'Finding driver'}
