@@ -92,7 +92,7 @@ const AuthPage = () => {
       GoogleAuth.initialize({
         clientId: '613545438163-5eo9e0tpustjgotq6u7m7elsas8gkjst.apps.googleusercontent.com',
         scopes: ['profile', 'email'],
-        grantOfflineAccess: false,
+        grantOfflineAccess: true,
       });
     } catch (e) {
       console.warn("GoogleAuth initialization skipped/failed:", e);
@@ -275,9 +275,6 @@ const AuthPage = () => {
       }
 
       localStorage.setItem('token', data.access_token);
-      try {
-        localStorage.setItem('mulu_user_cache', JSON.stringify(data.user));
-      } catch (e) {}
 
       if (data.is_new_user) {
         navigate('/complete-profile', {
@@ -289,10 +286,9 @@ const AuthPage = () => {
         });
       } else {
         const role = data.user.role;
-        const target = role === 'admin' || role === 'super_admin' ? '/admin'
+        window.location.href = role === 'admin' || role === 'super_admin' ? '/admin'
           : role === 'driver' && !data.driver_profile_complete ? '/driver/register'
           : role === 'driver' ? '/driver' : '/dashboard';
-        navigate(target, { replace: true });
       }
 
     } catch (error) {
@@ -335,10 +331,6 @@ const AuthPage = () => {
           }
 
           localStorage.setItem('token', data.access_token);
-          try {
-            localStorage.setItem('mulu_user_cache', JSON.stringify(data.user));
-          } catch (e) {}
-
           if (data.is_new_user) {
             navigate('/complete-profile', {
               state: {
@@ -349,10 +341,9 @@ const AuthPage = () => {
             });
           } else {
             const role = data.user.role;
-            const target = role === 'admin' || role === 'super_admin' ? '/admin'
+            window.location.href = role === 'admin' || role === 'super_admin' ? '/admin'
               : role === 'driver' && !data.driver_profile_complete ? '/driver/register'
               : role === 'driver' ? '/driver' : '/dashboard';
-            navigate(target, { replace: true });
           }
         }
       } catch (err) {
@@ -377,10 +368,13 @@ const AuthPage = () => {
     if (Capacitor.isNativePlatform()) {
       setLoading(true);
       try {
+        await GoogleAuth.signOut();
+      } catch (e) {}
+      try {
         const response = await GoogleAuth.signIn();
         const idToken = response?.authentication?.idToken || response?.idToken;
         if (idToken) {
-          await handleGoogleSuccess({ credential: idToken });
+          handleGoogleSuccess({ credential: idToken });
         } else {
           throw new Error("No ID token returned by Google");
         }
