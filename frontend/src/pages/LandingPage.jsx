@@ -492,24 +492,13 @@ const LandingPage = () => {
               exit="exit"
               className="absolute inset-0 flex flex-col justify-between w-full h-full z-10 overflow-hidden"
             >
-              {/* Top Brand Header (Aligned Left: Brand Badge + Geometric Text Header) */}
-              <div className="w-full pt-8 sm:pt-12 px-6 sm:px-10 md:px-14 lg:px-20 flex items-center justify-start gap-3.5 z-20 overflow-hidden">
-                {/* Brand Badge Squircle */}
-                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-black/70 border border-white/20 p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.5)] backdrop-blur-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
-                  <img
-                    src="/assets/images/jride_app_icon.png"
-                    alt="JRide Car Logo"
-                    className="w-full h-full object-contain rounded-xl select-none"
-                    onError={(e) => { e.currentTarget.src = '/assets/images/Jaey-logo.png'; }}
-                  />
-                </div>
-
-                {/* JRIDE Text */}
-                <div className="flex flex-col justify-center">
-                  <span className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-[0.18em] text-white uppercase font-sans drop-shadow-md select-none">
-                    JRIDE
-                  </span>
-                </div>
+              {/* Top Header: Clean Transparent White Logo positioned in the top-left corner */}
+              <div className="w-full pt-8 sm:pt-12 px-6 sm:px-10 md:px-14 lg:px-20 flex items-center justify-start z-20">
+                <img
+                  src="/assets/images/jride_text_white.png"
+                  alt="JRide"
+                  className="h-9 sm:h-12 md:h-14 lg:h-16 w-auto object-contain drop-shadow-2xl select-none"
+                />
               </div>
 
               {/* Bottom Hero Content & Wide Dynamic CTA */}
