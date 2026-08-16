@@ -449,9 +449,17 @@ const LandingPage = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-black/85" />
       </div>
 
-      {/* Top Header / Back Navigation across all viewports */}
-      {step > 1 && (
-        <div className="relative z-20 w-full flex items-center justify-between px-6 sm:px-12 md:px-16 lg:px-24 pt-6 pb-2">
+      {/* Permanent Top Navigation Bar (Zero layout shifts, zero height jumps, zero flickering!) */}
+      <div className="relative z-30 w-full flex items-center justify-between px-6 sm:px-12 md:px-16 lg:px-24 pt-6 sm:pt-8 pb-2 min-h-[64px] flex-shrink-0">
+        {step === 1 ? (
+          <div className="flex items-center justify-start">
+            <img
+              src="/assets/images/jride_text_white.png"
+              alt="JRide"
+              className="h-8 sm:h-11 md:h-13 lg:h-15 w-auto object-contain drop-shadow-2xl select-none"
+            />
+          </div>
+        ) : (
           <button
             onClick={handleBack}
             className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-zinc-900/90 border border-zinc-800 flex items-center justify-center text-zinc-300 hover:text-white active:scale-95 transition-transform cursor-pointer shadow-lg"
@@ -459,8 +467,10 @@ const LandingPage = () => {
           >
             <ArrowLeft className="w-6 h-6 sm:w-7 sm:h-7" />
           </button>
+        )}
 
-          {/* Progress Indicator dots */}
+        {/* Progress Indicator dots (Only on steps 2-5) */}
+        {step > 1 ? (
           <div className="flex items-center gap-2.5 sm:gap-4">
             {[2, 3, 4, 5].map((s) => (
               <div
@@ -472,15 +482,17 @@ const LandingPage = () => {
               />
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="w-12 h-12" />
+        )}
+      </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col justify-center relative z-10 w-full h-full">
+      <div className="flex-1 flex flex-col justify-center relative z-10 w-full h-full overflow-hidden">
         <AnimatePresence mode="wait" custom={direction}>
           
           {/* ========================================================================= */}
-          {/* STEP 1: HERO PAGE (Peculiar Shop Style Badge Header, Playfair Serif & CTA) */}
+          {/* STEP 1: HERO PAGE (Playfair Serif, Clean Bottom Content & Wide CTA) */}
           {/* ========================================================================= */}
           {step === 1 && (
             <motion.div
@@ -490,17 +502,8 @@ const LandingPage = () => {
               initial="enter"
               animate="center"
               exit="exit"
-              className="absolute inset-0 flex flex-col justify-between w-full h-full z-10 overflow-hidden"
+              className="absolute inset-0 flex flex-col justify-end w-full h-full z-10 overflow-hidden"
             >
-              {/* Top Header: Clean Transparent White Logo positioned in the top-left corner */}
-              <div className="w-full pt-8 sm:pt-12 px-6 sm:px-10 md:px-14 lg:px-20 flex items-center justify-start z-20">
-                <img
-                  src="/assets/images/jride_text_white.png"
-                  alt="JRide"
-                  className="h-9 sm:h-12 md:h-14 lg:h-16 w-auto object-contain drop-shadow-2xl select-none"
-                />
-              </div>
-
               {/* Bottom Hero Content & Wide Dynamic CTA */}
               <div className="w-full p-6 sm:p-10 md:p-14 lg:p-20 pb-8 sm:pb-12 flex flex-col items-start gap-6">
                 <div className="space-y-3.5 text-left max-w-4xl">
