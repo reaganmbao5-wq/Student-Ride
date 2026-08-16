@@ -37,6 +37,15 @@
     <title>Jaey Ride</title>
 
     <script>
+        // SPA redirect handler for direct page refreshes
+        (function(){
+          var redirect = sessionStorage.redirect;
+          delete sessionStorage.redirect;
+          if (redirect && redirect != location.href) {
+            history.replaceState(null, null, redirect);
+          }
+        })();
+
         // Configure Tailwind if needed separately, mostly handled by build
         window.tailwind = window.tailwind || {};
         tailwind.config = {

@@ -84,6 +84,7 @@
   "scripts": {
     "start": "craco start",
     "build": "craco build",
+    "postbuild": "node -e \"const fs = require('fs'); if (fs.existsSync('build/index.html')) { fs.copyFileSync('build/index.html', 'build/404.html'); console.log('Created build/404.html SPA fallback.'); }\"",
     "test": "craco test"
   },
   "browserslist": {
