@@ -19,7 +19,7 @@ const ResetPasswordPage = () => {
     useEffect(() => {
         if (!token) {
             toast.error('Invalid or missing reset token.');
-            navigate('/');
+            navigate('/auth?mode=login');
         }
     }, [token, navigate]);
 
@@ -52,7 +52,7 @@ const ResetPasswordPage = () => {
             }
 
             toast.success('Password successfully reset! You can now log in.');
-            navigate('/');
+            navigate('/auth?mode=login');
         } catch (error) {
             showFriendlyError(error, 'Failed to reset password. Please try again.');
         } finally {
@@ -67,8 +67,8 @@ const ResetPasswordPage = () => {
 
             <GlassCard className="w-full max-w-md p-8 relative z-10 border-white/10">
                 <div className="text-center mb-8">
-                    <div className="w-16 h-16 bg-gold/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-gold/20 shadow-inner">
-                        <ShieldCheck className="w-8 h-8 text-gold" />
+                    <div className="flex items-center justify-center gap-3 mb-6">
+                        <img src="/assets/images/jride_text_white.png" alt="JRide" className="h-9 w-auto object-contain" />
                     </div>
                     <h1 className="text-2xl font-bold text-foreground mb-2 tracking-tight">
                         Create New Password

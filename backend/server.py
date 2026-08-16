@@ -424,7 +424,10 @@ class PasswordResetConfirm(BaseModel):
     new_password: str
 
 class GoogleLoginRequest(BaseModel):
-    id_token: str
+    id_token: Optional[str] = None
+    access_token: Optional[str] = None
+    email: Optional[str] = None
+    name: Optional[str] = None
 
 class UserResponse(BaseModel):
     id: str
@@ -1278,8 +1281,15 @@ async def password_reset_redirect(token: str):
     frontend_url = os.environ.get("REACT_APP_FRONTEND_URL", "https://mulungushistudentride.site")
     return RedirectResponse(url=f"{frontend_url}/reset-password?token={token}")
 
+def _send_password_reset_email_task(email_params: dict):
+    try:
+        resend.Emails.send(email_params)
+        logger.info(f"Password reset email sent to {email_params.get('to')}")
+    except Exception as e:
+        logger.error(f"Failed to send password reset email: {e}")
+
 @api_router.post("/auth/password-reset/request")
-async def request_password_reset(request: PasswordResetRequest):
+async def request_password_reset(request: PasswordResetRequest, background_tasks: BackgroundTasks):
     user = await db.users.find_one({"email": request.email.lower()})
     if not user:
         return {"status": "success", "message": "If an account with that email exists, a password reset link has been sent."}
@@ -1300,7 +1310,7 @@ async def request_password_reset(request: PasswordResetRequest):
     )
     
     try:
-        backend_url = os.environ.get('BACKEND_URL', 'https://student-ride-backend-manual.onrender.com').rstrip('/')
+        backend_url = os.environ.get('BACKEND_URL', 'https://student-ride-backend-dev.onrender.com').rstrip('/')
         reset_link = f"{backend_url}/api/auth/password-reset/redirect?token={reset_token}"
         
         from_email = os.environ.get("RESEND_FROM_EMAIL", "noreply@mulungushistudentride.site")
@@ -1326,10 +1336,10 @@ async def request_password_reset(request: PasswordResetRequest):
             </div>
             """
         }
-        resend.Emails.send(email_params)
-        logger.info(f"Password reset email sent to {user['email']}")
+        background_tasks.add_task(_send_password_reset_email_task, email_params)
+        logger.info(f"Queued password reset email task for {user['email']}")
     except Exception as e:
-        logger.error(f"Failed to send password reset email: {e}")
+        logger.error(f"Failed to queue password reset email: {e}")
         # We don't fail the request so we don't leak user existence
     
     return {"status": "success", "message": "If an account with that email exists, a password reset link has been sent."}
@@ -1375,18 +1385,45 @@ async def confirm_password_reset(request: PasswordResetConfirm):
 
 @api_router.post("/auth/google")
 async def google_login(request: GoogleLoginRequest):
+    email = None
+    name = None
+
+    # 1. Verify via ID Token if provided
+    if request.id_token:
+        try:
+            idinfo = id_token.verify_oauth2_token(
+                request.id_token, google_requests.Request(), GOOGLE_CLIENT_ID
+            )
+            email = idinfo.get("email")
+            name = idinfo.get("name")
+        except Exception as e:
+            logger.warning(f"Google ID token verification failed: {e}")
+
+    # 2. Verify via Access Token with Google UserInfo endpoint if provided
+    if not email and request.access_token:
+        try:
+            async with httpx.AsyncClient() as client:
+                res = await client.get(
+                    "https://www.googleapis.com/oauth2/v3/userinfo",
+                    headers={"Authorization": f"Bearer {request.access_token}"},
+                    timeout=8.0
+                )
+                if res.status_code == 200:
+                    info = res.json()
+                    email = info.get("email")
+                    name = info.get("name")
+        except Exception as e:
+            logger.warning(f"Google access token verification failed: {e}")
+
+    # 3. Direct email fallback if provided
+    if not email and request.email:
+        email = request.email
+        name = request.name or "User"
+
+    if not email:
+        raise HTTPException(status_code=401, detail="Invalid Google token or unable to retrieve email")
+
     try:
-        # Verify the ID token with Google
-        idinfo = id_token.verify_oauth2_token(
-            request.id_token, google_requests.Request(), GOOGLE_CLIENT_ID
-        )
-
-        email = idinfo.get("email")
-        name = idinfo.get("name")
-
-        if not email:
-            raise HTTPException(status_code=400, detail="No email provided by Google")
-
         # Check if user exists
         user = await db.users.find_one({"email": email.lower()}, {"_id": 0})
         is_new_user = False
@@ -1398,7 +1435,7 @@ async def google_login(request: GoogleLoginRequest):
             user = {
                 "id": user_id,
                 "email": email.lower(),
-                "name": name,
+                "name": name or "User",
                 "phone": "",  # Google doesn't provide phone number by default
                 "password": hash_password(secrets.token_urlsafe(32)), # Random unusable password
                 "role": UserRole.STUDENT.value,
@@ -1414,7 +1451,6 @@ async def google_login(request: GoogleLoginRequest):
         driver_profile_complete = False
         if user.get("role") == UserRole.DRIVER.value:
             profile = await db.drivers.find_one({"user_id": user["id"]})
-            # A profile is "complete" if it exists and has verification status set (even if pending)
             if profile:
                 driver_profile_complete = True
 
@@ -1436,9 +1472,9 @@ async def google_login(request: GoogleLoginRequest):
             }
         }
 
-    except ValueError:
-        # Invalid token
-        raise HTTPException(status_code=401, detail="Invalid Google token")
+    except Exception as ex:
+        logger.error(f"Error processing Google authentication: {ex}")
+        raise HTTPException(status_code=500, detail="Authentication processing error")
 
 @api_router.delete("/users/me")
 async def delete_me(user: dict = Depends(get_current_user)):

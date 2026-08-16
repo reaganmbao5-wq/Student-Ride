@@ -55,7 +55,7 @@ export default function CompleteProfilePage() {
     // Redirect if someone lands here without Google state
     useEffect(() => {
         if (!token || !email) {
-            navigate('/auth');
+            navigate('/auth?mode=login');
         }
     }, [token, email, navigate]);
 

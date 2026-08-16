@@ -48,7 +48,7 @@ const ForgotPasswordPage = () => {
 
             {/* Back Button */}
             <button
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/auth?mode=login')}
                 className="absolute top-6 left-6 p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors z-10 
                    border border-white/10 backdrop-blur-md"
             >
@@ -57,8 +57,8 @@ const ForgotPasswordPage = () => {
 
             <GlassCard className="w-full max-w-md p-8 relative z-10 border-white/10">
                 <div className="text-center mb-8">
-                    <div className="w-16 h-16 bg-gold/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-gold/20 shadow-inner">
-                        <KeySquare className="w-8 h-8 text-gold" />
+                    <div className="flex items-center justify-center gap-3 mb-6">
+                        <img src="/assets/images/jride_text_white.png" alt="JRide" className="h-9 w-auto object-contain" />
                     </div>
                     <h1 className="text-2xl font-bold text-foreground mb-2 tracking-tight">
                         Reset Password
@@ -74,7 +74,7 @@ const ForgotPasswordPage = () => {
                     <div className="space-y-4 pt-4">
                         <button
                             type="button"
-                            onClick={() => navigate('/')}
+                            onClick={() => navigate('/auth?mode=login')}
                             className="w-full py-3 rounded-xl text-sm font-medium transition-all bg-white/5 hover:bg-white/10 text-foreground border border-white/10 backdrop-blur-md"
                         >
                             Return to Login

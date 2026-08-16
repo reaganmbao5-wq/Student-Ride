@@ -4,7 +4,7 @@ import { Eye, EyeOff, ArrowLeft, Mail, Phone, User as UserIcon, Lock, UploadClou
 import { Car } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
-import { GoogleLogin } from '@react-oauth/google';
+import { useGoogleLogin } from '@react-oauth/google';
 import { GoogleAuth } from '@daniele-rolli/capacitor-google-auth';
 import { Capacitor } from '@capacitor/core';
 import { Camera as CapacitorCamera, CameraResultType, CameraSource } from '@capacitor/camera';
@@ -299,6 +299,95 @@ const AuthPage = () => {
     }
   };
 
+  const loginWithGoogleWeb = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      if (mode === 'register' && !agreedToTerms) {
+        toast.error('You must agree to the Terms of Service and Privacy Policy before signing up');
+        return;
+      }
+      setLoading(true);
+      try {
+        if (tokenResponse.credential) {
+          await handleGoogleSuccess({ credential: tokenResponse.credential });
+        } else if (tokenResponse.access_token) {
+          const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+          }).then(res => res.json());
+
+          const backendUrl = getBackendUrl();
+          const response = await fetch(`${backendUrl}/api/auth/google`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              access_token: tokenResponse.access_token,
+              email: userInfo.email,
+              name: userInfo.name,
+            }),
+          });
+
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data.detail || 'Google sign-in failed');
+          }
+
+          localStorage.setItem('token', data.access_token);
+          if (data.is_new_user) {
+            navigate('/complete-profile', {
+              state: {
+                name: data.user.name,
+                email: data.user.email,
+                token: data.access_token,
+              }
+            });
+          } else {
+            const role = data.user.role;
+            window.location.href = role === 'admin' || role === 'super_admin' ? '/admin'
+              : role === 'driver' && !data.driver_profile_complete ? '/driver/register'
+              : role === 'driver' ? '/driver' : '/dashboard';
+          }
+        }
+      } catch (err) {
+        console.error('Google web auth error:', err);
+        showFriendlyError(err, 'Google sign-in failed. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    onError: () => {
+      showFriendlyError(null, 'Google sign-in was cancelled or failed.');
+      setLoading(false);
+    }
+  });
+
+  const handleGoogleClick = async () => {
+    if (mode === 'register' && !agreedToTerms) {
+      toast.error('You must agree to the Terms of Service and Privacy Policy before signing up');
+      return;
+    }
+
+    if (Capacitor.isNativePlatform()) {
+      setLoading(true);
+      try {
+        await GoogleAuth.signOut();
+      } catch (e) {}
+      try {
+        const response = await GoogleAuth.signIn();
+        const idToken = response?.authentication?.idToken || response?.idToken;
+        if (idToken) {
+          handleGoogleSuccess({ credential: idToken });
+        } else {
+          throw new Error("No ID token returned by Google");
+        }
+      } catch (error) {
+        console.error('Native Google Auth Error:', error);
+        toast.error('Google authentication failed or cancelled');
+        setLoading(false);
+      }
+    } else {
+      loginWithGoogleWeb();
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-zinc-950 text-zinc-50 overflow-hidden flex flex-col justify-end">
       {/* Optimized Static Hardware-Accelerated Background Glow */}
@@ -310,7 +399,13 @@ const AuthPage = () => {
       {/* Header Area (Visible before sheet) */}
       <div className="absolute top-0 left-0 right-0 p-6 z-10">
         <button
-          onClick={() => navigate('/')}
+          onClick={() => {
+            if (window.history.length > 1) {
+              navigate(-1);
+            } else {
+              navigate('/');
+            }
+          }}
           className="w-10 h-10 rounded-full bg-zinc-900/80 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-all"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -713,58 +808,20 @@ const AuthPage = () => {
 
             {/* Google Authentication */}
             <div className="flex justify-center flex-col items-center gap-2 pb-8">
-              {Capacitor.isNativePlatform() ? (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (mode === 'register' && !agreedToTerms) {
-                      toast.error('You must agree to the Terms of Service and Privacy Policy before signing up');
-                      return;
-                    }
-                    setLoading(true);
-                    try {
-                      // Force account picker by clearing any existing session first
-                      await GoogleAuth.signOut();
-                    } catch (e) {
-                      // ignore error if not signed in
-                    }
-                    try {
-                      const response = await GoogleAuth.signIn();
-                      const idToken = response?.authentication?.idToken || response?.idToken;
-                      if (idToken) {
-                        handleGoogleSuccess({ credential: idToken });
-                      } else {
-                        throw new Error("No ID token returned by Google");
-                      }
-                    } catch (error) {
-                      console.error('Native Google Auth Error:', error);
-                      toast.error('Google authentication failed or cancelled');
-                      setLoading(false);
-                    }
-                  }}
-                  className="w-full flex items-center justify-center gap-3 bg-zinc-900 border border-zinc-800 text-zinc-100 py-3.5 rounded-xl hover:bg-zinc-800 transition-colors font-semibold shadow-sm h-[52px]"
-                >
-                  <svg className="w-5 h-5" viewBox="0 0 24 24">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                  </svg>
-                  Continue with Google
-                </button>
-              ) : (
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={() => {
-                    toast.error('Google authentication failed');
-                  }}
-                  useOneTap={false}
-                  shape="rect"
-                  theme="filled_black"
-                  text="continue_with"
-                  size="large"
-                />
-              )}
+              <button
+                type="button"
+                onClick={handleGoogleClick}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-3 bg-zinc-900 border border-zinc-800 text-zinc-100 py-3.5 rounded-xl hover:bg-zinc-800 transition-colors font-semibold shadow-sm h-[52px] active:scale-[0.99]"
+              >
+                <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                <span>Continue with Google</span>
+              </button>
             </div>
           </motion.form>
         </AnimatePresence>
