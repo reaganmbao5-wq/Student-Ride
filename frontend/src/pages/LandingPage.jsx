@@ -8,8 +8,9 @@ import { Capacitor } from '@capacitor/core';
 import { toast } from 'sonner';
 import { useTheme } from '../context/ThemeContext';
 import { ImageGallery } from '../components/common/ImageGallery';
+import { getOnlineWebUrl, openExternalUrl, getBackendUrl } from '../utils/urlHelpers';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://student-ride-backend-manual.onrender.com';
+const BACKEND_URL = getBackendUrl();
 
 const slideVariants = {
   enter: (direction) => ({
@@ -355,8 +356,11 @@ const LandingPage = () => {
     if (Capacitor.isNativePlatform()) {
       try {
         const googleUser = await GoogleAuth.signIn();
-        if (googleUser?.authentication?.idToken) {
-          await handleGoogleSuccessBackend(googleUser.authentication.idToken);
+        const idToken = googleUser?.authentication?.idToken || googleUser?.idToken;
+        if (idToken) {
+          await handleGoogleSuccessBackend(idToken);
+        } else {
+          throw new Error("No Google ID token received");
         }
       } catch (err) {
         console.error("Native Google Auth error:", err);

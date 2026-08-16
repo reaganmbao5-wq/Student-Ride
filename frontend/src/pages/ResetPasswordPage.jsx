@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Lock, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { GlassCard, GlassInput, GoldButton } from '../components/common/GlassComponents';
 import { toast } from 'sonner';
+import { getBackendUrl } from '../utils/urlHelpers';
 
 const ResetPasswordPage = () => {
     const [searchParams] = useSearchParams();
@@ -36,8 +37,8 @@ const ResetPasswordPage = () => {
         setIsLoading(true);
 
         try {
-            const backendUrl = process.env.REACT_APP_BACKEND_URL;
-            const response = await fetch(`${backendUrl}/api/auth/password-reset/confirm`, {
+            const endpoint = getBackendUrl('/api/auth/password-reset/confirm');
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token, new_password: password }),

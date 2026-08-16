@@ -5,6 +5,7 @@ import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
 // import { LocalNotifications } from '@capacitor/local-notifications';
 import { PermissionsService } from '../../services/PermissionsService';
+import { getBackendUrl } from '../../utils/urlHelpers';
 
 // Utility to convert Base64 VAPID key to Uint8Array
 const urlBase64ToUint8Array = (base64String) => {
@@ -23,26 +24,22 @@ const PushNotificationManager = () => {
     const [showPrompt, setShowPrompt] = useState(false);
 
     useEffect(() => {
-        if (!isAuthenticated) return;
-
         const checkPermission = async () => {
-            const hasAsked = localStorage.getItem('mulu_rides_push_asked');
-            if (hasAsked) return;
+            const asked = localStorage.getItem('mulu_rides_push_asked');
+            if (asked) return;
 
             if (Capacitor.isNativePlatform()) {
-                const permStatus = await PushNotifications.checkPermissions();
-                if (permStatus.receive === 'prompt') {
+                const status = await PushNotifications.checkPermissions();
+                if (status.receive !== 'granted') {
                     setShowPrompt(true);
-                } else if (permStatus.receive === 'granted') {
-                    await subscribeUser(false);
+                } else {
+                    subscribeUser(false);
                 }
             } else {
-                if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-                
-                if (Notification.permission === 'default') {
+                if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
                     setShowPrompt(true);
-                } else if (Notification.permission === 'granted') {
-                    await subscribeUser(false);
+                } else if ('Notification' in window && Notification.permission === 'granted') {
+                    subscribeUser(false);
                 }
             }
         };
@@ -57,7 +54,7 @@ const PushNotificationManager = () => {
     const subscribeUser = async (isExplicit = true) => {
         try {
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
-            const backendUrl = process.env.REACT_APP_BACKEND_URL || window.location.origin;
+            const backendUrl = getBackendUrl();
 
             if (Capacitor.isNativePlatform()) {
                 const hasPermission = await PermissionsService.requestPushPermission();

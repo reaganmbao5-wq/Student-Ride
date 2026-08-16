@@ -10,7 +10,7 @@ import { Camera as CapacitorCamera, CameraResultType, CameraSource } from '@capa
 import { motion, AnimatePresence } from 'framer-motion';
 import { PermissionsService } from '../services/PermissionsService';
 import { compressImage } from '../utils/imageCompressor';
-import { getOnlineWebUrl, openExternalUrl } from '../utils/urlHelpers';
+import { getOnlineWebUrl, openExternalUrl, getBackendUrl } from '../utils/urlHelpers';
 import { LoadingSpinner } from '../components/common/GlassComponents';
 
 const GlassInput = React.forwardRef(({ className, ...props }, ref) => (
@@ -262,7 +262,7 @@ const AuthPage = () => {
   const handleGoogleSuccess = async (credentialResponse) => {
     setLoading(true);
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://student-ride-backend-manual.onrender.com';
+      const backendUrl = getBackendUrl();
 
       const response = await fetch(`${backendUrl}/api/auth/google`, {
         method: 'POST',
@@ -732,8 +732,12 @@ const AuthPage = () => {
                     }
                     try {
                       const response = await GoogleAuth.signIn();
-                      const idToken = response.authentication.idToken;
-                      handleGoogleSuccess({ credential: idToken });
+                      const idToken = response?.authentication?.idToken || response?.idToken;
+                      if (idToken) {
+                        handleGoogleSuccess({ credential: idToken });
+                      } else {
+                        throw new Error("No ID token returned by Google");
+                      }
                     } catch (error) {
                       console.error('Native Google Auth Error:', error);
                       toast.error('Google authentication failed or cancelled');

@@ -108,7 +108,7 @@ notification_service = NotificationService(db)
 resend.api_key = os.environ.get('RESEND_API_KEY')
 
 # Google OAuth Configuration
-GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '613545438163-5eo9e0tpustjgotq6u7m7elsas8gkjst.apps.googleusercontent.com')
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
 
 # JWT Config

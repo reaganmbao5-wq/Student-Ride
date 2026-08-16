@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import { getBackendUrl } from '../utils/urlHelpers';
 
 const WebSocketContext = createContext(null);
 
@@ -24,7 +25,7 @@ export const WebSocketProvider = ({ children }) => {
       return;
     }
 
-    const backendUrl = process.env.REACT_APP_BACKEND_URL || window.location.origin;
+    const backendUrl = getBackendUrl();
     const wsUrl = backendUrl.replace('https://', 'wss://').replace('http://', 'ws://');
     const ws = new WebSocket(`${wsUrl}/ws?token=${token}`);
 

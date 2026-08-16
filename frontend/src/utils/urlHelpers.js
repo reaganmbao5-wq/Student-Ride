@@ -27,6 +27,30 @@ export const getOnlineWebUrl = (path = '') => {
   return `https://student-ride-frontend-manual.onrender.com${path}`;
 };
 
+export const getBackendUrl = (path = '') => {
+  const envUrl = process.env.REACT_APP_BACKEND_URL;
+  if (envUrl && envUrl !== 'undefined') {
+    return `${envUrl.replace(/\/$/, '')}${path}`;
+  }
+
+  if (typeof window !== 'undefined' && window.location && window.location.origin) {
+    const origin = window.location.origin;
+    const isNativeOrLocal =
+      origin.includes('localhost') ||
+      origin.startsWith('capacitor://') ||
+      origin.startsWith('file://') ||
+      origin.startsWith('http://10.') ||
+      origin.startsWith('http://192.168.');
+
+    if (!isNativeOrLocal) {
+      return `${origin}${path}`;
+    }
+  }
+
+  // Deployed production backend fallback URL
+  return `https://student-ride-backend-manual.onrender.com${path}`;
+};
+
 export const openExternalUrl = (path = '') => {
   const targetUrl = getOnlineWebUrl(path);
   if (typeof window !== 'undefined') {

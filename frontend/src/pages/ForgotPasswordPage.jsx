@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Mail, ArrowLeft, KeySquare } from 'lucide-react';
 import { GlassCard, GlassInput, GoldButton } from '../components/common/GlassComponents';
 import { toast } from 'sonner';
+import { getBackendUrl } from '../utils/urlHelpers';
 
 const ForgotPasswordPage = () => {
     const location = useLocation();
@@ -17,8 +18,8 @@ const ForgotPasswordPage = () => {
         setIsLoading(true);
 
         try {
-            const backendUrl = process.env.REACT_APP_BACKEND_URL;
-            const response = await fetch(`${backendUrl}/api/auth/password-reset/request`, {
+            const endpoint = getBackendUrl('/api/auth/password-reset/request');
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email }),
