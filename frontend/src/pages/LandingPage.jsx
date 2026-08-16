@@ -38,6 +38,54 @@ const THEME_OPTIONS = [
   { id: 'system', label: 'System Default', desc: 'Syncs with device settings', icon: 'Monitor' },
 ];
 
+const THEME_GALLERY_ITEMS = [
+  {
+    id: 1,
+    title: 'Dark Theme',
+    description: 'Cinematic deep black and dark tones designed for OLED screens and night travel.',
+    url: '/theme_previews/dark.png',
+    mode: 'dark'
+  },
+  {
+    id: 2,
+    title: 'Light Theme',
+    description: 'Clean high-contrast crisp white aesthetic for bright sunlight and daytime.',
+    url: '/theme_previews/light.png',
+    mode: 'light'
+  },
+  {
+    id: 3,
+    title: 'System Theme',
+    description: 'Automatically synchronizes with your device light and dark system settings.',
+    url: '/theme_previews/system.png',
+    mode: 'system'
+  }
+];
+
+const MAP_GALLERY_ITEMS = [
+  {
+    id: 1,
+    title: 'Night Map',
+    description: 'High contrast dark navigation map with glowing route lines.',
+    url: '/theme_previews/map_night.png',
+    mode: 'night'
+  },
+  {
+    id: 2,
+    title: 'Day Map',
+    description: 'Bright high-legibility street map with detailed campus geography.',
+    url: '/theme_previews/map_day.png',
+    mode: 'day'
+  },
+  {
+    id: 3,
+    title: 'Auto Map',
+    description: 'Dynamically switches map style matching your active app theme.',
+    url: '/theme_previews/map_auto.png',
+    mode: 'auto'
+  }
+];
+
 const MAP_STYLES = [
   {
     id: 'day',

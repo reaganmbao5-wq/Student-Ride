@@ -72,6 +72,46 @@ const StudentDashboard = () => {
   const searchLocation = activeRide?.pickup_location || userLocation;
   const { drivers: nearbyDrivers } = useDriverDiscovery(api, searchLocation);
 
+  // Smart Dynamic Average Wait Time Estimation (Free, 0 API credits burned, instant)
+  const smartWaitTime = React.useMemo(() => {
+    if (!nearbyDrivers || nearbyDrivers.length === 0 || !userLocation) {
+      return '~3 min';
+    }
+    
+    // Haversine formula to find distance to closest driver in km
+    const R = 6371; // Earth's radius in km
+    let minDistance = Infinity;
+
+    for (const d of nearbyDrivers) {
+      const dLat = d.latitude ?? d.lat;
+      const dLng = d.longitude ?? d.lng;
+      if (typeof dLat === 'number' && typeof dLng === 'number') {
+        const radLat1 = (userLocation.lat * Math.PI) / 180;
+        const radLat2 = (dLat * Math.PI) / 180;
+        const diffLat = ((dLat - userLocation.lat) * Math.PI) / 180;
+        const diffLng = ((dLng - userLocation.lng) * Math.PI) / 180;
+
+        const a =
+          Math.sin(diffLat / 2) * Math.sin(diffLat / 2) +
+          Math.cos(radLat1) * Math.cos(radLat2) *
+          Math.sin(diffLng / 2) * Math.sin(diffLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distance = R * c;
+        if (distance < minDistance) {
+          minDistance = distance;
+        }
+      }
+    }
+
+    if (minDistance === Infinity) {
+      return '~3 min';
+    }
+
+    // Estimate based on ~25km/h campus driving speed + 1 min dispatch buffer
+    const estimatedMinutes = Math.max(1, Math.min(15, Math.ceil((minDistance / 25) * 60) + 1));
+    return `~${estimatedMinutes} min`;
+  }, [nearbyDrivers, userLocation]);
+
   const getInitialRecentRides = () => {
     const recent = AppCache.get('recent_rides');
     if (Array.isArray(recent) && recent.length > 0) return recent;
@@ -866,11 +906,10 @@ const StudentDashboard = () => {
 
               {/* Dynamic Top-Down Car Graphic */}
               <motion.img
-                src={heroCarImage}
-                alt="Selected Vehicle"
-                key={heroCarImage}
-                initial={{ opacity: 0, scale: 0.85 }}
-                animate={{ opacity: 1, scale: 1 }}
+                src="/car_top.png"
+                alt="Ride Car"
+                initial={{ y: 0, scale: 1, opacity: 1 }}
+                animate={isDriving ? { y: 450, scale: 0.85, opacity: [1, 1, 0] } : { y: 0, scale: 1, opacity: 1 }}
                 transition={{ duration: 0.85, ease: [0.45, 0, 0.55, 1] }}
                 className="w-60 md:w-72 h-auto drop-shadow-xl z-10 select-none pointer-events-none absolute"
               />
@@ -914,7 +953,7 @@ const StudentDashboard = () => {
             <div className="flex items-center gap-3">
               <Clock className="w-7 h-7 text-amber-500 shrink-0" />
               <div className="min-w-0">
-                <p className="text-xl sm:text-2xl font-heading font-bold text-foreground leading-tight">~3 min</p>
+                <p className="text-xl sm:text-2xl font-heading font-bold text-foreground leading-tight">{smartWaitTime}</p>
                 <p className="text-[11px] sm:text-xs text-muted-foreground font-medium whitespace-nowrap mt-0.5">Avg. Wait Time</p>
               </div>
             </div>

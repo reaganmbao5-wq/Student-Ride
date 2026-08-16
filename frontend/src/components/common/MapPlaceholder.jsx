@@ -1,6 +1,6 @@
 import React from 'react';
 import { Map, MapPin } from 'lucide-react';
-import { GlassCard } from '../components/common/GlassComponents';
+import { GlassCard } from './GlassComponents';
 
 const MapPlaceholder = ({ pickup, dropoff }) => {
     return (
