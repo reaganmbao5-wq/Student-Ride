@@ -92,7 +92,7 @@ const AuthPage = () => {
       GoogleAuth.initialize({
         clientId: '613545438163-5eo9e0tpustjgotq6u7m7elsas8gkjst.apps.googleusercontent.com',
         scopes: ['profile', 'email'],
-        grantOfflineAccess: true,
+        grantOfflineAccess: false,
       });
     } catch (e) {
       console.warn("GoogleAuth initialization skipped/failed:", e);
