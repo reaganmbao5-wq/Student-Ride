@@ -7,8 +7,8 @@ import { GoogleAuth } from '@daniele-rolli/capacitor-google-auth';
 import { Capacitor } from '@capacitor/core';
 import { toast } from 'sonner';
 import { useTheme } from '../context/ThemeContext';
-import { ImageGallery } from '../components/common/ImageGallery';
 import { getOnlineWebUrl, openExternalUrl, getBackendUrl } from '../utils/urlHelpers';
+import { showFriendlyError } from '../utils/errorHandler';
 
 const BACKEND_URL = getBackendUrl();
 
@@ -316,7 +316,7 @@ const LandingPage = () => {
       }
     } catch (err) {
       console.error('Google Auth Error:', err);
-      toast.error(err.message || 'Google sign-in failed. Please try again.');
+      showFriendlyError(err, 'Google sign-in failed. Please try again.');
     } finally {
       setGoogleLoading(false);
     }
@@ -345,11 +345,11 @@ const LandingPage = () => {
             }
           });
         } catch (e) {
-          toast.error("Failed to retrieve Google profile");
+          showFriendlyError(e, 'Failed to retrieve Google profile.');
         }
       }
     },
-    onError: () => toast.error('Google Sign-In was cancelled or failed')
+    onError: () => showFriendlyError(null, 'Google sign-in was cancelled or failed.')
   });
 
   const handleGoogleClick = async () => {
@@ -364,7 +364,7 @@ const LandingPage = () => {
         }
       } catch (err) {
         console.error("Native Google Auth error:", err);
-        toast.error("Native Google sign-in cancelled or failed");
+        showFriendlyError(err, 'Native Google sign-in failed or was cancelled.');
       }
     } else {
       loginWithGoogleWeb();

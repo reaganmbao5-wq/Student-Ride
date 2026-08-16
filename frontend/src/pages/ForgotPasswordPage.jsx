@@ -4,6 +4,7 @@ import { Mail, ArrowLeft, KeySquare } from 'lucide-react';
 import { GlassCard, GlassInput, GoldButton } from '../components/common/GlassComponents';
 import { toast } from 'sonner';
 import { getBackendUrl } from '../utils/urlHelpers';
+import { showFriendlyError } from '../utils/errorHandler';
 
 const ForgotPasswordPage = () => {
     const location = useLocation();
@@ -26,13 +27,14 @@ const ForgotPasswordPage = () => {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to request password reset');
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.detail || 'Unable to request password reset. Please try again.');
             }
 
             setSubmitted(true);
             toast.success('Reset link sent if the account exists!');
         } catch (error) {
-            toast.error(error.message || 'Something went wrong');
+            showFriendlyError(error, 'Unable to send reset link. Please check your connection and try again.');
         } finally {
             setIsLoading(false);
         }

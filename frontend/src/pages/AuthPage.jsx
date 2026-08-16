@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { PermissionsService } from '../services/PermissionsService';
 import { compressImage } from '../utils/imageCompressor';
 import { getOnlineWebUrl, openExternalUrl, getBackendUrl } from '../utils/urlHelpers';
+import { showFriendlyError } from '../utils/errorHandler';
 import { LoadingSpinner } from '../components/common/GlassComponents';
 
 const GlassInput = React.forwardRef(({ className, ...props }, ref) => (
@@ -249,11 +250,7 @@ const AuthPage = () => {
       }
     } catch (error) {
       console.error('Auth error:', error);
-      const detail = error.response?.data?.detail;
-      const errorMessage = Array.isArray(detail)
-        ? detail.map(e => e.msg).join(', ')
-        : detail || 'Authentication failed. Please check your inputs.';
-      toast.error(errorMessage);
+      showFriendlyError(error, 'Authentication failed. Please check your credentials and try again.');
     } finally {
       setLoading(false);
     }
@@ -270,7 +267,7 @@ const AuthPage = () => {
         body: JSON.stringify({ id_token: credentialResponse.credential }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         throw new Error(data.detail || 'Google authentication failed');
@@ -295,7 +292,7 @@ const AuthPage = () => {
 
     } catch (error) {
       console.error('Google auth error:', error);
-      toast.error(error.message);
+      showFriendlyError(error, 'Google sign-in failed. Please try again.');
     } finally {
       setLoading(false);
     }

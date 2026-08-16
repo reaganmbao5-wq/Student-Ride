@@ -4,6 +4,7 @@ import { Lock, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { GlassCard, GlassInput, GoldButton } from '../components/common/GlassComponents';
 import { toast } from 'sonner';
 import { getBackendUrl } from '../utils/urlHelpers';
+import { showFriendlyError } from '../utils/errorHandler';
 
 const ResetPasswordPage = () => {
     const [searchParams] = useSearchParams();
@@ -44,7 +45,7 @@ const ResetPasswordPage = () => {
                 body: JSON.stringify({ token, new_password: password }),
             });
 
-            const data = await response.json();
+            const data = await response.json().catch(() => ({}));
 
             if (!response.ok) {
                 throw new Error(data.detail || 'Failed to reset password');
@@ -53,7 +54,7 @@ const ResetPasswordPage = () => {
             toast.success('Password successfully reset! You can now log in.');
             navigate('/');
         } catch (error) {
-            toast.error(error.message || 'Something went wrong');
+            showFriendlyError(error, 'Failed to reset password. Please try again.');
         } finally {
             setIsLoading(false);
         }
