@@ -27,17 +27,25 @@ export const StudentDashboardSkeleton = () => (
       </div>
 
       {/* Hero Car Section Skeleton */}
-      <div className="flex flex-col items-center justify-center space-y-6 pt-2 pb-4">
-        {/* Yellow Circle Placeholder */}
-        <div className="relative w-56 h-56 md:w-64 md:h-64 rounded-full bg-zinc-800/60 dark:bg-zinc-800/50 flex items-center justify-center overflow-hidden">
-          <ShimmerBlock className="w-48 h-48 rounded-full opacity-60" />
+      <div className="flex flex-col items-center justify-center space-y-4 pt-4 sm:pt-6 pb-2">
+        {/* Yellow Circle & Car Silhouette Placeholder */}
+        <div className="relative w-64 h-64 md:w-80 md:h-80 flex items-center justify-center">
+          {/* Subtle amber circle backdrop */}
+          <div className="w-52 h-52 md:w-64 md:h-64 rounded-full bg-amber-400/20 dark:bg-amber-400/15 animate-pulse flex items-center justify-center" />
+
+          {/* Muted Car Graphic Silhouette */}
+          <img
+            src="/car_top.png"
+            alt="Loading Car"
+            className="w-60 md:w-72 h-auto opacity-35 grayscale brightness-90 drop-shadow-md select-none pointer-events-none absolute"
+          />
         </div>
 
         {/* Subtext Guidance Skeleton */}
-        <ShimmerBlock className="h-4 w-52 rounded-md" />
+        <ShimmerBlock className="h-4 w-52 rounded-md mt-2" />
 
         {/* Request a Ride Button Skeleton */}
-        <ShimmerBlock className="h-14 w-full max-w-xs rounded-2xl" />
+        <ShimmerBlock className="h-14 w-full max-w-xs rounded-2xl bg-amber-400/40 dark:bg-amber-400/30" />
       </div>
 
       {/* Quick Stats Grid Skeleton */}
