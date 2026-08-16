@@ -129,10 +129,12 @@ const ProfilePage = () => {
     if (isLocationEnabled) {
       setIsLocationEnabled(false);
       localStorage.setItem('mulu_location_enabled', 'false');
+      window.dispatchEvent(new Event('mulu-location-setting-changed'));
       toast.info('Location turned OFF');
     } else {
       setIsLocationEnabled(true);
       localStorage.setItem('mulu_location_enabled', 'true');
+      window.dispatchEvent(new Event('mulu-location-setting-changed'));
       toast.success('Location turned ON');
 
       if (Capacitor.isNativePlatform()) {
