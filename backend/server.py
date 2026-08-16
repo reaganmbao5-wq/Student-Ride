@@ -10,6 +10,8 @@ from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
 from bson import ObjectId
 import os
 import time
+import secrets
+import base64
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr
@@ -99,17 +101,17 @@ async def inject_etas_into_trip(trip: dict, driver_location: dict):
 load_dotenv(ROOT_DIR / '.env')
 
 # MongoDB connection
-mongo_url = os.environ['MONGO_URL']
+mongo_url = os.environ.get('MONGO_URL', 'mongodb+srv://admin:reaganmbao31?@cluster0.mucpxu8.mongodb.net/?appName=Cluster0')
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ.get('DB_NAME', 'mulungushi_rides')]
 notification_service = NotificationService(db)
 
 # Resend API Configuration
-resend.api_key = os.environ.get('RESEND_API_KEY')
+resend.api_key = os.environ.get('RESEND_API_KEY', 're_X7gVHfvT_F9eBjUDtnFbvE6rhr954sMGR')
 
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '613545438163-5eo9e0tpustjgotq6u7m7elsas8gkjst.apps.googleusercontent.com')
-GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
+GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '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')
 
 # JWT Config
 JWT_SECRET = os.environ.get('JWT_SECRET', 'mulungushi-rides-secret-key-2024')
