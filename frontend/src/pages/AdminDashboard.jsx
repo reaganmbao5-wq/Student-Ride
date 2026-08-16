@@ -32,27 +32,34 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     console.log('DASHBOARD_MOUNTED (Admin)');
-    fetchData();
-    const interval = setInterval(fetchData, 30000); // Refresh every 30s
+    fetchData(false);
+    const interval = setInterval(() => fetchData(true), 20000); // Refresh every 20s silently
     return () => clearInterval(interval);
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = async (isBackground = false) => {
     try {
-      setLoading(true);
-      const [statsRes, analyticsRes, activeRidesRes] = await Promise.all([
+      if (!isBackground) setLoading(true);
+      const [statsRes, analyticsRes, activeRidesRes] = await Promise.allSettled([
         api.get('/admin/stats'),
         api.get('/admin/analytics'),
         api.get('/admin/active-rides')
       ]);
-      setStats(statsRes.data);
-      setAnalytics(analyticsRes.data);
-      setActiveRides(activeRidesRes.data || []);
+
+      if (statsRes.status === 'fulfilled' && statsRes.value?.data) {
+        setStats(statsRes.value.data);
+      }
+      if (analyticsRes.status === 'fulfilled' && analyticsRes.value?.data) {
+        setAnalytics(analyticsRes.value.data);
+      }
+      if (activeRidesRes.status === 'fulfilled' && activeRidesRes.value?.data) {
+        setActiveRides(activeRidesRes.value.data);
+      }
       console.log('DASHBOARD_RENDER_COMPLETE (Admin)');
     } catch (error) {
       console.error('Error fetching admin data:', error);
     } finally {
-      setLoading(false);
+      if (!isBackground) setLoading(false);
     }
   };
 
@@ -79,7 +86,6 @@ const AdminDashboard = () => {
               <span className="text-gold text-sm font-medium">Super Admin</span>
             </div>
           )}
-          <AdminPushNotifications />
         </div>
 
         {/* Stats Grid */}

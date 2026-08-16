@@ -1,5 +1,6 @@
 import os
 import json
+import asyncio
 from pywebpush import webpush, WebPushException
 import logging
 from datetime import datetime, timezone
@@ -112,7 +113,7 @@ class NotificationService:
                         token=fcm_token,
                     )
                     
-                    response = messaging.send(message_obj)
+                    response = await asyncio.to_thread(messaging.send, message_obj)
                     logger.info(f"FCM System Notification sent successfully to {user_id}: {response}")
                     success_count += 1
                     
@@ -136,7 +137,8 @@ class NotificationService:
                         logger.warning("VAPID_PRIVATE_KEY not set for Web Push.")
                         continue
                         
-                    webpush(
+                    await asyncio.to_thread(
+                        webpush,
                         subscription_info=sub_info,
                         data=json.dumps(message),
                         vapid_private_key=self.vapid_private_key,

@@ -3678,14 +3678,49 @@ async def get_all_rides(
     
     result = []
     for ride in rides:
-        student = await db.users.find_one({"id": ride["student_id"]}, {"_id": 0, "password": 0})
+        student = await db.users.find_one({"id": ride.get("student_id")}, {"_id": 0, "password": 0})
         if student:
             ride["student"] = UserResponse(**student)
         
-        if ride["driver_id"]:
+        if ride.get("driver_id"):
             driver = await db.drivers.find_one({"id": ride["driver_id"]}, {"_id": 0})
             if driver:
-                driver_user = await db.users.find_one({"id": driver["user_id"]}, {"_id": 0, "password": 0})
+                driver_user = await db.users.find_one({"id": driver.get("user_id")}, {"_id": 0, "password": 0})
+                if driver_user:
+                    driver["user"] = UserResponse(**driver_user)
+                ride["driver"] = DriverResponse(**driver)
+        
+        result.append(RideResponse(**ride))
+    
+    return result
+
+@api_router.get("/admin/active-rides", response_model=List[RideResponse])
+async def get_admin_active_rides(user: dict = Depends(require_admin)):
+    active_statuses = [
+        RideStatus.REQUESTED.value,
+        RideStatus.ACCEPTED.value,
+        RideStatus.DRIVER_ACCEPTED.value,
+        RideStatus.DRIVER_EN_ROUTE_TO_PICKUP.value,
+        RideStatus.DRIVER_ARRIVED.value,
+        RideStatus.PASSENGER_BOARDING.value,
+        RideStatus.RIDE_STARTED.value,
+        RideStatus.RIDE_IN_PROGRESS.value,
+        RideStatus.ONGOING.value,
+        "requested", "accepted", "driver_accepted", "driver_en_route_to_pickup", 
+        "driver_arrived", "passenger_boarding", "ride_started", "ride_in_progress", "ongoing"
+    ]
+    rides = await db.rides.find({"status": {"$in": active_statuses}}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    
+    result = []
+    for ride in rides:
+        student = await db.users.find_one({"id": ride.get("student_id")}, {"_id": 0, "password": 0})
+        if student:
+            ride["student"] = UserResponse(**student)
+        
+        if ride.get("driver_id"):
+            driver = await db.drivers.find_one({"id": ride["driver_id"]}, {"_id": 0})
+            if driver:
+                driver_user = await db.users.find_one({"id": driver.get("user_id")}, {"_id": 0, "password": 0})
                 if driver_user:
                     driver["user"] = UserResponse(**driver_user)
                 ride["driver"] = DriverResponse(**driver)
