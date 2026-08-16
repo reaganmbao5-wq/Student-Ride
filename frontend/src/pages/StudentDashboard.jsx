@@ -815,8 +815,8 @@ const StudentDashboard = () => {
     <Layout>
       <div className="p-4 md:p-6 space-y-5 max-w-4xl mx-auto" data-testid="student-dashboard">
         {/* Top Greeting & Hero Ride Request Feature matching Mockup */}
-        <div className="flex flex-col items-center text-center space-y-3 pt-0 pb-1">
-          {/* Header Greeting (Line removed, tight compact padding) */}
+        <div className="flex flex-col items-center text-center space-y-2 pt-0 pb-1">
+          {/* Header Greeting (Clean spacing, zero overlap with hero car) */}
           <div className="w-full text-left font-heading pb-1">
             <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
               Hello, {user?.name ? user.name.split(' ')[0] : 'Student'}
@@ -826,11 +826,11 @@ const StudentDashboard = () => {
             </p>
           </div>
 
-          {/* Hero Top-Down Car with Yellow Circle Background */}
-          <div className="relative flex flex-col items-center justify-center w-full pt-4 pb-2 overflow-hidden">
-            {/* Yellow/Gold Circle Background (Flat yellow, no outer glow/shadows) */}
-            <div className="relative w-56 h-56 md:w-64 md:h-64 rounded-full bg-amber-400 flex items-center justify-center my-2">
-              {/* Top-Down Transparent Car Image (Bigger than circle, overflowing circle boundary cleanly) */}
+          {/* Hero Top-Down Car with Yellow Circle Background (Moved down with breathing room) */}
+          <div className="relative flex flex-col items-center justify-center w-full pt-8 sm:pt-10 md:pt-12 pb-2 overflow-hidden">
+            {/* Yellow/Gold Circle Background (Positioned comfortably below greeting) */}
+            <div className="relative w-56 h-56 md:w-64 md:h-64 rounded-full bg-amber-400 flex items-center justify-center mt-2 mb-2">
+              {/* Top-Down Transparent Car Image (Bigger than circle, overflowing cleanly) */}
               <motion.img
                 src="/car_top.png"
                 alt="Ride Car"
@@ -841,12 +841,12 @@ const StudentDashboard = () => {
               />
             </div>
 
-            {/* Subtext Guidance (Moved further down) */}
-            <p className="text-xs md:text-sm text-muted-foreground font-medium mt-10 md:mt-12 mb-4 max-w-xs">
+            {/* Subtext Guidance (Positioned right below front of car) */}
+            <p className="text-xs md:text-sm text-muted-foreground font-medium mt-6 md:mt-8 mb-3 max-w-xs">
               Tap to set your pickup point and destination
             </p>
 
-            {/* Request a Ride Button (Moved further down, zero overlap with car) */}
+            {/* Request a Ride Button */}
             <motion.button
               type="button"
               onClick={handleRequestRideClick}
@@ -876,14 +876,14 @@ const StudentDashboard = () => {
               </div>
             </div>
           </GlassCard>
-          <GlassCard className="p-4" hover={false}>
+          <GlassCard className="p-4 cursor-pointer hover:border-gold/30 transition-all" hover={false} onClick={() => navigate('/ride')}>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center">
-                <PhosphorStar weight="duotone" className="w-5 h-5 text-gold" />
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                <MapPin className="w-5 h-5 text-emerald-400" />
               </div>
-              <div>
-                <p className="text-2xl font-heading font-bold text-foreground">5.0</p>
-                <p className="text-xs text-muted-foreground">Your Rating</p>
+              <div className="min-w-0">
+                <p className="text-lg md:text-xl font-heading font-bold text-foreground truncate">Main Campus</p>
+                <p className="text-xs text-muted-foreground truncate">Campus Transit Hub</p>
               </div>
             </div>
           </GlassCard>

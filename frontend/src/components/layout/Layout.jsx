@@ -71,20 +71,12 @@ export const Layout = ({ children }) => {
       <aside className="hidden md:flex fixed left-0 top-0 h-full w-20 hover:w-64 flex-col bg-background border-r border-border z-50 sidebar-transition group">
         {/* Logo */}
         <div className="p-4 border-b border-border h-20 flex items-center">
-          <div className="flex items-center gap-3 overflow-hidden">
+          <div className="flex items-center overflow-hidden">
             <img
-              src="/assets/images/Jaey-logo.png"
-              alt="Jaey Ride Logo"
-              className="w-11 h-11 min-w-[44px] object-contain drop-shadow-md"
+              src={theme === 'light' ? '/assets/images/jride_text_black.png' : '/assets/images/jride_text_white.png'}
+              alt="JRIDE"
+              className="h-8 w-auto object-contain"
             />
-            <div className="sidebar-label-transition opacity-0 group-hover:opacity-100 whitespace-nowrap">
-              <img
-                src={theme === 'light' ? '/assets/images/jride_text_black.png' : '/assets/images/jride_text_white.png'}
-                alt="JRIDE"
-                className="h-5 w-auto object-contain"
-              />
-              <p className="text-[10px] text-muted-foreground font-semibold tracking-wider">MULUNGUSHI</p>
-            </div>
           </div>
         </div>
 
@@ -157,16 +149,11 @@ export const Layout = ({ children }) => {
 
       {/* Mobile Header */}
       <header className="md:hidden fixed top-0 left-0 right-0 h-16 bg-background/80 backdrop-blur-xl border-b border-border z-40 flex items-center justify-between px-4 safe-top">
-        <div className="flex items-center gap-2.5">
-          <img
-            src="/assets/images/Jaey-logo.png"
-            alt="Jaey Ride Logo"
-            className="w-9 h-9 object-contain drop-shadow-md"
-          />
+        <div className="flex items-center">
           <img
             src={theme === 'light' ? '/assets/images/jride_text_black.png' : '/assets/images/jride_text_white.png'}
             alt="JRIDE"
-            className="h-5 w-auto object-contain"
+            className="h-8 sm:h-9 w-auto object-contain drop-shadow-sm select-none"
           />
         </div>
         <div className="flex items-center gap-2">
