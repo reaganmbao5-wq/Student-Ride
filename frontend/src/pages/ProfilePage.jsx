@@ -41,14 +41,13 @@ const urlBase64ToUint8Array = (base64String) => {
 };
 
 const ProfilePage = () => {
-  const { user, driverProfile, logout, isDriver, isAdmin, isSuperAdmin, api, fetchUser } = useAuth();
+  const { user, driverProfile, logout, isDriver, isAdmin, isSuperAdmin, api, fetchUser, updateUser, setUser } = useAuth();
   const navigate = useNavigate();
   
   // Bottom Sheet Edit Profile Modal State
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(user?.name || '');
   const [editPhone, setEditPhone] = useState(user?.phone || '');
-  const [editEmail, setEditEmail] = useState(user?.email || '');
   const [editAvatar, setEditAvatar] = useState(user?.avatar_url || '');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -90,7 +89,6 @@ const ProfilePage = () => {
     if (user) {
       setEditName(user.name || '');
       setEditPhone(user.phone || '');
-      setEditEmail(user.email || '');
       setEditAvatar(user.avatar_url || '');
     }
   }, [user]);
@@ -177,32 +175,30 @@ const ProfilePage = () => {
       toast.error('Name is required');
       return;
     }
-    if (!editEmail.trim()) {
-      toast.error('Email is required');
-      return;
-    }
 
     setIsSaving(true);
     try {
       const payload = {
         name: editName.trim(),
         phone: editPhone.trim(),
-        email: editEmail.trim(),
         avatar_url: editAvatar
       };
 
-      try {
-        await api.patch('/users/me', payload);
-      } catch (err) {
-        try {
-          await api.put('/users/me', payload);
-        } catch (e2) {
-          console.warn('API save fallback notice:', e2);
-        }
+      const response = await api.patch('/users/me', payload);
+      const updatedUser = response.data || { ...user, ...payload };
+
+      if (updateUser) {
+        updateUser(updatedUser);
+      } else if (setUser) {
+        setUser(updatedUser);
       }
 
+      setEditName(updatedUser.name || editName);
+      setEditPhone(updatedUser.phone || editPhone);
+      setEditAvatar(updatedUser.avatar_url || editAvatar);
+
       if (fetchUser) {
-        await fetchUser();
+        fetchUser();
       }
 
       haptics.pinDrop();
@@ -390,21 +386,6 @@ const ProfilePage = () => {
                     type="tel"
                     value={editPhone}
                     onChange={(e) => setEditPhone(e.target.value)}
-                    className="w-full bg-muted/50 text-foreground rounded-2xl pl-10 pr-4 py-3 text-sm border border-border focus:outline-none focus:border-gold"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Email Address */}
-              <div>
-                <label className="block text-xs text-muted-foreground mb-1 font-medium">Email Address</label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <input
-                    type="email"
-                    value={editEmail}
-                    onChange={(e) => setEditEmail(e.target.value)}
                     className="w-full bg-muted/50 text-foreground rounded-2xl pl-10 pr-4 py-3 text-sm border border-border focus:outline-none focus:border-gold"
                     required
                   />

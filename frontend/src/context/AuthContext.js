@@ -254,12 +254,24 @@ export const AuthProvider = ({ children }) => {
     return null;
   };
 
+  const updateUser = (updatedFields) => {
+    setUser(prev => {
+      const merged = { ...prev, ...updatedFields };
+      try { localStorage.setItem('mulu_user_cache', JSON.stringify(merged)); } catch (e) {}
+      return merged;
+    });
+  };
+
   const value = {
     user,
+    setUser,
+    updateUser,
     token,
     loading,
     driverProfile,
+    setDriverProfile,
     api,
+    fetchUser,
     login,
     register,
     registerDriver,
