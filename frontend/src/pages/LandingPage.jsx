@@ -7,6 +7,7 @@ import { GoogleAuth } from '@daniele-rolli/capacitor-google-auth';
 import { Capacitor } from '@capacitor/core';
 import { toast } from 'sonner';
 import { useTheme } from '../context/ThemeContext';
+import { ImageGallery } from '../components/common/ImageGallery';
 import { getOnlineWebUrl, openExternalUrl, getBackendUrl } from '../utils/urlHelpers';
 import { showFriendlyError } from '../utils/errorHandler';
 
