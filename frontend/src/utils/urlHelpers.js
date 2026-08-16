@@ -24,7 +24,7 @@ export const getOnlineWebUrl = (path = '') => {
   }
 
   // Deployed production website fallback URL
-  return `https://student-ride-frontend-manual.onrender.com${path}`;
+  return `https://student-ride-frontend-dev.onrender.com${path}`;
 };
 
 export const getBackendUrl = (path = '') => {
@@ -48,7 +48,7 @@ export const getBackendUrl = (path = '') => {
   }
 
   // Deployed production backend fallback URL
-  return `https://student-ride-backend-manual.onrender.com${path}`;
+  return `https://student-ride-backend-dev.onrender.com${path}`;
 };
 
 export const openExternalUrl = (path = '') => {
