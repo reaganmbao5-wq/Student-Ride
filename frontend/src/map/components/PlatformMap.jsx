@@ -593,8 +593,8 @@ export const PlatformMap = ({
           zoom: targetZoom,
           pitch: 0,
           bearing: 0,
-          speed: 0.15,
-          duration: 2400,
+          speed: 0.3,
+          duration: 1200,
           essential: true
         });
       }
