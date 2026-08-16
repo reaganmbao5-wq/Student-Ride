@@ -92,7 +92,7 @@ const AuthPage = () => {
       GoogleAuth.initialize({
         clientId: '613545438163-5eo9e0tpustjgotq6u7m7elsas8gkjst.apps.googleusercontent.com',
         scopes: ['profile', 'email'],
-        grantOfflineAccess: true,
+        grantOfflineAccess: false,
       });
     } catch (e) {
       console.warn("GoogleAuth initialization skipped/failed:", e);
@@ -380,7 +380,7 @@ const AuthPage = () => {
         const response = await GoogleAuth.signIn();
         const idToken = response?.authentication?.idToken || response?.idToken;
         if (idToken) {
-          handleGoogleSuccess({ credential: idToken });
+          await handleGoogleSuccess({ credential: idToken });
         } else {
           throw new Error("No ID token returned by Google");
         }
