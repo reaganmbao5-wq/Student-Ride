@@ -456,6 +456,22 @@
           ]
         ]
       }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Kafue Hostel",
+        "category": "hostel",
+        "icon": "bed",
+        "color": "#C24488"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.56009,
+          -14.297589
+        ]
+      }
     }
   ]
 }

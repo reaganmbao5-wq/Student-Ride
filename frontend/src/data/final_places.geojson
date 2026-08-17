@@ -8,7 +8,7 @@
     "category": "agricultural product wholesaler",
     "category_raw": "Agricultural product wholesaler",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -25,7 +25,7 @@
     "category": "apartment",
     "category_raw": "Apartment complex",
     "source": "gm",
-    "icon": "🏠"
+    "icon": "\ud83c\udfe0"
    },
    "geometry": {
     "type": "Point",
@@ -42,7 +42,7 @@
     "category": "apartment",
     "category_raw": "apartment",
     "source": "gm",
-    "icon": "🏠"
+    "icon": "\ud83c\udfe0"
    },
    "geometry": {
     "type": "Point",
@@ -59,7 +59,7 @@
     "category": "artwork",
     "category_raw": "artwork",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -76,7 +76,7 @@
     "category": "association / organization",
     "category_raw": "Association / Organization",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -93,7 +93,7 @@
     "category": "association / organization",
     "category_raw": "Association / Organization",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -110,7 +110,7 @@
     "category": "association / organization",
     "category_raw": "Association / Organization",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -127,7 +127,7 @@
     "category": "atm",
     "category_raw": "ATM",
     "source": "gm",
-    "icon": "💳"
+    "icon": "\ud83d\udcb3"
    },
    "geometry": {
     "type": "Point",
@@ -144,7 +144,7 @@
     "category": "atm",
     "category_raw": "ATM",
     "source": "gm",
-    "icon": "💳"
+    "icon": "\ud83d\udcb3"
    },
    "geometry": {
     "type": "Point",
@@ -161,7 +161,7 @@
     "category": "atm",
     "category_raw": "ATM",
     "source": "gm",
-    "icon": "💳"
+    "icon": "\ud83d\udcb3"
    },
    "geometry": {
     "type": "Point",
@@ -178,7 +178,7 @@
     "category": "atm",
     "category_raw": "ATM",
     "source": "gm",
-    "icon": "💳"
+    "icon": "\ud83d\udcb3"
    },
    "geometry": {
     "type": "Point",
@@ -195,7 +195,7 @@
     "category": "atm",
     "category_raw": "ATM",
     "source": "gm",
-    "icon": "💳"
+    "icon": "\ud83d\udcb3"
    },
    "geometry": {
     "type": "Point",
@@ -212,7 +212,7 @@
     "category": "attraction",
     "category_raw": "attraction",
     "source": "gm",
-    "icon": "🎡"
+    "icon": "\ud83c\udfa1"
    },
    "geometry": {
     "type": "Point",
@@ -229,7 +229,7 @@
     "category": "attraction",
     "category_raw": "attraction",
     "source": "gm",
-    "icon": "🎡"
+    "icon": "\ud83c\udfa1"
    },
    "geometry": {
     "type": "Point",
@@ -246,7 +246,7 @@
     "category": "attraction",
     "category_raw": "attraction",
     "source": "osm",
-    "icon": "🎡"
+    "icon": "\ud83c\udfa1"
    },
    "geometry": {
     "type": "Point",
@@ -263,7 +263,7 @@
     "category": "attraction",
     "category_raw": "attraction",
     "source": "osm",
-    "icon": "🎡"
+    "icon": "\ud83c\udfa1"
    },
    "geometry": {
     "type": "Point",
@@ -280,7 +280,7 @@
     "category": "attraction",
     "category_raw": "attraction",
     "source": "osm",
-    "icon": "🎡"
+    "icon": "\ud83c\udfa1"
    },
    "geometry": {
     "type": "Point",
@@ -297,7 +297,7 @@
     "category": "auditorium",
     "category_raw": "Auditorium",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -314,7 +314,7 @@
     "category": "bakery",
     "category_raw": "bakery",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -331,7 +331,7 @@
     "category": "bank",
     "category_raw": "bank",
     "source": "osm",
-    "icon": "🏦"
+    "icon": "\ud83c\udfe6"
    },
    "geometry": {
     "type": "Point",
@@ -348,7 +348,7 @@
     "category": "bank",
     "category_raw": "Bank",
     "source": "gm",
-    "icon": "🏦"
+    "icon": "\ud83c\udfe6"
    },
    "geometry": {
     "type": "Point",
@@ -365,7 +365,7 @@
     "category": "bank",
     "category_raw": "Bank",
     "source": "gm",
-    "icon": "🏦"
+    "icon": "\ud83c\udfe6"
    },
    "geometry": {
     "type": "Point",
@@ -382,7 +382,7 @@
     "category": "bank",
     "category_raw": "Bank",
     "source": "gm",
-    "icon": "🏦"
+    "icon": "\ud83c\udfe6"
    },
    "geometry": {
     "type": "Point",
@@ -399,7 +399,7 @@
     "category": "bank",
     "category_raw": "Bank",
     "source": "gm",
-    "icon": "🏦"
+    "icon": "\ud83c\udfe6"
    },
    "geometry": {
     "type": "Point",
@@ -416,7 +416,7 @@
     "category": "bank",
     "category_raw": "Bank",
     "source": "gm",
-    "icon": "🏦"
+    "icon": "\ud83c\udfe6"
    },
    "geometry": {
     "type": "Point",
@@ -433,7 +433,7 @@
     "category": "bank",
     "category_raw": "Bank",
     "source": "gm",
-    "icon": "🏦"
+    "icon": "\ud83c\udfe6"
    },
    "geometry": {
     "type": "Point",
@@ -450,7 +450,7 @@
     "category": "bank",
     "category_raw": "Bank",
     "source": "gm",
-    "icon": "🏦"
+    "icon": "\ud83c\udfe6"
    },
    "geometry": {
     "type": "Point",
@@ -467,7 +467,7 @@
     "category": "bank",
     "category_raw": "bank",
     "source": "osm",
-    "icon": "🏦"
+    "icon": "\ud83c\udfe6"
    },
    "geometry": {
     "type": "Point",
@@ -484,7 +484,7 @@
     "category": "bank",
     "category_raw": "Bank",
     "source": "gm",
-    "icon": "🏦"
+    "icon": "\ud83c\udfe6"
    },
    "geometry": {
     "type": "Point",
@@ -501,7 +501,7 @@
     "category": "bank",
     "category_raw": "Bank",
     "source": "gm",
-    "icon": "🏦"
+    "icon": "\ud83c\udfe6"
    },
    "geometry": {
     "type": "Point",
@@ -518,7 +518,7 @@
     "category": "bank",
     "category_raw": "Bank",
     "source": "gm",
-    "icon": "🏦"
+    "icon": "\ud83c\udfe6"
    },
    "geometry": {
     "type": "Point",
@@ -535,7 +535,7 @@
     "category": "bank",
     "category_raw": "bank",
     "source": "osm",
-    "icon": "🏦"
+    "icon": "\ud83c\udfe6"
    },
    "geometry": {
     "type": "Point",
@@ -552,7 +552,7 @@
     "category": "bank",
     "category_raw": "Bank",
     "source": "gm",
-    "icon": "🏦"
+    "icon": "\ud83c\udfe6"
    },
    "geometry": {
     "type": "Point",
@@ -569,7 +569,7 @@
     "category": "bank",
     "category_raw": "Bank",
     "source": "gm",
-    "icon": "🏦"
+    "icon": "\ud83c\udfe6"
    },
    "geometry": {
     "type": "Point",
@@ -586,7 +586,7 @@
     "category": "bank",
     "category_raw": "bank",
     "source": "osm",
-    "icon": "🏦"
+    "icon": "\ud83c\udfe6"
    },
    "geometry": {
     "type": "Point",
@@ -603,7 +603,7 @@
     "category": "bar",
     "category_raw": "bar",
     "source": "osm",
-    "icon": "🍻"
+    "icon": "\ud83c\udf7b"
    },
    "geometry": {
     "type": "Point",
@@ -620,7 +620,7 @@
     "category": "bar",
     "category_raw": "bar",
     "source": "osm",
-    "icon": "🍻"
+    "icon": "\ud83c\udf7b"
    },
    "geometry": {
     "type": "Point",
@@ -637,7 +637,7 @@
     "category": "bar",
     "category_raw": "bar",
     "source": "osm",
-    "icon": "🍻"
+    "icon": "\ud83c\udf7b"
    },
    "geometry": {
     "type": "Point",
@@ -654,7 +654,7 @@
     "category": "bar",
     "category_raw": "Bar",
     "source": "gm",
-    "icon": "🍻"
+    "icon": "\ud83c\udf7b"
    },
    "geometry": {
     "type": "Point",
@@ -671,7 +671,7 @@
     "category": "bar",
     "category_raw": "Bar",
     "source": "gm",
-    "icon": "🍻"
+    "icon": "\ud83c\udf7b"
    },
    "geometry": {
     "type": "Point",
@@ -688,7 +688,7 @@
     "category": "bar",
     "category_raw": "Bar",
     "source": "gm",
-    "icon": "🍻"
+    "icon": "\ud83c\udf7b"
    },
    "geometry": {
     "type": "Point",
@@ -705,7 +705,7 @@
     "category": "bar",
     "category_raw": "bar",
     "source": "osm",
-    "icon": "🍻"
+    "icon": "\ud83c\udf7b"
    },
    "geometry": {
     "type": "Point",
@@ -722,7 +722,7 @@
     "category": "bed & breakfast",
     "category_raw": "Bed & breakfast",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -739,7 +739,7 @@
     "category": "bed & breakfast",
     "category_raw": "Bed & breakfast",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -756,7 +756,7 @@
     "category": "bed & breakfast",
     "category_raw": "Bed & breakfast",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -773,7 +773,7 @@
     "category": "beverages",
     "category_raw": "beverages",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -790,7 +790,7 @@
     "category": "beverages",
     "category_raw": "beverages",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -807,7 +807,7 @@
     "category": "boutique",
     "category_raw": "Boutique",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -824,7 +824,7 @@
     "category": "boutique",
     "category_raw": "Boutique",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -841,7 +841,7 @@
     "category": "bridge",
     "category_raw": "Bridge",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -858,7 +858,7 @@
     "category": "building society",
     "category_raw": "Building society",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -875,7 +875,7 @@
     "category": "building_materials",
     "category_raw": "building_materials",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -892,7 +892,7 @@
     "category": "business broker",
     "category_raw": "Business broker",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -909,7 +909,7 @@
     "category": "business broker",
     "category_raw": "Business broker",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -926,7 +926,7 @@
     "category": "butcher",
     "category_raw": "butcher",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -943,7 +943,7 @@
     "category": "cafe",
     "category_raw": "Coffee shop",
     "source": "gm",
-    "icon": "☕"
+    "icon": "\u2615"
    },
    "geometry": {
     "type": "Point",
@@ -960,7 +960,7 @@
     "category": "camp_site",
     "category_raw": "camp_site",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -977,7 +977,7 @@
     "category": "campground",
     "category_raw": "Campground",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -991,10 +991,10 @@
    "type": "Feature",
    "properties": {
     "name": "Mweru Hostel",
-    "category": "camping cabin",
-    "category_raw": "Camping cabin",
+    "category": "hostel",
+    "category_raw": "Hostel",
     "source": "gm",
-    "icon": "📍"
+    "icon": "hostel"
    },
    "geometry": {
     "type": "Point",
@@ -1011,7 +1011,7 @@
     "category": "car_repair",
     "category_raw": "car_repair",
     "source": "osm",
-    "icon": "🔧"
+    "icon": "\ud83d\udd27"
    },
    "geometry": {
     "type": "Point",
@@ -1028,7 +1028,7 @@
     "category": "car_wash",
     "category_raw": "car_wash",
     "source": "osm",
-    "icon": "🧼"
+    "icon": "\ud83e\uddfc"
    },
    "geometry": {
     "type": "Point",
@@ -1045,7 +1045,7 @@
     "category": "clinic",
     "category_raw": "Medical clinic",
     "source": "gm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1062,7 +1062,7 @@
     "category": "clinic",
     "category_raw": "clinic",
     "source": "osm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1079,7 +1079,7 @@
     "category": "clinic",
     "category_raw": "clinic",
     "source": "osm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1096,7 +1096,7 @@
     "category": "clinic",
     "category_raw": "clinic",
     "source": "osm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1113,7 +1113,7 @@
     "category": "clinic",
     "category_raw": "Medical clinic",
     "source": "gm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1130,7 +1130,7 @@
     "category": "clinic",
     "category_raw": "Medical clinic",
     "source": "gm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1147,7 +1147,7 @@
     "category": "clinic",
     "category_raw": "Medical Center",
     "source": "gm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1164,7 +1164,7 @@
     "category": "clinic",
     "category_raw": "clinic",
     "source": "osm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1181,7 +1181,7 @@
     "category": "clinic",
     "category_raw": "Medical clinic",
     "source": "gm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1198,7 +1198,7 @@
     "category": "clinic",
     "category_raw": "Medical clinic",
     "source": "gm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1215,7 +1215,7 @@
     "category": "clinic",
     "category_raw": "clinic",
     "source": "osm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1232,7 +1232,7 @@
     "category": "clinic",
     "category_raw": "Medical clinic",
     "source": "gm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1249,7 +1249,7 @@
     "category": "clinic",
     "category_raw": "clinic",
     "source": "osm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1266,7 +1266,7 @@
     "category": "clinic",
     "category_raw": "Medical clinic",
     "source": "gm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1283,7 +1283,7 @@
     "category": "clinic",
     "category_raw": "Medical clinic",
     "source": "gm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1300,7 +1300,7 @@
     "category": "clinic",
     "category_raw": "clinic",
     "source": "osm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1317,7 +1317,7 @@
     "category": "clinic",
     "category_raw": "clinic",
     "source": "osm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1334,7 +1334,7 @@
     "category": "clinic",
     "category_raw": "Medical clinic",
     "source": "gm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1351,7 +1351,7 @@
     "category": "clinic",
     "category_raw": "clinic",
     "source": "osm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1368,7 +1368,7 @@
     "category": "clinic",
     "category_raw": "clinic",
     "source": "osm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1385,7 +1385,7 @@
     "category": "clinic",
     "category_raw": "clinic",
     "source": "osm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1402,7 +1402,7 @@
     "category": "clinic",
     "category_raw": "clinic",
     "source": "gm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1419,7 +1419,7 @@
     "category": "clinic",
     "category_raw": "clinic",
     "source": "osm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1436,7 +1436,7 @@
     "category": "clinic",
     "category_raw": "clinic",
     "source": "osm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1453,7 +1453,7 @@
     "category": "clinic",
     "category_raw": "clinic",
     "source": "osm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1470,7 +1470,7 @@
     "category": "clinic",
     "category_raw": "clinic",
     "source": "osm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1487,7 +1487,7 @@
     "category": "clinic",
     "category_raw": "clinic",
     "source": "osm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1504,7 +1504,7 @@
     "category": "clinic",
     "category_raw": "Medical clinic",
     "source": "gm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1521,7 +1521,7 @@
     "category": "clinic",
     "category_raw": "Medical clinic",
     "source": "gm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1538,7 +1538,7 @@
     "category": "clinic",
     "category_raw": "clinic",
     "source": "osm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1555,7 +1555,7 @@
     "category": "clinic",
     "category_raw": "clinic",
     "source": "osm",
-    "icon": "🩺"
+    "icon": "\ud83e\ude7a"
    },
    "geometry": {
     "type": "Point",
@@ -1572,7 +1572,7 @@
     "category": "clothing wholesale market place",
     "category_raw": "Clothing wholesale market place",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -1589,7 +1589,7 @@
     "category": "college",
     "category_raw": "College",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -1606,7 +1606,7 @@
     "category": "college",
     "category_raw": "college",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -1623,7 +1623,7 @@
     "category": "community center",
     "category_raw": "Community center",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -1640,7 +1640,7 @@
     "category": "community health center",
     "category_raw": "Community health center",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -1657,7 +1657,7 @@
     "category": "community health center",
     "category_raw": "Community health center",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -1674,7 +1674,7 @@
     "category": "company",
     "category_raw": "company",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -1691,7 +1691,7 @@
     "category": "company",
     "category_raw": "company",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -1708,7 +1708,7 @@
     "category": "condominium complex",
     "category_raw": "Condominium complex",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -1725,7 +1725,7 @@
     "category": "conference center",
     "category_raw": "Conference center",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -1742,7 +1742,7 @@
     "category": "convenience",
     "category_raw": "convenience",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -1759,7 +1759,7 @@
     "category": "convenience",
     "category_raw": "convenience",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -1776,7 +1776,7 @@
     "category": "courthouse",
     "category_raw": "courthouse",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -1793,7 +1793,7 @@
     "category": "diner",
     "category_raw": "Diner",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -1810,7 +1810,7 @@
     "category": "education center",
     "category_raw": "Education center",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -1827,7 +1827,7 @@
     "category": "education center",
     "category_raw": "Education center",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -1844,7 +1844,7 @@
     "category": "education center",
     "category_raw": "Education center",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -1861,7 +1861,7 @@
     "category": "education center",
     "category_raw": "Education center",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -1878,7 +1878,7 @@
     "category": "educational institution",
     "category_raw": "Educational institution",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -1895,7 +1895,7 @@
     "category": "educational institution",
     "category_raw": "Educational institution",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -1912,7 +1912,7 @@
     "category": "educational institution",
     "category_raw": "Educational institution",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -1929,7 +1929,7 @@
     "category": "educational institution",
     "category_raw": "Educational institution",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -1946,7 +1946,7 @@
     "category": "educational institution",
     "category_raw": "Educational institution",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -1963,7 +1963,7 @@
     "category": "educational institution",
     "category_raw": "Educational institution",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -1980,7 +1980,7 @@
     "category": "educational institution",
     "category_raw": "Educational institution",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -1997,7 +1997,7 @@
     "category": "educational institution",
     "category_raw": "Educational institution",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -2014,7 +2014,7 @@
     "category": "educational_institution",
     "category_raw": "educational_institution",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -2031,7 +2031,7 @@
     "category": "educational_institution",
     "category_raw": "educational_institution",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -2048,7 +2048,7 @@
     "category": "educational_institution",
     "category_raw": "educational_institution",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -2065,7 +2065,7 @@
     "category": "electrical",
     "category_raw": "electrical",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -2082,7 +2082,7 @@
     "category": "fast_food",
     "category_raw": "fast_food",
     "source": "osm",
-    "icon": "🍔"
+    "icon": "\ud83c\udf54"
    },
    "geometry": {
     "type": "Point",
@@ -2099,7 +2099,7 @@
     "category": "fast_food",
     "category_raw": "fast_food",
     "source": "osm",
-    "icon": "🍔"
+    "icon": "\ud83c\udf54"
    },
    "geometry": {
     "type": "Point",
@@ -2116,7 +2116,7 @@
     "category": "fast_food",
     "category_raw": "fast_food",
     "source": "osm",
-    "icon": "🍔"
+    "icon": "\ud83c\udf54"
    },
    "geometry": {
     "type": "Point",
@@ -2133,7 +2133,7 @@
     "category": "financial institution",
     "category_raw": "Financial institution",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -2150,7 +2150,7 @@
     "category": "financial institution",
     "category_raw": "Financial institution",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -2167,7 +2167,7 @@
     "category": "financial institution",
     "category_raw": "Financial institution",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -2184,7 +2184,7 @@
     "category": "financial institution",
     "category_raw": "Financial institution",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -2201,7 +2201,7 @@
     "category": "financial institution",
     "category_raw": "Financial institution",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -2218,7 +2218,7 @@
     "category": "fish farm",
     "category_raw": "Fish farm",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -2235,7 +2235,7 @@
     "category": "fish farm",
     "category_raw": "Fish farm",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -2252,7 +2252,7 @@
     "category": "fitness_centre",
     "category_raw": "fitness_centre",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -2269,7 +2269,7 @@
     "category": "fuel",
     "category_raw": "Gas station",
     "source": "gm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2286,7 +2286,7 @@
     "category": "fuel",
     "category_raw": "Gas station",
     "source": "gm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2303,7 +2303,7 @@
     "category": "fuel",
     "category_raw": "Gas station",
     "source": "gm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2320,7 +2320,7 @@
     "category": "fuel",
     "category_raw": "Gas station",
     "source": "gm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2337,7 +2337,7 @@
     "category": "fuel",
     "category_raw": "Diesel fuel supplier",
     "source": "gm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2354,7 +2354,7 @@
     "category": "fuel",
     "category_raw": "Gas station",
     "source": "gm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2371,7 +2371,7 @@
     "category": "fuel",
     "category_raw": "Gas station",
     "source": "gm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2388,7 +2388,7 @@
     "category": "fuel",
     "category_raw": "Gas station",
     "source": "gm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2405,7 +2405,7 @@
     "category": "fuel",
     "category_raw": "fuel",
     "source": "osm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2422,7 +2422,7 @@
     "category": "fuel",
     "category_raw": "Gas station",
     "source": "gm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2439,7 +2439,7 @@
     "category": "fuel",
     "category_raw": "fuel",
     "source": "osm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2456,7 +2456,7 @@
     "category": "fuel",
     "category_raw": "Gas station",
     "source": "gm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2473,7 +2473,7 @@
     "category": "fuel",
     "category_raw": "Gas station",
     "source": "gm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2490,7 +2490,7 @@
     "category": "fuel",
     "category_raw": "Gas station",
     "source": "gm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2507,7 +2507,7 @@
     "category": "fuel",
     "category_raw": "Gas station",
     "source": "gm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2524,7 +2524,7 @@
     "category": "fuel",
     "category_raw": "fuel",
     "source": "osm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2541,7 +2541,7 @@
     "category": "fuel",
     "category_raw": "Gas station",
     "source": "gm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2558,7 +2558,7 @@
     "category": "fuel",
     "category_raw": "Gas station",
     "source": "gm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2575,7 +2575,7 @@
     "category": "fuel",
     "category_raw": "Gas station",
     "source": "gm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2592,7 +2592,7 @@
     "category": "fuel",
     "category_raw": "Gas station",
     "source": "gm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2609,7 +2609,7 @@
     "category": "fuel",
     "category_raw": "fuel",
     "source": "osm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2626,7 +2626,7 @@
     "category": "fuel",
     "category_raw": "Gas station",
     "source": "gm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2643,7 +2643,7 @@
     "category": "fuel",
     "category_raw": "fuel",
     "source": "osm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2660,7 +2660,7 @@
     "category": "fuel",
     "category_raw": "Gas station",
     "source": "gm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2677,7 +2677,7 @@
     "category": "fuel",
     "category_raw": "Gas station",
     "source": "gm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2694,7 +2694,7 @@
     "category": "fuel",
     "category_raw": "Gas station",
     "source": "gm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2711,7 +2711,7 @@
     "category": "fuel",
     "category_raw": "Gas station",
     "source": "gm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2728,7 +2728,7 @@
     "category": "fuel",
     "category_raw": "Gas station",
     "source": "gm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2745,7 +2745,7 @@
     "category": "fuel",
     "category_raw": "fuel",
     "source": "osm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2762,7 +2762,7 @@
     "category": "fuel",
     "category_raw": "fuel",
     "source": "osm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2779,7 +2779,7 @@
     "category": "fuel",
     "category_raw": "Gas station",
     "source": "gm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2796,7 +2796,7 @@
     "category": "fuel",
     "category_raw": "Gas station",
     "source": "gm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2813,7 +2813,7 @@
     "category": "fuel",
     "category_raw": "Gas station",
     "source": "gm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2830,7 +2830,7 @@
     "category": "fuel",
     "category_raw": "Gas station",
     "source": "gm",
-    "icon": "⛽"
+    "icon": "\u26fd"
    },
    "geometry": {
     "type": "Point",
@@ -2847,7 +2847,7 @@
     "category": "government",
     "category_raw": "government",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -2864,7 +2864,7 @@
     "category": "government",
     "category_raw": "government",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -2881,7 +2881,7 @@
     "category": "greenhouse",
     "category_raw": "Greenhouse",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -2898,7 +2898,7 @@
     "category": "guest_house",
     "category_raw": "guest_house",
     "source": "osm",
-    "icon": "🛏️"
+    "icon": "\ud83d\udecf\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -2915,7 +2915,7 @@
     "category": "guest_house",
     "category_raw": "Guest house",
     "source": "gm",
-    "icon": "🛏️"
+    "icon": "\ud83d\udecf\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -2932,7 +2932,7 @@
     "category": "guest_house",
     "category_raw": "guest_house",
     "source": "osm",
-    "icon": "🛏️"
+    "icon": "\ud83d\udecf\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -2949,7 +2949,7 @@
     "category": "guest_house",
     "category_raw": "guest_house",
     "source": "osm",
-    "icon": "🛏️"
+    "icon": "\ud83d\udecf\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -2966,7 +2966,7 @@
     "category": "guest_house",
     "category_raw": "guest_house",
     "source": "osm",
-    "icon": "🛏️"
+    "icon": "\ud83d\udecf\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -2983,7 +2983,7 @@
     "category": "guest_house",
     "category_raw": "guest_house",
     "source": "osm",
-    "icon": "🛏️"
+    "icon": "\ud83d\udecf\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -3000,7 +3000,7 @@
     "category": "guest_house",
     "category_raw": "Guest house",
     "source": "gm",
-    "icon": "🛏️"
+    "icon": "\ud83d\udecf\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -3017,7 +3017,7 @@
     "category": "guest_house",
     "category_raw": "guest_house",
     "source": "osm",
-    "icon": "🛏️"
+    "icon": "\ud83d\udecf\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -3034,7 +3034,7 @@
     "category": "guest_house",
     "category_raw": "Guest house",
     "source": "gm",
-    "icon": "🛏️"
+    "icon": "\ud83d\udecf\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -3051,7 +3051,7 @@
     "category": "guest_house",
     "category_raw": "Guest house",
     "source": "gm",
-    "icon": "🛏️"
+    "icon": "\ud83d\udecf\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -3068,7 +3068,7 @@
     "category": "guest_house",
     "category_raw": "guest_house",
     "source": "osm",
-    "icon": "🛏️"
+    "icon": "\ud83d\udecf\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -3085,7 +3085,7 @@
     "category": "guest_house",
     "category_raw": "guest_house",
     "source": "osm",
-    "icon": "🛏️"
+    "icon": "\ud83d\udecf\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -3102,7 +3102,7 @@
     "category": "guest_house",
     "category_raw": "Guest house",
     "source": "gm",
-    "icon": "🛏️"
+    "icon": "\ud83d\udecf\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -3119,7 +3119,7 @@
     "category": "guest_house",
     "category_raw": "guest_house",
     "source": "osm",
-    "icon": "🛏️"
+    "icon": "\ud83d\udecf\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -3136,7 +3136,7 @@
     "category": "guest_house",
     "category_raw": "Guest house",
     "source": "gm",
-    "icon": "🛏️"
+    "icon": "\ud83d\udecf\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -3153,7 +3153,7 @@
     "category": "health",
     "category_raw": "Health",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -3170,7 +3170,7 @@
     "category": "health consultant",
     "category_raw": "Health consultant",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -3187,7 +3187,7 @@
     "category": "health consultant",
     "category_raw": "Health consultant",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -3204,7 +3204,7 @@
     "category": "health_post",
     "category_raw": "health_post",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -3221,7 +3221,7 @@
     "category": "health_post",
     "category_raw": "health_post",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -3238,7 +3238,7 @@
     "category": "health_post",
     "category_raw": "health_post",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -3255,7 +3255,7 @@
     "category": "hospital",
     "category_raw": "Hospital",
     "source": "gm",
-    "icon": "🏥"
+    "icon": "\ud83c\udfe5"
    },
    "geometry": {
     "type": "Point",
@@ -3272,7 +3272,7 @@
     "category": "hospital",
     "category_raw": "Government hospital",
     "source": "gm",
-    "icon": "🏥"
+    "icon": "\ud83c\udfe5"
    },
    "geometry": {
     "type": "Point",
@@ -3289,7 +3289,7 @@
     "category": "hospital",
     "category_raw": "Private hospital",
     "source": "gm",
-    "icon": "🏥"
+    "icon": "\ud83c\udfe5"
    },
    "geometry": {
     "type": "Point",
@@ -3306,7 +3306,7 @@
     "category": "hospital",
     "category_raw": "Hospital",
     "source": "gm",
-    "icon": "🏥"
+    "icon": "\ud83c\udfe5"
    },
    "geometry": {
     "type": "Point",
@@ -3323,7 +3323,7 @@
     "category": "hospital",
     "category_raw": "hospital",
     "source": "osm",
-    "icon": "🏥"
+    "icon": "\ud83c\udfe5"
    },
    "geometry": {
     "type": "Point",
@@ -3340,7 +3340,7 @@
     "category": "hospital",
     "category_raw": "Hospital",
     "source": "gm",
-    "icon": "🏥"
+    "icon": "\ud83c\udfe5"
    },
    "geometry": {
     "type": "Point",
@@ -3357,7 +3357,7 @@
     "category": "hospital",
     "category_raw": "Hospital",
     "source": "gm",
-    "icon": "🏥"
+    "icon": "\ud83c\udfe5"
    },
    "geometry": {
     "type": "Point",
@@ -3374,7 +3374,7 @@
     "category": "hospital",
     "category_raw": "hospital",
     "source": "osm",
-    "icon": "🏥"
+    "icon": "\ud83c\udfe5"
    },
    "geometry": {
     "type": "Point",
@@ -3391,7 +3391,7 @@
     "category": "hospital",
     "category_raw": "hospital",
     "source": "osm",
-    "icon": "🏥"
+    "icon": "\ud83c\udfe5"
    },
    "geometry": {
     "type": "Point",
@@ -3408,7 +3408,7 @@
     "category": "hospital",
     "category_raw": "Hospital",
     "source": "gm",
-    "icon": "🏥"
+    "icon": "\ud83c\udfe5"
    },
    "geometry": {
     "type": "Point",
@@ -3425,7 +3425,7 @@
     "category": "hospital",
     "category_raw": "Hospital department",
     "source": "gm",
-    "icon": "🏥"
+    "icon": "\ud83c\udfe5"
    },
    "geometry": {
     "type": "Point",
@@ -3442,7 +3442,7 @@
     "category": "hospital",
     "category_raw": "Hospital",
     "source": "gm",
-    "icon": "🏥"
+    "icon": "\ud83c\udfe5"
    },
    "geometry": {
     "type": "Point",
@@ -3459,7 +3459,7 @@
     "category": "hostel",
     "category_raw": "Hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3476,7 +3476,7 @@
     "category": "hostel",
     "category_raw": "Hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3493,7 +3493,7 @@
     "category": "hostel",
     "category_raw": "Hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3510,7 +3510,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3527,7 +3527,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3544,7 +3544,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "osm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3561,7 +3561,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3578,7 +3578,7 @@
     "category": "hostel",
     "category_raw": "Hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3595,7 +3595,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3612,7 +3612,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3629,7 +3629,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3646,7 +3646,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3663,7 +3663,7 @@
     "category": "hostel",
     "category_raw": "student_accommodation",
     "source": "osm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3680,7 +3680,7 @@
     "category": "hostel",
     "category_raw": "Hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3697,7 +3697,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3714,7 +3714,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3731,7 +3731,7 @@
     "category": "hostel",
     "category_raw": "student_accommodation",
     "source": "osm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3748,7 +3748,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3765,7 +3765,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3782,7 +3782,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3799,7 +3799,7 @@
     "category": "hostel",
     "category_raw": "student_accommodation",
     "source": "osm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3816,7 +3816,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3833,7 +3833,7 @@
     "category": "hostel",
     "category_raw": "Hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3850,7 +3850,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3867,7 +3867,7 @@
     "category": "hostel",
     "category_raw": "Hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3884,7 +3884,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3901,7 +3901,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3918,7 +3918,7 @@
     "category": "hostel",
     "category_raw": "Hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3935,7 +3935,7 @@
     "category": "hostel",
     "category_raw": "Hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3952,7 +3952,7 @@
     "category": "hostel",
     "category_raw": "Hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3969,7 +3969,7 @@
     "category": "hostel",
     "category_raw": "Hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -3986,7 +3986,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4003,7 +4003,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "osm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4020,7 +4020,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4037,7 +4037,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4054,7 +4054,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4071,7 +4071,7 @@
     "category": "hostel",
     "category_raw": "student_accommodation",
     "source": "osm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4088,7 +4088,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4105,7 +4105,7 @@
     "category": "hostel",
     "category_raw": "Hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4122,7 +4122,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4139,7 +4139,7 @@
     "category": "hostel",
     "category_raw": "Hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4156,7 +4156,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4173,7 +4173,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4190,7 +4190,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4207,7 +4207,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4224,7 +4224,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4241,7 +4241,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4258,7 +4258,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4275,7 +4275,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4292,7 +4292,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4309,7 +4309,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4326,7 +4326,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4343,7 +4343,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4360,7 +4360,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4377,7 +4377,7 @@
     "category": "hostel",
     "category_raw": "Hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4394,7 +4394,7 @@
     "category": "hostel",
     "category_raw": "Hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4411,7 +4411,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4428,7 +4428,7 @@
     "category": "hostel",
     "category_raw": "Hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4445,7 +4445,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4462,7 +4462,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4479,7 +4479,7 @@
     "category": "hostel",
     "category_raw": "student_accommodation",
     "source": "osm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4496,7 +4496,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4513,7 +4513,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4530,7 +4530,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4547,7 +4547,7 @@
     "category": "hostel",
     "category_raw": "Hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4564,7 +4564,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4581,7 +4581,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4598,7 +4598,7 @@
     "category": "hostel",
     "category_raw": "Hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4615,7 +4615,7 @@
     "category": "hostel",
     "category_raw": "Hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4632,7 +4632,7 @@
     "category": "hostel",
     "category_raw": "Hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4649,7 +4649,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4666,7 +4666,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4683,7 +4683,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4700,7 +4700,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4717,7 +4717,7 @@
     "category": "hostel",
     "category_raw": "Hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4734,7 +4734,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4751,7 +4751,7 @@
     "category": "hostel",
     "category_raw": "Hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4768,7 +4768,7 @@
     "category": "hostel",
     "category_raw": "Hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4785,7 +4785,7 @@
     "category": "hostel",
     "category_raw": "hostel",
     "source": "gm",
-    "icon": "🛌"
+    "icon": "\ud83d\udecc"
    },
    "geometry": {
     "type": "Point",
@@ -4802,7 +4802,7 @@
     "category": "hotel",
     "category_raw": "Lodge",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -4819,7 +4819,7 @@
     "category": "hotel",
     "category_raw": "Lodge",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -4836,7 +4836,7 @@
     "category": "hotel",
     "category_raw": "hotel",
     "source": "osm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -4853,7 +4853,7 @@
     "category": "hotel",
     "category_raw": "Hotel",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -4870,7 +4870,7 @@
     "category": "hotel",
     "category_raw": "Lodge",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -4887,7 +4887,7 @@
     "category": "hotel",
     "category_raw": "Hotel",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -4904,7 +4904,7 @@
     "category": "hotel",
     "category_raw": "Hotel",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -4921,7 +4921,7 @@
     "category": "hotel",
     "category_raw": "Hotel",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -4938,7 +4938,7 @@
     "category": "hotel",
     "category_raw": "hotel",
     "source": "osm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -4955,7 +4955,7 @@
     "category": "hotel",
     "category_raw": "Lodge",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -4972,7 +4972,7 @@
     "category": "hotel",
     "category_raw": "Lodge",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -4989,7 +4989,7 @@
     "category": "hotel",
     "category_raw": "Lodge",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5006,7 +5006,7 @@
     "category": "hotel",
     "category_raw": "Lodge",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5023,7 +5023,7 @@
     "category": "hotel",
     "category_raw": "Hotel",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5040,7 +5040,7 @@
     "category": "hotel",
     "category_raw": "Lodge",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5057,7 +5057,7 @@
     "category": "hotel",
     "category_raw": "Lodge",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5074,7 +5074,7 @@
     "category": "hotel",
     "category_raw": "Lodge",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5091,7 +5091,7 @@
     "category": "hotel",
     "category_raw": "Lodge",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5108,7 +5108,7 @@
     "category": "hotel",
     "category_raw": "Hotel",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5125,7 +5125,7 @@
     "category": "hotel",
     "category_raw": "Lodge",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5142,7 +5142,7 @@
     "category": "hotel",
     "category_raw": "Hotel",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5159,7 +5159,7 @@
     "category": "hotel",
     "category_raw": "hotel",
     "source": "osm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5176,7 +5176,7 @@
     "category": "hotel",
     "category_raw": "Hotel",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5193,7 +5193,7 @@
     "category": "hotel",
     "category_raw": "Lodge",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5210,7 +5210,7 @@
     "category": "hotel",
     "category_raw": "Hotel",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5227,7 +5227,7 @@
     "category": "hotel",
     "category_raw": "Lodge",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5244,7 +5244,7 @@
     "category": "hotel",
     "category_raw": "Hotel",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5261,7 +5261,7 @@
     "category": "hotel",
     "category_raw": "Lodge",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5278,7 +5278,7 @@
     "category": "hotel",
     "category_raw": "Lodge",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5295,7 +5295,7 @@
     "category": "hotel",
     "category_raw": "hotel",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5312,7 +5312,7 @@
     "category": "hotel",
     "category_raw": "Lodge",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5329,7 +5329,7 @@
     "category": "hotel",
     "category_raw": "Lodge",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5346,7 +5346,7 @@
     "category": "hotel",
     "category_raw": "Hotel",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5363,7 +5363,7 @@
     "category": "hotel",
     "category_raw": "Lodge",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5380,7 +5380,7 @@
     "category": "hotel",
     "category_raw": "Lodge",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5397,7 +5397,7 @@
     "category": "hotel",
     "category_raw": "Lodge",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5414,7 +5414,7 @@
     "category": "hotel",
     "category_raw": "Lodge",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5431,7 +5431,7 @@
     "category": "hotel",
     "category_raw": "Hotel",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5448,7 +5448,7 @@
     "category": "hotel",
     "category_raw": "Hotel",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5465,7 +5465,7 @@
     "category": "hotel",
     "category_raw": "Lodge",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5482,7 +5482,7 @@
     "category": "hotel",
     "category_raw": "hotel",
     "source": "osm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5499,7 +5499,7 @@
     "category": "hotel",
     "category_raw": "Lodge",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5516,7 +5516,7 @@
     "category": "hotel",
     "category_raw": "hunting_lodge",
     "source": "osm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5533,7 +5533,7 @@
     "category": "hotel",
     "category_raw": "Lodge",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5550,7 +5550,7 @@
     "category": "hotel",
     "category_raw": "Hotel",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5567,7 +5567,7 @@
     "category": "hotel",
     "category_raw": "Hotel",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5584,7 +5584,7 @@
     "category": "hotel",
     "category_raw": "hotel",
     "source": "osm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5601,7 +5601,7 @@
     "category": "hotel",
     "category_raw": "Hotel",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5618,7 +5618,7 @@
     "category": "hotel",
     "category_raw": "Motel",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5635,7 +5635,7 @@
     "category": "housing society",
     "category_raw": "Housing society",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -5652,7 +5652,7 @@
     "category": "hypermarket",
     "category_raw": "Hypermarket",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -5669,7 +5669,7 @@
     "category": "kindergarten",
     "category_raw": "Kindergarten",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -5686,7 +5686,7 @@
     "category": "library",
     "category_raw": "library",
     "source": "osm",
-    "icon": "📚"
+    "icon": "\ud83d\udcda"
    },
    "geometry": {
     "type": "Point",
@@ -5703,7 +5703,7 @@
     "category": "lodging",
     "category_raw": "Lodging",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5720,7 +5720,7 @@
     "category": "lodging",
     "category_raw": "Lodging",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5737,7 +5737,7 @@
     "category": "lodging",
     "category_raw": "Lodging",
     "source": "gm",
-    "icon": "🏨"
+    "icon": "\ud83c\udfe8"
    },
    "geometry": {
     "type": "Point",
@@ -5754,7 +5754,7 @@
     "category": "mall",
     "category_raw": "Shopping mall",
     "source": "gm",
-    "icon": "🏬"
+    "icon": "\ud83c\udfec"
    },
    "geometry": {
     "type": "Point",
@@ -5771,7 +5771,7 @@
     "category": "mall",
     "category_raw": "Shopping mall",
     "source": "gm",
-    "icon": "🏬"
+    "icon": "\ud83c\udfec"
    },
    "geometry": {
     "type": "Point",
@@ -5788,7 +5788,7 @@
     "category": "mall",
     "category_raw": "mall",
     "source": "osm",
-    "icon": "🏬"
+    "icon": "\ud83c\udfec"
    },
    "geometry": {
     "type": "Point",
@@ -5805,7 +5805,7 @@
     "category": "mall",
     "category_raw": "Shopping mall",
     "source": "gm",
-    "icon": "🏬"
+    "icon": "\ud83c\udfec"
    },
    "geometry": {
     "type": "Point",
@@ -5822,7 +5822,7 @@
     "category": "mall",
     "category_raw": "Shopping mall",
     "source": "gm",
-    "icon": "🏬"
+    "icon": "\ud83c\udfec"
    },
    "geometry": {
     "type": "Point",
@@ -5839,7 +5839,7 @@
     "category": "mall",
     "category_raw": "Shopping mall",
     "source": "gm",
-    "icon": "🏬"
+    "icon": "\ud83c\udfec"
    },
    "geometry": {
     "type": "Point",
@@ -5856,7 +5856,7 @@
     "category": "market",
     "category_raw": "Market",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -5873,7 +5873,7 @@
     "category": "market",
     "category_raw": "Market",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -5890,7 +5890,7 @@
     "category": "market",
     "category_raw": "Market",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -5907,7 +5907,7 @@
     "category": "market",
     "category_raw": "Market",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -5924,7 +5924,7 @@
     "category": "medical laboratory",
     "category_raw": "Medical laboratory",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -5941,7 +5941,7 @@
     "category": "money order service",
     "category_raw": "Money order service",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -5958,7 +5958,7 @@
     "category": "money transfer service",
     "category_raw": "Money transfer service",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -5975,7 +5975,7 @@
     "category": "money transfer service",
     "category_raw": "Money transfer service",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -5992,7 +5992,7 @@
     "category": "money transfer service",
     "category_raw": "Money transfer service",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -6009,7 +6009,7 @@
     "category": "money transfer service",
     "category_raw": "Money transfer service",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -6026,7 +6026,7 @@
     "category": "ngo",
     "category_raw": "ngo",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -6043,7 +6043,7 @@
     "category": "night club",
     "category_raw": "Night club",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -6060,7 +6060,7 @@
     "category": "nightclub",
     "category_raw": "nightclub",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -6077,7 +6077,7 @@
     "category": "park",
     "category_raw": "park",
     "source": "osm",
-    "icon": "🌳"
+    "icon": "\ud83c\udf33"
    },
    "geometry": {
     "type": "Point",
@@ -6094,7 +6094,7 @@
     "category": "pharmaceutical company",
     "category_raw": "Pharmaceutical company",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -6111,7 +6111,7 @@
     "category": "pharmacy",
     "category_raw": "Pharmacy",
     "source": "gm",
-    "icon": "💊"
+    "icon": "\ud83d\udc8a"
    },
    "geometry": {
     "type": "Point",
@@ -6128,7 +6128,7 @@
     "category": "pharmacy",
     "category_raw": "Pharmacy",
     "source": "gm",
-    "icon": "💊"
+    "icon": "\ud83d\udc8a"
    },
    "geometry": {
     "type": "Point",
@@ -6145,7 +6145,7 @@
     "category": "pharmacy",
     "category_raw": "Pharmacy",
     "source": "gm",
-    "icon": "💊"
+    "icon": "\ud83d\udc8a"
    },
    "geometry": {
     "type": "Point",
@@ -6162,7 +6162,7 @@
     "category": "pharmacy",
     "category_raw": "Pharmacy",
     "source": "gm",
-    "icon": "💊"
+    "icon": "\ud83d\udc8a"
    },
    "geometry": {
     "type": "Point",
@@ -6179,7 +6179,7 @@
     "category": "pharmacy",
     "category_raw": "Pharmacy",
     "source": "gm",
-    "icon": "💊"
+    "icon": "\ud83d\udc8a"
    },
    "geometry": {
     "type": "Point",
@@ -6196,7 +6196,7 @@
     "category": "pharmacy",
     "category_raw": "Pharmacy",
     "source": "gm",
-    "icon": "💊"
+    "icon": "\ud83d\udc8a"
    },
    "geometry": {
     "type": "Point",
@@ -6213,7 +6213,7 @@
     "category": "pharmacy",
     "category_raw": "Pharmacy",
     "source": "gm",
-    "icon": "💊"
+    "icon": "\ud83d\udc8a"
    },
    "geometry": {
     "type": "Point",
@@ -6230,7 +6230,7 @@
     "category": "pharmacy",
     "category_raw": "Pharmacy",
     "source": "gm",
-    "icon": "💊"
+    "icon": "\ud83d\udc8a"
    },
    "geometry": {
     "type": "Point",
@@ -6247,7 +6247,7 @@
     "category": "pharmacy",
     "category_raw": "Pharmacy",
     "source": "gm",
-    "icon": "💊"
+    "icon": "\ud83d\udc8a"
    },
    "geometry": {
     "type": "Point",
@@ -6264,7 +6264,7 @@
     "category": "pharmacy",
     "category_raw": "Pharmacy",
     "source": "gm",
-    "icon": "💊"
+    "icon": "\ud83d\udc8a"
    },
    "geometry": {
     "type": "Point",
@@ -6281,7 +6281,7 @@
     "category": "pharmacy",
     "category_raw": "Pharmacy",
     "source": "gm",
-    "icon": "💊"
+    "icon": "\ud83d\udc8a"
    },
    "geometry": {
     "type": "Point",
@@ -6298,7 +6298,7 @@
     "category": "pharmacy",
     "category_raw": "Pharmacy",
     "source": "gm",
-    "icon": "💊"
+    "icon": "\ud83d\udc8a"
    },
    "geometry": {
     "type": "Point",
@@ -6315,7 +6315,7 @@
     "category": "pharmacy",
     "category_raw": "Pharmacy",
     "source": "gm",
-    "icon": "💊"
+    "icon": "\ud83d\udc8a"
    },
    "geometry": {
     "type": "Point",
@@ -6332,7 +6332,7 @@
     "category": "pharmacy",
     "category_raw": "Pharmacy",
     "source": "gm",
-    "icon": "💊"
+    "icon": "\ud83d\udc8a"
    },
    "geometry": {
     "type": "Point",
@@ -6349,7 +6349,7 @@
     "category": "pharmacy",
     "category_raw": "Pharmacy",
     "source": "gm",
-    "icon": "💊"
+    "icon": "\ud83d\udc8a"
    },
    "geometry": {
     "type": "Point",
@@ -6366,7 +6366,7 @@
     "category": "pharmacy",
     "category_raw": "Pharmacy",
     "source": "gm",
-    "icon": "💊"
+    "icon": "\ud83d\udc8a"
    },
    "geometry": {
     "type": "Point",
@@ -6383,7 +6383,7 @@
     "category": "pharmacy",
     "category_raw": "Pharmacy",
     "source": "gm",
-    "icon": "💊"
+    "icon": "\ud83d\udc8a"
    },
    "geometry": {
     "type": "Point",
@@ -6400,7 +6400,7 @@
     "category": "pharmacy",
     "category_raw": "Pharmacy",
     "source": "gm",
-    "icon": "💊"
+    "icon": "\ud83d\udc8a"
    },
    "geometry": {
     "type": "Point",
@@ -6417,7 +6417,7 @@
     "category": "place_of_worship",
     "category_raw": "place_of_worship",
     "source": "osm",
-    "icon": "⛪"
+    "icon": "\u26ea"
    },
    "geometry": {
     "type": "Point",
@@ -6434,7 +6434,7 @@
     "category": "place_of_worship",
     "category_raw": "place_of_worship",
     "source": "osm",
-    "icon": "⛪"
+    "icon": "\u26ea"
    },
    "geometry": {
     "type": "Point",
@@ -6451,7 +6451,7 @@
     "category": "place_of_worship",
     "category_raw": "place_of_worship",
     "source": "gm",
-    "icon": "⛪"
+    "icon": "\u26ea"
    },
    "geometry": {
     "type": "Point",
@@ -6468,7 +6468,7 @@
     "category": "place_of_worship",
     "category_raw": "place_of_worship",
     "source": "osm",
-    "icon": "⛪"
+    "icon": "\u26ea"
    },
    "geometry": {
     "type": "Point",
@@ -6485,7 +6485,7 @@
     "category": "place_of_worship",
     "category_raw": "place_of_worship",
     "source": "gm",
-    "icon": "⛪"
+    "icon": "\u26ea"
    },
    "geometry": {
     "type": "Point",
@@ -6502,7 +6502,7 @@
     "category": "place_of_worship",
     "category_raw": "place_of_worship",
     "source": "osm",
-    "icon": "⛪"
+    "icon": "\u26ea"
    },
    "geometry": {
     "type": "Point",
@@ -6519,7 +6519,7 @@
     "category": "place_of_worship",
     "category_raw": "place_of_worship",
     "source": "osm",
-    "icon": "⛪"
+    "icon": "\u26ea"
    },
    "geometry": {
     "type": "Point",
@@ -6536,7 +6536,7 @@
     "category": "place_of_worship",
     "category_raw": "place_of_worship",
     "source": "osm",
-    "icon": "⛪"
+    "icon": "\u26ea"
    },
    "geometry": {
     "type": "Point",
@@ -6553,7 +6553,7 @@
     "category": "place_of_worship",
     "category_raw": "place_of_worship",
     "source": "gm",
-    "icon": "⛪"
+    "icon": "\u26ea"
    },
    "geometry": {
     "type": "Point",
@@ -6570,7 +6570,7 @@
     "category": "place_of_worship",
     "category_raw": "place_of_worship",
     "source": "osm",
-    "icon": "⛪"
+    "icon": "\u26ea"
    },
    "geometry": {
     "type": "Point",
@@ -6587,7 +6587,7 @@
     "category": "place_of_worship",
     "category_raw": "place_of_worship",
     "source": "gm",
-    "icon": "⛪"
+    "icon": "\u26ea"
    },
    "geometry": {
     "type": "Point",
@@ -6604,7 +6604,7 @@
     "category": "place_of_worship",
     "category_raw": "place_of_worship",
     "source": "osm",
-    "icon": "⛪"
+    "icon": "\u26ea"
    },
    "geometry": {
     "type": "Point",
@@ -6621,7 +6621,7 @@
     "category": "place_of_worship",
     "category_raw": "place_of_worship",
     "source": "osm",
-    "icon": "⛪"
+    "icon": "\u26ea"
    },
    "geometry": {
     "type": "Point",
@@ -6638,7 +6638,7 @@
     "category": "place_of_worship",
     "category_raw": "place_of_worship",
     "source": "osm",
-    "icon": "⛪"
+    "icon": "\u26ea"
    },
    "geometry": {
     "type": "Point",
@@ -6655,7 +6655,7 @@
     "category": "place_of_worship",
     "category_raw": "place_of_worship",
     "source": "osm",
-    "icon": "⛪"
+    "icon": "\u26ea"
    },
    "geometry": {
     "type": "Point",
@@ -6672,7 +6672,7 @@
     "category": "place_of_worship",
     "category_raw": "place_of_worship",
     "source": "gm",
-    "icon": "⛪"
+    "icon": "\u26ea"
    },
    "geometry": {
     "type": "Point",
@@ -6689,7 +6689,7 @@
     "category": "playground",
     "category_raw": "Playground",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -6706,7 +6706,7 @@
     "category": "police",
     "category_raw": "police",
     "source": "osm",
-    "icon": "🚓"
+    "icon": "\ud83d\ude93"
    },
    "geometry": {
     "type": "Point",
@@ -6723,7 +6723,7 @@
     "category": "police",
     "category_raw": "police",
     "source": "osm",
-    "icon": "🚓"
+    "icon": "\ud83d\ude93"
    },
    "geometry": {
     "type": "Point",
@@ -6740,7 +6740,7 @@
     "category": "police",
     "category_raw": "police",
     "source": "osm",
-    "icon": "🚓"
+    "icon": "\ud83d\ude93"
    },
    "geometry": {
     "type": "Point",
@@ -6757,7 +6757,7 @@
     "category": "police",
     "category_raw": "police",
     "source": "osm",
-    "icon": "🚓"
+    "icon": "\ud83d\ude93"
    },
    "geometry": {
     "type": "Point",
@@ -6774,7 +6774,7 @@
     "category": "police",
     "category_raw": "police",
     "source": "osm",
-    "icon": "🚓"
+    "icon": "\ud83d\ude93"
    },
    "geometry": {
     "type": "Point",
@@ -6791,7 +6791,7 @@
     "category": "police",
     "category_raw": "police",
     "source": "osm",
-    "icon": "🚓"
+    "icon": "\ud83d\ude93"
    },
    "geometry": {
     "type": "Point",
@@ -6808,7 +6808,7 @@
     "category": "police",
     "category_raw": "police",
     "source": "osm",
-    "icon": "🚓"
+    "icon": "\ud83d\ude93"
    },
    "geometry": {
     "type": "Point",
@@ -6825,7 +6825,7 @@
     "category": "police",
     "category_raw": "police",
     "source": "osm",
-    "icon": "🚓"
+    "icon": "\ud83d\ude93"
    },
    "geometry": {
     "type": "Point",
@@ -6842,7 +6842,7 @@
     "category": "post office",
     "category_raw": "Post office",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -6859,7 +6859,7 @@
     "category": "post_office",
     "category_raw": "post_office",
     "source": "osm",
-    "icon": "📮"
+    "icon": "\ud83d\udcee"
    },
    "geometry": {
     "type": "Point",
@@ -6876,7 +6876,7 @@
     "category": "prison",
     "category_raw": "prison",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -6893,7 +6893,7 @@
     "category": "private educational institution",
     "category_raw": "Private educational institution",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -6910,7 +6910,7 @@
     "category": "restaurant",
     "category_raw": "restaurant",
     "source": "osm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -6927,7 +6927,7 @@
     "category": "restaurant",
     "category_raw": "Bar & grill",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -6944,7 +6944,7 @@
     "category": "restaurant",
     "category_raw": "Restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -6961,7 +6961,7 @@
     "category": "restaurant",
     "category_raw": "Restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -6978,7 +6978,7 @@
     "category": "restaurant",
     "category_raw": "Restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -6995,7 +6995,7 @@
     "category": "restaurant",
     "category_raw": "restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7008,11 +7008,11 @@
   {
    "type": "Feature",
    "properties": {
-    "name": "Coffee Mug Café",
+    "name": "Coffee Mug Caf\u00e9",
     "category": "restaurant",
     "category_raw": "Restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7029,7 +7029,7 @@
     "category": "restaurant",
     "category_raw": "Pizza restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7046,7 +7046,7 @@
     "category": "restaurant",
     "category_raw": "Restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7063,7 +7063,7 @@
     "category": "restaurant",
     "category_raw": "Chicken restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7080,7 +7080,7 @@
     "category": "restaurant",
     "category_raw": "Chicken restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7097,7 +7097,7 @@
     "category": "restaurant",
     "category_raw": "Family restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7114,7 +7114,7 @@
     "category": "restaurant",
     "category_raw": "East African restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7127,11 +7127,11 @@
   {
    "type": "Feature",
    "properties": {
-    "name": "Ka Café",
+    "name": "Ka Caf\u00e9",
     "category": "restaurant",
     "category_raw": "Bar & grill",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7148,7 +7148,7 @@
     "category": "restaurant",
     "category_raw": "Restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7165,7 +7165,7 @@
     "category": "restaurant",
     "category_raw": "Restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7182,7 +7182,7 @@
     "category": "restaurant",
     "category_raw": "Restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7199,7 +7199,7 @@
     "category": "restaurant",
     "category_raw": "restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7216,7 +7216,7 @@
     "category": "restaurant",
     "category_raw": "Bar & grill",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7233,7 +7233,7 @@
     "category": "restaurant",
     "category_raw": "Restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7250,7 +7250,7 @@
     "category": "restaurant",
     "category_raw": "Takeout restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7267,7 +7267,7 @@
     "category": "restaurant",
     "category_raw": "Family restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7284,7 +7284,7 @@
     "category": "restaurant",
     "category_raw": "Restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7301,7 +7301,7 @@
     "category": "restaurant",
     "category_raw": "Restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7318,7 +7318,7 @@
     "category": "restaurant",
     "category_raw": "Restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7335,7 +7335,7 @@
     "category": "restaurant",
     "category_raw": "Restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7352,7 +7352,7 @@
     "category": "restaurant",
     "category_raw": "Hamburger restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7369,7 +7369,7 @@
     "category": "restaurant",
     "category_raw": "Hamburger restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7386,7 +7386,7 @@
     "category": "restaurant",
     "category_raw": "restaurant",
     "source": "osm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7403,7 +7403,7 @@
     "category": "restaurant",
     "category_raw": "restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7420,7 +7420,7 @@
     "category": "restaurant",
     "category_raw": "Restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7437,7 +7437,7 @@
     "category": "restaurant",
     "category_raw": "Restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7454,7 +7454,7 @@
     "category": "restaurant",
     "category_raw": "Restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7471,7 +7471,7 @@
     "category": "restaurant",
     "category_raw": "Bar & grill",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7488,7 +7488,7 @@
     "category": "restaurant",
     "category_raw": "Bar & grill",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7505,7 +7505,7 @@
     "category": "restaurant",
     "category_raw": "Bar & grill",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7522,7 +7522,7 @@
     "category": "restaurant",
     "category_raw": "Restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7539,7 +7539,7 @@
     "category": "restaurant",
     "category_raw": "Restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7556,7 +7556,7 @@
     "category": "restaurant",
     "category_raw": "Restaurant",
     "source": "gm",
-    "icon": "🍽️"
+    "icon": "\ud83c\udf7d\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -7573,7 +7573,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -7590,7 +7590,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -7607,7 +7607,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -7624,7 +7624,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -7641,7 +7641,7 @@
     "category": "school",
     "category_raw": "High school",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -7658,7 +7658,7 @@
     "category": "school",
     "category_raw": "Girls' high school",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -7675,7 +7675,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -7692,7 +7692,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -7709,7 +7709,7 @@
     "category": "school",
     "category_raw": "General education school",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -7726,7 +7726,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -7743,7 +7743,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -7760,7 +7760,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -7777,7 +7777,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -7794,7 +7794,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -7811,7 +7811,7 @@
     "category": "school",
     "category_raw": "Middle school",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -7828,7 +7828,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -7845,7 +7845,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -7862,7 +7862,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -7879,7 +7879,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -7896,7 +7896,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -7913,7 +7913,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -7930,7 +7930,7 @@
     "category": "school",
     "category_raw": "K-12 school",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -7947,7 +7947,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -7964,7 +7964,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -7981,7 +7981,7 @@
     "category": "school",
     "category_raw": "Elementary school",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -7998,7 +7998,7 @@
     "category": "school",
     "category_raw": "Parochial school",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8015,7 +8015,7 @@
     "category": "school",
     "category_raw": "High school",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8032,7 +8032,7 @@
     "category": "school",
     "category_raw": "Nursing school",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8049,7 +8049,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8066,7 +8066,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8083,7 +8083,7 @@
     "category": "school",
     "category_raw": "General education school",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8100,7 +8100,7 @@
     "category": "school",
     "category_raw": "Secondary school",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8117,7 +8117,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8134,7 +8134,7 @@
     "category": "school",
     "category_raw": "Primary school",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8151,7 +8151,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8168,7 +8168,7 @@
     "category": "school",
     "category_raw": "School center",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8185,7 +8185,7 @@
     "category": "school",
     "category_raw": "Secondary school",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8202,7 +8202,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8219,7 +8219,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8236,7 +8236,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8253,7 +8253,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8270,7 +8270,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8287,7 +8287,7 @@
     "category": "school",
     "category_raw": "Elementary school",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8304,7 +8304,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8321,7 +8321,7 @@
     "category": "school",
     "category_raw": "General education school",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8338,7 +8338,7 @@
     "category": "school",
     "category_raw": "Secondary school",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8355,7 +8355,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8372,7 +8372,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8389,7 +8389,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8406,7 +8406,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8423,7 +8423,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8440,7 +8440,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8457,7 +8457,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8474,7 +8474,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8491,7 +8491,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8508,7 +8508,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8525,7 +8525,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8542,7 +8542,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8559,7 +8559,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8576,7 +8576,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8593,7 +8593,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8610,7 +8610,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8627,7 +8627,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8644,7 +8644,7 @@
     "category": "school",
     "category_raw": "Middle school",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8661,7 +8661,7 @@
     "category": "school",
     "category_raw": "Primary school",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8678,7 +8678,7 @@
     "category": "school",
     "category_raw": "Girls' high school",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8695,7 +8695,7 @@
     "category": "school",
     "category_raw": "High school",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8712,7 +8712,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8729,7 +8729,7 @@
     "category": "school",
     "category_raw": "Boarding school",
     "source": "gm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8746,7 +8746,7 @@
     "category": "school",
     "category_raw": "school",
     "source": "osm",
-    "icon": "🏫"
+    "icon": "\ud83c\udfeb"
    },
    "geometry": {
     "type": "Point",
@@ -8763,7 +8763,7 @@
     "category": "security",
     "category_raw": "security",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -8780,7 +8780,7 @@
     "category": "security",
     "category_raw": "security",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -8797,7 +8797,7 @@
     "category": "security",
     "category_raw": "security",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -8814,7 +8814,7 @@
     "category": "serviced accommodation",
     "category_raw": "Serviced accommodation",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -8831,7 +8831,7 @@
     "category": "serviced accommodation",
     "category_raw": "Serviced accommodation",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -8848,7 +8848,7 @@
     "category": "shelter",
     "category_raw": "shelter",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -8865,7 +8865,7 @@
     "category": "shoes",
     "category_raw": "shoes",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -8882,7 +8882,7 @@
     "category": "shop",
     "category_raw": "Clothing store",
     "source": "gm",
-    "icon": "🛍️"
+    "icon": "\ud83d\udecd\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -8899,7 +8899,7 @@
     "category": "shop",
     "category_raw": "Stationery store",
     "source": "gm",
-    "icon": "🛍️"
+    "icon": "\ud83d\udecd\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -8916,7 +8916,7 @@
     "category": "shop",
     "category_raw": "Cosmetics store",
     "source": "gm",
-    "icon": "🛍️"
+    "icon": "\ud83d\udecd\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -8933,7 +8933,7 @@
     "category": "shop",
     "category_raw": "Jewelry store",
     "source": "gm",
-    "icon": "🛍️"
+    "icon": "\ud83d\udecd\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -8950,7 +8950,7 @@
     "category": "shop",
     "category_raw": "Clothing store",
     "source": "gm",
-    "icon": "🛍️"
+    "icon": "\ud83d\udecd\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -8967,7 +8967,7 @@
     "category": "shop",
     "category_raw": "Thrift store",
     "source": "gm",
-    "icon": "🛍️"
+    "icon": "\ud83d\udecd\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -8984,7 +8984,7 @@
     "category": "shop",
     "category_raw": "Health and beauty shop",
     "source": "gm",
-    "icon": "🛍️"
+    "icon": "\ud83d\udecd\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -9001,7 +9001,7 @@
     "category": "shop",
     "category_raw": "Health and beauty shop",
     "source": "gm",
-    "icon": "🛍️"
+    "icon": "\ud83d\udecd\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -9018,7 +9018,7 @@
     "category": "shop",
     "category_raw": "Butcher shop",
     "source": "gm",
-    "icon": "🛍️"
+    "icon": "\ud83d\udecd\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -9035,7 +9035,7 @@
     "category": "shop",
     "category_raw": "shop",
     "source": "gm",
-    "icon": "🛍️"
+    "icon": "\ud83d\udecd\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -9052,7 +9052,7 @@
     "category": "shop",
     "category_raw": "General store",
     "source": "gm",
-    "icon": "🛍️"
+    "icon": "\ud83d\udecd\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -9069,7 +9069,7 @@
     "category": "shop",
     "category_raw": "Store",
     "source": "gm",
-    "icon": "🛍️"
+    "icon": "\ud83d\udecd\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -9086,7 +9086,7 @@
     "category": "shop",
     "category_raw": "Home goods store",
     "source": "gm",
-    "icon": "🛍️"
+    "icon": "\ud83d\udecd\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -9103,7 +9103,7 @@
     "category": "shop",
     "category_raw": "Butcher shop deli",
     "source": "gm",
-    "icon": "🛍️"
+    "icon": "\ud83d\udecd\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -9120,7 +9120,7 @@
     "category": "shop",
     "category_raw": "shop",
     "source": "gm",
-    "icon": "🛍️"
+    "icon": "\ud83d\udecd\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -9137,7 +9137,7 @@
     "category": "shop",
     "category_raw": "Clothing store",
     "source": "gm",
-    "icon": "🛍️"
+    "icon": "\ud83d\udecd\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -9154,7 +9154,7 @@
     "category": "shop",
     "category_raw": "Clothing store",
     "source": "gm",
-    "icon": "🛍️"
+    "icon": "\ud83d\udecd\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -9171,7 +9171,7 @@
     "category": "shop",
     "category_raw": "Store",
     "source": "gm",
-    "icon": "🛍️"
+    "icon": "\ud83d\udecd\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -9188,7 +9188,7 @@
     "category": "shop",
     "category_raw": "Store",
     "source": "gm",
-    "icon": "🛍️"
+    "icon": "\ud83d\udecd\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -9205,7 +9205,7 @@
     "category": "shop",
     "category_raw": "General store",
     "source": "gm",
-    "icon": "🛍️"
+    "icon": "\ud83d\udecd\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -9222,7 +9222,7 @@
     "category": "shop",
     "category_raw": "Bed shop",
     "source": "gm",
-    "icon": "🛍️"
+    "icon": "\ud83d\udecd\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -9239,7 +9239,7 @@
     "category": "shop",
     "category_raw": "shop",
     "source": "gm",
-    "icon": "🛍️"
+    "icon": "\ud83d\udecd\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -9256,7 +9256,7 @@
     "category": "shop",
     "category_raw": "Store",
     "source": "gm",
-    "icon": "🛍️"
+    "icon": "\ud83d\udecd\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -9273,7 +9273,7 @@
     "category": "shop",
     "category_raw": "Store",
     "source": "gm",
-    "icon": "🛍️"
+    "icon": "\ud83d\udecd\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -9290,7 +9290,7 @@
     "category": "shop",
     "category_raw": "Clothing store",
     "source": "gm",
-    "icon": "🛍️"
+    "icon": "\ud83d\udecd\ufe0f"
    },
    "geometry": {
     "type": "Point",
@@ -9307,7 +9307,7 @@
     "category": "sports",
     "category_raw": "pitch",
     "source": "osm",
-    "icon": "⚽"
+    "icon": "\u26bd"
    },
    "geometry": {
     "type": "Point",
@@ -9324,7 +9324,7 @@
     "category": "sports",
     "category_raw": "sports",
     "source": "gm",
-    "icon": "⚽"
+    "icon": "\u26bd"
    },
    "geometry": {
     "type": "Point",
@@ -9341,7 +9341,7 @@
     "category": "sports",
     "category_raw": "pitch",
     "source": "osm",
-    "icon": "⚽"
+    "icon": "\u26bd"
    },
    "geometry": {
     "type": "Point",
@@ -9358,7 +9358,7 @@
     "category": "sports",
     "category_raw": "stadium",
     "source": "osm",
-    "icon": "⚽"
+    "icon": "\u26bd"
    },
    "geometry": {
     "type": "Point",
@@ -9375,7 +9375,7 @@
     "category": "sports",
     "category_raw": "pitch",
     "source": "osm",
-    "icon": "⚽"
+    "icon": "\u26bd"
    },
    "geometry": {
     "type": "Point",
@@ -9392,7 +9392,7 @@
     "category": "sports",
     "category_raw": "pitch",
     "source": "osm",
-    "icon": "⚽"
+    "icon": "\u26bd"
    },
    "geometry": {
     "type": "Point",
@@ -9409,7 +9409,7 @@
     "category": "station",
     "category_raw": "station_station",
     "source": "osm",
-    "icon": "🚉"
+    "icon": "\ud83d\ude89"
    },
    "geometry": {
     "type": "Point",
@@ -9426,7 +9426,7 @@
     "category": "station",
     "category_raw": "fire_station",
     "source": "osm",
-    "icon": "🚉"
+    "icon": "\ud83d\ude89"
    },
    "geometry": {
     "type": "Point",
@@ -9443,7 +9443,7 @@
     "category": "station",
     "category_raw": "station_station",
     "source": "osm",
-    "icon": "🚉"
+    "icon": "\ud83d\ude89"
    },
    "geometry": {
     "type": "Point",
@@ -9460,7 +9460,7 @@
     "category": "station",
     "category_raw": "station_station",
     "source": "osm",
-    "icon": "🚉"
+    "icon": "\ud83d\ude89"
    },
    "geometry": {
     "type": "Point",
@@ -9477,7 +9477,7 @@
     "category": "station",
     "category_raw": "bus_station",
     "source": "osm",
-    "icon": "🚉"
+    "icon": "\ud83d\ude89"
    },
    "geometry": {
     "type": "Point",
@@ -9494,7 +9494,7 @@
     "category": "station",
     "category_raw": "station_station",
     "source": "osm",
-    "icon": "🚉"
+    "icon": "\ud83d\ude89"
    },
    "geometry": {
     "type": "Point",
@@ -9511,7 +9511,7 @@
     "category": "station",
     "category_raw": "Weigh station",
     "source": "gm",
-    "icon": "🚉"
+    "icon": "\ud83d\ude89"
    },
    "geometry": {
     "type": "Point",
@@ -9528,7 +9528,7 @@
     "category": "station",
     "category_raw": "bus_station",
     "source": "osm",
-    "icon": "🚉"
+    "icon": "\ud83d\ude89"
    },
    "geometry": {
     "type": "Point",
@@ -9545,7 +9545,7 @@
     "category": "student housing center",
     "category_raw": "Student housing center",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -9562,7 +9562,7 @@
     "category": "supermarket",
     "category_raw": "Grocery store",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -9579,7 +9579,7 @@
     "category": "supermarket",
     "category_raw": "supermarket",
     "source": "osm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -9596,7 +9596,7 @@
     "category": "supermarket",
     "category_raw": "Supermarket",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -9613,7 +9613,7 @@
     "category": "supermarket",
     "category_raw": "Grocery store",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -9630,7 +9630,7 @@
     "category": "supermarket",
     "category_raw": "Grocery store",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -9647,7 +9647,7 @@
     "category": "supermarket",
     "category_raw": "Grocery store",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -9664,7 +9664,7 @@
     "category": "supermarket",
     "category_raw": "Grocery store",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -9681,7 +9681,7 @@
     "category": "supermarket",
     "category_raw": "Supermarket",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -9698,7 +9698,7 @@
     "category": "supermarket",
     "category_raw": "Grocery store",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -9715,7 +9715,7 @@
     "category": "supermarket",
     "category_raw": "Supermarket",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -9732,7 +9732,7 @@
     "category": "supermarket",
     "category_raw": "Supermarket",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -9749,7 +9749,7 @@
     "category": "supermarket",
     "category_raw": "Grocery store",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -9766,7 +9766,7 @@
     "category": "supermarket",
     "category_raw": "supermarket",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -9783,7 +9783,7 @@
     "category": "supermarket",
     "category_raw": "Grocery store",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -9800,7 +9800,7 @@
     "category": "supermarket",
     "category_raw": "Grocery store",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -9817,7 +9817,7 @@
     "category": "supermarket",
     "category_raw": "Grocery store",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -9834,7 +9834,7 @@
     "category": "supermarket",
     "category_raw": "Grocery store",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -9851,7 +9851,7 @@
     "category": "supermarket",
     "category_raw": "Grocery store",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -9868,7 +9868,7 @@
     "category": "supermarket",
     "category_raw": "Supermarket",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -9885,7 +9885,7 @@
     "category": "supermarket",
     "category_raw": "supermarket",
     "source": "osm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -9902,7 +9902,7 @@
     "category": "supermarket",
     "category_raw": "supermarket",
     "source": "osm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -9919,7 +9919,7 @@
     "category": "supermarket",
     "category_raw": "supermarket",
     "source": "osm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -9936,7 +9936,7 @@
     "category": "supermarket",
     "category_raw": "Supermarket",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -9953,7 +9953,7 @@
     "category": "supermarket",
     "category_raw": "Grocery store",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -9970,7 +9970,7 @@
     "category": "supermarket",
     "category_raw": "Supermarket",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -9987,7 +9987,7 @@
     "category": "supermarket",
     "category_raw": "Supermarket",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -10004,7 +10004,7 @@
     "category": "supermarket",
     "category_raw": "supermarket",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -10021,7 +10021,7 @@
     "category": "supermarket",
     "category_raw": "Grocery store",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -10038,7 +10038,7 @@
     "category": "supermarket",
     "category_raw": "Grocery store",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -10055,7 +10055,7 @@
     "category": "supermarket",
     "category_raw": "Grocery store",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -10072,7 +10072,7 @@
     "category": "supermarket",
     "category_raw": "Grocery store",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -10089,7 +10089,7 @@
     "category": "supermarket",
     "category_raw": "Grocery store",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -10106,7 +10106,7 @@
     "category": "supermarket",
     "category_raw": "supermarket",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -10123,7 +10123,7 @@
     "category": "supermarket",
     "category_raw": "Supermarket",
     "source": "gm",
-    "icon": "🛒"
+    "icon": "\ud83d\uded2"
    },
    "geometry": {
     "type": "Point",
@@ -10140,7 +10140,7 @@
     "category": "telecommunication",
     "category_raw": "telecommunication",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -10157,7 +10157,7 @@
     "category": "townhall",
     "category_raw": "townhall",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -10174,7 +10174,7 @@
     "category": "transport",
     "category_raw": "transport",
     "source": "gm",
-    "icon": "🚕"
+    "icon": "\ud83d\ude95"
    },
    "geometry": {
     "type": "Point",
@@ -10191,7 +10191,7 @@
     "category": "transport",
     "category_raw": "transport",
     "source": "gm",
-    "icon": "🚕"
+    "icon": "\ud83d\ude95"
    },
    "geometry": {
     "type": "Point",
@@ -10208,7 +10208,7 @@
     "category": "transport",
     "category_raw": "transport",
     "source": "gm",
-    "icon": "🚕"
+    "icon": "\ud83d\ude95"
    },
    "geometry": {
     "type": "Point",
@@ -10225,7 +10225,7 @@
     "category": "transport",
     "category_raw": "transport",
     "source": "gm",
-    "icon": "🚕"
+    "icon": "\ud83d\ude95"
    },
    "geometry": {
     "type": "Point",
@@ -10242,7 +10242,7 @@
     "category": "transportation service",
     "category_raw": "Transportation service",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -10259,7 +10259,7 @@
     "category": "transportation service",
     "category_raw": "Transportation service",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -10276,7 +10276,7 @@
     "category": "trucking company",
     "category_raw": "Trucking company",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -10293,7 +10293,7 @@
     "category": "university",
     "category_raw": "university",
     "source": "gm",
-    "icon": "🎓"
+    "icon": "\ud83c\udf93"
    },
    "geometry": {
     "type": "Point",
@@ -10306,11 +10306,11 @@
   {
    "type": "Feature",
    "properties": {
-    "name": "Big daddy 🧔",
+    "name": "Big daddy \ud83e\uddd4",
     "category": "university",
     "category_raw": "university",
     "source": "gm",
-    "icon": "🎓"
+    "icon": "\ud83c\udf93"
    },
    "geometry": {
     "type": "Point",
@@ -10327,7 +10327,7 @@
     "category": "university",
     "category_raw": "university",
     "source": "gm",
-    "icon": "🎓"
+    "icon": "\ud83c\udf93"
    },
    "geometry": {
     "type": "Point",
@@ -10344,7 +10344,7 @@
     "category": "university",
     "category_raw": "university",
     "source": "gm",
-    "icon": "🎓"
+    "icon": "\ud83c\udf93"
    },
    "geometry": {
     "type": "Point",
@@ -10361,7 +10361,7 @@
     "category": "university",
     "category_raw": "university",
     "source": "gm",
-    "icon": "🎓"
+    "icon": "\ud83c\udf93"
    },
    "geometry": {
     "type": "Point",
@@ -10378,7 +10378,7 @@
     "category": "university",
     "category_raw": "university",
     "source": "gm",
-    "icon": "🎓"
+    "icon": "\ud83c\udf93"
    },
    "geometry": {
     "type": "Point",
@@ -10395,7 +10395,7 @@
     "category": "university",
     "category_raw": "university",
     "source": "gm",
-    "icon": "🎓"
+    "icon": "\ud83c\udf93"
    },
    "geometry": {
     "type": "Point",
@@ -10412,7 +10412,7 @@
     "category": "university",
     "category_raw": "university",
     "source": "gm",
-    "icon": "🎓"
+    "icon": "\ud83c\udf93"
    },
    "geometry": {
     "type": "Point",
@@ -10429,7 +10429,7 @@
     "category": "university",
     "category_raw": "university",
     "source": "gm",
-    "icon": "🎓"
+    "icon": "\ud83c\udf93"
    },
    "geometry": {
     "type": "Point",
@@ -10446,7 +10446,7 @@
     "category": "university",
     "category_raw": "university",
     "source": "gm",
-    "icon": "🎓"
+    "icon": "\ud83c\udf93"
    },
    "geometry": {
     "type": "Point",
@@ -10463,7 +10463,7 @@
     "category": "university",
     "category_raw": "university",
     "source": "gm",
-    "icon": "🎓"
+    "icon": "\ud83c\udf93"
    },
    "geometry": {
     "type": "Point",
@@ -10480,7 +10480,7 @@
     "category": "university",
     "category_raw": "University",
     "source": "gm",
-    "icon": "🎓"
+    "icon": "\ud83c\udf93"
    },
    "geometry": {
     "type": "Point",
@@ -10497,7 +10497,7 @@
     "category": "university",
     "category_raw": "university",
     "source": "osm",
-    "icon": "🎓"
+    "icon": "\ud83c\udf93"
    },
    "geometry": {
     "type": "Point",
@@ -10514,7 +10514,7 @@
     "category": "university",
     "category_raw": "University",
     "source": "gm",
-    "icon": "🎓"
+    "icon": "\ud83c\udf93"
    },
    "geometry": {
     "type": "Point",
@@ -10531,7 +10531,7 @@
     "category": "university",
     "category_raw": "University",
     "source": "gm",
-    "icon": "🎓"
+    "icon": "\ud83c\udf93"
    },
    "geometry": {
     "type": "Point",
@@ -10548,7 +10548,7 @@
     "category": "university",
     "category_raw": "University library",
     "source": "gm",
-    "icon": "🎓"
+    "icon": "\ud83c\udf93"
    },
    "geometry": {
     "type": "Point",
@@ -10565,7 +10565,7 @@
     "category": "university",
     "category_raw": "University",
     "source": "gm",
-    "icon": "🎓"
+    "icon": "\ud83c\udf93"
    },
    "geometry": {
     "type": "Point",
@@ -10582,7 +10582,7 @@
     "category": "university",
     "category_raw": "University",
     "source": "gm",
-    "icon": "🎓"
+    "icon": "\ud83c\udf93"
    },
    "geometry": {
     "type": "Point",
@@ -10599,7 +10599,7 @@
     "category": "university",
     "category_raw": "University",
     "source": "gm",
-    "icon": "🎓"
+    "icon": "\ud83c\udf93"
    },
    "geometry": {
     "type": "Point",
@@ -10616,7 +10616,7 @@
     "category": "university",
     "category_raw": "university",
     "source": "gm",
-    "icon": "🎓"
+    "icon": "\ud83c\udf93"
    },
    "geometry": {
     "type": "Point",
@@ -10633,7 +10633,7 @@
     "category": "university",
     "category_raw": "university",
     "source": "gm",
-    "icon": "🎓"
+    "icon": "\ud83c\udf93"
    },
    "geometry": {
     "type": "Point",
@@ -10650,7 +10650,7 @@
     "category": "university",
     "category_raw": "university",
     "source": "gm",
-    "icon": "🎓"
+    "icon": "\ud83c\udf93"
    },
    "geometry": {
     "type": "Point",
@@ -10667,7 +10667,7 @@
     "category": "university",
     "category_raw": "university",
     "source": "gm",
-    "icon": "🎓"
+    "icon": "\ud83c\udf93"
    },
    "geometry": {
     "type": "Point",
@@ -10684,7 +10684,7 @@
     "category": "university",
     "category_raw": "university",
     "source": "gm",
-    "icon": "🎓"
+    "icon": "\ud83c\udf93"
    },
    "geometry": {
     "type": "Point",
@@ -10701,7 +10701,7 @@
     "category": "university",
     "category_raw": "university",
     "source": "gm",
-    "icon": "🎓"
+    "icon": "\ud83c\udf93"
    },
    "geometry": {
     "type": "Point",
@@ -10718,7 +10718,7 @@
     "category": "unknown",
     "category_raw": "unknown",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -10735,7 +10735,7 @@
     "category": "unknown",
     "category_raw": "unknown",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -10752,7 +10752,7 @@
     "category": "unknown",
     "category_raw": "unknown",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -10769,7 +10769,7 @@
     "category": "unknown",
     "category_raw": "unknown",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -10786,7 +10786,7 @@
     "category": "unknown",
     "category_raw": "unknown",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -10803,7 +10803,7 @@
     "category": "unknown",
     "category_raw": "unknown",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -10820,7 +10820,7 @@
     "category": "unknown",
     "category_raw": "unknown",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -10837,7 +10837,7 @@
     "category": "unknown",
     "category_raw": "unknown",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -10854,7 +10854,7 @@
     "category": "unknown",
     "category_raw": "unknown",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -10871,7 +10871,7 @@
     "category": "unknown",
     "category_raw": "unknown",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -10888,7 +10888,7 @@
     "category": "unknown",
     "category_raw": "unknown",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -10905,7 +10905,7 @@
     "category": "unknown",
     "category_raw": "unknown",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -10922,7 +10922,7 @@
     "category": "unknown",
     "category_raw": "unknown",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -10939,7 +10939,7 @@
     "category": "unknown",
     "category_raw": "unknown",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -10956,7 +10956,7 @@
     "category": "unknown",
     "category_raw": "unknown",
     "source": "gm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",
@@ -10973,7 +10973,7 @@
     "category": "veterinary",
     "category_raw": "veterinary",
     "source": "osm",
-    "icon": "🐾"
+    "icon": "\ud83d\udc3e"
    },
    "geometry": {
     "type": "Point",
@@ -10990,7 +10990,7 @@
     "category": "veterinary",
     "category_raw": "veterinary",
     "source": "osm",
-    "icon": "🐾"
+    "icon": "\ud83d\udc3e"
    },
    "geometry": {
     "type": "Point",
@@ -11007,7 +11007,7 @@
     "category": "veterinary",
     "category_raw": "veterinary",
     "source": "osm",
-    "icon": "🐾"
+    "icon": "\ud83d\udc3e"
    },
    "geometry": {
     "type": "Point",
@@ -11024,7 +11024,7 @@
     "category": "veterinary",
     "category_raw": "veterinary",
     "source": "osm",
-    "icon": "🐾"
+    "icon": "\ud83d\udc3e"
    },
    "geometry": {
     "type": "Point",
@@ -11041,7 +11041,7 @@
     "category": "veterinary",
     "category_raw": "veterinary",
     "source": "osm",
-    "icon": "🐾"
+    "icon": "\ud83d\udc3e"
    },
    "geometry": {
     "type": "Point",
@@ -11058,7 +11058,7 @@
     "category": "veterinary",
     "category_raw": "veterinary",
     "source": "osm",
-    "icon": "🐾"
+    "icon": "\ud83d\udc3e"
    },
    "geometry": {
     "type": "Point",
@@ -11075,7 +11075,7 @@
     "category": "veterinary",
     "category_raw": "veterinary",
     "source": "osm",
-    "icon": "🐾"
+    "icon": "\ud83d\udc3e"
    },
    "geometry": {
     "type": "Point",
@@ -11092,7 +11092,7 @@
     "category": "veterinary",
     "category_raw": "veterinary",
     "source": "osm",
-    "icon": "🐾"
+    "icon": "\ud83d\udc3e"
    },
    "geometry": {
     "type": "Point",
@@ -11109,7 +11109,7 @@
     "category": "veterinary",
     "category_raw": "veterinary",
     "source": "osm",
-    "icon": "🐾"
+    "icon": "\ud83d\udc3e"
    },
    "geometry": {
     "type": "Point",
@@ -11126,7 +11126,7 @@
     "category": "veterinary",
     "category_raw": "veterinary",
     "source": "osm",
-    "icon": "🐾"
+    "icon": "\ud83d\udc3e"
    },
    "geometry": {
     "type": "Point",
@@ -11143,7 +11143,7 @@
     "category": "veterinary",
     "category_raw": "veterinary",
     "source": "osm",
-    "icon": "🐾"
+    "icon": "\ud83d\udc3e"
    },
    "geometry": {
     "type": "Point",
@@ -11160,7 +11160,7 @@
     "category": "veterinary",
     "category_raw": "veterinary",
     "source": "osm",
-    "icon": "🐾"
+    "icon": "\ud83d\udc3e"
    },
    "geometry": {
     "type": "Point",
@@ -11177,7 +11177,7 @@
     "category": "veterinary",
     "category_raw": "veterinary",
     "source": "osm",
-    "icon": "🐾"
+    "icon": "\ud83d\udc3e"
    },
    "geometry": {
     "type": "Point",
@@ -11194,7 +11194,7 @@
     "category": "yes",
     "category_raw": "yes",
     "source": "osm",
-    "icon": "📍"
+    "icon": "\ud83d\udccd"
    },
    "geometry": {
     "type": "Point",

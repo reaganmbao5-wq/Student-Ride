@@ -991,16 +991,33 @@
       "type": "Feature",
       "properties": {
         "name": "Mweru Hostel",
-        "category": "camping cabin",
-        "category_raw": "Camping cabin",
+        "category": "hostel",
+        "category_raw": "Hostel",
         "source": "gm",
-        "icon": "📍"
+        "icon": "🛌"
       },
       "geometry": {
         "type": "Point",
         "coordinates": [
           28.560213,
           -14.298388
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Kafue Hostel",
+        "category": "hostel",
+        "category_raw": "Hostel",
+        "source": "gm",
+        "icon": "🛌"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.56009,
+          -14.297589
         ]
       }
     },

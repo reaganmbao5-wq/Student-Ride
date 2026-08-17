@@ -241,7 +241,7 @@
   },
   {
     "id": 31,
-    "display_name": "Big daddy 🧔",
+    "display_name": "Big daddy \ud83e\uddd4",
     "category": "university",
     "lat": -14.2916474,
     "lon": 28.5624921,
@@ -3089,7 +3089,7 @@
   },
   {
     "id": 387,
-    "display_name": "Coffee Mug Café",
+    "display_name": "Coffee Mug Caf\u00e9",
     "category": "restaurant",
     "lat": -14.485082,
     "lon": 28.409217,
@@ -3105,7 +3105,7 @@
   },
   {
     "id": 389,
-    "display_name": "Ka Café",
+    "display_name": "Ka Caf\u00e9",
     "category": "restaurant",
     "lat": -14.452164,
     "lon": 28.47135,
@@ -4086,5 +4086,13 @@
     "lat": -13.94686,
     "lon": 28.663711,
     "source": "osm"
+  },
+  {
+    "id": 512,
+    "display_name": "Kafue Hostel",
+    "category": "hostel",
+    "lat": -14.297589,
+    "lon": 28.56009,
+    "source": "jaeycod_kmz_razor_sharp"
   }
 ]
