@@ -1104,94 +1104,94 @@ class ConnectionManager:
                 except Exception as ex:
                     logger.error(f"Failed to update passenger briefings on driver location update: {ex}")
 
-    async def broadcast_to_nearby_drivers(self, message: dict, location: dict, radius_km: float = 3.0):
-        """Broadcast ride request to nearby online drivers using geospatial query"""
+    async def broadcast_to_nearby_drivers(self, message: dict, location: dict, radius_km: float = 5.0):
+        """
+        Targeted dispatch of new ride requests per Section 6.
+        Only targets drivers who are:
+        1. Marked is_online == True and is_approved == True and wallet not restricted
+        2. Not on a conflicting active trip (is_driver_eligible == True)
+        3. Within radius_km (default 5.0 km) of the pickup location
+        """
         try:
-            # Guard: if location is missing or not a dict, skip geo query and go straight to fallback
-            if not location or not isinstance(location, dict):
-                logger.warning(f"broadcast_to_nearby_drivers called with invalid location ({location!r}) for message type '{message.get('type')}'. Using all-online-drivers fallback.")
-                online_drivers = await db.drivers.find({
-                    "is_online": True,
-                    "is_approved": True,
-                    "wallet_status": {"$ne": WalletStatus.RESTRICTED.value}
-                }, {"_id": 0}).to_list(50)
-            else:
-                max_distance_meters = radius_km * 1000
-                logger.info(f"Broadcasting '{message.get('type')}' to drivers near {location} within {radius_km}km")
-
-                loc_lng = float(location.get("lng", location.get("longitude", 0)))
-                loc_lat = float(location.get("lat", location.get("latitude", 0)))
-
-                try:
-                    online_drivers = await db.drivers.find({
-                        "is_online": True,
-                        "is_approved": True,
-                        "wallet_status": {"$ne": WalletStatus.RESTRICTED.value},
-                        "location": {
-                            "$near": {
-                                "$geometry": {
-                                    "type": "Point",
-                                    "coordinates": [loc_lng, loc_lat]
-                                },
-                                "$maxDistance": max_distance_meters
-                            }
-                        }
-                    }, {"_id": 0}).to_list(20)
-                except Exception as geo_err:
-                    logger.warning(f"Geospatial $near query failed: {geo_err}. Falling back to all online drivers.")
-                    online_drivers = []
-
-                if not online_drivers:
-                    online_drivers = await db.drivers.find({
-                        "is_online": True,
-                        "is_approved": True,
-                        "wallet_status": {"$ne": WalletStatus.RESTRICTED.value}
-                    }, {"_id": 0}).to_list(50)
-
             ride = message.get("ride", {})
             ride_mode = ride.get("ride_mode", "private")
             passenger_count = ride.get("passenger_count", 1)
-            
+            pickup_loc = location or ride.get("pickup_location", {})
+            loc_lat = float(pickup_loc.get("lat", pickup_loc.get("latitude", 0))) if isinstance(pickup_loc, dict) else 0
+            loc_lng = float(pickup_loc.get("lng", pickup_loc.get("longitude", 0))) if isinstance(pickup_loc, dict) else 0
+
+            # 1. Query online, approved, non-restricted drivers
+            online_drivers = await db.drivers.find({
+                "is_online": True,
+                "is_approved": True,
+                "wallet_status": {"$ne": WalletStatus.RESTRICTED.value}
+            }, {"_id": 0}).to_list(100)
+
             eligible_drivers = []
             for driver in online_drivers:
                 d_id = driver.get("user_id") or driver.get("id")
+                
+                # Check eligibility (capacity, not on conflicting private ride)
                 active_state = await get_driver_active_state(d_id)
                 eligibility = is_driver_eligible(driver, active_state, ride_mode, passenger_count)
-                if eligibility["eligible"]:
-                    eligible_drivers.append(driver)
-                    
-            logger.info(f"Found {len(eligible_drivers)} eligible nearby drivers for location {location}")
-            
-            delivered_count = 0
-            for driver in eligible_drivers:
-                candidate_ids = list(set([driver.get("user_id"), driver.get("id"), driver.get("driver_id")]))
-                candidate_ids = [cid for cid in candidate_ids if cid]
-                
-                for cid in candidate_ids:
-                    if cid in self.active_connections:
-                        try:
-                            await self.send_personal_message(message, cid)
-                            logger.info(f"Broadcast sent to driver {cid}")
-                            delivered_count += 1
-                            break
-                        except Exception as e:
-                            logger.error(f"Failed to send broadcast to driver {cid}: {e}")
+                if not eligibility.get("eligible"):
+                    continue
 
-            # Safety Fallback: If targeted lookup missed or delivered to zero drivers, broadcast to all active connections
-            if delivered_count == 0:
-                logger.info("Targeted lookup delivered to 0 active connections. Executing fallback broadcast to all active WebSockets.")
-                sanitized = sanitize_for_json(message)
-                for user_id, sockets in list(self.active_connections.items()):
-                    for ws in sockets:
-                        try:
-                            await ws.send_json(sanitized)
-                            delivered_count += 1
-                        except Exception as ex:
-                            logger.error(f"Failed to send fallback broadcast to {user_id}: {ex}")
-                logger.info(f"Fallback broadcast delivered to {delivered_count} active WebSocket connections.")
+                # Check proximity if driver coordinates are available
+                d_loc = driver.get("location") or driver.get("current_location") or {}
+                d_lat = 0
+                d_lng = 0
+                if isinstance(d_loc, dict):
+                    if "coordinates" in d_loc and isinstance(d_loc["coordinates"], list) and len(d_loc["coordinates"]) >= 2:
+                        d_lng = float(d_loc["coordinates"][0])
+                        d_lat = float(d_loc["coordinates"][1])
+                    else:
+                        d_lat = float(d_loc.get("lat", d_loc.get("latitude", 0)))
+                        d_lng = float(d_loc.get("lng", d_loc.get("longitude", 0)))
+
+                if loc_lat != 0 and loc_lng != 0 and d_lat != 0 and d_lng != 0:
+                    dist_km = calculate_haversine_distance(loc_lat, loc_lng, d_lat, d_lng)
+                    if dist_km > radius_km:
+                        continue # Skip driver beyond radius
+
+                eligible_drivers.append(driver)
+
+            logger.info(f"Targeted broadcast '{message.get('type')}': Found {len(eligible_drivers)} eligible nearby drivers within {radius_km}km")
+
+            pickup_name = pickup_loc.get("name") or pickup_loc.get("address") or "your location"
+            if isinstance(pickup_name, str) and len(pickup_name) > 30:
+                pickup_name = pickup_name[:30] + "..."
+
+            for driver in eligible_drivers:
+                d_user_id = driver.get("user_id") or driver.get("id")
+                if not d_user_id:
+                    continue
+
+                # 1. Real-time WebSocket event
+                if d_user_id in self.active_connections:
+                    try:
+                        await self.send_personal_message(message, d_user_id)
+                        logger.info(f"WebSocket new_ride_request delivered to driver {d_user_id}")
+                    except Exception as ws_err:
+                        logger.error(f"WebSocket send failed for driver {d_user_id}: {ws_err}")
+
+                # 2. Targeted Push Notification (FCM / WebPush)
+                try:
+                    await notification_service.send(
+                        user_id=d_user_id,
+                        type="new_ride_request",
+                        payload={
+                            "title": "New ride request",
+                            "body": f"Pickup near {pickup_name}. Tap to view.",
+                            "url": "/driver",
+                            "channelId": "ride_updates"
+                        }
+                    )
+                except Exception as push_err:
+                    logger.error(f"Push send failed for driver {d_user_id}: {push_err}")
 
         except Exception as top_err:
-            logger.error(f"broadcast_to_nearby_drivers FATAL ERROR for message type '{message.get('type')}': {top_err}", exc_info=True)
+            logger.error(f"broadcast_to_nearby_drivers error: {top_err}", exc_info=True)
 
 manager = ConnectionManager()
 

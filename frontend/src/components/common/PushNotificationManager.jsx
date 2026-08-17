@@ -3,7 +3,6 @@ import { useAuth } from '../../context/AuthContext';
 import { Bell, X } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
-// import { LocalNotifications } from '@capacitor/local-notifications';
 import { PermissionsService } from '../../services/PermissionsService';
 import { getBackendUrl } from '../../utils/urlHelpers';
 
@@ -24,29 +23,78 @@ const PushNotificationManager = () => {
     const [showPrompt, setShowPrompt] = useState(false);
 
     useEffect(() => {
-        const checkPermission = async () => {
-            const asked = localStorage.getItem('mulu_rides_push_asked');
-            if (asked) return;
-
+        const checkPermissionAndRefresh = async () => {
             if (Capacitor.isNativePlatform()) {
+                try {
+                    // Create Notification Channels (Section 2)
+                    await PushNotifications.createChannel({
+                        id: 'ride_updates',
+                        name: 'Ride Updates',
+                        description: 'Real-time updates about ride acceptance, arrival, progress, and completion',
+                        importance: 5,
+                        visibility: 1,
+                        vibration: true
+                    });
+                    await PushNotifications.createChannel({
+                        id: 'chat_messages',
+                        name: 'Chat Messages',
+                        description: 'In-ride chat messages between drivers and students',
+                        importance: 3,
+                        visibility: 1,
+                        vibration: true
+                    });
+                    await PushNotifications.createChannel({
+                        id: 'account_security',
+                        name: 'Account & Security',
+                        description: 'Account profile changes and security alerts',
+                        importance: 3,
+                        visibility: 1,
+                        vibration: false
+                    });
+                    await PushNotifications.createChannel({
+                        id: 'admin_broadcast',
+                        name: 'Announcements',
+                        description: 'System announcements and updates from admins',
+                        importance: 3,
+                        visibility: 1,
+                        vibration: false
+                    });
+                    await PushNotifications.createChannel({
+                        id: 'emergency_sos',
+                        name: 'Emergency SOS Alerts',
+                        description: 'High-priority critical emergency alerts',
+                        importance: 5,
+                        visibility: 1,
+                        vibration: true
+                    });
+                } catch (chErr) {
+                    console.warn('Channel creation notice:', chErr);
+                }
+
                 const status = await PushNotifications.checkPermissions();
                 if (status.receive !== 'granted') {
-                    setShowPrompt(true);
-                } else {
+                    const asked = localStorage.getItem('j_ride_push_asked');
+                    if (!asked) setShowPrompt(true);
+                } else if (isAuthenticated) {
+                    // Auto-refresh token on app mount (Section 3.4)
                     subscribeUser(false);
                 }
             } else {
-                if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-                    setShowPrompt(true);
-                } else if ('Notification' in window && Notification.permission === 'granted') {
-                    subscribeUser(false);
+                if ('Notification' in window) {
+                    if (Notification.permission === 'default') {
+                        const asked = localStorage.getItem('j_ride_push_asked');
+                        if (!asked) setShowPrompt(true);
+                    } else if (Notification.permission === 'granted' && isAuthenticated) {
+                        // Auto-refresh web subscription
+                        subscribeUser(false);
+                    }
                 }
             }
         };
 
         const timer = setTimeout(() => {
-            checkPermission();
-        }, 3000);
+            checkPermissionAndRefresh();
+        }, 2000);
 
         return () => clearTimeout(timer);
     }, [isAuthenticated]);
@@ -61,7 +109,7 @@ const PushNotificationManager = () => {
                 if (!hasPermission) {
                     console.log('Push permission denied natively.');
                     if (isExplicit) {
-                        localStorage.setItem('mulu_rides_push_asked', 'true');
+                        localStorage.setItem('j_ride_push_asked', 'true');
                         setShowPrompt(false);
                     }
                     return;
@@ -73,8 +121,6 @@ const PushNotificationManager = () => {
                 PushNotifications.addListener('registration', async (fcmToken) => {
                     console.log('FCM Token generated:', fcmToken.value);
                     try {
-                        // Register device token with backend using existing endpoint
-                        // We format it as a PushSubscriptionRequest to satisfy the backend model schema
                         await fetch(`${backendUrl}/api/notifications/subscribe`, {
                             method: 'POST',
                             headers: {
@@ -96,78 +142,52 @@ const PushNotificationManager = () => {
                     console.error('Push registration error:', JSON.stringify(error));
                 });
 
-                // Request permission for local notifications (Live Tracking)
-                // await LocalNotifications.requestPermissions();
-
-                // Intercept foreground pushes or data payloads and convert them into Local Notifications
-                // that have the exact same ID (which overwrites the previous one, creating a "live progress" feel).
                 PushNotifications.addListener('pushNotificationReceived', async (notification) => {
-                    console.log('Push received:', notification);
-                    
-                    // The backend payload might send it in `data.payload`
-                    let data = notification.data || {};
-                    let title = notification.title || "Jaey Ride Update";
-                    let body = notification.body || "You have a new update.";
-
-                    // If it's a data-only payload containing Live Tracking info:
-                    if (data && data.type === 'LIVE_TRACKING_UPDATE') {
-                        try {
-                            const parsedPayload = JSON.parse(data.payload);
-                            title = "Driver is moving...";
-                            body = `Arriving in ${parsedPayload.eta || 'a few'} mins`;
-                        } catch(e) {}
-                    }
-
-                    // await LocalNotifications.schedule({
-                    //     notifications: [
-                    //         {
-                    //             title: title,
-                    //             body: body,
-                    //             id: 12345, // Constant ID forces it to update the same notification instead of stacking!
-                    //             schedule: { at: new Date(Date.now() + 100) },
-                    //             sound: null, // Silent for live tracking
-                    //         }
-                    //     ]
-                    // });
+                    console.log('Push received in foreground:', notification);
                 });
 
-
                 if (isExplicit) {
-                    localStorage.setItem('mulu_rides_push_asked', 'true');
+                    localStorage.setItem('j_ride_push_asked', 'true');
                     setShowPrompt(false);
                 }
 
             } else {
-                // WEB VAPID LOGIC
+                // WEB VAPID PUSH REGISTRATION
                 if (isExplicit) {
                     const permission = await Notification.requestPermission();
                     if (permission !== 'granted') {
                         console.log('Push permission denied.');
-                        localStorage.setItem('mulu_rides_push_asked', 'true');
+                        localStorage.setItem('j_ride_push_asked', 'true');
                         setShowPrompt(false);
                         return;
                     }
                 }
 
-                const registration = await navigator.serviceWorker.ready;
-                const keyResponse = await fetch(`${backendUrl}/api/notifications/vapid-public-key`, { headers });
-                const { publicKey } = await keyResponse.json();
-                const convertedVapidKey = urlBase64ToUint8Array(publicKey);
+                if ('serviceWorker' in navigator) {
+                    const registration = await navigator.serviceWorker.ready;
+                    const keyResponse = await fetch(`${backendUrl}/api/notifications/vapid-public-key`, { headers });
+                    const data = await keyResponse.json();
+                    const publicKey = data.public_key || data.publicKey;
+                    
+                    if (publicKey) {
+                        const convertedVapidKey = urlBase64ToUint8Array(publicKey);
+                        const subscription = await registration.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: convertedVapidKey,
+                        });
 
-                const subscription = await registration.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: convertedVapidKey,
-                });
+                        await fetch(`${backendUrl}/api/notifications/subscribe`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', ...headers },
+                            body: JSON.stringify(subscription),
+                        });
 
-                await fetch(`${backendUrl}/api/notifications/subscribe`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', ...headers },
-                    body: JSON.stringify(subscription),
-                });
+                        console.log('Web Push subscription registered successfully');
+                    }
+                }
 
-                console.log('Web Push subscription successful');
                 if (isExplicit) {
-                    localStorage.setItem('mulu_rides_push_asked', 'true');
+                    localStorage.setItem('j_ride_push_asked', 'true');
                     setShowPrompt(false);
                 }
             }
@@ -178,7 +198,7 @@ const PushNotificationManager = () => {
     };
 
     const handleDismiss = () => {
-        localStorage.setItem('mulu_rides_push_asked', 'true');
+        localStorage.setItem('j_ride_push_asked', 'true');
         setShowPrompt(false);
     };
 
@@ -194,20 +214,20 @@ const PushNotificationManager = () => {
                     <div>
                         <h4 className="text-white font-medium text-sm">Enable Ride Updates</h4>
                         <p className="text-white/60 text-xs mt-0.5">
-                            Get instantly notified when your driver arrives or when your ride is accepted.
+                            Get instant alerts when your driver arrives or when your ride is accepted.
                         </p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                     <button
                         onClick={() => subscribeUser(true)}
-                        className="bg-gold text-black text-xs font-semibold px-4 py-2 rounded-lg hover:bg-gold/90 transition-colors"
+                        className="bg-gold text-black text-xs font-semibold px-4 py-2 rounded-lg hover:bg-gold/90 transition-colors cursor-pointer"
                     >
                         Enable
                     </button>
                     <button
                         onClick={handleDismiss}
-                        className="p-2 text-white/40 hover:text-white transition-colors"
+                        className="p-2 text-white/40 hover:text-white transition-colors cursor-pointer"
                         aria-label="Dismiss"
                     >
                         <X className="w-4 h-4" />
