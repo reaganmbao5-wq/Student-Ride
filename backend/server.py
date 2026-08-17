@@ -4422,6 +4422,136 @@ async def record_place_visit(payload: dict = Body(...)):
         logging.warning(f"Error recording place visit: {e}")
         return {"status": "error", "message": str(e)}
 
+@api_router.get("/places/reverse")
+async def reverse_geocode_proximity(lat: float = Query(...), lng: float = Query(...)):
+    """Reverse geocode with proximity landmark snapping (< 350m) and clean address formatting"""
+    import math
+
+    def dist_meters(lat1, lon1, lat2, lon2):
+        R = 6371000.0
+        phi1 = math.radians(lat1)
+        phi2 = math.radians(lat2)
+        delta_phi = math.radians(lat2 - lat1)
+        delta_lambda = math.radians(lon2 - lon1)
+        a = (math.sin(delta_phi / 2.0) ** 2 +
+             math.cos(phi1) * math.cos(phi2) * (math.sin(delta_lambda / 2.0) ** 2))
+        return R * 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0 - a))
+
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    db_paths = [
+        os.path.join(base_dir, "places.db"),
+        os.path.join(os.path.dirname(base_dir), "places.db"),
+        "places.db"
+    ]
+    db_path = None
+    for p in db_paths:
+        if os.path.exists(p):
+            db_path = p
+            break
+
+    # 1. Check local places.db landmarks
+    if db_path:
+        try:
+            conn = sqlite3.connect(db_path)
+            cur = conn.cursor()
+            cur.execute("SELECT name, category, latitude, longitude FROM places")
+            rows = cur.fetchall()
+            conn.close()
+
+            best_name = None
+            best_dist = float('inf')
+            for name, cat, p_lat, p_lon in rows:
+                d = dist_meters(lat, lng, float(p_lat), float(p_lon))
+                if d < best_dist:
+                    best_dist = d
+                    best_name = name.strip()
+
+            if best_name and best_dist <= 350.0:
+                if best_dist <= 35.0:
+                    return {
+                        "display_name": best_name,
+                        "nearest_landmark": best_name,
+                        "distance_m": round(best_dist, 1),
+                        "is_exact": True
+                    }
+                else:
+                    return {
+                        "display_name": f"Near {best_name}",
+                        "nearest_landmark": best_name,
+                        "distance_m": round(best_dist, 1),
+                        "is_exact": False
+                    }
+        except Exception as err:
+            logging.warning(f"Proximity reverse geocode DB check failed: {err}")
+
+    # 2. Check MongoDB cached places
+    try:
+        cached_places = await db.places_search_cache.find({}, {"_id": 0}).to_list(100)
+        best_name = None
+        best_dist = float('inf')
+        for cp in cached_places:
+            p_lat = cp.get("lat")
+            p_lon = cp.get("lon")
+            if p_lat is not None and p_lon is not None:
+                d = dist_meters(lat, lng, float(p_lat), float(p_lon))
+                if d < best_dist:
+                    best_dist = d
+                    best_name = cp.get("display_name", "").strip()
+
+        if best_name and best_dist <= 350.0:
+            if best_dist <= 35.0:
+                return {
+                    "display_name": best_name,
+                    "nearest_landmark": best_name,
+                    "distance_m": round(best_dist, 1),
+                    "is_exact": True
+                }
+            else:
+                return {
+                    "display_name": f"Near {best_name}",
+                    "nearest_landmark": best_name,
+                    "distance_m": round(best_dist, 1),
+                    "is_exact": False
+                }
+    except Exception:
+        pass
+
+    # 3. Fallback Mapbox / Nominatim Reverse with address cleaner
+    try:
+        from services.osrm_service import get_http_client
+        client = get_http_client()
+        mapbox_token = os.environ.get(
+            "MAPBOX_ACCESS_TOKEN",
+            "pk.eyJ1IjoiamFleSIsImEiOiJjbXNocmV5ZXAwM3JlMnhzZ29raTB3eGc5In0.riXZQNEurCaETWjZt02R6A"
+        )
+        url = f"https://api.mapbox.com/geocoding/v5/mapbox.places/{lng},{lat}.json"
+        params = {
+            "access_token": mapbox_token,
+            "country": "zm",
+            "types": "address,poi,neighborhood,locality,place"
+        }
+        resp = await client.get(url, params=params)
+        if resp.status_code == 200:
+            data = resp.json()
+            features = data.get("features", [])
+            if features:
+                raw_name = features[0].get("place_name", "")
+                parts = [p.strip() for p in raw_name.split(",") if p.strip()]
+                clean_parts = [p for p in parts if p.lower() not in {"zambia", "central province", "kapiri mposhi district", "kabwe district"} and not p.isdigit()][:2]
+                display = ", ".join(clean_parts) if clean_parts else (parts[0] if parts else raw_name)
+                return {
+                    "display_name": display,
+                    "is_exact": False,
+                    "source": "mapbox"
+                }
+    except Exception as mb_err:
+        logging.warning(f"Mapbox reverse failed: {mb_err}")
+
+    return {
+        "display_name": f"Location ({round(lat, 4)}, {round(lng, 4)})",
+        "is_exact": False
+    }
+
 # ==================== DESTINATIONS MANAGEMENT ====================
 
 @api_router.get("/destinations", response_model=List[DestinationResponse])
