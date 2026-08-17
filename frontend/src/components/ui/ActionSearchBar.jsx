@@ -3,13 +3,11 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, Loader2, MapPin } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
-import { isNightTheme } from '../../map/styles/MapboxStyles';
 import finalPlaces from '../../data/final_places.json';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "https://student-ride-backend-manual.onrender.com";
 
-// Client-Side LRU Search Cache (Persisted in localStorage)
+// Client-Side LRU Search Cache (Persisted in localStorage for credit preservation)
 const LOCAL_STORAGE_CACHE_KEY = 'SR_SEARCH_CACHE_V1';
 
 const getClientCache = () => {
@@ -28,7 +26,6 @@ const saveClientCache = (queryKey, data) => {
       timestamp: Date.now(),
       data
     };
-    // Keep max 100 queries in client cache
     const keys = Object.keys(cache);
     if (keys.length > 100) {
       delete cache[keys[0]];
@@ -103,68 +100,35 @@ const categoryToMaki = (category, name) => {
   return 'marker';
 };
 
-const getCategoryColor = (makiIcon, isNight) => {
-  if (isNight) {
-    switch (makiIcon) {
-      case 'lodging':
-        return { bg: 'bg-fuchsia-500/20', text: 'text-fuchsia-400', border: 'border-fuchsia-500/30' };
-      case 'hospital':
-        return { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30' };
-      case 'school':
-      case 'college':
-        return { bg: 'bg-amber-500/20', text: 'text-amber-400', border: 'border-amber-500/30' };
-      case 'restaurant':
-      case 'cafe':
-      case 'bar':
-        return { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/30' };
-      case 'bank':
-        return { bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30' };
-      case 'park':
-      case 'pitch':
-        return { bg: 'bg-emerald-500/20', text: 'text-emerald-400', border: 'border-emerald-500/30' };
-      case 'shop':
-      case 'grocery':
-        return { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30' };
-      case 'police':
-      case 'post':
-      case 'bus':
-        return { bg: 'bg-indigo-500/20', text: 'text-indigo-400', border: 'border-indigo-500/30' };
-      case 'place-of-worship':
-        return { bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/30' };
-      default:
-        return { bg: 'bg-zinc-700/30', text: 'text-zinc-300', border: 'border-zinc-700/40' };
-    }
-  } else {
-    // Light Mode map high contrast tokens
-    switch (makiIcon) {
-      case 'lodging':
-        return { bg: 'bg-fuchsia-100', text: 'text-fuchsia-800 font-semibold', border: 'border-fuchsia-200' };
-      case 'hospital':
-        return { bg: 'bg-red-100', text: 'text-red-800 font-semibold', border: 'border-red-200' };
-      case 'school':
-      case 'college':
-        return { bg: 'bg-amber-100', text: 'text-amber-900 font-semibold', border: 'border-amber-200' };
-      case 'restaurant':
-      case 'cafe':
-      case 'bar':
-        return { bg: 'bg-orange-100', text: 'text-orange-900 font-semibold', border: 'border-orange-200' };
-      case 'bank':
-        return { bg: 'bg-yellow-100', text: 'text-yellow-900 font-semibold', border: 'border-yellow-200' };
-      case 'park':
-      case 'pitch':
-        return { bg: 'bg-emerald-100', text: 'text-emerald-800 font-semibold', border: 'border-emerald-200' };
-      case 'shop':
-      case 'grocery':
-        return { bg: 'bg-blue-100', text: 'text-blue-800 font-semibold', border: 'border-blue-200' };
-      case 'police':
-      case 'post':
-      case 'bus':
-        return { bg: 'bg-indigo-100', text: 'text-indigo-800 font-semibold', border: 'border-indigo-200' };
-      case 'place-of-worship':
-        return { bg: 'bg-purple-100', text: 'text-purple-800 font-semibold', border: 'border-purple-200' };
-      default:
-        return { bg: 'bg-zinc-100', text: 'text-zinc-700 font-semibold', border: 'border-zinc-200' };
-    }
+const getCategoryColor = (makiIcon) => {
+  switch (makiIcon) {
+    case 'lodging':
+      return { bg: 'bg-fuchsia-500/20', text: 'text-fuchsia-400 font-semibold', border: 'border-fuchsia-500/30' };
+    case 'hospital':
+      return { bg: 'bg-rose-500/20', text: 'text-rose-400 font-semibold', border: 'border-rose-500/30' };
+    case 'school':
+    case 'college':
+      return { bg: 'bg-amber-500/20', text: 'text-amber-400 font-semibold', border: 'border-amber-500/30' };
+    case 'restaurant':
+    case 'cafe':
+    case 'bar':
+      return { bg: 'bg-orange-500/20', text: 'text-orange-400 font-semibold', border: 'border-orange-500/30' };
+    case 'bank':
+      return { bg: 'bg-yellow-500/20', text: 'text-yellow-400 font-semibold', border: 'border-yellow-500/30' };
+    case 'park':
+    case 'pitch':
+      return { bg: 'bg-emerald-500/20', text: 'text-emerald-400 font-semibold', border: 'border-emerald-500/30' };
+    case 'shop':
+    case 'grocery':
+      return { bg: 'bg-sky-500/20', text: 'text-sky-400 font-semibold', border: 'border-sky-500/30' };
+    case 'police':
+    case 'post':
+    case 'bus':
+      return { bg: 'bg-indigo-500/20', text: 'text-indigo-400 font-semibold', border: 'border-indigo-500/30' };
+    case 'place-of-worship':
+      return { bg: 'bg-purple-500/20', text: 'text-purple-400 font-semibold', border: 'border-purple-500/30' };
+    default:
+      return { bg: 'bg-zinc-700/40', text: 'text-zinc-300 font-semibold', border: 'border-zinc-600/40' };
   }
 };
 
@@ -174,11 +138,6 @@ export const ActionSearchBar = ({
   placeholder = "Search campus places, hostels...",
   className = ""
 }) => {
-  const { themeMode } = useTheme();
-  
-  // Directly follow the map's Day/Night style (Daytime = Light Map, Nighttime = Dark Map)
-  const isNight = useMemo(() => isNightTheme(themeMode === 'auto' ? null : themeMode), [themeMode]);
-
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
@@ -412,7 +371,7 @@ export const ActionSearchBar = ({
       {/* Search Trigger Circle (Always visible on left, expands to full pill on right) */}
       <div className="relative h-11 flex items-center">
         
-        {/* Left Circle Toggle Button (Search -> X) */}
+        {/* Left Circle Toggle Button (Search -> X) - Dark Gray Frosted Glass */}
         <button
           type="button"
           aria-label={isOpen ? "Close search" : "Open search"}
@@ -423,20 +382,16 @@ export const ActionSearchBar = ({
               setIsOpen(true);
             }
           }}
-          className={`w-11 h-11 z-20 rounded-full border shadow-lg grid place-items-center transition-transform active:scale-95 cursor-pointer ${
-            isNight
-              ? "bg-zinc-900 border-zinc-700/80 text-zinc-300 hover:text-white"
-              : "bg-white border-zinc-300/90 text-zinc-800 hover:text-zinc-950"
-          }`}
+          className="w-11 h-11 z-20 rounded-full border border-white/15 shadow-2xl grid place-items-center transition-transform active:scale-95 cursor-pointer bg-[#181D27]/90 backdrop-blur-2xl text-white hover:bg-zinc-800/90"
         >
           {isOpen ? (
-            <X className={`w-5 h-5 ${isNight ? "text-zinc-300" : "text-zinc-700"}`} />
+            <X className="w-5 h-5 text-zinc-300" />
           ) : (
-            <Search className={`w-5 h-5 ${isNight ? "text-zinc-300" : "text-zinc-700"}`} />
+            <Search className="w-5 h-5 text-zinc-300" />
           )}
         </button>
 
-        {/* Animated Expanding Input Pill (Expands to the right, stays 100% rounded-full) */}
+        {/* Animated Expanding Input Pill - Dark Gray Frosted Glass */}
         <AnimatePresence>
           {isOpen && (
             <motion.div
@@ -449,16 +404,12 @@ export const ActionSearchBar = ({
                 transition: { type: "spring", stiffness: 280, damping: 26 }
               }}
               transition={{ type: "spring", stiffness: 280, damping: 26 }}
-              className={`absolute top-0 left-0 h-11 rounded-full border shadow-2xl overflow-hidden flex items-center z-10 ${
-                isNight
-                  ? "bg-zinc-900/98 border-zinc-700/80 text-white"
-                  : "bg-white/98 border-zinc-300/90 text-zinc-950"
-              }`}
+              className="absolute top-0 left-0 h-11 rounded-full border border-white/15 shadow-2xl overflow-hidden flex items-center z-10 bg-[#181D27]/90 backdrop-blur-2xl text-white"
             >
               {/* Left spacer matching the circle button */}
               <div className="w-11 h-11 shrink-0" />
 
-              {/* Text Input */}
+              {/* Text Input - Crisp White Text */}
               <div className="relative flex-1 min-w-0 flex items-center h-full">
                 <input
                   ref={inputRef}
@@ -466,11 +417,7 @@ export const ActionSearchBar = ({
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder={placeholder}
-                  className={`w-full bg-transparent text-sm border-none outline-none focus:outline-none focus:ring-0 focus:border-none focus-visible:outline-none focus-visible:ring-0 shadow-none font-semibold pr-2 ${
-                    isNight
-                      ? "text-white placeholder:text-zinc-400"
-                      : "text-zinc-950 placeholder:text-zinc-500"
-                  }`}
+                  className="w-full bg-transparent text-sm border-none outline-none focus:outline-none focus:ring-0 focus:border-none focus-visible:outline-none focus-visible:ring-0 shadow-none font-semibold pr-2 text-white placeholder:text-zinc-400"
                   style={{ outline: "none", boxShadow: "none", border: "none" }}
                 />
               </div>
@@ -480,7 +427,7 @@ export const ActionSearchBar = ({
                 {loadingApi ? (
                   <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
                 ) : (
-                  <Search className={`w-4 h-4 ${isNight ? "text-zinc-400" : "text-zinc-600"}`} />
+                  <Search className="w-4 h-4 text-zinc-400" />
                 )}
               </div>
             </motion.div>
@@ -488,7 +435,7 @@ export const ActionSearchBar = ({
         </AnimatePresence>
       </div>
 
-      {/* Results Dropdown (Clean, high-visibility frosted glass, NO black scrollbar) */}
+      {/* Results Dropdown (Dark Gray Frosted Glass with Crisp White Text & Slim Internal Scrollbar) */}
       <AnimatePresence>
         {isOpen && results.length > 0 && (
           <motion.div
@@ -496,12 +443,7 @@ export const ActionSearchBar = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            className={`absolute left-0 top-14 w-[300px] sm:w-[340px] max-h-64 overflow-y-auto rounded-2xl border p-2 z-40 backdrop-blur-2xl scrollbar-none [&::-webkit-scrollbar]:hidden ${
-              isNight
-                ? "bg-[#121824]/98 border-zinc-700/60 text-white shadow-[0_20px_50px_rgba(0,0,0,0.6)]"
-                : "bg-white/98 border-zinc-200/90 text-zinc-950 shadow-[0_20px_50px_rgba(0,0,0,0.18)]"
-            }`}
+            className="absolute left-0 top-14 w-[300px] sm:w-[340px] max-h-64 overflow-y-auto rounded-2xl border border-white/15 p-2 z-40 bg-[#181D27]/95 backdrop-blur-2xl text-white shadow-[0_20px_50px_rgba(0,0,0,0.6)] [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.25)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent pr-1"
           >
             <motion.ul
               initial="hidden"
@@ -516,7 +458,7 @@ export const ActionSearchBar = ({
               className="space-y-1"
             >
               {results.map((item, idx) => {
-                const colorToken = getCategoryColor(item.makiIcon, isNight);
+                const colorToken = getCategoryColor(item.makiIcon);
                 return (
                   <motion.li
                     key={item.id || idx}
@@ -525,11 +467,7 @@ export const ActionSearchBar = ({
                       show: { opacity: 1, y: 0 }
                     }}
                     onClick={() => handleSelect(item)}
-                    className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-colors ${
-                      isNight
-                        ? "hover:bg-zinc-800/80 active:bg-zinc-700/80 text-zinc-100"
-                        : "hover:bg-zinc-100/90 active:bg-zinc-200/90 text-zinc-950"
-                    }`}
+                    className="flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-colors hover:bg-white/10 active:bg-white/15 text-white"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       
@@ -538,7 +476,7 @@ export const ActionSearchBar = ({
                         <img
                           src={`/icons/${item.makiIcon}.svg`}
                           alt={item.category}
-                          className={`w-4 h-4 object-contain filter drop-shadow-sm ${isNight ? 'brightness-125' : 'brightness-90'}`}
+                          className="w-4 h-4 object-contain filter drop-shadow-sm brightness-125"
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';
                             if (e.currentTarget.nextSibling) {
@@ -546,12 +484,12 @@ export const ActionSearchBar = ({
                             }
                           }}
                         />
-                        <MapPin className={`w-4 h-4 hidden ${isNight ? 'text-zinc-400' : 'text-zinc-600'}`} />
+                        <MapPin className="w-4 h-4 hidden text-zinc-400" />
                       </div>
 
-                      {/* Name & Category Label */}
+                      {/* Name & Category Label - Pure Crisp High-Visibility Typography */}
                       <div className="truncate min-w-0">
-                        <p className={`text-sm font-bold truncate leading-tight ${isNight ? 'text-white' : 'text-zinc-950'}`}>
+                        <p className="text-sm font-bold truncate leading-tight text-white">
                           {item.name}
                         </p>
                         <p className={`text-xs capitalize truncate mt-0.5 ${colorToken.text}`}>

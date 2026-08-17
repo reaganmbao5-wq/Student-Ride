@@ -435,9 +435,9 @@ const RideRequestPage = () => {
       <div className="absolute top-10 md:top-6 left-4 z-30 flex flex-col items-start gap-3 pointer-events-none">
         <button
           onClick={handleBack}
-          className="w-12 h-12 bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-full flex items-center justify-center shadow-lg pointer-events-auto active:scale-95 transition-transform"
+          className="w-11 h-11 bg-[#181D27]/90 backdrop-blur-2xl border border-white/15 text-white rounded-full flex items-center justify-center shadow-2xl pointer-events-auto active:scale-95 transition-transform"
         >
-          <ArrowLeft className="w-6 h-6 text-foreground" />
+          <ArrowLeft className="w-5 h-5 text-white" />
         </button>
 
         {/* ActionSearchBar with Animated Dropdown */}
