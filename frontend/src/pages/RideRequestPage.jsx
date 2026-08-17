@@ -11,7 +11,8 @@ import { CAMERA_MODES } from '../map/camera/CameraConfig';
 import { useDriverDiscovery } from '../map/discovery/DriverDiscoveryEngine';
 import { routeCache } from '../map/route/RouteCache';
 import { AddressSearch } from '../components/common/AddressSearch';
-import ExpandableSearchBar from '../components/ui/expandable-search-bar';
+import ActionSearchBar from '../components/ui/ActionSearchBar';
+import finalPlaces from '../data/final_places.json';
 import { TilePreloader } from '../map/services/TilePreloader';
 import { haptics } from '../utils/haptics';
 import {
@@ -111,6 +112,55 @@ const RideRequestPage = () => {
     } catch (error) {
       console.error('Error fetching destinations:', error);
     }
+  };
+
+  const searchableLocations = useMemo(() => {
+    const list = [];
+    if (finalPlaces?.features) {
+      finalPlaces.features.forEach((feat, idx) => {
+        const coords = feat.geometry?.coordinates;
+        if (coords && coords.length >= 2) {
+          list.push({
+            id: `fp_${idx}`,
+            name: feat.properties?.name || 'Unnamed Place',
+            description: feat.properties?.category || feat.properties?.category_raw || '',
+            category: feat.properties?.category || '',
+            lat: coords[1],
+            lng: coords[0],
+            address: feat.properties?.name || 'Campus Location'
+          });
+        }
+      });
+    }
+    if (destinations && destinations.length > 0) {
+      destinations.forEach((d) => {
+        if (!list.some(l => l.name?.toLowerCase() === d.name?.toLowerCase())) {
+          list.push({
+            id: `dest_${d.id}`,
+            name: d.name,
+            description: d.description || 'Popular Destination',
+            category: d.category || 'destination',
+            lat: d.latitude,
+            lng: d.longitude,
+            address: d.name
+          });
+        }
+      });
+    }
+    return list;
+  }, [destinations]);
+
+  const handleActionSearchSelect = (loc) => {
+    suppressConfirmUntilRef.current = Date.now() + 600;
+    isExplicitSelectionRef.current = true;
+    explicitSelectedLocationRef.current = { lat: loc.lat, lng: loc.lng, address: loc.address || loc.name };
+    setSelectionTarget({ lat: loc.lat, lng: loc.lng, ts: Date.now() });
+    setMapCenter({ lat: loc.lat, lng: loc.lng });
+    setCurrentAddress(loc.address || loc.name);
+    if (step === 'dropoff') {
+      setDropoff({ lat: loc.lat, lng: loc.lng, address: loc.address || loc.name });
+    }
+    setSelectedDestination(null);
   };
 
   // Ref to track if user explicitly picked a place from search (prevents reverseGeocode from overwriting chosen landmark address)
@@ -390,16 +440,13 @@ const RideRequestPage = () => {
           <ArrowLeft className="w-6 h-6 text-foreground" />
         </button>
 
-        {/* Expandable Search Bar (Expanding to the Right) */}
+        {/* ActionSearchBar with Animated Dropdown */}
         {step !== 'confirm' && (
           <div className="pointer-events-auto">
-            <ExpandableSearchBar
-              expandDirection="right"
-              width={260}
-              placeholder={step === 'pickup' ? "Search for a pickup..." : "Search for a destination..."}
-              onSearch={(query) => {
-                console.log("Search submitted:", query);
-              }}
+            <ActionSearchBar
+              locations={searchableLocations}
+              onSelectLocation={handleActionSearchSelect}
+              placeholder={step === 'pickup' ? "Search campus places, hostels..." : "Search destination..."}
             />
           </div>
         )}
