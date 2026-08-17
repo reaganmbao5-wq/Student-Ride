@@ -179,6 +179,8 @@ class NotificationService:
                                 sound=sound_setting,
                                 default_vibrate_timings=False,
                                 vibrate_timings_millis=vibe_pattern,
+                                icon="ic_stat_notification",
+                                color="#F5A623",
                                 tag=f"j_ride_{type}"
                             )
                         ),
