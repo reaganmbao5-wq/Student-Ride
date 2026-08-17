@@ -43,7 +43,6 @@ export const Layout = ({ children }) => {
     { to: '/admin/users', icon: (props) => <UsersThree weight="duotone" {...props} />, label: 'Users' },
     { to: '/admin/drivers', icon: (props) => <Car weight="duotone" {...props} />, label: 'Drivers' },
     { to: '/admin/rides', icon: (props) => <MapPin weight="duotone" {...props} />, label: 'Rides' },
-    { to: '/admin/destinations', icon: (props) => <MapPin weight="duotone" {...props} />, label: 'Destinations' },
     { to: '/admin/pricing', icon: (props) => <CurrencyCircleDollar weight="duotone" {...props} />, label: 'Pricing' },
     { to: '/admin/bug-reports', icon: (props) => <BugBeetle weight="duotone" {...props} />, label: 'Bug Reports' },
     { to: '/admin/settings', icon: (props) => <Gear weight="duotone" {...props} />, label: 'Settings' }
