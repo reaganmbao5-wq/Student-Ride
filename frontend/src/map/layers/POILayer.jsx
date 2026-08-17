@@ -264,10 +264,11 @@ export const POILayer = ({ map, isNight = false, onPlaceSelect = null }) => {
     if (!map || !map.style) return;
     try {
       if (map.getLayer(LAYER_LABELS_ID)) {
-        map.setPaintProperty(LAYER_LABELS_ID, 'text-color', isNight ? textColorExpressionDark : textColorExpressionLight);
+        map.setPaintProperty(LAYER_LABELS_ID, 'text-color', isNight ? '#FFFFFF' : textColorExpressionLight);
         map.setPaintProperty(LAYER_LABELS_ID, 'text-halo-color', isNight ? '#0F172A' : '#FFFFFF');
         map.setPaintProperty(LAYER_LABELS_ID, 'text-halo-width', 2);
         map.setPaintProperty(LAYER_LABELS_ID, 'text-halo-blur', 0.5);
+        map.setPaintProperty(LAYER_LABELS_ID, 'icon-color', isNight ? '#FFFFFF' : iconColorExpression);
       }
     } catch (err) {
       console.warn('Error updating POI layer paint properties:', err);
@@ -354,8 +355,8 @@ export const POILayer = ({ map, isNight = false, onPlaceSelect = null }) => {
               'text-allow-overlap': false
             },
             paint: {
-              'icon-color': iconColorExpression,
-              'text-color': isNightRef.current ? textColorExpressionDark : textColorExpressionLight,
+              'icon-color': isNightRef.current ? '#FFFFFF' : iconColorExpression,
+              'text-color': isNightRef.current ? '#FFFFFF' : textColorExpressionLight,
               'text-halo-color': isNightRef.current ? '#0F172A' : '#FFFFFF',
               'text-halo-width': 2,
               'text-halo-blur': 0.5
