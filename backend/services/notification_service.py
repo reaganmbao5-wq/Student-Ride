@@ -246,7 +246,7 @@ class NotificationService:
                         })
                     except WebPushException as ex:
                         logger.error(f"WebPush error sending to {user_id}: {repr(ex)}")
-                        if ex.response is not None and ex.response.status_code in [400, 404, 410]:
+                        if ex.response is not None and ex.response.status_code in [400, 401, 403, 404, 410]:
                             await self.db.push_subscriptions.delete_one({"_id": sub["_id"]})
                             logger.info(f"Purged dead web push subscription for user {user_id}")
 
