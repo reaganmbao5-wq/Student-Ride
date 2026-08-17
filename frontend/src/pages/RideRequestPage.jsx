@@ -11,6 +11,7 @@ import { CAMERA_MODES } from '../map/camera/CameraConfig';
 import { useDriverDiscovery } from '../map/discovery/DriverDiscoveryEngine';
 import { routeCache } from '../map/route/RouteCache';
 import { AddressSearch } from '../components/common/AddressSearch';
+import ExpandableSearchBar from '../components/ui/expandable-search-bar';
 import { TilePreloader } from '../map/services/TilePreloader';
 import { haptics } from '../utils/haptics';
 import {
@@ -380,14 +381,28 @@ const RideRequestPage = () => {
   return (
     <div className="fixed inset-0 bg-background overflow-hidden flex flex-col" data-testid="ride-request-page">
       
-      {/* Top Header overlay */}
-      <div className="absolute top-10 md:top-6 left-0 right-0 z-10 p-4 flex items-center justify-between pointer-events-none">
+      {/* Top Header Overlay & Expandable Search Bar */}
+      <div className="absolute top-10 md:top-6 left-4 z-30 flex flex-col items-start gap-3 pointer-events-none">
         <button
           onClick={handleBack}
-          className="w-12 h-12 bg-white dark:bg-zinc-900 rounded-full flex items-center justify-center shadow-lg pointer-events-auto active:scale-95 transition-transform"
+          className="w-12 h-12 bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-full flex items-center justify-center shadow-lg pointer-events-auto active:scale-95 transition-transform"
         >
           <ArrowLeft className="w-6 h-6 text-foreground" />
         </button>
+
+        {/* Expandable Search Bar (Expanding to the Right) */}
+        {step !== 'confirm' && (
+          <div className="pointer-events-auto">
+            <ExpandableSearchBar
+              expandDirection="right"
+              width={260}
+              placeholder={step === 'pickup' ? "Search for a pickup..." : "Search for a destination..."}
+              onSearch={(query) => {
+                console.log("Search submitted:", query);
+              }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Map Layer */}
