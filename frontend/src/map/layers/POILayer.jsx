@@ -157,6 +157,72 @@ const iconColorExpression = [
   '#D4AF37'                      // Default signature gold
 ];
 
+const textColorExpressionLight = [
+  'match',
+  ['get', 'maki_icon'],
+  'lodging', '#86198F',          // Deep plum/magenta-pink for hostel & dorm names (e.g. "Chambeshi Hostel")
+  'school', '#C2410C',           // Warm terracotta-amber for academic & school names
+  'college', '#C2410C',          // Warm terracotta-amber for lecture halls & departments
+  'restaurant', '#EA580C',       // Warm dining orange for cafeteria & restaurant names
+  'bar', '#EA580C',
+  'cafe', '#EA580C',
+  'fuel', '#B45309',             // Amber-gold for fuel stations
+  'grocery', '#1D4ED8',          // Crisp slate-blue for grocery & supermarket names
+  'shop', '#1D4ED8',             // Crisp slate-blue for shop & store names
+  'bank', '#047857',             // Emerald teal for banks & ATMs
+  'place-of-worship', '#6D28D9', // Violet-purple for religious & worship places
+  'police', '#1D4ED8',           // Blue for police & security
+  'bus', '#0284C7',              // Cyan-blue for transit & bus stops
+  'post', '#1D4ED8',             // Blue for post offices
+  'park', '#15803D',             // Forest green for parks, fields & pitches
+  'campsite', '#15803D',
+  'pitch', '#15803D',
+  'hospital', '#B91C1C',         // Crimson red for clinic & medical names
+  'veterinary', '#B91C1C',
+  'art-gallery', '#6D28D9',
+  'attraction', '#B45309',
+  'town-hall', '#334155',
+  'car-repair', '#334155',
+  'car', '#334155',
+  'prison', '#334155',
+  'shelter', '#334155',
+  'communications-tower', '#334155',
+  '#334155'                      // Default dark slate
+];
+
+const textColorExpressionDark = [
+  'match',
+  ['get', 'maki_icon'],
+  'lodging', '#F472B6',          // Soft vibrant pink/magenta for hostel & dorm names
+  'school', '#FDBA74',           // Warm peach/amber for academic & school names
+  'college', '#FDBA74',          // Warm peach/amber for lecture halls & departments
+  'restaurant', '#FB923C',       // Vibrant orange for dining & cafeterias
+  'bar', '#FB923C',
+  'cafe', '#FB923C',
+  'fuel', '#FDE047',             // Bright yellow for fuel stations
+  'grocery', '#60A5FA',          // Soft sky blue for shops & grocery
+  'shop', '#60A5FA',
+  'bank', '#34D399',             // Bright emerald teal for banks
+  'place-of-worship', '#A78BFA', // Soft violet for places of worship
+  'police', '#60A5FA',
+  'bus', '#38BDF8',
+  'post', '#60A5FA',
+  'park', '#4ADE80',             // Bright green for parks & fields
+  'campsite', '#4ADE80',
+  'pitch', '#4ADE80',
+  'hospital', '#F87171',         // Soft coral red for clinics & health centers
+  'veterinary', '#F87171',
+  'art-gallery', '#A78BFA',
+  'attraction', '#FBBF24',
+  'town-hall', '#94A3B8',
+  'car-repair', '#94A3B8',
+  'car', '#94A3B8',
+  'prison', '#94A3B8',
+  'shelter', '#94A3B8',
+  'communications-tower', '#94A3B8',
+  '#F8FAFC'                      // Default crisp off-white
+];
+
 // Combine GeoJSON features once statically
 const combinedFeatures = [
   ...(finalPlaces.features || []),
@@ -198,9 +264,10 @@ export const POILayer = ({ map, isNight = false, onPlaceSelect = null }) => {
     if (!map || !map.style) return;
     try {
       if (map.getLayer(LAYER_LABELS_ID)) {
-        map.setPaintProperty(LAYER_LABELS_ID, 'text-color', isNight ? '#F8FAFC' : '#1E293B');
+        map.setPaintProperty(LAYER_LABELS_ID, 'text-color', isNight ? textColorExpressionDark : textColorExpressionLight);
         map.setPaintProperty(LAYER_LABELS_ID, 'text-halo-color', isNight ? '#0F172A' : '#FFFFFF');
-        map.setPaintProperty(LAYER_LABELS_ID, 'text-halo-width', 1.75);
+        map.setPaintProperty(LAYER_LABELS_ID, 'text-halo-width', 2);
+        map.setPaintProperty(LAYER_LABELS_ID, 'text-halo-blur', 0.5);
       }
     } catch (err) {
       console.warn('Error updating POI layer paint properties:', err);
@@ -288,9 +355,9 @@ export const POILayer = ({ map, isNight = false, onPlaceSelect = null }) => {
             },
             paint: {
               'icon-color': iconColorExpression,
-              'text-color': isNightRef.current ? '#F8FAFC' : '#1E293B',
+              'text-color': isNightRef.current ? textColorExpressionDark : textColorExpressionLight,
               'text-halo-color': isNightRef.current ? '#0F172A' : '#FFFFFF',
-              'text-halo-width': 1.75,
+              'text-halo-width': 2,
               'text-halo-blur': 0.5
             }
           });
