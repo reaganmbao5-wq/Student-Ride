@@ -660,291 +660,318 @@ const AdminUsersPage = () => {
           />
         )}
 
-        {/* Enlarged Desktop Modal for User Management & Ride History */}
-        <Dialog open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
-          <DialogContent className="bg-card text-foreground border-border w-[96vw] sm:max-w-4xl lg:max-w-5xl max-h-[92vh] overflow-y-auto overflow-x-hidden p-6 md:p-8 rounded-3xl shadow-2xl">
-            <DialogHeader className="border-b border-border pb-4">
-              <DialogTitle className="text-xl md:text-2xl font-bold flex items-center justify-between">
-                <span className="truncate pr-2">User Details & History</span>
-                <div className="flex items-center gap-3 shrink-0">
+        {/* FULL SCREEN / MAXIMUM VIEWPORT MODAL FOR USER MANAGEMENT & TRIP HISTORY */}
+        {selectedUser && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/80 backdrop-blur-md animate-in fade-in-0 duration-200">
+            <div className="bg-card text-foreground border border-border w-full h-full max-w-7xl max-h-[96vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden relative">
+              {/* Sticky Top Navigation Header */}
+              <div className="px-6 py-4 md:px-8 md:py-5 border-b border-border flex items-center justify-between bg-card/95 backdrop-blur shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-gold/10 border border-gold/20 flex items-center justify-center text-gold font-bold font-heading text-lg">
+                    {(selectedUser?.name || 'U').charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <h2 className="text-lg md:text-xl font-extrabold text-foreground flex items-center gap-2">
+                      <span>{selectedUser?.name}</span>
+                      <span className="text-xs font-bold text-muted-foreground capitalize">
+                        • {selectedUser?.role.replace('_', ' ')}
+                      </span>
+                    </h2>
+                    <p className="text-xs text-muted-foreground">{selectedUser?.email}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
                   <button
                     onClick={handleStartEdit}
-                    className="px-3.5 py-1.5 rounded-xl bg-muted hover:bg-gold/20 hover:text-gold border border-border text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                    className="px-4 py-2 rounded-xl bg-gold/10 hover:bg-gold/20 text-gold border border-gold/30 text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer"
                   >
-                    <Edit3 className="w-3.5 h-3.5" />
+                    <Edit3 className="w-4 h-4" />
                     <span>Edit Profile</span>
                   </button>
-                  {selectedUser && (
-                    <span className="text-xs capitalize font-bold text-foreground pl-2">
-                      {selectedUser.role.replace('_', ' ')}
-                    </span>
-                  )}
-                </div>
-              </DialogTitle>
-            </DialogHeader>
 
-            {loadingDetails ? (
-              <div className="py-16 flex flex-col items-center justify-center space-y-3">
-                <Loader2 className="w-8 h-8 text-gold animate-spin" />
-                <p className="text-xs text-muted-foreground">Loading complete user profile & ride records...</p>
-              </div>
-            ) : userDetails ? (
-              <div className="space-y-6 pt-4 text-sm w-full">
-                {/* User Identity Card */}
-                <div className="p-5 rounded-2xl bg-muted/40 border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-center gap-4 min-w-0">
-                    <div className="w-16 h-16 rounded-2xl bg-muted border border-gold/30 overflow-hidden flex items-center justify-center shrink-0">
-                      {userDetails.user?.avatar_url ? (
-                        <img src={userDetails.user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="font-heading font-bold text-2xl text-gold">
-                          {(userDetails.user?.name || 'U').charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="text-lg font-bold text-foreground truncate">{userDetails.user?.name}</h3>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5 truncate">
-                        <Mail className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">{userDetails.user?.email}</span>
-                      </p>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5 font-mono">
-                        <Phone className="w-3.5 h-3.5 shrink-0" /> {userDetails.user?.phone || 'No phone added'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center sm:flex-col sm:items-end justify-between border-t sm:border-t-0 border-border pt-3 sm:pt-0">
-                    <p className="text-xs text-muted-foreground">Total Lifetime Trips</p>
-                    <p className="text-2xl font-extrabold text-foreground">{userDetails.total_rides || 0}</p>
-                  </div>
-                </div>
-
-                {/* Role Switcher Action Box */}
-                {(userDetails.user?.role === 'student' || userDetails.user?.role === 'driver') && (
-                  <div className="p-4 rounded-2xl bg-gold/10 border border-gold/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-bold text-gold uppercase tracking-wider">Account Role</p>
-                      <p className="text-xs text-foreground mt-0.5">
-                        Currently registered as <strong className="capitalize">{userDetails.user.role}</strong>. Convert if created in error.
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleSwitchRole(userDetails.user.id, userDetails.user.role)}
-                      disabled={switchingRole}
-                      className="px-4 py-2 rounded-xl bg-gold text-zinc-950 font-bold text-xs shadow-md hover:bg-gold/90 transition-colors cursor-pointer shrink-0 self-start sm:self-auto"
-                    >
-                      {switchingRole ? 'Switching...' : `Make ${userDetails.user.role === 'student' ? 'Driver' : 'Student'}`}
-                    </button>
-                  </div>
-                )}
-
-                {/* Driver Fleet Specs (If Driver) */}
-                {userDetails.driver_profile && (
-                  <div className="p-5 rounded-2xl bg-muted/40 border border-border space-y-3">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                        <SteeringWheel weight="duotone" className="w-4 h-4 text-gold" />
-                        Driver Fleet Details
-                      </p>
-                      <button
-                        onClick={handleStartEdit}
-                        className="text-[11px] text-gold font-bold hover:underline flex items-center gap-1 cursor-pointer"
-                      >
-                        <Edit3 className="w-3 h-3" /> Edit Vehicle
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-1">
-                      <div className="p-3 rounded-xl bg-card border border-border">
-                        <p className="text-muted-foreground text-[10px]">Vehicle</p>
-                        <p className="font-bold text-foreground truncate mt-0.5">{userDetails.driver_profile.vehicle_color} {userDetails.driver_profile.vehicle_model}</p>
-                      </div>
-                      <div className="p-3 rounded-xl bg-card border border-border">
-                        <p className="text-muted-foreground text-[10px]">Plate Number</p>
-                        <p className="font-bold text-gold font-mono truncate mt-0.5">{userDetails.driver_profile.plate_number}</p>
-                      </div>
-                      <div className="p-3 rounded-xl bg-card border border-border">
-                        <p className="text-muted-foreground text-[10px]">Driver Rating</p>
-                        <p className="font-bold text-foreground mt-0.5">⭐ {userDetails.driver_profile.rating?.toFixed(1) || '5.0'}</p>
-                      </div>
-                      <div className="p-3 rounded-xl bg-card border border-border">
-                        <p className="text-muted-foreground text-[10px]">Total Earnings</p>
-                        <p className="font-bold text-emerald-400 mt-0.5">ZMW {userDetails.driver_profile.total_earnings?.toFixed(2) || '0.00'}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Active Ongoing Trip (If Any) */}
-                {userDetails.active_ride && (
-                  <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-bold text-emerald-500 uppercase tracking-wider flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        Active Ongoing Trip
-                      </p>
-                      <span className="text-xs font-bold text-gold">ZMW {userDetails.active_ride.fare?.toFixed(2)}</span>
-                    </div>
-                    <div className="text-xs text-foreground font-medium pt-1 space-y-1">
-                      <p className="break-words">📍 From: {userDetails.active_ride.pickup_location?.name || userDetails.active_ride.pickup_location?.address}</p>
-                      <p className="break-words">🏁 To: {userDetails.active_ride.dropoff_location?.name || userDetails.active_ride.dropoff_location?.address}</p>
-                      <p className="text-muted-foreground text-[11px] pt-1">Status: <span className="text-foreground capitalize">{userDetails.active_ride.status}</span></p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Expandable Recent Ride Logs */}
-                <div className="space-y-3 w-full">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                      Trip History Records ({userDetails.recent_rides?.length || 0})
-                    </p>
-                    <span className="text-[11px] text-muted-foreground">Click any card to expand full trip details</span>
-                  </div>
-
-                  {userDetails.recent_rides && userDetails.recent_rides.length > 0 ? (
-                    <div className="space-y-2.5 w-full">
-                      {userDetails.recent_rides.map((ride) => {
-                        const isExpanded = expandedRideIds[ride.id];
-                        const dateStr = ride.created_at
-                          ? new Date(ride.created_at).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })
-                          : 'N/A';
-
-                        return (
-                          <div 
-                            key={ride.id} 
-                            className="bg-card border border-border rounded-2xl overflow-hidden transition-all duration-200 w-full"
-                          >
-                            {/* Summary Header (Click to Expand) */}
-                            <div 
-                              onClick={() => toggleRideExpand(ride.id)}
-                              className="p-4 flex items-center justify-between text-xs hover:bg-muted/40 cursor-pointer transition-colors gap-3"
-                            >
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2">
-                                  <p className="font-bold text-foreground truncate max-w-full">
-                                    {ride.pickup_location?.name || ride.pickup_location?.address || 'Pickup'} → {ride.dropoff_location?.name || ride.dropoff_location?.address || 'Destination'}
-                                  </p>
-                                </div>
-                                <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-2">
-                                  <span>{dateStr}</span>
-                                  <span>•</span>
-                                  <span className="capitalize">{ride.ride_mode || 'private'}</span>
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-3 shrink-0">
-                                <div className="text-right">
-                                  <span className="font-bold text-gold text-sm">ZMW {ride.fare?.toFixed(2)}</span>
-                                  <div className="mt-0.5">
-                                    <StatusBadge status={ride.status} />
-                                  </div>
-                                </div>
-                                {isExpanded ? (
-                                  <ChevronUp className="w-4 h-4 text-muted-foreground" />
-                                ) : (
-                                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Expanded Trip Full Details */}
-                            {isExpanded && (
-                              <div className="p-4 md:p-5 bg-muted/20 border-t border-border space-y-4 text-xs w-full">
-                                {/* Route Details */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
-                                  <div className="p-3.5 rounded-xl bg-card border border-border overflow-hidden">
-                                    <p className="text-muted-foreground text-[10px] font-bold uppercase flex items-center gap-1 text-gold">
-                                      <MapPin className="w-3.5 h-3.5 shrink-0" /> Pickup Point
-                                    </p>
-                                    <p className="font-bold text-foreground mt-1 break-words">{ride.pickup_location?.name || 'Pickup Point'}</p>
-                                    <p className="text-muted-foreground text-[11px] mt-0.5 break-words">{ride.pickup_location?.address}</p>
-                                  </div>
-
-                                  <div className="p-3.5 rounded-xl bg-card border border-border overflow-hidden">
-                                    <p className="text-muted-foreground text-[10px] font-bold uppercase flex items-center gap-1 text-emerald-400">
-                                      <MapPin className="w-3.5 h-3.5 shrink-0" /> Destination Point
-                                    </p>
-                                    <p className="font-bold text-foreground mt-1 break-words">{ride.dropoff_location?.name || 'Dropoff Point'}</p>
-                                    <p className="text-muted-foreground text-[11px] mt-0.5 break-words">{ride.dropoff_location?.address}</p>
-                                  </div>
-                                </div>
-
-                                {/* Metrics Breakdown */}
-                                <div className="grid grid-cols-3 gap-3 text-center">
-                                  <div className="p-3 rounded-xl bg-card border border-border">
-                                    <p className="text-muted-foreground text-[10px]">Total Fare</p>
-                                    <p className="font-bold text-gold text-sm mt-0.5">ZMW {ride.fare?.toFixed(2)}</p>
-                                  </div>
-                                  <div className="p-3 rounded-xl bg-card border border-border">
-                                    <p className="text-muted-foreground text-[10px]">Driver Share</p>
-                                    <p className="font-bold text-emerald-400 text-sm mt-0.5">ZMW {ride.driver_earning?.toFixed(2) || (ride.fare * 0.85).toFixed(2)}</p>
-                                  </div>
-                                  <div className="p-3 rounded-xl bg-card border border-border">
-                                    <p className="text-muted-foreground text-[10px]">Platform Commission</p>
-                                    <p className="font-bold text-foreground text-sm mt-0.5">ZMW {ride.commission?.toFixed(2) || (ride.fare * 0.15).toFixed(2)}</p>
-                                  </div>
-                                </div>
-
-                                {/* Passenger & Driver Involved */}
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-muted-foreground gap-2 pt-1">
-                                  <span>Passenger: <strong className="text-foreground">{ride.student?.name || 'Student'}</strong></span>
-                                  <span>Driver: <strong className="text-foreground">{ride.driver?.user?.name || (ride.driver_id ? 'Assigned Driver' : 'None')}</strong></span>
-                                </div>
-
-                                {/* Delete Ride Action */}
-                                <div className="flex items-center justify-between pt-3 border-t border-border">
-                                  <span className="font-mono text-[10px] text-muted-foreground">ID: {ride.id}</span>
-                                  <button
-                                    onClick={() => handleDeleteRide(ride.id)}
-                                    className="px-3.5 py-1.5 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                    Delete Record
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="p-8 text-center text-xs text-muted-foreground bg-muted/20 border border-border rounded-2xl">
-                      No trip history recorded for this account yet
-                    </div>
-                  )}
-                </div>
-
-                {/* Account Action Buttons */}
-                <div className="pt-3 flex items-center justify-between border-t border-border">
-                  {selectedUser?.role !== 'super_admin' && (
-                    <button
-                      onClick={() => handleToggleActiveStatus(selectedUser)}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                        selectedUser?.is_active !== false
-                          ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20'
-                          : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20'
-                      }`}
-                    >
-                      {selectedUser?.is_active !== false ? 'Suspend Account' : 'Activate Account'}
-                    </button>
-                  )}
-
+                  {/* Clean Prominent Top Right Close Button */}
                   <button
                     onClick={() => setSelectedUser(null)}
-                    className="px-5 py-2 rounded-xl bg-muted text-foreground text-xs font-bold hover:bg-muted/80 transition-colors ml-auto cursor-pointer"
+                    className="p-2 rounded-2xl bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border transition-colors cursor-pointer"
+                    title="Close Window"
                   >
-                    Close
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
               </div>
-            ) : null}
-          </DialogContent>
-        </Dialog>
+
+              {/* Scrollable Body Content (Full Width & Multi-column Grid) */}
+              <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 md:p-8 space-y-6 min-w-0">
+                {loadingDetails ? (
+                  <div className="py-24 flex flex-col items-center justify-center space-y-3">
+                    <Loader2 className="w-10 h-10 text-gold animate-spin" />
+                    <p className="text-xs text-muted-foreground">Loading complete user profile & ride records...</p>
+                  </div>
+                ) : userDetails ? (
+                  <div className="space-y-6 w-full max-w-full">
+                    {/* Top Identity & Summary Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                      {/* Left: User Identity Card (8 cols) */}
+                      <div className="lg:col-span-8 p-5 rounded-2xl bg-muted/40 border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4 min-w-0">
+                          <div className="w-16 h-16 rounded-2xl bg-muted border border-gold/30 overflow-hidden flex items-center justify-center shrink-0">
+                            {userDetails.user?.avatar_url ? (
+                              <img src={userDetails.user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="font-heading font-bold text-2xl text-gold">
+                                {(userDetails.user?.name || 'U').charAt(0).toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <h3 className="text-lg font-bold text-foreground truncate">{userDetails.user?.name}</h3>
+                            <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5 truncate">
+                              <Mail className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">{userDetails.user?.email}</span>
+                            </p>
+                            <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5 font-mono">
+                              <Phone className="w-3.5 h-3.5 shrink-0" /> {userDetails.user?.phone || 'No phone registered'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center sm:flex-col sm:items-end justify-between border-t sm:border-t-0 border-border pt-3 sm:pt-0 shrink-0">
+                          <p className="text-xs text-muted-foreground">Total Lifetime Trips</p>
+                          <p className="text-2xl md:text-3xl font-extrabold text-foreground">{userDetails.total_rides || 0}</p>
+                        </div>
+                      </div>
+
+                      {/* Right: Quick Role Switcher (4 cols) */}
+                      {(userDetails.user?.role === 'student' || userDetails.user?.role === 'driver') && (
+                        <div className="lg:col-span-4 p-5 rounded-2xl bg-gold/10 border border-gold/20 flex flex-col justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-bold text-gold uppercase tracking-wider">Account Role</p>
+                            <p className="text-xs text-foreground mt-0.5">
+                              Currently registered as <strong className="capitalize">{userDetails.user.role}</strong>. Convert if needed.
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => handleSwitchRole(userDetails.user.id, userDetails.user.role)}
+                            disabled={switchingRole}
+                            className="px-4 py-2.5 rounded-xl bg-gold text-zinc-950 font-bold text-xs shadow-md hover:bg-gold/90 transition-colors cursor-pointer w-full text-center"
+                          >
+                            {switchingRole ? 'Switching...' : `Make ${userDetails.user.role === 'student' ? 'Driver' : 'Student'}`}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Driver Fleet Details (If Driver) */}
+                    {userDetails.driver_profile && (
+                      <div className="p-6 rounded-2xl bg-muted/40 border border-border space-y-4">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                            <SteeringWheel weight="duotone" className="w-4 h-4 text-gold" />
+                            Driver Fleet Specifications
+                          </p>
+                          <button
+                            onClick={handleStartEdit}
+                            className="text-xs text-gold font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" /> Edit Specs
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                          <div className="p-4 rounded-xl bg-card border border-border">
+                            <p className="text-muted-foreground text-[10px] uppercase font-bold">Vehicle Model</p>
+                            <p className="font-bold text-foreground text-sm truncate mt-1">
+                              {userDetails.driver_profile.vehicle_color} {userDetails.driver_profile.vehicle_model}
+                            </p>
+                          </div>
+                          <div className="p-4 rounded-xl bg-card border border-border">
+                            <p className="text-muted-foreground text-[10px] uppercase font-bold">Plate Number</p>
+                            <p className="font-bold text-gold font-mono text-sm truncate mt-1">{userDetails.driver_profile.plate_number}</p>
+                          </div>
+                          <div className="p-4 rounded-xl bg-card border border-border">
+                            <p className="text-muted-foreground text-[10px] uppercase font-bold">Driver Rating</p>
+                            <p className="font-bold text-foreground text-sm mt-1">⭐ {userDetails.driver_profile.rating?.toFixed(1) || '5.0'}</p>
+                          </div>
+                          <div className="p-4 rounded-xl bg-card border border-border">
+                            <p className="text-muted-foreground text-[10px] uppercase font-bold">Total Earnings</p>
+                            <p className="font-bold text-emerald-400 text-sm mt-1">ZMW {userDetails.driver_profile.total_earnings?.toFixed(2) || '0.00'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Active Ongoing Trip (If Any) */}
+                    {userDetails.active_ride && (
+                      <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-bold text-emerald-500 uppercase tracking-wider flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            Active Ongoing Trip
+                          </p>
+                          <span className="text-sm font-bold text-gold">ZMW {userDetails.active_ride.fare?.toFixed(2)}</span>
+                        </div>
+                        <div className="text-xs text-foreground font-medium pt-1 space-y-1">
+                          <p className="break-words">📍 From: {userDetails.active_ride.pickup_location?.name || userDetails.active_ride.pickup_location?.address}</p>
+                          <p className="break-words">🏁 To: {userDetails.active_ride.dropoff_location?.name || userDetails.active_ride.dropoff_location?.address}</p>
+                          <p className="text-muted-foreground text-[11px] pt-1">Status: <span className="text-foreground capitalize">{userDetails.active_ride.status}</span></p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Expandable Recent Ride Logs */}
+                    <div className="space-y-3 w-full">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                          Complete Trip History Records ({userDetails.recent_rides?.length || 0})
+                        </p>
+                        <span className="text-xs text-muted-foreground">Click any card to expand full trip breakdown</span>
+                      </div>
+
+                      {userDetails.recent_rides && userDetails.recent_rides.length > 0 ? (
+                        <div className="space-y-3 w-full">
+                          {userDetails.recent_rides.map((ride) => {
+                            const isExpanded = expandedRideIds[ride.id];
+                            const dateStr = ride.created_at
+                              ? new Date(ride.created_at).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })
+                              : 'N/A';
+
+                            return (
+                              <div 
+                                key={ride.id} 
+                                className="bg-card border border-border rounded-2xl overflow-hidden transition-all duration-200 w-full"
+                              >
+                                {/* Summary Header (Click to Expand) */}
+                                <div 
+                                  onClick={() => toggleRideExpand(ride.id)}
+                                  className="p-4 md:p-5 flex items-center justify-between text-xs hover:bg-muted/40 cursor-pointer transition-colors gap-4"
+                                >
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-bold text-foreground text-sm break-words whitespace-normal">
+                                        {ride.pickup_location?.name || ride.pickup_location?.address || 'Pickup'} → {ride.dropoff_location?.name || ride.dropoff_location?.address || 'Destination'}
+                                      </p>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
+                                      <span>{dateStr}</span>
+                                      <span>•</span>
+                                      <span className="capitalize">{ride.ride_mode || 'private'}</span>
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center gap-4 shrink-0">
+                                    <div className="text-right">
+                                      <span className="font-bold text-gold text-base">ZMW {ride.fare?.toFixed(2)}</span>
+                                      <div className="mt-0.5">
+                                        <StatusBadge status={ride.status} />
+                                      </div>
+                                    </div>
+                                    {isExpanded ? (
+                                      <ChevronUp className="w-5 h-5 text-muted-foreground" />
+                                    ) : (
+                                      <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Expanded Trip Full Details */}
+                                {isExpanded && (
+                                  <div className="p-5 md:p-6 bg-muted/20 border-t border-border space-y-4 text-xs w-full">
+                                    {/* Route Details */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                                      <div className="p-4 rounded-xl bg-card border border-border overflow-hidden">
+                                        <p className="text-muted-foreground text-[10px] font-bold uppercase flex items-center gap-1 text-gold">
+                                          <MapPin className="w-4 h-4 shrink-0" /> Pickup Point
+                                        </p>
+                                        <p className="font-bold text-foreground text-sm mt-1 break-words whitespace-normal">{ride.pickup_location?.name || 'Pickup Point'}</p>
+                                        <p className="text-muted-foreground text-xs mt-0.5 break-words whitespace-normal">{ride.pickup_location?.address}</p>
+                                      </div>
+
+                                      <div className="p-4 rounded-xl bg-card border border-border overflow-hidden">
+                                        <p className="text-muted-foreground text-[10px] font-bold uppercase flex items-center gap-1 text-emerald-400">
+                                          <MapPin className="w-4 h-4 shrink-0" /> Destination Point
+                                        </p>
+                                        <p className="font-bold text-foreground text-sm mt-1 break-words whitespace-normal">{ride.dropoff_location?.name || 'Dropoff Point'}</p>
+                                        <p className="text-muted-foreground text-xs mt-0.5 break-words whitespace-normal">{ride.dropoff_location?.address}</p>
+                                      </div>
+                                    </div>
+
+                                    {/* Metrics Breakdown */}
+                                    <div className="grid grid-cols-3 gap-4 text-center">
+                                      <div className="p-3.5 rounded-xl bg-card border border-border">
+                                        <p className="text-muted-foreground text-[10px] uppercase font-bold">Total Fare</p>
+                                        <p className="font-extrabold text-gold text-base mt-1">ZMW {ride.fare?.toFixed(2)}</p>
+                                      </div>
+                                      <div className="p-3.5 rounded-xl bg-card border border-border">
+                                        <p className="text-muted-foreground text-[10px] uppercase font-bold">Driver Share</p>
+                                        <p className="font-extrabold text-emerald-400 text-base mt-1">ZMW {ride.driver_earning?.toFixed(2) || (ride.fare * 0.85).toFixed(2)}</p>
+                                      </div>
+                                      <div className="p-3.5 rounded-xl bg-card border border-border">
+                                        <p className="text-muted-foreground text-[10px] uppercase font-bold">Commission</p>
+                                        <p className="font-extrabold text-foreground text-base mt-1">ZMW {ride.commission?.toFixed(2) || (ride.fare * 0.15).toFixed(2)}</p>
+                                      </div>
+                                    </div>
+
+                                    {/* Passenger & Driver Involved */}
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-muted-foreground gap-2 pt-2 border-t border-border">
+                                      <span>Passenger: <strong className="text-foreground">{ride.student?.name || 'Student'}</strong></span>
+                                      <span>Driver: <strong className="text-foreground">{ride.driver?.user?.name || (ride.driver_id ? 'Assigned Driver' : 'None')}</strong></span>
+                                    </div>
+
+                                    {/* Delete Ride Action */}
+                                    <div className="flex items-center justify-between pt-2">
+                                      <span className="font-mono text-[11px] text-muted-foreground">ID: {ride.id}</span>
+                                      <button
+                                        onClick={() => handleDeleteRide(ride.id)}
+                                        className="px-4 py-2 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                        Delete Record
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="p-12 text-center text-sm text-muted-foreground bg-muted/20 border border-border rounded-3xl">
+                          No trip history recorded for this account yet
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              {/* Bottom Sticky Action Footer */}
+              <div className="px-6 py-4 md:px-8 md:py-4 border-t border-border bg-card/95 backdrop-blur flex items-center justify-between shrink-0">
+                {selectedUser?.role !== 'super_admin' && (
+                  <button
+                    onClick={() => handleToggleActiveStatus(selectedUser)}
+                    className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                      selectedUser?.is_active !== false
+                        ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20'
+                        : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20'
+                    }`}
+                  >
+                    {selectedUser?.is_active !== false ? 'Suspend Account' : 'Activate Account'}
+                  </button>
+                )}
+
+                <button
+                  onClick={() => setSelectedUser(null)}
+                  className="px-6 py-2.5 rounded-xl bg-muted text-foreground text-xs font-bold hover:bg-muted/80 transition-colors ml-auto cursor-pointer"
+                >
+                  Close Window
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Edit User / Driver Details Modal */}
         <Dialog open={isEditingUser} onOpenChange={setIsEditingUser}>

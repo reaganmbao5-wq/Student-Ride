@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Search, Check, X, Star, AlertCircle, Wallet, Plus, Loader2, 
-  FileText, Eye, Calendar, RefreshCw, Ban, CheckCircle, Shield, Edit3, DollarSign
+  FileText, Eye, Calendar, RefreshCw, Ban, CheckCircle, Shield, Edit3, DollarSign,
+  Mail, Phone
 } from 'lucide-react';
 import { SteeringWheel, Car } from '@phosphor-icons/react';
 import { GlassCard, GlassInput, GoldButton, EmptyState } from '../components/common/GlassComponents';
@@ -500,128 +501,150 @@ const AdminDriversPage = () => {
           />
         )}
 
-        {/* Enlarged Driver Inspection Modal */}
-        <Dialog open={!!inspectedDriver} onOpenChange={(open) => !open && setInspectedDriver(null)}>
-          <DialogContent className="bg-card text-foreground border-border w-[96vw] sm:max-w-3xl lg:max-w-4xl max-h-[92vh] overflow-y-auto overflow-x-hidden p-6 md:p-8 rounded-3xl shadow-2xl">
-            <DialogHeader className="border-b border-border pb-4">
-              <DialogTitle className="text-xl font-bold flex items-center justify-between">
-                <span>Driver Details</span>
-                <div className="flex items-center gap-2">
+        {/* FULL SCREEN / MAXIMUM VIEWPORT MODAL FOR DRIVER INSPECTION */}
+        {inspectedDriver && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/80 backdrop-blur-md animate-in fade-in-0 duration-200">
+            <div className="bg-card text-foreground border border-border w-full h-full max-w-6xl max-h-[96vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden relative">
+              {/* Sticky Top Navigation Header */}
+              <div className="px-6 py-4 md:px-8 md:py-5 border-b border-border flex items-center justify-between bg-card/95 backdrop-blur shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-gold/10 border border-gold/20 flex items-center justify-center text-gold font-bold font-heading text-lg">
+                    {(inspectedDriver.user?.name || 'D').charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <h2 className="text-lg md:text-xl font-extrabold text-foreground flex items-center gap-2">
+                      <span>{inspectedDriver.user?.name || 'Driver'}</span>
+                      <span className="text-xs font-bold text-muted-foreground capitalize">
+                        • {inspectedDriver.is_approved ? 'Approved Active' : 'Pending Review'}
+                      </span>
+                    </h2>
+                    <p className="text-xs text-muted-foreground">{inspectedDriver.user?.email}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
                   <button
                     onClick={() => handleStartEditDriver(inspectedDriver)}
-                    className="px-3 py-1.5 rounded-xl bg-muted hover:bg-gold/20 hover:text-gold border border-border text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                    className="px-4 py-2 rounded-xl bg-gold/10 hover:bg-gold/20 text-gold border border-gold/30 text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer"
                   >
-                    <Edit3 className="w-3.5 h-3.5" />
+                    <Edit3 className="w-4 h-4" />
                     <span>Edit Specs</span>
                   </button>
-                  {inspectedDriver && (
-                    <span className="text-xs font-bold capitalize text-foreground pl-2">
-                      {inspectedDriver.is_approved ? 'Approved Active' : 'Pending Review'}
-                    </span>
-                  )}
-                </div>
-              </DialogTitle>
-            </DialogHeader>
-
-            {inspectedDriver && (
-              <div className="space-y-6 pt-4 text-sm w-full">
-                {/* Identity */}
-                <div className="p-5 rounded-2xl bg-muted/40 border border-border flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-muted border border-gold/30 overflow-hidden flex items-center justify-center shrink-0">
-                    {inspectedDriver.user?.avatar_url || inspectedDriver.avatar_url ? (
-                      <img src={inspectedDriver.user?.avatar_url || inspectedDriver.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="font-heading font-bold text-2xl text-gold">
-                        {(inspectedDriver.user?.name || 'D').charAt(0).toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-foreground">{inspectedDriver.user?.name}</h3>
-                    <p className="text-xs text-muted-foreground">{inspectedDriver.user?.email}</p>
-                    <p className="text-xs text-muted-foreground font-mono mt-0.5">{inspectedDriver.user?.phone || 'No phone'}</p>
-                  </div>
-                </div>
-
-                {/* Vehicle Specs Grid */}
-                <div className="p-5 rounded-2xl bg-muted/40 border border-border space-y-3">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                    <SteeringWheel weight="duotone" className="w-4 h-4 text-gold" />
-                    Vehicle Specifications
-                  </p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs pt-1">
-                    <div className="p-3 rounded-xl bg-card border border-border">
-                      <p className="text-muted-foreground text-[10px]">Model & Color</p>
-                      <p className="font-bold text-foreground mt-0.5">{inspectedDriver.vehicle_color} {inspectedDriver.vehicle_model}</p>
-                    </div>
-                    <div className="p-3 rounded-xl bg-card border border-border">
-                      <p className="text-muted-foreground text-[10px]">Plate Number</p>
-                      <p className="font-bold text-gold font-mono mt-0.5">{inspectedDriver.plate_number}</p>
-                    </div>
-                    <div className="p-3 rounded-xl bg-card border border-border">
-                      <p className="text-muted-foreground text-[10px]">Vehicle Type</p>
-                      <p className="font-bold text-foreground capitalize mt-0.5">{inspectedDriver.vehicle_type || 'Car'}</p>
-                    </div>
-                    <div className="p-3 rounded-xl bg-card border border-border">
-                      <p className="text-muted-foreground text-[10px]">License Number</p>
-                      <p className="font-bold text-foreground font-mono mt-0.5">{inspectedDriver.license_number || 'N/A'}</p>
-                    </div>
-                    <div className="p-3 rounded-xl bg-card border border-border">
-                      <p className="text-muted-foreground text-[10px]">Completed Rides</p>
-                      <p className="font-bold text-foreground mt-0.5">{inspectedDriver.total_trips || 0} completed</p>
-                    </div>
-                    <div className="p-3 rounded-xl bg-card border border-border">
-                      <p className="text-muted-foreground text-[10px]">Total Earnings</p>
-                      <p className="font-bold text-emerald-400 mt-0.5">ZMW {inspectedDriver.total_earnings?.toFixed(2) || '0.00'}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Settle Commission Action Card */}
-                <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-bold text-emerald-500 uppercase tracking-wider">Driver Wallet Clearance</p>
-                    <p className="text-xs text-foreground mt-0.5">
-                      Commission Due: <strong className="text-gold">ZMW {inspectedDriver.total_commission_due?.toFixed(2) || '0.00'}</strong>
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => handleOpenSettleModal(inspectedDriver)}
-                    className="px-4 py-2 rounded-xl bg-emerald-500 text-zinc-950 font-bold text-xs shadow-md hover:bg-emerald-400 transition-colors cursor-pointer self-start sm:self-auto"
-                  >
-                    Clear Wallet
-                  </button>
-                </div>
-
-                {/* Approval & Action Buttons */}
-                <div className="pt-3 flex items-center justify-between border-t border-border">
-                  {inspectedDriver.is_approved ? (
-                    <button
-                      onClick={() => handleSuspendDriver(inspectedDriver.id)}
-                      className="px-4 py-2 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 text-xs font-bold transition-colors cursor-pointer"
-                    >
-                      Suspend Driver
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => handleApproveDriver(inspectedDriver.id)}
-                      className="px-4 py-2 rounded-xl bg-emerald-500 text-zinc-950 text-xs font-bold hover:bg-emerald-400 transition-colors shadow-md cursor-pointer"
-                    >
-                      Approve Driver
-                    </button>
-                  )}
 
                   <button
                     onClick={() => setInspectedDriver(null)}
-                    className="px-5 py-2 rounded-xl bg-muted text-foreground text-xs font-bold hover:bg-muted/80 transition-colors ml-auto cursor-pointer"
+                    className="p-2 rounded-2xl bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border transition-colors cursor-pointer"
+                    title="Close Window"
                   >
-                    Close
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
               </div>
-            )}
-          </DialogContent>
-        </Dialog>
+
+              {/* Scrollable Body Content */}
+              <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 md:p-8 space-y-6 min-w-0">
+                <div className="space-y-6 w-full max-w-full">
+                  {/* Identity Banner */}
+                  <div className="p-5 rounded-2xl bg-muted/40 border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className="w-16 h-16 rounded-2xl bg-muted border border-gold/30 overflow-hidden flex items-center justify-center shrink-0">
+                        {inspectedDriver.user?.avatar_url || inspectedDriver.avatar_url ? (
+                          <img src={inspectedDriver.user?.avatar_url || inspectedDriver.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="font-heading font-bold text-2xl text-gold">
+                            {(inspectedDriver.user?.name || 'D').charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="text-lg font-bold text-foreground truncate">{inspectedDriver.user?.name}</h3>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5 truncate">
+                          <Mail className="w-3.5 h-3.5 shrink-0" /> {inspectedDriver.user?.email}
+                        </p>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5 font-mono">
+                          <Phone className="w-3.5 h-3.5 shrink-0" /> {inspectedDriver.user?.phone || 'No phone'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center sm:flex-col sm:items-end justify-between border-t sm:border-t-0 border-border pt-3 sm:pt-0 shrink-0">
+                      <p className="text-xs text-muted-foreground">Total Lifetime Trips</p>
+                      <p className="text-2xl md:text-3xl font-extrabold text-foreground">{inspectedDriver.total_trips || 0}</p>
+                    </div>
+                  </div>
+
+                  {/* Vehicle Specs Grid */}
+                  <div className="p-6 rounded-2xl bg-muted/40 border border-border space-y-4">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <SteeringWheel weight="duotone" className="w-4 h-4 text-gold" />
+                      Vehicle Specifications
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                      <div className="p-4 rounded-xl bg-card border border-border">
+                        <p className="text-muted-foreground text-[10px] uppercase font-bold">Model & Color</p>
+                        <p className="font-bold text-foreground text-sm truncate mt-1">{inspectedDriver.vehicle_color} {inspectedDriver.vehicle_model}</p>
+                      </div>
+                      <div className="p-4 rounded-xl bg-card border border-border">
+                        <p className="text-muted-foreground text-[10px] uppercase font-bold">Plate Number</p>
+                        <p className="font-bold text-gold font-mono text-sm truncate mt-1">{inspectedDriver.plate_number}</p>
+                      </div>
+                      <div className="p-4 rounded-xl bg-card border border-border">
+                        <p className="text-muted-foreground text-[10px] uppercase font-bold">Vehicle Type</p>
+                        <p className="font-bold text-foreground capitalize text-sm mt-1">{inspectedDriver.vehicle_type || 'Car'}</p>
+                      </div>
+                      <div className="p-4 rounded-xl bg-card border border-border">
+                        <p className="text-muted-foreground text-[10px] uppercase font-bold">Total Earnings</p>
+                        <p className="font-bold text-emerald-400 text-sm mt-1">ZMW {inspectedDriver.total_earnings?.toFixed(2) || '0.00'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Settle Commission Action Card */}
+                  <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-bold text-emerald-500 uppercase tracking-wider">Driver Wallet Clearance</p>
+                      <p className="text-xs text-foreground mt-0.5">
+                        Commission Remittance Due: <strong className="text-gold font-mono">ZMW {inspectedDriver.total_commission_due?.toFixed(2) || '0.00'}</strong>
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleOpenSettleModal(inspectedDriver)}
+                      className="px-5 py-2.5 rounded-xl bg-emerald-500 text-zinc-950 font-bold text-xs shadow-md hover:bg-emerald-400 transition-colors cursor-pointer self-start sm:self-auto"
+                    >
+                      Clear Driver Wallet
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Sticky Action Footer */}
+              <div className="px-6 py-4 md:px-8 md:py-4 border-t border-border bg-card/95 backdrop-blur flex items-center justify-between shrink-0">
+                {inspectedDriver.is_approved ? (
+                  <button
+                    onClick={() => handleSuspendDriver(inspectedDriver.id)}
+                    className="px-5 py-2.5 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    Suspend Driver
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleApproveDriver(inspectedDriver.id)}
+                    className="px-5 py-2.5 rounded-xl bg-emerald-500 text-zinc-950 text-xs font-bold hover:bg-emerald-400 transition-colors shadow-md cursor-pointer"
+                  >
+                    Approve Driver
+                  </button>
+                )}
+
+                <button
+                  onClick={() => setInspectedDriver(null)}
+                  className="px-6 py-2.5 rounded-xl bg-muted text-foreground text-xs font-bold hover:bg-muted/80 transition-colors ml-auto cursor-pointer"
+                >
+                  Close Window
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Clear Wallet / Settle Commission Dialog */}
         <Dialog open={settleModalOpen} onOpenChange={setSettleModalOpen}>

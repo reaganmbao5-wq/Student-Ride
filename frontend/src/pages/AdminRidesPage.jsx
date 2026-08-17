@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   MapPin, Search, Calendar, RefreshCw, User, Clock, 
-  ArrowUpDown, Filter, Eye, CheckCircle2, XCircle, AlertCircle 
+  ArrowUpDown, Filter, Eye, CheckCircle2, XCircle, AlertCircle, X 
 } from 'lucide-react';
 import { SteeringWheel, Car } from '@phosphor-icons/react';
 import { GlassCard, StatusBadge, EmptyState } from '../components/common/GlassComponents';
@@ -329,93 +329,114 @@ const AdminRidesPage = () => {
           />
         )}
 
-        {/* Enlarged Desktop Ride Details Inspector Modal */}
-        <Dialog open={!!selectedRide} onOpenChange={(open) => !open && setSelectedRide(null)}>
-          <DialogContent className="bg-card text-foreground border-border w-[96vw] sm:max-w-3xl lg:max-w-4xl max-h-[92vh] overflow-y-auto overflow-x-hidden p-6 md:p-8 rounded-3xl shadow-2xl">
-            <DialogHeader className="border-b border-border pb-4">
-              <DialogTitle className="text-xl font-bold flex items-center justify-between">
-                <span>Trip Inspection & Audit</span>
-                {selectedRide && <StatusBadge status={selectedRide.status} />}
-              </DialogTitle>
-            </DialogHeader>
-
-            {selectedRide && (
-              <div className="space-y-6 pt-4 text-sm w-full">
-                {/* Route Section */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-4 rounded-2xl bg-muted/40 border border-border space-y-1 overflow-hidden">
-                    <p className="text-xs font-bold text-gold uppercase tracking-wider flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 shrink-0" />
-                      Pickup Point
-                    </p>
-                    <p className="font-bold text-foreground text-sm break-words">{selectedRide.pickup_location?.name || 'Pickup Point'}</p>
-                    <p className="text-xs text-muted-foreground break-words">{selectedRide.pickup_location?.address}</p>
+        {/* FULL SCREEN / MAXIMUM VIEWPORT MODAL FOR RIDE INSPECTION */}
+        {selectedRide && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/80 backdrop-blur-md animate-in fade-in-0 duration-200">
+            <div className="bg-card text-foreground border border-border w-full h-full max-w-6xl max-h-[96vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden relative">
+              {/* Sticky Top Navigation Header */}
+              <div className="px-6 py-4 md:px-8 md:py-5 border-b border-border flex items-center justify-between bg-card/95 backdrop-blur shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-gold/10 border border-gold/20 flex items-center justify-center text-gold font-bold font-heading text-lg">
+                    <MapPin className="w-5 h-5 text-gold" />
                   </div>
-
-                  <div className="p-4 rounded-2xl bg-muted/40 border border-border space-y-1 overflow-hidden">
-                    <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 shrink-0" />
-                      Dropoff Destination
-                    </p>
-                    <p className="font-bold text-foreground text-sm break-words">{selectedRide.dropoff_location?.name || 'Dropoff Point'}</p>
-                    <p className="text-xs text-muted-foreground break-words">{selectedRide.dropoff_location?.address}</p>
+                  <div>
+                    <h2 className="text-lg md:text-xl font-extrabold text-foreground flex items-center gap-2">
+                      <span>Trip Inspection & Audit</span>
+                      <StatusBadge status={selectedRide.status} />
+                    </h2>
+                    <p className="text-xs text-muted-foreground font-mono">ID: {selectedRide.id}</p>
                   </div>
                 </div>
 
-                {/* People Involved */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-4 rounded-2xl bg-muted/40 border border-border space-y-1">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Passenger</p>
-                    <p className="font-bold text-foreground">{selectedRide.student?.name || 'Student'}</p>
-                    <p className="text-xs text-muted-foreground">{selectedRide.student?.email || 'No email'}</p>
-                    <p className="text-xs text-muted-foreground font-mono">{selectedRide.student?.phone || 'No phone'}</p>
+                <button
+                  onClick={() => setSelectedRide(null)}
+                  className="p-2 rounded-2xl bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border transition-colors cursor-pointer"
+                  title="Close Window"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Scrollable Body Content */}
+              <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 md:p-8 space-y-6 min-w-0">
+                <div className="space-y-6 w-full max-w-full">
+                  {/* Route Section */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-5 rounded-2xl bg-muted/40 border border-border space-y-2 overflow-hidden">
+                      <p className="text-xs font-bold text-gold uppercase tracking-wider flex items-center gap-1.5">
+                        <MapPin className="w-4 h-4 shrink-0" />
+                        Pickup Point
+                      </p>
+                      <p className="font-bold text-foreground text-base break-words whitespace-normal">{selectedRide.pickup_location?.name || 'Pickup Point'}</p>
+                      <p className="text-xs text-muted-foreground break-words whitespace-normal">{selectedRide.pickup_location?.address}</p>
+                    </div>
+
+                    <div className="p-5 rounded-2xl bg-muted/40 border border-border space-y-2 overflow-hidden">
+                      <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <MapPin className="w-4 h-4 shrink-0" />
+                        Dropoff Destination
+                      </p>
+                      <p className="font-bold text-foreground text-base break-words whitespace-normal">{selectedRide.dropoff_location?.name || 'Dropoff Point'}</p>
+                      <p className="text-xs text-muted-foreground break-words whitespace-normal">{selectedRide.dropoff_location?.address}</p>
+                    </div>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-muted/40 border border-border space-y-1">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Assigned Driver</p>
-                    <p className="font-bold text-foreground">{selectedRide.driver?.user?.name || (selectedRide.driver_id ? 'Assigned Driver' : 'Unassigned')}</p>
-                    <p className="text-xs text-muted-foreground">{selectedRide.driver?.user?.email || 'No email'}</p>
-                    <p className="text-xs text-gold font-mono">{selectedRide.driver?.plate_number ? `Plate: ${selectedRide.driver.plate_number}` : ''}</p>
-                  </div>
-                </div>
+                  {/* People Involved */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-5 rounded-2xl bg-muted/40 border border-border space-y-2">
+                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Passenger Details</p>
+                      <p className="font-bold text-foreground text-base">{selectedRide.student?.name || 'Student'}</p>
+                      <p className="text-xs text-muted-foreground">{selectedRide.student?.email || 'No email'}</p>
+                      <p className="text-xs text-muted-foreground font-mono">{selectedRide.student?.phone || 'No phone'}</p>
+                    </div>
 
-                {/* Financials Breakdown */}
-                <div className="grid grid-cols-3 gap-3 text-center">
-                  <div className="p-3 rounded-2xl bg-card border border-border">
-                    <p className="text-muted-foreground text-xs">Total Fare</p>
-                    <p className="font-extrabold text-gold text-lg mt-0.5">ZMW {selectedRide.fare?.toFixed(2)}</p>
+                    <div className="p-5 rounded-2xl bg-muted/40 border border-border space-y-2">
+                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Assigned Driver</p>
+                      <p className="font-bold text-foreground text-base">{selectedRide.driver?.user?.name || (selectedRide.driver_id ? 'Assigned Driver' : 'Unassigned')}</p>
+                      <p className="text-xs text-muted-foreground">{selectedRide.driver?.user?.email || 'No email'}</p>
+                      <p className="text-xs text-gold font-mono">{selectedRide.driver?.plate_number ? `Plate: ${selectedRide.driver.plate_number}` : ''}</p>
+                    </div>
                   </div>
-                  <div className="p-3 rounded-2xl bg-card border border-border">
-                    <p className="text-muted-foreground text-xs">Driver Earnings</p>
-                    <p className="font-extrabold text-emerald-400 text-lg mt-0.5">ZMW {selectedRide.driver_earning?.toFixed(2) || (selectedRide.fare * 0.85).toFixed(2)}</p>
-                  </div>
-                  <div className="p-3 rounded-2xl bg-card border border-border">
-                    <p className="text-muted-foreground text-xs">Platform Commission</p>
-                    <p className="font-extrabold text-foreground text-lg mt-0.5">ZMW {selectedRide.commission?.toFixed(2) || (selectedRide.fare * 0.15).toFixed(2)}</p>
-                  </div>
-                </div>
 
-                {/* Metadata & Timestamp Audit */}
-                <div className="p-4 rounded-2xl bg-muted/20 border border-border text-xs space-y-1.5 font-mono text-muted-foreground">
-                  <p>Ride ID: <span className="text-foreground">{selectedRide.id}</span></p>
-                  <p>Ride Mode: <span className="text-foreground capitalize">{selectedRide.ride_mode || 'private'} ({selectedRide.passenger_count || 1} passenger)</span></p>
-                  <p>Distance: <span className="text-foreground">{selectedRide.distance_km?.toFixed(2) || 'N/A'} km</span> • Duration: <span className="text-foreground">{selectedRide.duration_min ? `${selectedRide.duration_min} mins` : 'N/A'}</span></p>
-                  <p>Requested: <span className="text-foreground">{selectedRide.created_at || 'N/A'}</span></p>
-                  {selectedRide.completed_at && <p>Completed: <span className="text-foreground">{selectedRide.completed_at}</span></p>}
-                </div>
+                  {/* Financials Breakdown */}
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div className="p-4 rounded-2xl bg-card border border-border">
+                      <p className="text-muted-foreground text-xs uppercase font-bold">Total Fare</p>
+                      <p className="font-extrabold text-gold text-xl mt-1">ZMW {selectedRide.fare?.toFixed(2)}</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-card border border-border">
+                      <p className="text-muted-foreground text-xs uppercase font-bold">Driver Earnings</p>
+                      <p className="font-extrabold text-emerald-400 text-xl mt-1">ZMW {selectedRide.driver_earning?.toFixed(2) || (selectedRide.fare * 0.85).toFixed(2)}</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-card border border-border">
+                      <p className="text-muted-foreground text-xs uppercase font-bold">Platform Commission</p>
+                      <p className="font-extrabold text-foreground text-xl mt-1">ZMW {selectedRide.commission?.toFixed(2) || (selectedRide.fare * 0.15).toFixed(2)}</p>
+                    </div>
+                  </div>
 
-                <div className="pt-2 flex justify-end border-t border-border">
-                  <button
-                    onClick={() => setSelectedRide(null)}
-                    className="px-5 py-2 rounded-xl bg-muted text-foreground text-xs font-bold hover:bg-muted/80 transition-colors cursor-pointer"
-                  >
-                    Close Inspection
-                  </button>
+                  {/* Metadata & Timestamp Audit */}
+                  <div className="p-5 rounded-2xl bg-muted/20 border border-border text-xs space-y-2 font-mono text-muted-foreground">
+                    <p>Ride ID: <span className="text-foreground">{selectedRide.id}</span></p>
+                    <p>Ride Mode: <span className="text-foreground capitalize">{selectedRide.ride_mode || 'private'} ({selectedRide.passenger_count || 1} passenger)</span></p>
+                    <p>Distance: <span className="text-foreground">{selectedRide.distance_km?.toFixed(2) || 'N/A'} km</span> • Duration: <span className="text-foreground">{selectedRide.duration_min ? `${selectedRide.duration_min} mins` : 'N/A'}</span></p>
+                    <p>Requested: <span className="text-foreground">{selectedRide.created_at || 'N/A'}</span></p>
+                    {selectedRide.completed_at && <p>Completed: <span className="text-foreground">{selectedRide.completed_at}</span></p>}
+                  </div>
                 </div>
               </div>
-            )}
-          </DialogContent>
-        </Dialog>
+
+              {/* Bottom Sticky Action Footer */}
+              <div className="px-6 py-4 md:px-8 md:py-4 border-t border-border bg-card/95 backdrop-blur flex items-center justify-end shrink-0">
+                <button
+                  onClick={() => setSelectedRide(null)}
+                  className="px-6 py-2.5 rounded-xl bg-muted text-foreground text-xs font-bold hover:bg-muted/80 transition-colors cursor-pointer"
+                >
+                  Close Inspection
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );
