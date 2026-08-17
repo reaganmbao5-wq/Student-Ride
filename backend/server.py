@@ -2193,6 +2193,17 @@ async def settle_single_driver_commission(driver_id: str, data: dict = Body({}),
         "wallet_status": WalletStatus.ACTIVE.value
     }
 
+COMPLETED_RIDE_STATUSES = [
+    RideStatus.COMPLETED.value,
+    RideStatus.RIDE_COMPLETED.value,
+    RideStatus.RIDE_ARCHIVED.value,
+    RideStatus.SETTLEMENT.value,
+    "completed",
+    "ride_completed",
+    "ride_archived",
+    "settlement"
+]
+
 @api_router.get("/admin/analytics")
 async def get_admin_analytics(user: dict = Depends(require_admin)):
     """
@@ -2201,7 +2212,7 @@ async def get_admin_analytics(user: dict = Depends(require_admin)):
     thirty_days_ago = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
     
     rides = await db.rides.find({
-        "status": RideStatus.COMPLETED.value
+        "status": {"$in": COMPLETED_RIDE_STATUSES}
     }).sort("created_at", -1).to_list(5000)
     
     daily_stats = {}
@@ -2211,9 +2222,14 @@ async def get_admin_analytics(user: dict = Depends(require_admin)):
         date = created_raw[:10] if len(created_raw) >= 10 else datetime.now(timezone.utc).strftime("%Y-%m-%d")
         
         if date not in daily_stats:
-            daily_stats[date] = {"date": date, "revenue": 0.0, "rides": 0}
+            daily_stats[date] = {"date": date, "revenue": 0.0, "gross_fare": 0.0, "rides": 0}
+            
         fare_val = float(ride.get("fare") or 0.0)
-        daily_stats[date]["revenue"] = round(daily_stats[date]["revenue"] + fare_val, 2)
+        commission_val = float(ride.get("commission") or (fare_val * 0.15))
+        
+        # Platform revenue = commission profit
+        daily_stats[date]["revenue"] = round(daily_stats[date]["revenue"] + commission_val, 2)
+        daily_stats[date]["gross_fare"] = round(daily_stats[date]["gross_fare"] + fare_val, 2)
         daily_stats[date]["rides"] += 1
         
     revenue_chart = sorted(daily_stats.values(), key=lambda x: x["date"])
@@ -2223,10 +2239,10 @@ async def get_admin_analytics(user: dict = Depends(require_admin)):
         for i in range(6, -1, -1):
             d_str = (datetime.now(timezone.utc) - timedelta(days=i)).strftime("%Y-%m-%d")
             if d_str not in existing_dates:
-                revenue_chart.append({"date": d_str, "revenue": 0.0, "rides": 0})
+                revenue_chart.append({"date": d_str, "revenue": 0.0, "gross_fare": 0.0, "rides": 0})
         revenue_chart = sorted(revenue_chart, key=lambda x: x["date"])
         
-    # Online Drivers vs Busy Drivers (Centralized Logic)
+    # Online Drivers vs Busy Drivers
     online_drivers_list = await db.drivers.find({"is_online": True}).to_list(1000)
     online_drivers = len(online_drivers_list)
     busy_drivers = 0
@@ -2239,10 +2255,33 @@ async def get_admin_analytics(user: dict = Depends(require_admin)):
                 busy_drivers += 1
         except Exception:
             pass
+
+    # Aggregated Frequently Visited Places / Campus Hotspots
+    dest_counts = {}
+    for r in rides:
+        dropoff = r.get("dropoff_location") or {}
+        name = dropoff.get("name") or dropoff.get("address")
+        if name and len(name.strip()) > 1:
+            clean_name = name.strip().split(",")[0]
+            dest_counts[clean_name] = dest_counts.get(clean_name, 0) + 1
+            
+    popular_destinations = [
+        {"name": k, "value": v}
+        for k, v in sorted(dest_counts.items(), key=lambda item: item[1], reverse=True)[:8]
+    ]
+    
+    # Fallback popular hotspots if history is brand new
+    if not popular_destinations:
+        popular_destinations = [
+            {"name": "Main Campus Gate", "value": max(1, len(rides))},
+            {"name": "Campus Library", "value": max(1, len(rides) // 2)},
+            {"name": "Student Hostels", "value": max(1, len(rides) // 3)},
+            {"name": "Science Complex", "value": max(1, len(rides) // 4)}
+        ]
             
     return {
         "revenue_trends": revenue_chart[-30:],
-        "popular_destinations": [],
+        "popular_destinations": popular_destinations,
         "driver_activity": {
             "online": online_drivers,
             "busy": busy_drivers,
@@ -3465,13 +3504,13 @@ async def get_admin_stats(user: dict = Depends(require_admin)):
     total_drivers = await db.drivers.count_documents({})
     pending_drivers = await db.drivers.count_documents({"is_approved": False})
     total_rides = await db.rides.count_documents({})
-    completed_rides = await db.rides.count_documents({"status": RideStatus.COMPLETED.value})
+    completed_rides = await db.rides.count_documents({"status": {"$in": COMPLETED_RIDE_STATUSES}})
     active_rides = await db.rides.count_documents({"status": {"$in": get_active_ride_states()}})
     
     # Calculate earnings
-    rides = await db.rides.find({"status": RideStatus.COMPLETED.value}, {"_id": 0}).to_list(10000)
-    total_revenue = sum(r["fare"] for r in rides)
-    total_commission = sum(r["commission"] for r in rides)
+    rides = await db.rides.find({"status": {"$in": COMPLETED_RIDE_STATUSES}}, {"_id": 0}).to_list(10000)
+    total_gross_volume = sum(float(r.get("fare") or 0.0) for r in rides)
+    total_commission = sum(float(r.get("commission") or (float(r.get("fare") or 0.0) * 0.15)) for r in rides)
     
     settings = await get_platform_settings()
     
@@ -3482,7 +3521,8 @@ async def get_admin_stats(user: dict = Depends(require_admin)):
         "total_rides": total_rides,
         "completed_rides": completed_rides,
         "active_rides": active_rides,
-        "total_revenue": total_revenue,
+        "total_revenue": total_commission,
+        "total_gross_volume": total_gross_volume,
         "total_commission": total_commission,
         "commission_rate": settings["commission_rate"]
     }
@@ -3595,6 +3635,84 @@ async def switch_user_role(user_id: str, request: SwitchRoleRequest, admin: dict
     await log_admin_action(admin["id"], admin["name"], "switch_role", user_id, f"Switched role to {new_role}")
     return UserResponse(**updated)
 
+class AdminUpdateUserRequest(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    password: Optional[str] = None
+
+@api_router.patch("/admin/users/{user_id}", response_model=UserResponse)
+async def update_user_by_admin(
+    user_id: str,
+    payload: AdminUpdateUserRequest,
+    admin: dict = Depends(require_admin)
+):
+    target_user = await db.users.find_one({"id": user_id})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    updates = {}
+    if payload.name is not None and payload.name.strip():
+        updates["name"] = payload.name.strip()
+    if payload.phone is not None:
+        updates["phone"] = payload.phone.strip()
+    if payload.email is not None and payload.email.strip().lower() != target_user.get("email"):
+        new_email = payload.email.strip().lower()
+        existing = await db.users.find_one({"email": new_email, "id": {"$ne": user_id}})
+        if existing:
+            raise HTTPException(status_code=400, detail="Email already used by another user")
+        updates["email"] = new_email
+    if payload.password is not None and payload.password.strip():
+        updates["password_hash"] = hash_password(payload.password.strip())
+        
+    if updates:
+        await db.users.update_one({"id": user_id}, {"$set": updates})
+        await log_admin_action(admin["id"], admin["name"], "update_user_profile", user_id, f"Updated fields: {list(updates.keys())}")
+        
+    updated_user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    return UserResponse(**updated_user)
+
+class AdminUpdateDriverRequest(BaseModel):
+    vehicle_model: Optional[str] = None
+    vehicle_color: Optional[str] = None
+    plate_number: Optional[str] = None
+    vehicle_type: Optional[str] = None
+    license_number: Optional[str] = None
+
+@api_router.patch("/admin/drivers/{driver_id}", response_model=DriverResponse)
+async def update_driver_by_admin(
+    driver_id: str,
+    payload: AdminUpdateDriverRequest,
+    admin: dict = Depends(require_admin)
+):
+    driver = await db.drivers.find_one({"id": driver_id})
+    if not driver:
+        driver = await db.drivers.find_one({"user_id": driver_id})
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver not found")
+        
+    updates = {}
+    if payload.vehicle_model is not None:
+        updates["vehicle_model"] = payload.vehicle_model.strip()
+    if payload.vehicle_color is not None:
+        updates["vehicle_color"] = payload.vehicle_color.strip()
+    if payload.plate_number is not None:
+        updates["plate_number"] = payload.plate_number.strip().upper()
+    if payload.vehicle_type is not None:
+        updates["vehicle_type"] = payload.vehicle_type.strip()
+    if payload.license_number is not None:
+        updates["license_number"] = payload.license_number.strip().upper()
+        
+    if updates:
+        await db.drivers.update_one({"id": driver["id"]}, {"$set": updates})
+        await log_admin_action(admin["id"], admin["name"], "update_driver_specs", driver["id"], f"Updated: {list(updates.keys())}")
+        
+    updated_driver = await db.drivers.find_one({"id": driver["id"]}, {"_id": 0})
+    user_info = await db.users.find_one({"id": updated_driver.get("user_id")}, {"_id": 0, "password": 0})
+    if user_info:
+        updated_driver["user"] = UserResponse(**user_info)
+    return DriverResponse(**updated_driver)
+
 @api_router.get("/admin/users/{user_id}/details")
 async def get_admin_user_details(user_id: str, admin: dict = Depends(require_admin)):
     target_user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
@@ -3631,8 +3749,17 @@ async def get_admin_user_details(user_id: str, admin: dict = Depends(require_adm
             *([{"driver_id": driver_id}] if driver_id else [])
         ]
     }
-    recent_rides_raw = await db.rides.find(history_query, {"_id": 0}).sort("created_at", -1).to_list(15)
+    # Return up to 100 rides so admin can inspect full history
+    recent_rides_raw = await db.rides.find(history_query, {"_id": 0}).sort("created_at", -1).to_list(100)
     total_rides_count = await db.rides.count_documents(history_query)
+    
+    # Calculate real completed trips for driver
+    if driver_profile and driver_id:
+        driver_completed_trips = await db.rides.count_documents({
+            "driver_id": driver_id,
+            "status": {"$in": COMPLETED_RIDE_STATUSES}
+        })
+        driver_profile["total_trips"] = max(driver_profile.get("total_trips", 0), driver_completed_trips)
     
     hydrated_recent = await batch_hydrate_rides(recent_rides_raw)
     hydrated_active = None
@@ -3655,9 +3782,25 @@ async def get_all_drivers(user: dict = Depends(require_admin)):
     user_ids = [d["user_id"] for d in drivers if d.get("user_id")]
     users_list = await db.users.find({"id": {"$in": user_ids}}, {"_id": 0, "password": 0}).to_list(len(user_ids)) if user_ids else []
     user_map = {u["id"]: u for u in users_list}
+    
+    # Aggregate dynamic real trip count & earnings from db.rides
+    driver_stats_agg = await db.rides.aggregate([
+        {"$match": {"status": {"$in": COMPLETED_RIDE_STATUSES}}},
+        {"$group": {
+            "_id": "$driver_id",
+            "trips": {"$sum": 1},
+            "earnings": {"$sum": {"$ifNull": ["$driver_earning", "$fare"]}}
+        }}
+    ]).to_list(1000)
+    stats_map = {item["_id"]: item for item in driver_stats_agg if item.get("_id")}
+    
     result = []
     for driver in drivers:
         try:
+            d_id = driver.get("id")
+            if d_id in stats_map:
+                driver["total_trips"] = max(driver.get("total_trips", 0), stats_map[d_id].get("trips", 0))
+                driver["total_earnings"] = max(float(driver.get("total_earnings") or 0.0), float(stats_map[d_id].get("earnings") or 0.0))
             if driver.get("user_id") in user_map:
                 driver["user"] = UserResponse(**user_map[driver["user_id"]])
             result.append(DriverResponse(**driver))
@@ -3724,6 +3867,16 @@ async def delete_user(user_id: str, admin: dict = Depends(require_admin)):
     await log_admin_action(admin["id"], admin["name"], "delete_user", user_id, f"Deleted user: {target_user['email']}")
     return {"status": "deleted"}
 
+@api_router.delete("/admin/rides/{ride_id}")
+async def delete_ride_by_admin(ride_id: str, admin: dict = Depends(require_admin)):
+    target_ride = await db.rides.find_one({"id": ride_id})
+    if not target_ride:
+        raise HTTPException(status_code=404, detail="Ride not found")
+        
+    await db.rides.delete_one({"id": ride_id})
+    await log_admin_action(admin["id"], admin["name"], "delete_ride", ride_id, f"Deleted ride: {ride_id}")
+    return {"status": "deleted", "id": ride_id}
+
 @api_router.get("/admin/rides", response_model=List[RideResponse])
 async def get_all_rides(
     status: Optional[str] = None,
@@ -3732,7 +3885,10 @@ async def get_all_rides(
 ):
     query = {}
     if status:
-        query["status"] = status
+        if status == "completed":
+            query["status"] = {"$in": COMPLETED_RIDE_STATUSES}
+        else:
+            query["status"] = status
     
     rides = await db.rides.find(query, {"_id": 0}).sort("created_at", -1).to_list(limit)
     return await batch_hydrate_rides(rides)

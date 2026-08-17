@@ -49,10 +49,6 @@ class NotificationService:
 
     async def send(self, user_id: str, type: str, payload: dict):
         """Send a push notification to all active subscriptions for a user"""
-        if not self.vapid_private_key:
-            logger.warning("VAPID_PRIVATE_KEY not set. Cannot send push notifications.")
-            return False
-
         # Prepare message
         message = {
             "type": type,

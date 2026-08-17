@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Search, Check, X, Star, AlertCircle, Wallet, Plus, Loader2, 
-  FileText, Eye, Calendar, RefreshCw, Car as CarIcon, Ban, CheckCircle, Shield 
+  FileText, Eye, Calendar, RefreshCw, Car as CarIcon, Ban, CheckCircle, Shield, Edit3, DollarSign
 } from 'lucide-react';
 import { Car } from '@phosphor-icons/react';
 import { GlassCard, GlassInput, GoldButton, EmptyState } from '../components/common/GlassComponents';
@@ -34,14 +34,29 @@ const AdminDriversPage = () => {
   const [selectedYear, setSelectedYear] = useState('all');
   const [sortOrder, setSortOrder] = useState('newest'); // 'newest' | 'oldest' | 'rating' | 'trips'
 
-  // Selected Driver Drawer / Detail Modal
+  // Selected Driver Details / Modal
   const [inspectedDriver, setInspectedDriver] = useState(null);
 
-  // Settlement & Top-Up Modal State
+  // Settlement / Clear Wallet Modal State
   const [settleModalOpen, setSettleModalOpen] = useState(false);
+  const [settleTargetDriver, setSettleTargetDriver] = useState(null);
   const [settleAmount, setSettleAmount] = useState('');
   const [settleNotes, setSettleNotes] = useState('Commission Remittance Settlement');
   const [isSubmittingSettle, setIsSubmittingSettle] = useState(false);
+
+  // Edit Driver Specs Modal State
+  const [isEditingDriver, setIsEditingDriver] = useState(false);
+  const [editDriverForm, setEditDriverForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    vehicle_model: '',
+    vehicle_color: '',
+    plate_number: '',
+    vehicle_type: 'Car',
+    license_number: ''
+  });
+  const [savingDriverEdit, setSavingDriverEdit] = useState(false);
 
   useEffect(() => {
     fetchDrivers(Boolean(AppCache.get('admin_drivers')));
@@ -62,7 +77,6 @@ const AdminDriversPage = () => {
   };
 
   const handleApproveDriver = async (driverId) => {
-    // Optimistic UI update
     const updated = drivers.map(d => d.id === driverId ? { ...d, is_approved: true } : d);
     setDrivers(updated);
     AppCache.set('admin_drivers', updated);
@@ -78,7 +92,6 @@ const AdminDriversPage = () => {
   };
 
   const handleSuspendDriver = async (driverId) => {
-    // Optimistic UI update
     const updated = drivers.map(d => d.id === driverId ? { ...d, is_approved: false, is_online: false } : d);
     setDrivers(updated);
     AppCache.set('admin_drivers', updated);
@@ -93,20 +106,29 @@ const AdminDriversPage = () => {
     }
   };
 
+  // Open Settle Commission / Clear Wallet Modal
+  const handleOpenSettleModal = (driver) => {
+    setSettleTargetDriver(driver);
+    setSettleAmount(driver.total_commission_due ? driver.total_commission_due.toFixed(2) : '0.00');
+    setSettleNotes('Commission Remittance Clearance');
+    setSettleModalOpen(true);
+  };
+
+  // Settle Commission Submission
   const handleSettleCommission = async (e) => {
     e.preventDefault();
-    if (!inspectedDriver) return;
+    if (!settleTargetDriver) return;
 
     setIsSubmittingSettle(true);
     try {
-      const response = await api.post(`/admin/drivers/${inspectedDriver.id}/settle-commission`, {
+      const response = await api.post(`/admin/drivers/${settleTargetDriver.id}/settle-commission`, {
         amount: parseFloat(settleAmount),
         notes: settleNotes
       });
 
-      toast.success(`Successfully settled K${parseFloat(settleAmount).toFixed(2)} commission debt`);
+      toast.success(`Successfully cleared K${parseFloat(settleAmount).toFixed(2)} commission debt`);
       const updated = drivers.map(d => {
-        if (d.id === inspectedDriver.id) {
+        if (d.id === settleTargetDriver.id) {
           return {
             ...d,
             total_commission_due: response.data.remaining_due,
@@ -118,12 +140,75 @@ const AdminDriversPage = () => {
       setDrivers(updated);
       AppCache.set('admin_drivers', updated);
 
+      if (inspectedDriver?.id === settleTargetDriver.id) {
+        setInspectedDriver(prev => ({
+          ...prev,
+          total_commission_due: response.data.remaining_due,
+          wallet_status: response.data.wallet_status
+        }));
+      }
+
       setSettleModalOpen(false);
       setSettleAmount('');
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to settle commission');
     } finally {
       setIsSubmittingSettle(false);
+    }
+  };
+
+  // Open Edit Driver Specs Modal
+  const handleStartEditDriver = (driver) => {
+    setEditDriverForm({
+      name: driver.user?.name || '',
+      email: driver.user?.email || '',
+      phone: driver.user?.phone || '',
+      vehicle_model: driver.vehicle_model || '',
+      vehicle_color: driver.vehicle_color || '',
+      plate_number: driver.plate_number || '',
+      vehicle_type: driver.vehicle_type || 'Car',
+      license_number: driver.license_number || ''
+    });
+    setIsEditingDriver(true);
+  };
+
+  // Save Driver Edits
+  const handleSaveDriverEdits = async (e) => {
+    e.preventDefault();
+    if (!inspectedDriver) return;
+
+    setSavingDriverEdit(true);
+    try {
+      // 1. Update user profile if user_id present
+      if (inspectedDriver.user_id) {
+        await api.patch(`/admin/users/${inspectedDriver.user_id}`, {
+          name: editDriverForm.name,
+          email: editDriverForm.email,
+          phone: editDriverForm.phone
+        });
+      }
+
+      // 2. Update driver specs
+      const driverPayload = {
+        vehicle_model: editDriverForm.vehicle_model,
+        vehicle_color: editDriverForm.vehicle_color,
+        plate_number: editDriverForm.plate_number,
+        vehicle_type: editDriverForm.vehicle_type,
+        license_number: editDriverForm.license_number
+      };
+      const res = await api.patch(`/admin/drivers/${inspectedDriver.id}`, driverPayload);
+
+      const updated = drivers.map(d => d.id === inspectedDriver.id ? { ...d, ...res.data, user: { ...d.user, name: editDriverForm.name, email: editDriverForm.email, phone: editDriverForm.phone } } : d);
+      setDrivers(updated);
+      AppCache.set('admin_drivers', updated);
+      setInspectedDriver(prev => ({ ...prev, ...res.data, user: { ...prev.user, name: editDriverForm.name, email: editDriverForm.email, phone: editDriverForm.phone } }));
+
+      setIsEditingDriver(false);
+      toast.success('Driver information updated successfully');
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to update driver details');
+    } finally {
+      setSavingDriverEdit(false);
     }
   };
 
@@ -194,7 +279,7 @@ const AdminDriversPage = () => {
               Driver Management
             </h1>
             <p className="text-muted-foreground text-sm">
-              Review verification requests, inspect vehicle specs, approve and manage fleet drivers
+              Review verification requests, inspect vehicle specs, approve, settle wallets & manage fleet drivers
             </p>
           </div>
 
@@ -305,7 +390,7 @@ const AdminDriversPage = () => {
               <div className="col-span-4">Driver Profile</div>
               <div className="col-span-3">Vehicle Details</div>
               <div className="col-span-2">Stats & Earnings</div>
-              <div className="col-span-3 text-right">Approval & Actions</div>
+              <div className="col-span-3 text-right">Approval, Wallet & Actions</div>
             </div>
 
             {/* Driver Rows */}
@@ -352,8 +437,8 @@ const AdminDriversPage = () => {
 
                   {/* Col 3: Stats */}
                   <div className="lg:col-span-2 text-xs space-y-0.5">
-                    <p className="font-bold text-foreground">⭐ {driver.rating?.toFixed(1) || '5.0'} ({driver.total_trips || 0} trips)</p>
-                    <p className="text-[11px] text-emerald-500 font-semibold">ZMW {driver.total_earnings?.toFixed(2) || '0.00'}</p>
+                    <p className="font-bold text-foreground">⭐ {driver.rating?.toFixed(1) || '5.0'} ({driver.total_trips || 0} rides)</p>
+                    <p className="text-[11px] text-emerald-400 font-semibold">ZMW {driver.total_earnings?.toFixed(2) || '0.00'}</p>
                     <p className="text-[10px] text-muted-foreground flex items-center gap-1">
                       <Calendar className="w-3 h-3" /> {joinedDate}
                     </p>
@@ -361,27 +446,33 @@ const AdminDriversPage = () => {
 
                   {/* Col 4: Approval & Action Controls */}
                   <div className="lg:col-span-3 flex items-center justify-end gap-2">
+                    {/* Clear Wallet / Settle Button */}
+                    <button
+                      onClick={() => handleOpenSettleModal(driver)}
+                      className="px-2.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                      title="Clear / Settle Driver Wallet Commission"
+                    >
+                      <Wallet className="w-3.5 h-3.5" />
+                      <span>Clear Wallet</span>
+                    </button>
+
                     {driver.is_approved ? (
-                      <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                          Approved
-                        </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-semibold text-emerald-400">Approved</span>
                         <button
                           onClick={() => handleSuspendDriver(driver.id)}
-                          className="p-2 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors cursor-pointer"
+                          className="p-1.5 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors cursor-pointer"
                           title="Suspend Driver"
                         >
-                          <Ban className="w-4 h-4" />
+                          <Ban className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
-                          Pending
-                        </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-semibold text-yellow-400">Pending</span>
                         <button
                           onClick={() => handleApproveDriver(driver.id)}
-                          className="px-3 py-1.5 rounded-xl bg-emerald-500 text-zinc-950 text-xs font-bold shadow-md hover:bg-emerald-400 transition-colors cursor-pointer flex items-center gap-1"
+                          className="px-2.5 py-1.5 rounded-xl bg-emerald-500 text-zinc-950 text-xs font-bold shadow-md hover:bg-emerald-400 transition-colors cursor-pointer flex items-center gap-1"
                           title="Approve Driver"
                         >
                           <Check className="w-3.5 h-3.5" /> Approve
@@ -415,13 +506,20 @@ const AdminDriversPage = () => {
             <DialogHeader className="border-b border-border pb-4">
               <DialogTitle className="text-xl font-bold flex items-center justify-between">
                 <span>Driver Details</span>
-                {inspectedDriver && (
-                  <span className={`text-xs px-2.5 py-1 rounded-full border capitalize font-semibold ${
-                    inspectedDriver.is_approved ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
-                  }`}>
-                    {inspectedDriver.is_approved ? 'Approved Active' : 'Pending Review'}
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleStartEditDriver(inspectedDriver)}
+                    className="px-3 py-1.5 rounded-xl bg-muted hover:bg-gold/20 hover:text-gold border border-border text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Edit Specs</span>
+                  </button>
+                  {inspectedDriver && (
+                    <span className="text-xs font-bold capitalize text-foreground pl-2">
+                      {inspectedDriver.is_approved ? 'Approved Active' : 'Pending Review'}
+                    </span>
+                  )}
+                </div>
               </DialogTitle>
             </DialogHeader>
 
@@ -466,7 +564,7 @@ const AdminDriversPage = () => {
                       <p className="font-bold text-foreground font-mono mt-0.5">{inspectedDriver.license_number || 'N/A'}</p>
                     </div>
                     <div className="p-3 rounded-xl bg-card border border-border">
-                      <p className="text-muted-foreground text-[10px]">Total Trips</p>
+                      <p className="text-muted-foreground text-[10px]">Completed Rides</p>
                       <p className="font-bold text-foreground mt-0.5">{inspectedDriver.total_trips || 0} completed</p>
                     </div>
                     <div className="p-3 rounded-xl bg-card border border-border">
@@ -474,6 +572,22 @@ const AdminDriversPage = () => {
                       <p className="font-bold text-emerald-400 mt-0.5">ZMW {inspectedDriver.total_earnings?.toFixed(2) || '0.00'}</p>
                     </div>
                   </div>
+                </div>
+
+                {/* Settle Commission Action Card */}
+                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-bold text-emerald-500 uppercase tracking-wider">Driver Wallet Clearance</p>
+                    <p className="text-xs text-foreground mt-0.5">
+                      Commission Due: <strong className="text-gold">ZMW {inspectedDriver.total_commission_due?.toFixed(2) || '0.00'}</strong>
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleOpenSettleModal(inspectedDriver)}
+                    className="px-4 py-2 rounded-xl bg-emerald-500 text-zinc-950 font-bold text-xs shadow-md hover:bg-emerald-400 transition-colors cursor-pointer"
+                  >
+                    Clear Wallet
+                  </button>
                 </div>
 
                 {/* Approval & Action Buttons */}
@@ -503,6 +617,155 @@ const AdminDriversPage = () => {
                 </div>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Clear Wallet / Settle Commission Dialog */}
+        <Dialog open={settleModalOpen} onOpenChange={setSettleModalOpen}>
+          <DialogContent className="bg-card text-foreground border-border sm:max-w-md p-6 rounded-3xl">
+            <DialogHeader className="border-b border-border pb-3">
+              <DialogTitle className="text-lg font-bold flex items-center gap-2">
+                <Wallet className="w-5 h-5 text-emerald-400" />
+                <span>Clear Driver Commission Wallet</span>
+              </DialogTitle>
+            </DialogHeader>
+
+            <form onSubmit={handleSettleCommission} className="space-y-4 pt-3 text-xs">
+              <div>
+                <p className="text-muted-foreground mb-2">
+                  Clearing commission remittance debt for driver <strong className="text-foreground">{settleTargetDriver?.user?.name}</strong>.
+                </p>
+                <label className="block text-muted-foreground font-bold mb-1">Settlement Amount (ZMW)</label>
+                <GlassInput
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={settleAmount}
+                  onChange={(e) => setSettleAmount(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-muted-foreground font-bold mb-1">Settlement Notes / Reference</label>
+                <GlassInput
+                  type="text"
+                  value={settleNotes}
+                  onChange={(e) => setSettleNotes(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
+                <button
+                  type="button"
+                  onClick={() => setSettleModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-muted-foreground hover:text-foreground text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <GoldButton type="submit" disabled={isSubmittingSettle}>
+                  {isSubmittingSettle ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirm Clearance'}
+                </GoldButton>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Driver Specifications Modal */}
+        <Dialog open={isEditingDriver} onOpenChange={setIsEditingDriver}>
+          <DialogContent className="bg-card text-foreground border-border sm:max-w-lg max-h-[90vh] overflow-y-auto p-6 rounded-3xl">
+            <DialogHeader className="border-b border-border pb-3">
+              <DialogTitle className="text-xl font-bold flex items-center justify-between">
+                <span>Edit Driver Specifications</span>
+              </DialogTitle>
+            </DialogHeader>
+
+            <form onSubmit={handleSaveDriverEdits} className="space-y-4 pt-3 text-xs">
+              <div>
+                <label className="block text-muted-foreground font-bold mb-1">Driver Full Name</label>
+                <GlassInput
+                  type="text"
+                  value={editDriverForm.name}
+                  onChange={(e) => setEditDriverForm({ ...editDriverForm, name: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-muted-foreground font-bold mb-1">Email</label>
+                  <GlassInput
+                    type="email"
+                    value={editDriverForm.email}
+                    onChange={(e) => setEditDriverForm({ ...editDriverForm, email: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-muted-foreground font-bold mb-1">Phone</label>
+                  <GlassInput
+                    type="tel"
+                    value={editDriverForm.phone}
+                    onChange={(e) => setEditDriverForm({ ...editDriverForm, phone: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-muted-foreground font-bold mb-1">Vehicle Model</label>
+                  <GlassInput
+                    type="text"
+                    value={editDriverForm.vehicle_model}
+                    onChange={(e) => setEditDriverForm({ ...editDriverForm, vehicle_model: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-muted-foreground font-bold mb-1">Vehicle Color</label>
+                  <GlassInput
+                    type="text"
+                    value={editDriverForm.vehicle_color}
+                    onChange={(e) => setEditDriverForm({ ...editDriverForm, vehicle_color: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-muted-foreground font-bold mb-1">Plate Number</label>
+                  <GlassInput
+                    type="text"
+                    value={editDriverForm.plate_number}
+                    onChange={(e) => setEditDriverForm({ ...editDriverForm, plate_number: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-muted-foreground font-bold mb-1">License Number</label>
+                  <GlassInput
+                    type="text"
+                    value={editDriverForm.license_number}
+                    onChange={(e) => setEditDriverForm({ ...editDriverForm, license_number: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
+                <button
+                  type="button"
+                  onClick={() => setIsEditingDriver(false)}
+                  className="px-4 py-2 rounded-xl text-muted-foreground hover:text-foreground text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <GoldButton type="submit" disabled={savingDriverEdit}>
+                  {savingDriverEdit ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Driver Specs'}
+                </GoldButton>
+              </div>
+            </form>
           </DialogContent>
         </Dialog>
       </div>

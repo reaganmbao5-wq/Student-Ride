@@ -2,9 +2,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Users, Search, Shield, Ban, Check, UserPlus, Trash2, Loader2, 
   Calendar, Filter, ArrowUpDown, ArrowUp, ArrowDown, Eye, Car, 
-  MapPin, Clock, Phone, Mail, CheckCircle, AlertCircle, RefreshCw, X, ShieldAlert
+  MapPin, Clock, Phone, Mail, CheckCircle, AlertCircle, RefreshCw, X, 
+  ShieldAlert, Edit3, ChevronDown, ChevronUp, Key, DollarSign
 } from 'lucide-react';
-import { GlassCard, GlassInput, GoldButton, EmptyState } from '../components/common/GlassComponents';
+import { GlassCard, GlassInput, GoldButton, EmptyState, StatusBadge } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
 import { AdminUsersSkeleton } from '../components/common/PageSkeletons';
@@ -51,6 +52,24 @@ const AdminUsersPage = () => {
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [switchingRole, setSwitchingRole] = useState(false);
 
+  // Edit User / Driver Modal State
+  const [isEditingUser, setIsEditingUser] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+    vehicle_model: '',
+    vehicle_color: '',
+    plate_number: '',
+    vehicle_type: 'Car',
+    license_number: ''
+  });
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  // Expandable Ride Cards in User Details Drawer
+  const [expandedRideIds, setExpandedRideIds] = useState({});
+
   // Delete Confirmation State
   const [deleteConfirmation, setDeleteConfirmation] = useState(null);
 
@@ -77,6 +96,7 @@ const AdminUsersPage = () => {
     setSelectedUser(user);
     setUserDetails(null);
     setLoadingDetails(true);
+    setExpandedRideIds({});
     try {
       const res = await api.get(`/admin/users/${user.id}/details`);
       setUserDetails(res.data);
@@ -88,6 +108,104 @@ const AdminUsersPage = () => {
     }
   };
 
+  // Open Edit Form pre-filled
+  const handleStartEdit = () => {
+    if (!userDetails?.user) return;
+    const u = userDetails.user;
+    const d = userDetails.driver_profile;
+    setEditFormData({
+      name: u.name || '',
+      email: u.email || '',
+      phone: u.phone || '',
+      password: '',
+      vehicle_model: d?.vehicle_model || '',
+      vehicle_color: d?.vehicle_color || '',
+      plate_number: d?.plate_number || '',
+      vehicle_type: d?.vehicle_type || 'Car',
+      license_number: d?.license_number || ''
+    });
+    setIsEditingUser(true);
+  };
+
+  // Save User / Driver Edits
+  const handleSaveUserEdits = async (e) => {
+    e.preventDefault();
+    if (!selectedUser) return;
+
+    setSavingEdit(true);
+    try {
+      // 1. Update user profile
+      const userPayload = {
+        name: editFormData.name,
+        email: editFormData.email,
+        phone: editFormData.phone,
+      };
+      if (editFormData.password && editFormData.password.trim()) {
+        userPayload.password = editFormData.password.trim();
+      }
+      const userRes = await api.patch(`/admin/users/${selectedUser.id}`, userPayload);
+
+      // 2. If driver, update vehicle specs
+      let updatedDriverProfile = userDetails?.driver_profile;
+      if (selectedUser.role === 'driver') {
+        const driverPayload = {
+          vehicle_model: editFormData.vehicle_model,
+          vehicle_color: editFormData.vehicle_color,
+          plate_number: editFormData.plate_number,
+          vehicle_type: editFormData.vehicle_type,
+          license_number: editFormData.license_number
+        };
+        const driverRes = await api.patch(`/admin/drivers/${selectedUser.id}`, driverPayload);
+        updatedDriverProfile = driverRes.data;
+      }
+
+      // Update local state
+      const nextUsers = users.map(u => u.id === selectedUser.id ? { ...u, ...userRes.data } : u);
+      setUsers(nextUsers);
+      AppCache.set('admin_users', nextUsers);
+      setSelectedUser(userRes.data);
+      setUserDetails(prev => ({
+        ...prev,
+        user: userRes.data,
+        driver_profile: updatedDriverProfile
+      }));
+
+      setIsEditingUser(false);
+      toast.success('User details updated successfully');
+    } catch (err) {
+      console.error('Failed to update user:', err);
+      toast.error(err.response?.data?.detail || 'Failed to update user details');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  // Toggle Single Ride Card Expansion
+  const toggleRideExpand = (rideId) => {
+    setExpandedRideIds(prev => ({
+      ...prev,
+      [rideId]: !prev[rideId]
+    }));
+  };
+
+  // Delete Single Ride from History
+  const handleDeleteRide = async (rideId) => {
+    try {
+      await api.delete(`/admin/rides/${rideId}`);
+      toast.success('Ride record deleted');
+      setUserDetails(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          recent_rides: prev.recent_rides.filter(r => r.id !== rideId),
+          total_rides: Math.max(0, (prev.total_rides || 1) - 1)
+        };
+      });
+    } catch (err) {
+      toast.error('Failed to delete ride record');
+    }
+  };
+
   // Switch Role between Student and Driver
   const handleSwitchRole = async (targetUserId, currentRole) => {
     const nextRole = currentRole === 'student' ? 'driver' : 'student';
@@ -96,7 +214,6 @@ const AdminUsersPage = () => {
       const res = await api.patch(`/admin/users/${targetUserId}/role`, { role: nextRole });
       const updatedUser = res.data;
       
-      // Optimistically update local users list and cache
       const nextUsers = users.map(u => u.id === targetUserId ? { ...u, role: nextRole } : u);
       setUsers(nextUsers);
       AppCache.set('admin_users', nextUsers);
@@ -122,7 +239,6 @@ const AdminUsersPage = () => {
     const isCurrentlyActive = userObj.is_active !== false;
     const nextStatus = !isCurrentlyActive;
 
-    // Optimistic UI update
     const updatedUsers = users.map(u => u.id === userObj.id ? { ...u, is_active: nextStatus } : u);
     setUsers(updatedUsers);
     AppCache.set('admin_users', updatedUsers);
@@ -140,7 +256,6 @@ const AdminUsersPage = () => {
         toast.info(`User ${userObj.name} suspended`);
       }
     } catch (error) {
-      // Revert on error
       fetchUsers(true);
       toast.error(error.response?.data?.detail || 'Failed to update user status');
     }
@@ -152,7 +267,6 @@ const AdminUsersPage = () => {
     const targetId = deleteConfirmation.id;
     const targetName = deleteConfirmation.name;
 
-    // Optimistic UI removal
     const nextUsers = users.filter(u => u.id !== targetId);
     setUsers(nextUsers);
     AppCache.set('admin_users', nextUsers);
@@ -189,7 +303,7 @@ const AdminUsersPage = () => {
     }
   };
 
-  // Available Years for filter extraction
+  // Available Years
   const availableYears = useMemo(() => {
     const yearsSet = new Set();
     users.forEach(u => {
@@ -248,19 +362,6 @@ const AdminUsersPage = () => {
 
     return result;
   }, [users, searchQuery, roleFilter, selectedMonth, selectedYear, sortOrder]);
-
-  const getRoleBadgeClass = (role) => {
-    switch (role) {
-      case 'super_admin':
-        return 'bg-gold/20 text-gold border-gold/30';
-      case 'admin':
-        return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
-      case 'driver':
-        return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
-      default:
-        return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-    }
-  };
 
   if (loading && users.length === 0) {
     return <AdminUsersSkeleton />;
@@ -478,9 +579,9 @@ const AdminUsersPage = () => {
                     </div>
                   </div>
 
-                  {/* Col 2: Role & Active Status */}
+                  {/* Col 2: Role & Active Status (Absolute plain typography, no pill container) */}
                   <div className="lg:col-span-2 flex items-center gap-2">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border capitalize whitespace-nowrap ${getRoleBadgeClass(user.role)}`}>
+                    <span className="text-xs font-bold text-foreground capitalize tracking-wide">
                       {user.role.replace('_', ' ')}
                     </span>
                   </div>
@@ -564,11 +665,20 @@ const AdminUsersPage = () => {
             <DialogHeader className="border-b border-border pb-4">
               <DialogTitle className="text-xl font-bold flex items-center justify-between">
                 <span>User Management & History</span>
-                {selectedUser && (
-                  <span className={`text-xs px-2.5 py-1 rounded-full border capitalize font-semibold ${getRoleBadgeClass(selectedUser.role)}`}>
-                    {selectedUser.role.replace('_', ' ')}
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleStartEdit}
+                    className="px-3 py-1.5 rounded-xl bg-muted hover:bg-gold/20 hover:text-gold border border-border text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Edit Profile</span>
+                  </button>
+                  {selectedUser && (
+                    <span className="text-xs capitalize font-bold text-foreground pl-2">
+                      {selectedUser.role.replace('_', ' ')}
+                    </span>
+                  )}
+                </div>
               </DialogTitle>
             </DialogHeader>
 
@@ -627,7 +737,15 @@ const AdminUsersPage = () => {
                 {/* Driver Vehicle Specs (If Driver) */}
                 {userDetails.driver_profile && (
                   <div className="p-4 rounded-2xl bg-muted/40 border border-border space-y-2">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Driver Fleet Details</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Driver Fleet Details</p>
+                      <button
+                        onClick={handleStartEdit}
+                        className="text-[11px] text-gold font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <Edit3 className="w-3 h-3" /> Edit Vehicle
+                      </button>
+                    </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-1">
                       <div className="p-2.5 rounded-xl bg-card border border-border">
                         <p className="text-muted-foreground text-[10px]">Vehicle</p>
@@ -667,32 +785,126 @@ const AdminUsersPage = () => {
                   </div>
                 )}
 
-                {/* Recent Ride Logs Table */}
+                {/* Expandable Recent Ride Logs */}
                 <div className="space-y-3">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    Recent Trip Logs ({userDetails.recent_rides?.length || 0})
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      Trip History Records ({userDetails.recent_rides?.length || 0})
+                    </p>
+                    <span className="text-[11px] text-muted-foreground">Click any ride to expand details</span>
+                  </div>
 
                   {userDetails.recent_rides && userDetails.recent_rides.length > 0 ? (
-                    <div className="rounded-2xl border border-border overflow-hidden divide-y divide-border">
-                      {userDetails.recent_rides.map((ride) => (
-                        <div key={ride.id} className="p-3 bg-card flex items-center justify-between text-xs hover:bg-muted/40 transition-colors">
-                          <div className="min-w-0 flex-1 pr-3">
-                            <p className="font-bold text-foreground truncate">
-                              {ride.pickup_location?.name || 'Pickup'} → {ride.dropoff_location?.name || 'Dropoff'}
-                            </p>
-                            <p className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-2">
-                              <span>{ride.created_at ? new Date(ride.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}</span>
-                              <span>•</span>
-                              <span className="capitalize">{ride.ride_mode || 'private'}</span>
-                            </p>
+                    <div className="space-y-2.5">
+                      {userDetails.recent_rides.map((ride) => {
+                        const isExpanded = expandedRideIds[ride.id];
+                        const dateStr = ride.created_at
+                          ? new Date(ride.created_at).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })
+                          : 'N/A';
+
+                        return (
+                          <div 
+                            key={ride.id} 
+                            className="bg-card border border-border rounded-2xl overflow-hidden transition-all duration-200"
+                          >
+                            {/* Summary Header (Click to Expand) */}
+                            <div 
+                              onClick={() => toggleRideExpand(ride.id)}
+                              className="p-3.5 flex items-center justify-between text-xs hover:bg-muted/40 cursor-pointer transition-colors"
+                            >
+                              <div className="min-w-0 flex-1 pr-3">
+                                <div className="flex items-center gap-2">
+                                  <p className="font-bold text-foreground truncate">
+                                    {ride.pickup_location?.name || ride.pickup_location?.address || 'Pickup'} → {ride.dropoff_location?.name || ride.dropoff_location?.address || 'Destination'}
+                                  </p>
+                                </div>
+                                <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-2">
+                                  <span>{dateStr}</span>
+                                  <span>•</span>
+                                  <span className="capitalize">{ride.ride_mode || 'private'}</span>
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-3 shrink-0">
+                                <div className="text-right">
+                                  <span className="font-bold text-gold text-sm">ZMW {ride.fare?.toFixed(2)}</span>
+                                  <div className="mt-0.5">
+                                    <StatusBadge status={ride.status} />
+                                  </div>
+                                </div>
+                                {isExpanded ? (
+                                  <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                                ) : (
+                                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Expanded Trip Full Details */}
+                            {isExpanded && (
+                              <div className="p-4 bg-muted/20 border-t border-border space-y-3 text-xs">
+                                {/* Route Details */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  <div className="p-3 rounded-xl bg-card border border-border">
+                                    <p className="text-muted-foreground text-[10px] font-bold uppercase flex items-center gap-1 text-gold">
+                                      <MapPin className="w-3.5 h-3.5" /> Pickup Point
+                                    </p>
+                                    <p className="font-bold text-foreground mt-1">{ride.pickup_location?.name || 'Pickup Point'}</p>
+                                    <p className="text-muted-foreground text-[11px]">{ride.pickup_location?.address}</p>
+                                  </div>
+
+                                  <div className="p-3 rounded-xl bg-card border border-border">
+                                    <p className="text-muted-foreground text-[10px] font-bold uppercase flex items-center gap-1 text-emerald-400">
+                                      <MapPin className="w-3.5 h-3.5" /> Destination Point
+                                    </p>
+                                    <p className="font-bold text-foreground mt-1">{ride.dropoff_location?.name || 'Dropoff Point'}</p>
+                                    <p className="text-muted-foreground text-[11px]">{ride.dropoff_location?.address}</p>
+                                  </div>
+                                </div>
+
+                                {/* Metrics Breakdown */}
+                                <div className="grid grid-cols-3 gap-2 text-center">
+                                  <div className="p-2.5 rounded-xl bg-card border border-border">
+                                    <p className="text-muted-foreground text-[10px]">Total Fare</p>
+                                    <p className="font-bold text-gold text-xs mt-0.5">ZMW {ride.fare?.toFixed(2)}</p>
+                                  </div>
+                                  <div className="p-2.5 rounded-xl bg-card border border-border">
+                                    <p className="text-muted-foreground text-[10px]">Driver Share</p>
+                                    <p className="font-bold text-emerald-400 text-xs mt-0.5">ZMW {ride.driver_earning?.toFixed(2) || (ride.fare * 0.85).toFixed(2)}</p>
+                                  </div>
+                                  <div className="p-2.5 rounded-xl bg-card border border-border">
+                                    <p className="text-muted-foreground text-[10px]">Commission</p>
+                                    <p className="font-bold text-foreground text-xs mt-0.5">ZMW {ride.commission?.toFixed(2) || (ride.fare * 0.15).toFixed(2)}</p>
+                                  </div>
+                                </div>
+
+                                {/* Passenger & Driver Involved */}
+                                <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1">
+                                  <span>Passenger: <strong className="text-foreground">{ride.student?.name || 'Student'}</strong></span>
+                                  <span>Driver: <strong className="text-foreground">{ride.driver?.user?.name || (ride.driver_id ? 'Assigned Driver' : 'None')}</strong></span>
+                                </div>
+
+                                {/* Delete Ride Action */}
+                                <div className="flex items-center justify-between pt-2 border-t border-border">
+                                  <span className="font-mono text-[10px] text-muted-foreground">ID: {ride.id}</span>
+                                  <button
+                                    onClick={() => handleDeleteRide(ride.id)}
+                                    className="px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 font-semibold text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                    Delete Record
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </div>
-                          <div className="text-right shrink-0">
-                            <span className="font-bold text-foreground">ZMW {ride.fare?.toFixed(2)}</span>
-                            <p className="text-[10px] text-muted-foreground capitalize mt-0.5">{ride.status}</p>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="p-6 text-center text-xs text-muted-foreground bg-muted/20 border border-border rounded-2xl">
@@ -725,6 +937,120 @@ const AdminUsersPage = () => {
                 </div>
               </div>
             ) : null}
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit User / Driver Details Modal */}
+        <Dialog open={isEditingUser} onOpenChange={setIsEditingUser}>
+          <DialogContent className="bg-card text-foreground border-border sm:max-w-lg max-h-[90vh] overflow-y-auto p-6 rounded-3xl">
+            <DialogHeader className="border-b border-border pb-3">
+              <DialogTitle className="text-xl font-bold flex items-center justify-between">
+                <span>Edit {selectedUser?.role === 'driver' ? 'Driver' : 'Student'} Profile</span>
+              </DialogTitle>
+            </DialogHeader>
+
+            <form onSubmit={handleSaveUserEdits} className="space-y-4 pt-3 text-xs">
+              <div>
+                <label className="block text-muted-foreground font-bold mb-1">Full Name</label>
+                <GlassInput
+                  type="text"
+                  value={editFormData.name}
+                  onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-muted-foreground font-bold mb-1">Email Address</label>
+                  <GlassInput
+                    type="email"
+                    value={editFormData.email}
+                    onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-muted-foreground font-bold mb-1">Phone Number</label>
+                  <GlassInput
+                    type="tel"
+                    value={editFormData.phone}
+                    onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-muted-foreground font-bold mb-1">Reset Password (Leave blank to keep current)</label>
+                <GlassInput
+                  type="password"
+                  placeholder="Enter new password..."
+                  value={editFormData.password}
+                  onChange={(e) => setEditFormData({ ...editFormData, password: e.target.value })}
+                />
+              </div>
+
+              {selectedUser?.role === 'driver' && (
+                <div className="p-4 rounded-2xl bg-muted/40 border border-border space-y-3">
+                  <p className="font-bold text-gold uppercase tracking-wider text-[11px]">Vehicle Fleet Specs</p>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-muted-foreground font-semibold mb-1">Vehicle Model</label>
+                      <GlassInput
+                        type="text"
+                        placeholder="e.g. Toyota Vitz"
+                        value={editFormData.vehicle_model}
+                        onChange={(e) => setEditFormData({ ...editFormData, vehicle_model: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-muted-foreground font-semibold mb-1">Vehicle Color</label>
+                      <GlassInput
+                        type="text"
+                        placeholder="e.g. Silver"
+                        value={editFormData.vehicle_color}
+                        onChange={(e) => setEditFormData({ ...editFormData, vehicle_color: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-muted-foreground font-semibold mb-1">Plate Number</label>
+                      <GlassInput
+                        type="text"
+                        placeholder="e.g. ABC 1234"
+                        value={editFormData.plate_number}
+                        onChange={(e) => setEditFormData({ ...editFormData, plate_number: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-muted-foreground font-semibold mb-1">License Number</label>
+                      <GlassInput
+                        type="text"
+                        placeholder="e.g. LIC-9988"
+                        value={editFormData.license_number}
+                        onChange={(e) => setEditFormData({ ...editFormData, license_number: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
+                <button
+                  type="button"
+                  onClick={() => setIsEditingUser(false)}
+                  className="px-4 py-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <GoldButton type="submit" disabled={savingEdit}>
+                  {savingEdit ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Changes'}
+                </GoldButton>
+              </div>
+            </form>
           </DialogContent>
         </Dialog>
 
