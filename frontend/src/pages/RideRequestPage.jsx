@@ -428,8 +428,44 @@ const RideRequestPage = () => {
   }, [step]);
   const [isSheetExpanded, setIsSheetExpanded] = useState(false);
 
+  // Lock viewport height to physical screen height so keyboard never shrinks container or pushes bottom sheet
+  const [viewportHeight, setViewportHeight] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerHeight;
+    }
+    return 800;
+  });
+
+  useEffect(() => {
+    let lastWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
+    const handleResize = () => {
+      // Only recalculate on actual device orientation change (width change), ignoring keyboard resize
+      if (typeof window !== 'undefined' && window.innerWidth !== lastWidth) {
+        lastWidth = window.innerWidth;
+        setViewportHeight(window.innerHeight);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    const handleOrientation = () => {
+      setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          setViewportHeight(window.innerHeight);
+        }
+      }, 200);
+    };
+    window.addEventListener('orientationchange', handleOrientation);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleOrientation);
+    };
+  }, []);
+
   return (
-    <div className="fixed inset-0 bg-background overflow-hidden flex flex-col" data-testid="ride-request-page">
+    <div 
+      className="fixed inset-x-0 top-0 bg-background overflow-hidden flex flex-col" 
+      style={{ height: `${viewportHeight}px`, maxHeight: `${viewportHeight}px` }}
+      data-testid="ride-request-page"
+    >
       
       {/* Top Header Overlay & Expandable Search Bar */}
       <div className="absolute top-10 md:top-6 left-4 z-30 flex flex-col items-start gap-3 pointer-events-none">
