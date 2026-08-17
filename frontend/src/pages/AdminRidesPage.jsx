@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  MapPin, Search, Calendar, RefreshCw, Car, User, Clock, 
+  MapPin, Search, Calendar, RefreshCw, User, Clock, 
   ArrowUpDown, Filter, Eye, CheckCircle2, XCircle, AlertCircle 
 } from 'lucide-react';
+import { SteeringWheel, Car } from '@phosphor-icons/react';
 import { GlassCard, StatusBadge, EmptyState } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
@@ -54,7 +55,7 @@ const AdminRidesPage = () => {
     }
   };
 
-  // Extract Years
+  // Available Years
   const availableYears = useMemo(() => {
     const yearsSet = new Set();
     rides.forEach(r => {
@@ -69,27 +70,26 @@ const AdminRidesPage = () => {
   // Filtered & Sorted Rides
   const processedRides = useMemo(() => {
     let result = rides.filter(ride => {
-      const searchLower = searchQuery.toLowerCase();
+      const studentName = ride.student?.name || '';
+      const driverName = ride.driver?.user?.name || '';
+      const pickup = ride.pickup_location?.name || ride.pickup_location?.address || '';
+      const dropoff = ride.dropoff_location?.name || ride.dropoff_location?.address || '';
+
       const matchesSearch =
-        (ride.student?.name || '').toLowerCase().includes(searchLower) ||
-        (ride.driver?.user?.name || '').toLowerCase().includes(searchLower) ||
-        (ride.pickup_location?.name || ride.pickup_location?.address || '').toLowerCase().includes(searchLower) ||
-        (ride.dropoff_location?.name || ride.dropoff_location?.address || '').toLowerCase().includes(searchLower) ||
-        (ride.id || '').toLowerCase().includes(searchLower);
+        studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        driverName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        pickup.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        dropoff.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (ride.id && ride.id.toLowerCase().includes(searchQuery.toLowerCase()));
 
       if (!matchesSearch) return false;
 
-      // Status Filter
-      if (statusFilter !== 'all') {
-        if (statusFilter === 'active') {
-          const activeList = ['requested', 'accepted', 'driver_accepted', 'driver_en_route_to_pickup', 'driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'ongoing'];
-          if (!activeList.includes(ride.status)) return false;
-        } else if (ride.status !== statusFilter) {
-          return false;
-        }
+      // Status filter
+      if (statusFilter !== 'all' && ride.status !== statusFilter) {
+        return false;
       }
 
-      // Date / Month / Year Filters
+      // Date Filters
       if (ride.created_at) {
         const dateObj = new Date(ride.created_at);
         if (selectedYear !== 'all' && dateObj.getFullYear() !== parseInt(selectedYear, 10)) {
@@ -107,7 +107,7 @@ const AdminRidesPage = () => {
       if (sortOrder === 'newest') return new Date(b.created_at || 0) - new Date(a.created_at || 0);
       if (sortOrder === 'oldest') return new Date(a.created_at || 0) - new Date(b.created_at || 0);
       if (sortOrder === 'fare_high') return (b.fare || 0) - (a.fare || 0);
-      if (sortOrder === 'distance') return (b.distance || 0) - (a.distance || 0);
+      if (sortOrder === 'distance') return (b.distance_km || 0) - (a.distance_km || 0);
       return 0;
     });
 
@@ -125,10 +125,10 @@ const AdminRidesPage = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="font-heading text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">
-              Ride Logs & Operations
+              Ride Management
             </h1>
             <p className="text-muted-foreground text-sm">
-              Inspect trip routes, pricing, timestamps, passenger and driver assignments
+              Comprehensive audit log of all requested, active, and completed campus rides
             </p>
           </div>
 
@@ -141,14 +141,14 @@ const AdminRidesPage = () => {
           </button>
         </div>
 
-        {/* Filter & Search Bar */}
+        {/* Filters and Search Bar */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-3 bg-card/60 p-4 rounded-3xl border border-border">
           {/* Search Box */}
           <div className="md:col-span-4 relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search by passenger, driver, or location..."
+              placeholder="Search rider, driver, pickup, or destination..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-muted/60 text-foreground text-sm rounded-2xl pl-10 pr-4 py-2.5 border border-border focus:outline-none focus:border-gold"
@@ -164,7 +164,10 @@ const AdminRidesPage = () => {
             >
               <option value="all">All Statuses</option>
               <option value="completed">Completed</option>
-              <option value="active">Active / In Progress</option>
+              <option value="ride_completed">Ride Completed</option>
+              <option value="in_progress">In Progress</option>
+              <option value="accepted">Accepted</option>
+              <option value="requested">Requested</option>
               <option value="cancelled">Cancelled</option>
             </select>
           </div>
@@ -260,7 +263,7 @@ const AdminRidesPage = () => {
                   className="p-4 lg:px-6 lg:py-4 flex flex-col lg:grid lg:grid-cols-12 gap-3 lg:gap-4 lg:items-center hover:bg-muted/30 transition-colors"
                 >
                   {/* Col 1: Route & Timestamp */}
-                  <div className="lg:col-span-4 space-y-1">
+                  <div className="lg:col-span-4 space-y-1 min-w-0">
                     <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
                       <MapPin className="w-3.5 h-3.5 text-gold shrink-0" />
                       <span className="truncate">{ride.pickup_location?.name || ride.pickup_location?.address || 'Pickup Point'}</span>
@@ -274,14 +277,14 @@ const AdminRidesPage = () => {
                     </p>
                   </div>
 
-                  {/* Col 2: Passenger & Driver */}
-                  <div className="lg:col-span-3 text-xs space-y-0.5">
-                    <p className="font-semibold text-foreground flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5 text-blue-400" />
+                  {/* Col 2: Passenger & Driver (Updated Phosphor SteeringWheel) */}
+                  <div className="lg:col-span-3 text-xs space-y-0.5 min-w-0">
+                    <p className="font-semibold text-foreground flex items-center gap-1.5 truncate">
+                      <User className="w-3.5 h-3.5 text-blue-400 shrink-0" />
                       <span className="truncate">{ride.student?.name || 'Student Passenger'}</span>
                     </p>
-                    <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-                      <Car className="w-3.5 h-3.5 text-gold" />
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 truncate">
+                      <SteeringWheel weight="duotone" className="w-3.5 h-3.5 text-gold shrink-0" />
                       <span className="truncate">{ride.driver?.user?.name || (ride.driver_id ? 'Assigned Driver' : 'No driver assigned')}</span>
                     </p>
                   </div>
@@ -298,19 +301,18 @@ const AdminRidesPage = () => {
 
                   {/* Col 4: Pricing */}
                   <div className="lg:col-span-2 text-xs">
-                    <p className="font-bold text-foreground">ZMW {ride.fare?.toFixed(2)}</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {ride.distance ? `${ride.distance.toFixed(1)} km` : '0 km'} • {ride.duration ? `${Math.round(ride.duration / 60)} min` : ''}
+                    <p className="font-bold text-gold text-sm">ZMW {ride.fare?.toFixed(2)}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      Earns: K{ride.driver_earning?.toFixed(2) || (ride.fare * 0.85).toFixed(2)} • Comm: K{ride.commission?.toFixed(2) || (ride.fare * 0.15).toFixed(2)}
                     </p>
-                    <p className="text-[10px] text-emerald-400">Comm: ZMW {ride.commission?.toFixed(2) || '0.00'}</p>
                   </div>
 
-                  {/* Col 5: Inspect Details */}
+                  {/* Col 5: Inspection Button */}
                   <div className="lg:col-span-1 flex items-center justify-end">
                     <button
                       onClick={() => setSelectedRide(ride)}
-                      className="p-2 rounded-xl bg-gold/10 hover:bg-gold/20 text-gold border border-gold/20 transition-colors cursor-pointer"
-                      title="View Full Trip Details"
+                      className="p-2 rounded-xl bg-gold/10 hover:bg-gold/20 text-gold border border-gold/20 text-xs font-bold transition-colors cursor-pointer"
+                      title="View Complete Ride Details"
                     >
                       <Eye className="w-4 h-4" />
                     </button>
@@ -322,85 +324,92 @@ const AdminRidesPage = () => {
         ) : (
           <EmptyState
             icon={MapPin}
-            title="No matching ride logs found"
-            description="Try changing your search parameters or selecting a different status filter"
+            title="No matching rides found"
+            description="Try changing your search terms or adjusting the date/status filter"
           />
         )}
 
-        {/* Deep Ride Inspection Modal */}
+        {/* Enlarged Desktop Ride Details Inspector Modal */}
         <Dialog open={!!selectedRide} onOpenChange={(open) => !open && setSelectedRide(null)}>
-          <DialogContent className="bg-card text-foreground border-border sm:max-w-lg max-h-[90vh] overflow-y-auto p-6 rounded-3xl">
-            <DialogHeader className="border-b border-border pb-3">
-              <DialogTitle className="text-lg font-bold flex items-center justify-between">
-                <span>Trip Inspection Details</span>
+          <DialogContent className="bg-card text-foreground border-border w-[96vw] sm:max-w-3xl lg:max-w-4xl max-h-[92vh] overflow-y-auto overflow-x-hidden p-6 md:p-8 rounded-3xl shadow-2xl">
+            <DialogHeader className="border-b border-border pb-4">
+              <DialogTitle className="text-xl font-bold flex items-center justify-between">
+                <span>Trip Inspection & Audit</span>
                 {selectedRide && <StatusBadge status={selectedRide.status} />}
               </DialogTitle>
             </DialogHeader>
 
             {selectedRide && (
-              <div className="space-y-4 pt-3 text-xs">
-                {/* Route Box */}
-                <div className="p-3.5 rounded-2xl bg-muted/40 border border-border space-y-2">
-                  <div className="flex items-start gap-2.5">
-                    <MapPin className="w-4 h-4 text-gold shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-bold text-foreground">Pickup Location</p>
-                      <p className="text-muted-foreground text-[11px]">{selectedRide.pickup_location?.name || selectedRide.pickup_location?.address}</p>
-                    </div>
+              <div className="space-y-6 pt-4 text-sm w-full">
+                {/* Route Section */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-2xl bg-muted/40 border border-border space-y-1 overflow-hidden">
+                    <p className="text-xs font-bold text-gold uppercase tracking-wider flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 shrink-0" />
+                      Pickup Point
+                    </p>
+                    <p className="font-bold text-foreground text-sm break-words">{selectedRide.pickup_location?.name || 'Pickup Point'}</p>
+                    <p className="text-xs text-muted-foreground break-words">{selectedRide.pickup_location?.address}</p>
                   </div>
-                  <div className="flex items-start gap-2.5 border-t border-border pt-2">
-                    <MapPin className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-bold text-foreground">Dropoff Location</p>
-                      <p className="text-muted-foreground text-[11px]">{selectedRide.dropoff_location?.name || selectedRide.dropoff_location?.address}</p>
-                    </div>
+
+                  <div className="p-4 rounded-2xl bg-muted/40 border border-border space-y-1 overflow-hidden">
+                    <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 shrink-0" />
+                      Dropoff Destination
+                    </p>
+                    <p className="font-bold text-foreground text-sm break-words">{selectedRide.dropoff_location?.name || 'Dropoff Point'}</p>
+                    <p className="text-xs text-muted-foreground break-words">{selectedRide.dropoff_location?.address}</p>
                   </div>
                 </div>
 
-                {/* Passenger & Driver Info */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 rounded-2xl bg-card border border-border space-y-1">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Passenger</p>
+                {/* People Involved */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-2xl bg-muted/40 border border-border space-y-1">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Passenger</p>
                     <p className="font-bold text-foreground">{selectedRide.student?.name || 'Student'}</p>
-                    <p className="text-muted-foreground text-[11px]">{selectedRide.student?.phone || 'No phone'}</p>
+                    <p className="text-xs text-muted-foreground">{selectedRide.student?.email || 'No email'}</p>
+                    <p className="text-xs text-muted-foreground font-mono">{selectedRide.student?.phone || 'No phone'}</p>
                   </div>
 
-                  <div className="p-3 rounded-2xl bg-card border border-border space-y-1">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Driver</p>
-                    <p className="font-bold text-foreground">{selectedRide.driver?.user?.name || 'Unassigned'}</p>
-                    <p className="text-gold font-mono text-[11px]">{selectedRide.driver?.plate_number || 'No plate'}</p>
+                  <div className="p-4 rounded-2xl bg-muted/40 border border-border space-y-1">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Assigned Driver</p>
+                    <p className="font-bold text-foreground">{selectedRide.driver?.user?.name || (selectedRide.driver_id ? 'Assigned Driver' : 'Unassigned')}</p>
+                    <p className="text-xs text-muted-foreground">{selectedRide.driver?.user?.email || 'No email'}</p>
+                    <p className="text-xs text-gold font-mono">{selectedRide.driver?.plate_number ? `Plate: ${selectedRide.driver.plate_number}` : ''}</p>
                   </div>
                 </div>
 
-                {/* Fare & Metrics */}
-                <div className="grid grid-cols-3 gap-2.5 text-center">
-                  <div className="p-3 rounded-2xl bg-muted/40 border border-border">
-                    <p className="text-[10px] text-muted-foreground">Total Fare</p>
-                    <p className="font-bold text-gold text-sm mt-0.5">ZMW {selectedRide.fare?.toFixed(2)}</p>
+                {/* Financials Breakdown */}
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="p-3 rounded-2xl bg-card border border-border">
+                    <p className="text-muted-foreground text-xs">Total Fare</p>
+                    <p className="font-extrabold text-gold text-lg mt-0.5">ZMW {selectedRide.fare?.toFixed(2)}</p>
                   </div>
-                  <div className="p-3 rounded-2xl bg-muted/40 border border-border">
-                    <p className="text-[10px] text-muted-foreground">Driver Earns</p>
-                    <p className="font-bold text-emerald-400 text-sm mt-0.5">ZMW {selectedRide.driver_earning?.toFixed(2) || '0.00'}</p>
+                  <div className="p-3 rounded-2xl bg-card border border-border">
+                    <p className="text-muted-foreground text-xs">Driver Earnings</p>
+                    <p className="font-extrabold text-emerald-400 text-lg mt-0.5">ZMW {selectedRide.driver_earning?.toFixed(2) || (selectedRide.fare * 0.85).toFixed(2)}</p>
                   </div>
-                  <div className="p-3 rounded-2xl bg-muted/40 border border-border">
-                    <p className="text-[10px] text-muted-foreground">Commission</p>
-                    <p className="font-bold text-foreground text-sm mt-0.5">ZMW {selectedRide.commission?.toFixed(2) || '0.00'}</p>
+                  <div className="p-3 rounded-2xl bg-card border border-border">
+                    <p className="text-muted-foreground text-xs">Platform Commission</p>
+                    <p className="font-extrabold text-foreground text-lg mt-0.5">ZMW {selectedRide.commission?.toFixed(2) || (selectedRide.fare * 0.15).toFixed(2)}</p>
                   </div>
                 </div>
 
-                {/* Timestamps */}
-                <div className="p-3 rounded-2xl bg-muted/30 border border-border space-y-1 text-[11px] text-muted-foreground font-mono">
-                  <p>Requested: {selectedRide.created_at ? new Date(selectedRide.created_at).toLocaleString() : 'N/A'}</p>
-                  {selectedRide.accepted_at && <p>Accepted: {new Date(selectedRide.accepted_at).toLocaleString()}</p>}
-                  {selectedRide.completed_at && <p>Completed: {new Date(selectedRide.completed_at).toLocaleString()}</p>}
+                {/* Metadata & Timestamp Audit */}
+                <div className="p-4 rounded-2xl bg-muted/20 border border-border text-xs space-y-1.5 font-mono text-muted-foreground">
+                  <p>Ride ID: <span className="text-foreground">{selectedRide.id}</span></p>
+                  <p>Ride Mode: <span className="text-foreground capitalize">{selectedRide.ride_mode || 'private'} ({selectedRide.passenger_count || 1} passenger)</span></p>
+                  <p>Distance: <span className="text-foreground">{selectedRide.distance_km?.toFixed(2) || 'N/A'} km</span> • Duration: <span className="text-foreground">{selectedRide.duration_min ? `${selectedRide.duration_min} mins` : 'N/A'}</span></p>
+                  <p>Requested: <span className="text-foreground">{selectedRide.created_at || 'N/A'}</span></p>
+                  {selectedRide.completed_at && <p>Completed: <span className="text-foreground">{selectedRide.completed_at}</span></p>}
                 </div>
 
-                <div className="pt-2 flex justify-end">
+                <div className="pt-2 flex justify-end border-t border-border">
                   <button
                     onClick={() => setSelectedRide(null)}
-                    className="px-4 py-2 rounded-xl bg-muted text-foreground text-xs font-bold hover:bg-muted/80 transition-colors cursor-pointer"
+                    className="px-5 py-2 rounded-xl bg-muted text-foreground text-xs font-bold hover:bg-muted/80 transition-colors cursor-pointer"
                   >
-                    Close
+                    Close Inspection
                   </button>
                 </div>
               </div>

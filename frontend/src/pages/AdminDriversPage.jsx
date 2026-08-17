@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Search, Check, X, Star, AlertCircle, Wallet, Plus, Loader2, 
-  FileText, Eye, Calendar, RefreshCw, Car as CarIcon, Ban, CheckCircle, Shield, Edit3, DollarSign
+  FileText, Eye, Calendar, RefreshCw, Ban, CheckCircle, Shield, Edit3, DollarSign
 } from 'lucide-react';
-import { Car } from '@phosphor-icons/react';
+import { SteeringWheel, Car } from '@phosphor-icons/react';
 import { GlassCard, GlassInput, GoldButton, EmptyState } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
@@ -425,10 +425,10 @@ const AdminDriversPage = () => {
                     </div>
                   </div>
 
-                  {/* Col 2: Vehicle Specs */}
+                  {/* Col 2: Vehicle Specs (Updated duotone Phosphor SteeringWheel) */}
                   <div className="lg:col-span-3 text-xs">
                     <p className="font-bold text-foreground flex items-center gap-1.5">
-                      <CarIcon className="w-3.5 h-3.5 text-gold" />
+                      <SteeringWheel weight="duotone" className="w-4 h-4 text-gold shrink-0" />
                       {driver.vehicle_color} {driver.vehicle_model}
                     </p>
                     <p className="text-[11px] text-gold font-mono font-bold mt-0.5">Plate: {driver.plate_number}</p>
@@ -494,15 +494,15 @@ const AdminDriversPage = () => {
           </div>
         ) : (
           <EmptyState
-            icon={Car}
+            icon={SteeringWheel}
             title="No matching drivers found"
             description="Try adjusting your search criteria or filter status"
           />
         )}
 
-        {/* Detailed Driver Inspection Modal */}
+        {/* Enlarged Driver Inspection Modal */}
         <Dialog open={!!inspectedDriver} onOpenChange={(open) => !open && setInspectedDriver(null)}>
-          <DialogContent className="bg-card text-foreground border-border sm:max-w-xl max-h-[90vh] overflow-y-auto p-6 rounded-3xl">
+          <DialogContent className="bg-card text-foreground border-border w-[96vw] sm:max-w-3xl lg:max-w-4xl max-h-[92vh] overflow-y-auto overflow-x-hidden p-6 md:p-8 rounded-3xl shadow-2xl">
             <DialogHeader className="border-b border-border pb-4">
               <DialogTitle className="text-xl font-bold flex items-center justify-between">
                 <span>Driver Details</span>
@@ -524,28 +524,31 @@ const AdminDriversPage = () => {
             </DialogHeader>
 
             {inspectedDriver && (
-              <div className="space-y-5 pt-3 text-sm">
+              <div className="space-y-6 pt-4 text-sm w-full">
                 {/* Identity */}
-                <div className="p-4 rounded-2xl bg-muted/40 border border-border flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-muted border border-gold/30 overflow-hidden flex items-center justify-center shrink-0">
+                <div className="p-5 rounded-2xl bg-muted/40 border border-border flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl bg-muted border border-gold/30 overflow-hidden flex items-center justify-center shrink-0">
                     {inspectedDriver.user?.avatar_url || inspectedDriver.avatar_url ? (
                       <img src={inspectedDriver.user?.avatar_url || inspectedDriver.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                     ) : (
-                      <span className="font-heading font-bold text-xl text-gold">
+                      <span className="font-heading font-bold text-2xl text-gold">
                         {(inspectedDriver.user?.name || 'D').charAt(0).toUpperCase()}
                       </span>
                     )}
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-foreground">{inspectedDriver.user?.name}</h3>
+                    <h3 className="text-lg font-bold text-foreground">{inspectedDriver.user?.name}</h3>
                     <p className="text-xs text-muted-foreground">{inspectedDriver.user?.email}</p>
                     <p className="text-xs text-muted-foreground font-mono mt-0.5">{inspectedDriver.user?.phone || 'No phone'}</p>
                   </div>
                 </div>
 
                 {/* Vehicle Specs Grid */}
-                <div className="p-4 rounded-2xl bg-muted/40 border border-border space-y-2">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Vehicle Specifications</p>
+                <div className="p-5 rounded-2xl bg-muted/40 border border-border space-y-3">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <SteeringWheel weight="duotone" className="w-4 h-4 text-gold" />
+                    Vehicle Specifications
+                  </p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs pt-1">
                     <div className="p-3 rounded-xl bg-card border border-border">
                       <p className="text-muted-foreground text-[10px]">Model & Color</p>
@@ -575,7 +578,7 @@ const AdminDriversPage = () => {
                 </div>
 
                 {/* Settle Commission Action Card */}
-                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
+                <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <p className="text-xs font-bold text-emerald-500 uppercase tracking-wider">Driver Wallet Clearance</p>
                     <p className="text-xs text-foreground mt-0.5">
@@ -584,14 +587,14 @@ const AdminDriversPage = () => {
                   </div>
                   <button
                     onClick={() => handleOpenSettleModal(inspectedDriver)}
-                    className="px-4 py-2 rounded-xl bg-emerald-500 text-zinc-950 font-bold text-xs shadow-md hover:bg-emerald-400 transition-colors cursor-pointer"
+                    className="px-4 py-2 rounded-xl bg-emerald-500 text-zinc-950 font-bold text-xs shadow-md hover:bg-emerald-400 transition-colors cursor-pointer self-start sm:self-auto"
                   >
                     Clear Wallet
                   </button>
                 </div>
 
                 {/* Approval & Action Buttons */}
-                <div className="pt-2 flex items-center justify-between border-t border-border">
+                <div className="pt-3 flex items-center justify-between border-t border-border">
                   {inspectedDriver.is_approved ? (
                     <button
                       onClick={() => handleSuspendDriver(inspectedDriver.id)}
@@ -610,7 +613,7 @@ const AdminDriversPage = () => {
 
                   <button
                     onClick={() => setInspectedDriver(null)}
-                    className="px-4 py-2 rounded-xl bg-muted text-foreground text-xs font-bold hover:bg-muted/80 transition-colors ml-auto cursor-pointer"
+                    className="px-5 py-2 rounded-xl bg-muted text-foreground text-xs font-bold hover:bg-muted/80 transition-colors ml-auto cursor-pointer"
                   >
                     Close
                   </button>
@@ -714,18 +717,20 @@ const AdminDriversPage = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-muted-foreground font-bold mb-1">Vehicle Model</label>
+                  <label className="block text-muted-foreground font-semibold mb-1">Vehicle Model</label>
                   <GlassInput
                     type="text"
+                    placeholder="e.g. Toyota Vitz"
                     value={editDriverForm.vehicle_model}
                     onChange={(e) => setEditDriverForm({ ...editDriverForm, vehicle_model: e.target.value })}
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-muted-foreground font-bold mb-1">Vehicle Color</label>
+                  <label className="block text-muted-foreground font-semibold mb-1">Vehicle Color</label>
                   <GlassInput
                     type="text"
+                    placeholder="e.g. Silver"
                     value={editDriverForm.vehicle_color}
                     onChange={(e) => setEditDriverForm({ ...editDriverForm, vehicle_color: e.target.value })}
                     required
@@ -735,18 +740,20 @@ const AdminDriversPage = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-muted-foreground font-bold mb-1">Plate Number</label>
+                  <label className="block text-muted-foreground font-semibold mb-1">Plate Number</label>
                   <GlassInput
                     type="text"
+                    placeholder="e.g. ABC 1234"
                     value={editDriverForm.plate_number}
                     onChange={(e) => setEditDriverForm({ ...editDriverForm, plate_number: e.target.value })}
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-muted-foreground font-bold mb-1">License Number</label>
+                  <label className="block text-muted-foreground font-semibold mb-1">License Number</label>
                   <GlassInput
                     type="text"
+                    placeholder="e.g. LIC-9988"
                     value={editDriverForm.license_number}
                     onChange={(e) => setEditDriverForm({ ...editDriverForm, license_number: e.target.value })}
                   />

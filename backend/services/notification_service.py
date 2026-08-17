@@ -5,30 +5,45 @@ from pywebpush import webpush, WebPushException
 import logging
 from datetime import datetime, timezone
 import firebase_admin
-from firebase_admin import credentials, messaging
+from firebase_admin import credentials, messaging, exceptions
 
 logger = logging.getLogger(__name__)
 
 # Initialize Firebase Admin SDK
 try:
     if not firebase_admin._apps:
-        cred_path = os.path.join(os.path.dirname(__file__), '..', 'firebase-adminsdk.json')
-        if os.path.exists(cred_path):
-            cred = credentials.Certificate(cred_path)
+        cred = None
+        firebase_json_env = os.environ.get("FIREBASE_CREDENTIALS_JSON") or os.environ.get("FIREBASE_ADMINSDK_JSON")
+        if firebase_json_env:
+            try:
+                cred_dict = json.loads(firebase_json_env)
+                cred = credentials.Certificate(cred_dict)
+                logger.info("Firebase credentials loaded from environment variable.")
+            except Exception as env_err:
+                logger.error(f"Error parsing FIREBASE_CREDENTIALS_JSON: {env_err}")
+                
+        if not cred:
+            cred_path = os.path.join(os.path.dirname(__file__), '..', 'firebase-adminsdk.json')
+            if os.path.exists(cred_path):
+                cred = credentials.Certificate(cred_path)
+            else:
+                alt_path = os.path.join(os.getcwd(), 'backend', 'firebase-adminsdk.json')
+                if os.path.exists(alt_path):
+                    cred = credentials.Certificate(alt_path)
+
+        if cred:
             firebase_admin.initialize_app(cred)
             logger.info("Firebase Admin SDK initialized successfully.")
         else:
-            logger.warning(f"Firebase Service Account file not found at {cred_path}")
+            logger.warning("Firebase Service Account file not found.")
 except Exception as e:
     logger.error(f"Failed to initialize Firebase Admin SDK: {e}")
-
-logger = logging.getLogger(__name__)
 
 class NotificationService:
     def __init__(self, db):
         self.db = db
         self.vapid_private_key = os.environ.get("VAPID_PRIVATE_KEY")
-        self.vapid_subject = os.environ.get("VAPID_SUBJECT")
+        self.vapid_subject = os.environ.get("VAPID_SUBJECT") or "mailto:support@mulurides.com"
 
     async def save_subscription(self, user_id: str, role: str, subscription_info: dict, device_info: dict = None):
         """Save a new push subscription or update existing one for a user"""
@@ -49,13 +64,11 @@ class NotificationService:
 
     async def send(self, user_id: str, type: str, payload: dict):
         """Send a push notification to all active subscriptions for a user"""
-        # Prepare message
         message = {
             "type": type,
             "payload": payload
         }
         
-        # Get all subscriptions for user
         cursor = self.db.push_subscriptions.find({"user_id": user_id})
         subscriptions = await cursor.to_list(length=10)
         
@@ -71,15 +84,16 @@ class NotificationService:
                 
                 if endpoint.startswith("FCM_TOKEN:"):
                     # Handle Native FCM Push Notification
-                    fcm_token = endpoint.replace("FCM_TOKEN:", "")
+                    fcm_token = endpoint.replace("FCM_TOKEN:", "").strip()
+                    if not fcm_token:
+                        continue
                     
                     title = payload.get("title") or "Mulu Rides Update"
                     body = payload.get("body") or payload.get("message") or "You have a new update."
 
-                    # Custom vibration timings for FCM Android Notification Channel
                     vibe_pattern = [0, 200, 100, 200]
                     if type == 'driver_arrived':
-                        vibe_pattern = [0, 600, 150, 600, 150, 900] # Most intense triple-burst!
+                        vibe_pattern = [0, 600, 150, 600, 150, 900]
                     elif type == 'driver_accepted':
                         vibe_pattern = [0, 300, 150, 300]
                     elif type == 'new_ride_request':
@@ -102,19 +116,18 @@ class NotificationService:
                             )
                         ),
                         data={
-                            "type": type,
+                            "type": str(type),
                             "payload": json.dumps(payload),
                             "timestamp": datetime.now(timezone.utc).isoformat()
                         },
                         token=fcm_token,
                     )
                     
-                    response = await asyncio.to_thread(messaging.send, message_obj)
-                    logger.info(f"FCM System Notification sent successfully to {user_id}: {response}")
-                    success_count += 1
-                    
-                    # Record log entry
                     try:
+                        response = await asyncio.to_thread(messaging.send, message_obj)
+                        logger.info(f"FCM Notification sent successfully to {user_id}: {response}")
+                        success_count += 1
+                        
                         await self.db.notification_logs.insert_one({
                             "user_id": user_id,
                             "role": sub.get("role", "user"),
@@ -124,28 +137,32 @@ class NotificationService:
                             "sent_via": "FCM",
                             "created_at": datetime.now(timezone.utc).isoformat()
                         })
-                    except Exception as log_err:
-                        logger.warn(f"Failed to log notification: {log_err}")
+                    except messaging.UnregisteredError:
+                        logger.warning(f"FCM token expired/unregistered for user {user_id}. Cleaning up dead subscription.")
+                        await self.db.push_subscriptions.delete_one({"_id": sub["_id"]})
+                    except exceptions.FirebaseError as f_err:
+                        logger.error(f"Firebase error for user {user_id}: {f_err}")
+                        if "not found" in str(f_err).lower() or "invalid" in str(f_err).lower():
+                            await self.db.push_subscriptions.delete_one({"_id": sub["_id"]})
 
                 else:
-                    # Handle standard Web Push (VAPID)
+                    # Handle Web Push (VAPID)
                     if not self.vapid_private_key:
                         logger.warning("VAPID_PRIVATE_KEY not set for Web Push.")
                         continue
                         
-                    await asyncio.to_thread(
-                        webpush,
-                        subscription_info=sub_info,
-                        data=json.dumps(message),
-                        vapid_private_key=self.vapid_private_key,
-                        vapid_claims={
-                            "sub": self.vapid_subject
-                        }
-                    )
-                    success_count += 1
-                    
-                    # Record log entry
                     try:
+                        await asyncio.to_thread(
+                            webpush,
+                            subscription_info=sub_info,
+                            data=json.dumps(message),
+                            vapid_private_key=self.vapid_private_key,
+                            vapid_claims={
+                                "sub": self.vapid_subject
+                            }
+                        )
+                        success_count += 1
+                        
                         title = payload.get("title") or "Mulu Rides Update"
                         body = payload.get("body") or payload.get("message") or "You have a new update."
                         await self.db.notification_logs.insert_one({
@@ -157,15 +174,13 @@ class NotificationService:
                             "sent_via": "WebPush",
                             "created_at": datetime.now(timezone.utc).isoformat()
                         })
-                    except Exception as log_err:
-                        logger.warn(f"Failed to log notification: {log_err}")
+                    except WebPushException as ex:
+                        logger.error(f"WebPush error sending to {user_id}: {repr(ex)}")
+                        if ex.response is not None and ex.response.status_code in [400, 404, 410]:
+                            await self.db.push_subscriptions.delete_one({"_id": sub["_id"]})
+                            logger.info(f"Removed invalid web push subscription for user {user_id}")
 
-            except WebPushException as ex:
-                logger.error(f"WebPush error sending to {user_id}: {repr(ex)}")
-                if ex.response is not None and ex.response.status_code in [404, 410]:
-                    await self.db.push_subscriptions.delete_one({"_id": sub["_id"]})
-                    logger.info(f"Removed invalid push subscription for user {user_id}")
             except Exception as e:
-                logger.error(f"Error sending push notification to {user_id}: {e}")
+                logger.error(f"Error processing notification for user {user_id}: {e}")
 
         return success_count > 0

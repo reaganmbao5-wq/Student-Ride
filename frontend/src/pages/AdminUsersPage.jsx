@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Users, Search, Shield, Ban, Check, UserPlus, Trash2, Loader2, 
-  Calendar, Filter, ArrowUpDown, ArrowUp, ArrowDown, Eye, Car, 
+  Calendar, Filter, ArrowUpDown, ArrowUp, ArrowDown, Eye, 
   MapPin, Clock, Phone, Mail, CheckCircle, AlertCircle, RefreshCw, X, 
   ShieldAlert, Edit3, ChevronDown, ChevronUp, Key, DollarSign
 } from 'lucide-react';
+import { SteeringWheel, Car, User, Sparkle } from '@phosphor-icons/react';
 import { GlassCard, GlassInput, GoldButton, EmptyState, StatusBadge } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
@@ -601,7 +602,7 @@ const AdminUsersPage = () => {
                         className="text-xs px-3 py-1.5 rounded-xl bg-muted hover:bg-muted/80 border border-border text-foreground font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
                         title={`Convert to ${user.role === 'student' ? 'Driver' : 'Student'}`}
                       >
-                        <Car className="w-3.5 h-3.5 text-gold" />
+                        <SteeringWheel weight="duotone" className="w-4 h-4 text-gold" />
                         <span>Make {user.role === 'student' ? 'Driver' : 'Student'}</span>
                       </button>
                     ) : (
@@ -659,16 +660,16 @@ const AdminUsersPage = () => {
           />
         )}
 
-        {/* Detailed User Management Drawer / Modal (Desktop-Focused) */}
+        {/* Enlarged Desktop Modal for User Management & Ride History */}
         <Dialog open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
-          <DialogContent className="bg-card text-foreground border-border sm:max-w-2xl max-h-[90vh] overflow-y-auto p-6 rounded-3xl">
+          <DialogContent className="bg-card text-foreground border-border w-[96vw] sm:max-w-4xl lg:max-w-5xl max-h-[92vh] overflow-y-auto overflow-x-hidden p-6 md:p-8 rounded-3xl shadow-2xl">
             <DialogHeader className="border-b border-border pb-4">
-              <DialogTitle className="text-xl font-bold flex items-center justify-between">
-                <span>User Management & History</span>
-                <div className="flex items-center gap-2">
+              <DialogTitle className="text-xl md:text-2xl font-bold flex items-center justify-between">
+                <span className="truncate pr-2">User Details & History</span>
+                <div className="flex items-center gap-3 shrink-0">
                   <button
                     onClick={handleStartEdit}
-                    className="px-3 py-1.5 rounded-xl bg-muted hover:bg-gold/20 hover:text-gold border border-border text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-xl bg-muted hover:bg-gold/20 hover:text-gold border border-border text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
                   >
                     <Edit3 className="w-3.5 h-3.5" />
                     <span>Edit Profile</span>
@@ -683,62 +684,67 @@ const AdminUsersPage = () => {
             </DialogHeader>
 
             {loadingDetails ? (
-              <div className="py-12 flex flex-col items-center justify-center space-y-3">
+              <div className="py-16 flex flex-col items-center justify-center space-y-3">
                 <Loader2 className="w-8 h-8 text-gold animate-spin" />
                 <p className="text-xs text-muted-foreground">Loading complete user profile & ride records...</p>
               </div>
             ) : userDetails ? (
-              <div className="space-y-6 pt-4 text-sm">
+              <div className="space-y-6 pt-4 text-sm w-full">
                 {/* User Identity Card */}
-                <div className="p-4 rounded-2xl bg-muted/40 border border-border flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-muted border border-gold/30 overflow-hidden flex items-center justify-center shrink-0">
-                    {userDetails.user?.avatar_url ? (
-                      <img src={userDetails.user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="font-heading font-bold text-2xl text-gold">
-                        {(userDetails.user?.name || 'U').charAt(0).toUpperCase()}
-                      </span>
-                    )}
+                <div className="p-5 rounded-2xl bg-muted/40 border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="w-16 h-16 rounded-2xl bg-muted border border-gold/30 overflow-hidden flex items-center justify-center shrink-0">
+                      {userDetails.user?.avatar_url ? (
+                        <img src={userDetails.user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="font-heading font-bold text-2xl text-gold">
+                          {(userDetails.user?.name || 'U').charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-lg font-bold text-foreground truncate">{userDetails.user?.name}</h3>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5 truncate">
+                        <Mail className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">{userDetails.user?.email}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5 font-mono">
+                        <Phone className="w-3.5 h-3.5 shrink-0" /> {userDetails.user?.phone || 'No phone added'}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-bold text-foreground truncate">{userDetails.user?.name}</h3>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
-                      <Mail className="w-3.5 h-3.5" /> {userDetails.user?.email}
-                    </p>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
-                      <Phone className="w-3.5 h-3.5" /> {userDetails.user?.phone || 'No phone added'}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground">Total Trips</p>
-                    <p className="text-xl font-extrabold text-foreground">{userDetails.total_rides || 0}</p>
+                  <div className="flex items-center sm:flex-col sm:items-end justify-between border-t sm:border-t-0 border-border pt-3 sm:pt-0">
+                    <p className="text-xs text-muted-foreground">Total Lifetime Trips</p>
+                    <p className="text-2xl font-extrabold text-foreground">{userDetails.total_rides || 0}</p>
                   </div>
                 </div>
 
                 {/* Role Switcher Action Box */}
                 {(userDetails.user?.role === 'student' || userDetails.user?.role === 'driver') && (
-                  <div className="p-4 rounded-2xl bg-gold/10 border border-gold/20 flex items-center justify-between">
+                  <div className="p-4 rounded-2xl bg-gold/10 border border-gold/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                       <p className="text-xs font-bold text-gold uppercase tracking-wider">Account Role</p>
                       <p className="text-xs text-foreground mt-0.5">
-                        Currently registered as <strong>{userDetails.user.role}</strong>. Convert if created in error.
+                        Currently registered as <strong className="capitalize">{userDetails.user.role}</strong>. Convert if created in error.
                       </p>
                     </div>
                     <button
                       onClick={() => handleSwitchRole(userDetails.user.id, userDetails.user.role)}
                       disabled={switchingRole}
-                      className="px-4 py-2 rounded-xl bg-gold text-zinc-950 font-bold text-xs shadow-md hover:bg-gold/90 transition-colors cursor-pointer shrink-0"
+                      className="px-4 py-2 rounded-xl bg-gold text-zinc-950 font-bold text-xs shadow-md hover:bg-gold/90 transition-colors cursor-pointer shrink-0 self-start sm:self-auto"
                     >
                       {switchingRole ? 'Switching...' : `Make ${userDetails.user.role === 'student' ? 'Driver' : 'Student'}`}
                     </button>
                   </div>
                 )}
 
-                {/* Driver Vehicle Specs (If Driver) */}
+                {/* Driver Fleet Specs (If Driver) */}
                 {userDetails.driver_profile && (
-                  <div className="p-4 rounded-2xl bg-muted/40 border border-border space-y-2">
+                  <div className="p-5 rounded-2xl bg-muted/40 border border-border space-y-3">
                     <div className="flex items-center justify-between">
-                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Driver Fleet Details</p>
+                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <SteeringWheel weight="duotone" className="w-4 h-4 text-gold" />
+                        Driver Fleet Details
+                      </p>
                       <button
                         onClick={handleStartEdit}
                         className="text-[11px] text-gold font-bold hover:underline flex items-center gap-1 cursor-pointer"
@@ -747,21 +753,21 @@ const AdminUsersPage = () => {
                       </button>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-1">
-                      <div className="p-2.5 rounded-xl bg-card border border-border">
+                      <div className="p-3 rounded-xl bg-card border border-border">
                         <p className="text-muted-foreground text-[10px]">Vehicle</p>
-                        <p className="font-bold text-foreground">{userDetails.driver_profile.vehicle_color} {userDetails.driver_profile.vehicle_model}</p>
+                        <p className="font-bold text-foreground truncate mt-0.5">{userDetails.driver_profile.vehicle_color} {userDetails.driver_profile.vehicle_model}</p>
                       </div>
-                      <div className="p-2.5 rounded-xl bg-card border border-border">
+                      <div className="p-3 rounded-xl bg-card border border-border">
                         <p className="text-muted-foreground text-[10px]">Plate Number</p>
-                        <p className="font-bold text-gold font-mono">{userDetails.driver_profile.plate_number}</p>
+                        <p className="font-bold text-gold font-mono truncate mt-0.5">{userDetails.driver_profile.plate_number}</p>
                       </div>
-                      <div className="p-2.5 rounded-xl bg-card border border-border">
+                      <div className="p-3 rounded-xl bg-card border border-border">
                         <p className="text-muted-foreground text-[10px]">Driver Rating</p>
-                        <p className="font-bold text-foreground">⭐ {userDetails.driver_profile.rating?.toFixed(1) || '5.0'}</p>
+                        <p className="font-bold text-foreground mt-0.5">⭐ {userDetails.driver_profile.rating?.toFixed(1) || '5.0'}</p>
                       </div>
-                      <div className="p-2.5 rounded-xl bg-card border border-border">
+                      <div className="p-3 rounded-xl bg-card border border-border">
                         <p className="text-muted-foreground text-[10px]">Total Earnings</p>
-                        <p className="font-bold text-emerald-400">ZMW {userDetails.driver_profile.total_earnings?.toFixed(2) || '0.00'}</p>
+                        <p className="font-bold text-emerald-400 mt-0.5">ZMW {userDetails.driver_profile.total_earnings?.toFixed(2) || '0.00'}</p>
                       </div>
                     </div>
                   </div>
@@ -777,25 +783,25 @@ const AdminUsersPage = () => {
                       </p>
                       <span className="text-xs font-bold text-gold">ZMW {userDetails.active_ride.fare?.toFixed(2)}</span>
                     </div>
-                    <div className="text-xs text-foreground font-medium pt-1">
-                      <p>📍 From: {userDetails.active_ride.pickup_location?.name || userDetails.active_ride.pickup_location?.address}</p>
-                      <p className="mt-1">🏁 To: {userDetails.active_ride.dropoff_location?.name || userDetails.active_ride.dropoff_location?.address}</p>
-                      <p className="text-muted-foreground text-[11px] mt-1.5">Status: <span className="text-foreground capitalize">{userDetails.active_ride.status}</span></p>
+                    <div className="text-xs text-foreground font-medium pt-1 space-y-1">
+                      <p className="break-words">📍 From: {userDetails.active_ride.pickup_location?.name || userDetails.active_ride.pickup_location?.address}</p>
+                      <p className="break-words">🏁 To: {userDetails.active_ride.dropoff_location?.name || userDetails.active_ride.dropoff_location?.address}</p>
+                      <p className="text-muted-foreground text-[11px] pt-1">Status: <span className="text-foreground capitalize">{userDetails.active_ride.status}</span></p>
                     </div>
                   </div>
                 )}
 
                 {/* Expandable Recent Ride Logs */}
-                <div className="space-y-3">
+                <div className="space-y-3 w-full">
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                       Trip History Records ({userDetails.recent_rides?.length || 0})
                     </p>
-                    <span className="text-[11px] text-muted-foreground">Click any ride to expand details</span>
+                    <span className="text-[11px] text-muted-foreground">Click any card to expand full trip details</span>
                   </div>
 
                   {userDetails.recent_rides && userDetails.recent_rides.length > 0 ? (
-                    <div className="space-y-2.5">
+                    <div className="space-y-2.5 w-full">
                       {userDetails.recent_rides.map((ride) => {
                         const isExpanded = expandedRideIds[ride.id];
                         const dateStr = ride.created_at
@@ -811,16 +817,16 @@ const AdminUsersPage = () => {
                         return (
                           <div 
                             key={ride.id} 
-                            className="bg-card border border-border rounded-2xl overflow-hidden transition-all duration-200"
+                            className="bg-card border border-border rounded-2xl overflow-hidden transition-all duration-200 w-full"
                           >
                             {/* Summary Header (Click to Expand) */}
                             <div 
                               onClick={() => toggleRideExpand(ride.id)}
-                              className="p-3.5 flex items-center justify-between text-xs hover:bg-muted/40 cursor-pointer transition-colors"
+                              className="p-4 flex items-center justify-between text-xs hover:bg-muted/40 cursor-pointer transition-colors gap-3"
                             >
-                              <div className="min-w-0 flex-1 pr-3">
+                              <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
-                                  <p className="font-bold text-foreground truncate">
+                                  <p className="font-bold text-foreground truncate max-w-full">
                                     {ride.pickup_location?.name || ride.pickup_location?.address || 'Pickup'} → {ride.dropoff_location?.name || ride.dropoff_location?.address || 'Destination'}
                                   </p>
                                 </div>
@@ -847,56 +853,56 @@ const AdminUsersPage = () => {
 
                             {/* Expanded Trip Full Details */}
                             {isExpanded && (
-                              <div className="p-4 bg-muted/20 border-t border-border space-y-3 text-xs">
+                              <div className="p-4 md:p-5 bg-muted/20 border-t border-border space-y-4 text-xs w-full">
                                 {/* Route Details */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                  <div className="p-3 rounded-xl bg-card border border-border">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
+                                  <div className="p-3.5 rounded-xl bg-card border border-border overflow-hidden">
                                     <p className="text-muted-foreground text-[10px] font-bold uppercase flex items-center gap-1 text-gold">
-                                      <MapPin className="w-3.5 h-3.5" /> Pickup Point
+                                      <MapPin className="w-3.5 h-3.5 shrink-0" /> Pickup Point
                                     </p>
-                                    <p className="font-bold text-foreground mt-1">{ride.pickup_location?.name || 'Pickup Point'}</p>
-                                    <p className="text-muted-foreground text-[11px]">{ride.pickup_location?.address}</p>
+                                    <p className="font-bold text-foreground mt-1 break-words">{ride.pickup_location?.name || 'Pickup Point'}</p>
+                                    <p className="text-muted-foreground text-[11px] mt-0.5 break-words">{ride.pickup_location?.address}</p>
                                   </div>
 
-                                  <div className="p-3 rounded-xl bg-card border border-border">
+                                  <div className="p-3.5 rounded-xl bg-card border border-border overflow-hidden">
                                     <p className="text-muted-foreground text-[10px] font-bold uppercase flex items-center gap-1 text-emerald-400">
-                                      <MapPin className="w-3.5 h-3.5" /> Destination Point
+                                      <MapPin className="w-3.5 h-3.5 shrink-0" /> Destination Point
                                     </p>
-                                    <p className="font-bold text-foreground mt-1">{ride.dropoff_location?.name || 'Dropoff Point'}</p>
-                                    <p className="text-muted-foreground text-[11px]">{ride.dropoff_location?.address}</p>
+                                    <p className="font-bold text-foreground mt-1 break-words">{ride.dropoff_location?.name || 'Dropoff Point'}</p>
+                                    <p className="text-muted-foreground text-[11px] mt-0.5 break-words">{ride.dropoff_location?.address}</p>
                                   </div>
                                 </div>
 
                                 {/* Metrics Breakdown */}
-                                <div className="grid grid-cols-3 gap-2 text-center">
-                                  <div className="p-2.5 rounded-xl bg-card border border-border">
+                                <div className="grid grid-cols-3 gap-3 text-center">
+                                  <div className="p-3 rounded-xl bg-card border border-border">
                                     <p className="text-muted-foreground text-[10px]">Total Fare</p>
-                                    <p className="font-bold text-gold text-xs mt-0.5">ZMW {ride.fare?.toFixed(2)}</p>
+                                    <p className="font-bold text-gold text-sm mt-0.5">ZMW {ride.fare?.toFixed(2)}</p>
                                   </div>
-                                  <div className="p-2.5 rounded-xl bg-card border border-border">
+                                  <div className="p-3 rounded-xl bg-card border border-border">
                                     <p className="text-muted-foreground text-[10px]">Driver Share</p>
-                                    <p className="font-bold text-emerald-400 text-xs mt-0.5">ZMW {ride.driver_earning?.toFixed(2) || (ride.fare * 0.85).toFixed(2)}</p>
+                                    <p className="font-bold text-emerald-400 text-sm mt-0.5">ZMW {ride.driver_earning?.toFixed(2) || (ride.fare * 0.85).toFixed(2)}</p>
                                   </div>
-                                  <div className="p-2.5 rounded-xl bg-card border border-border">
-                                    <p className="text-muted-foreground text-[10px]">Commission</p>
-                                    <p className="font-bold text-foreground text-xs mt-0.5">ZMW {ride.commission?.toFixed(2) || (ride.fare * 0.15).toFixed(2)}</p>
+                                  <div className="p-3 rounded-xl bg-card border border-border">
+                                    <p className="text-muted-foreground text-[10px]">Platform Commission</p>
+                                    <p className="font-bold text-foreground text-sm mt-0.5">ZMW {ride.commission?.toFixed(2) || (ride.fare * 0.15).toFixed(2)}</p>
                                   </div>
                                 </div>
 
                                 {/* Passenger & Driver Involved */}
-                                <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-muted-foreground gap-2 pt-1">
                                   <span>Passenger: <strong className="text-foreground">{ride.student?.name || 'Student'}</strong></span>
                                   <span>Driver: <strong className="text-foreground">{ride.driver?.user?.name || (ride.driver_id ? 'Assigned Driver' : 'None')}</strong></span>
                                 </div>
 
                                 {/* Delete Ride Action */}
-                                <div className="flex items-center justify-between pt-2 border-t border-border">
+                                <div className="flex items-center justify-between pt-3 border-t border-border">
                                   <span className="font-mono text-[10px] text-muted-foreground">ID: {ride.id}</span>
                                   <button
                                     onClick={() => handleDeleteRide(ride.id)}
-                                    className="px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 font-semibold text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
+                                    className="px-3.5 py-1.5 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                                   >
-                                    <Trash2 className="w-3 h-3" />
+                                    <Trash2 className="w-3.5 h-3.5" />
                                     Delete Record
                                   </button>
                                 </div>
@@ -907,14 +913,14 @@ const AdminUsersPage = () => {
                       })}
                     </div>
                   ) : (
-                    <div className="p-6 text-center text-xs text-muted-foreground bg-muted/20 border border-border rounded-2xl">
+                    <div className="p-8 text-center text-xs text-muted-foreground bg-muted/20 border border-border rounded-2xl">
                       No trip history recorded for this account yet
                     </div>
                   )}
                 </div>
 
                 {/* Account Action Buttons */}
-                <div className="pt-2 flex items-center justify-between border-t border-border">
+                <div className="pt-3 flex items-center justify-between border-t border-border">
                   {selectedUser?.role !== 'super_admin' && (
                     <button
                       onClick={() => handleToggleActiveStatus(selectedUser)}
@@ -930,7 +936,7 @@ const AdminUsersPage = () => {
 
                   <button
                     onClick={() => setSelectedUser(null)}
-                    className="px-4 py-2 rounded-xl bg-muted text-foreground text-xs font-bold hover:bg-muted/80 transition-colors ml-auto cursor-pointer"
+                    className="px-5 py-2 rounded-xl bg-muted text-foreground text-xs font-bold hover:bg-muted/80 transition-colors ml-auto cursor-pointer"
                   >
                     Close
                   </button>
@@ -992,7 +998,10 @@ const AdminUsersPage = () => {
 
               {selectedUser?.role === 'driver' && (
                 <div className="p-4 rounded-2xl bg-muted/40 border border-border space-y-3">
-                  <p className="font-bold text-gold uppercase tracking-wider text-[11px]">Vehicle Fleet Specs</p>
+                  <p className="font-bold text-gold uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                    <SteeringWheel weight="duotone" className="w-4 h-4 text-gold" />
+                    Vehicle Fleet Specs
+                  </p>
                   
                   <div className="grid grid-cols-2 gap-3">
                     <div>
