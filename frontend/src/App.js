@@ -26,6 +26,7 @@ import DriverRegisterPage from "./pages/DriverRegisterPage";
 import DriverEarningsPage from "./pages/DriverEarningsPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsersPage from "./pages/AdminUsersPage";
+import AdminLecturersPage from "./pages/AdminLecturersPage";
 import AdminDriversPage from "./pages/AdminDriversPage";
 import AdminRidesPage from "./pages/AdminRidesPage";
 import AdminSettingsPage from "./pages/AdminSettingsPage";
@@ -206,6 +207,14 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
               <AdminUsersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/lecturers"
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+              <AdminLecturersPage />
             </ProtectedRoute>
           }
         />

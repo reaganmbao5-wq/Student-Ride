@@ -963,7 +963,14 @@ const DriverDashboard = () => {
                             >
                               {pIndex}
                             </span>
-                            <span className="font-bold text-lg text-foreground">{ride.student?.name || 'Passenger'}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-lg text-foreground">{ride.student?.name || 'Passenger'}</span>
+                              {(ride.student?.role === 'lecturer' || ride.passenger_role === 'lecturer' || ride.role === 'lecturer') && (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-amber-500/20 text-amber-500 border border-amber-500/30">
+                                  Lecturer
+                                </span>
+                              )}
+                            </div>
                           </div>
                           <span className={`text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ${rideStatusStr === 'ACTIVE' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' : 'bg-muted text-muted-foreground'}`}>
                             {rideStatusStr}

@@ -6,6 +6,7 @@ import {
   UsersThree, ChartBar, Shield, SignOut, BugBeetle, SteeringWheel,
   Sun, Moon
 } from '@phosphor-icons/react';
+import { GraduationCap } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { cn } from '../../lib/utils';
 import { haptics } from '../../utils/haptics';
@@ -41,6 +42,7 @@ export const Layout = ({ children }) => {
   const adminNavItems = [
     { to: '/admin', icon: (props) => <ChartBar weight="duotone" {...props} />, label: 'Overview' },
     { to: '/admin/users', icon: (props) => <UsersThree weight="duotone" {...props} />, label: 'Users' },
+    { to: '/admin/lecturers', icon: (props) => <GraduationCap className="w-5 h-5 min-w-[20px]" {...props} />, label: 'Lecturers' },
     { to: '/admin/drivers', icon: (props) => <Car weight="duotone" {...props} />, label: 'Drivers' },
     { to: '/admin/rides', icon: (props) => <MapPin weight="duotone" {...props} />, label: 'Rides' },
     { to: '/admin/pricing', icon: (props) => <CurrencyCircleDollar weight="duotone" {...props} />, label: 'Pricing' },

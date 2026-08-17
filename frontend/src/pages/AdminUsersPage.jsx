@@ -3,7 +3,7 @@ import {
   Users, Search, Shield, Ban, Check, UserPlus, Trash2, Loader2, 
   Calendar, Filter, ArrowUpDown, ArrowUp, ArrowDown, Eye, 
   MapPin, Clock, Phone, Mail, CheckCircle, AlertCircle, RefreshCw, X, 
-  ShieldAlert, Edit3, ChevronDown, ChevronUp, Key, DollarSign
+  ShieldAlert, Edit3, ChevronDown, ChevronUp, Key, DollarSign, GraduationCap, Archive
 } from 'lucide-react';
 import { SteeringWheel, Car, User, Sparkle } from '@phosphor-icons/react';
 import { GlassCard, GlassInput, GoldButton, EmptyState, StatusBadge } from '../components/common/GlassComponents';
@@ -33,9 +33,12 @@ const AdminUsersPage = () => {
   // Search & Filter Controls
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+  const [yearOfStudyFilter, setYearOfStudyFilter] = useState('all');
+  const [archivedFilter, setArchivedFilter] = useState('active'); // 'active' | 'archived' | 'all'
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [selectedYear, setSelectedYear] = useState('all');
   const [sortOrder, setSortOrder] = useState('newest'); // 'newest' | 'oldest' | 'name'
+  const [archivingGraduated, setArchivingGraduated] = useState(false);
 
   // Admin Management Modals
   const [showAddAdmin, setShowAddAdmin] = useState(false);
@@ -207,9 +210,8 @@ const AdminUsersPage = () => {
     }
   };
 
-  // Switch Role between Student and Driver
-  const handleSwitchRole = async (targetUserId, currentRole) => {
-    const nextRole = currentRole === 'student' ? 'driver' : 'student';
+  // Switch Role between Student, Lecturer, and Driver
+  const handleSwitchRole = async (targetUserId, nextRole) => {
     setSwitchingRole(true);
     try {
       const res = await api.patch(`/admin/users/${targetUserId}/role`, { role: nextRole });
@@ -232,6 +234,22 @@ const AdminUsersPage = () => {
       toast.error(error.response?.data?.detail || 'Failed to switch user role');
     } finally {
       setSwitchingRole(false);
+    }
+  };
+
+  // Archive Graduated Students Batch Action
+  const handleArchiveGraduated = async () => {
+    if (!window.confirm("Archive all students who have exceeded their degree completion years (Year 4 for standard, Year 5 for engineering)?")) return;
+    setArchivingGraduated(true);
+    try {
+      const res = await api.post('/admin/students/archive-graduated');
+      toast.success(res.data.message || `Archived ${res.data.archived_count} graduated students`);
+      fetchUsers(false);
+    } catch (err) {
+      console.error('Error archiving graduated students:', err);
+      toast.error(err.response?.data?.detail || 'Failed to archive graduated students');
+    } finally {
+      setArchivingGraduated(false);
     }
   };
 
@@ -335,6 +353,19 @@ const AdminUsersPage = () => {
         }
       }
 
+      // Year of Study Filter (for Students)
+      if (yearOfStudyFilter !== 'all') {
+        if (user.role !== 'student') return false;
+        if (String(user.year_of_study) !== String(yearOfStudyFilter)) return false;
+      }
+
+      // Archived Filter
+      if (archivedFilter === 'active' && user.is_archived === true) {
+        return false;
+      } else if (archivedFilter === 'archived' && user.is_archived !== true) {
+        return false;
+      }
+
       // Date / Month / Year Filters
       if (user.created_at) {
         const dateObj = new Date(user.created_at);
@@ -362,7 +393,7 @@ const AdminUsersPage = () => {
     });
 
     return result;
-  }, [users, searchQuery, roleFilter, selectedMonth, selectedYear, sortOrder]);
+  }, [users, searchQuery, roleFilter, yearOfStudyFilter, archivedFilter, selectedMonth, selectedYear, sortOrder]);
 
   if (loading && users.length === 0) {
     return <AdminUsersSkeleton />;
@@ -382,7 +413,7 @@ const AdminUsersPage = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => fetchUsers(false)}
               className="p-2.5 rounded-2xl bg-muted border border-border text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
@@ -390,6 +421,18 @@ const AdminUsersPage = () => {
             >
               <RefreshCw className="w-4 h-4" />
             </button>
+
+            {isSuperAdmin && (
+              <button
+                onClick={handleArchiveGraduated}
+                disabled={archivingGraduated}
+                className="px-4 py-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-500 hover:bg-amber-500/20 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-sm"
+                title="Archive students who exceeded degree years"
+              >
+                <Archive className="w-4 h-4" />
+                <span>{archivingGraduated ? 'Archiving...' : 'Archive Graduated'}</span>
+              </button>
+            )}
 
             {isSuperAdmin && (
               <Dialog open={showAddAdmin} onOpenChange={setShowAddAdmin}>
@@ -443,13 +486,13 @@ const AdminUsersPage = () => {
         </div>
 
         {/* Filter & Search Bar */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 bg-card/60 p-4 rounded-3xl border border-border">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-3 bg-card/60 p-4 rounded-3xl border border-border">
           {/* Search Box */}
-          <div className="md:col-span-4 relative">
+          <div className="md:col-span-3 relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search by name, email, or phone..."
+              placeholder="Search name, email, phone..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-muted/60 text-foreground text-sm rounded-2xl pl-10 pr-4 py-2.5 border border-border focus:outline-none focus:border-gold"
@@ -465,33 +508,63 @@ const AdminUsersPage = () => {
             >
               <option value="all">All Roles</option>
               <option value="student">Students</option>
+              <option value="lecturer">Lecturers</option>
               <option value="driver">Drivers</option>
               <option value="admin">Admins</option>
             </select>
           </div>
 
-          {/* Month Filter */}
+          {/* Year of Study Filter */}
           <div className="md:col-span-2">
+            <select
+              value={yearOfStudyFilter}
+              onChange={(e) => setYearOfStudyFilter(e.target.value)}
+              className="w-full bg-muted/60 text-foreground text-sm rounded-2xl px-3 py-2.5 border border-border focus:outline-none focus:border-gold cursor-pointer"
+            >
+              <option value="all">All Study Years</option>
+              <option value="1">1st Year</option>
+              <option value="2">2nd Year</option>
+              <option value="3">3rd Year</option>
+              <option value="4">4th Year</option>
+              <option value="5">5th Year</option>
+            </select>
+          </div>
+
+          {/* Archived Filter */}
+          <div className="md:col-span-2">
+            <select
+              value={archivedFilter}
+              onChange={(e) => setArchivedFilter(e.target.value)}
+              className="w-full bg-muted/60 text-foreground text-sm rounded-2xl px-3 py-2.5 border border-border focus:outline-none focus:border-gold cursor-pointer"
+            >
+              <option value="active">Active Accounts</option>
+              <option value="archived">Archived Only</option>
+              <option value="all">All Statuses</option>
+            </select>
+          </div>
+
+          {/* Month Filter */}
+          <div className="md:col-span-1">
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="w-full bg-muted/60 text-foreground text-sm rounded-2xl px-3 py-2.5 border border-border focus:outline-none focus:border-gold cursor-pointer"
+              className="w-full bg-muted/60 text-foreground text-sm rounded-2xl px-2 py-2.5 border border-border focus:outline-none focus:border-gold cursor-pointer"
             >
-              <option value="all">All Months</option>
+              <option value="all">Month</option>
               {MONTH_NAMES.map((m, idx) => (
-                <option key={m} value={idx}>{m}</option>
+                <option key={m} value={idx}>{m.slice(0, 3)}</option>
               ))}
             </select>
           </div>
 
           {/* Year Filter */}
-          <div className="md:col-span-2">
+          <div className="md:col-span-1">
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
-              className="w-full bg-muted/60 text-foreground text-sm rounded-2xl px-3 py-2.5 border border-border focus:outline-none focus:border-gold cursor-pointer"
+              className="w-full bg-muted/60 text-foreground text-sm rounded-2xl px-2 py-2.5 border border-border focus:outline-none focus:border-gold cursor-pointer"
             >
-              <option value="all">All Years</option>
+              <option value="all">Year</option>
               {availableYears.map((yr) => (
                 <option key={yr} value={yr}>{yr}</option>
               ))}
@@ -499,15 +572,15 @@ const AdminUsersPage = () => {
           </div>
 
           {/* Sort Order */}
-          <div className="md:col-span-2">
+          <div className="md:col-span-1">
             <select
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value)}
-              className="w-full bg-muted/60 text-foreground text-sm rounded-2xl px-3 py-2.5 border border-border focus:outline-none focus:border-gold cursor-pointer"
+              className="w-full bg-muted/60 text-foreground text-sm rounded-2xl px-2 py-2.5 border border-border focus:outline-none focus:border-gold cursor-pointer"
             >
-              <option value="newest">Joined: Newest</option>
-              <option value="oldest">Joined: Oldest</option>
-              <option value="name">Name (A-Z)</option>
+              <option value="newest">Newest</option>
+              <option value="oldest">Oldest</option>
+              <option value="name">A-Z</option>
             </select>
           </div>
         </div>
@@ -580,11 +653,27 @@ const AdminUsersPage = () => {
                     </div>
                   </div>
 
-                  {/* Col 2: Role & Active Status (Absolute plain typography, no pill container) */}
-                  <div className="lg:col-span-2 flex items-center gap-2">
+                  {/* Col 2: Role & Active Status */}
+                  <div className="lg:col-span-2 flex flex-wrap items-center gap-1.5">
                     <span className="text-xs font-bold text-foreground capitalize tracking-wide">
                       {user.role.replace('_', ' ')}
                     </span>
+                    {user.role === 'student' && user.year_of_study && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 font-bold border border-blue-500/20">
+                        Yr {user.year_of_study}
+                      </span>
+                    )}
+                    {user.role === 'lecturer' && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 font-bold border border-amber-500/20 flex items-center gap-0.5">
+                        <GraduationCap className="w-3 h-3" />
+                        Lecturer
+                      </span>
+                    )}
+                    {user.is_archived && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-500/10 text-zinc-400 font-bold border border-zinc-500/20">
+                        Archived
+                      </span>
+                    )}
                   </div>
 
                   {/* Col 3: Joined Date */}
@@ -593,18 +682,19 @@ const AdminUsersPage = () => {
                     <span>{joinedDate}</span>
                   </div>
 
-                  {/* Col 4: Quick Role Switch (Student <-> Driver) */}
+                  {/* Col 4: Quick Role Switch */}
                   <div className="lg:col-span-2">
-                    {isStudentOrDriver ? (
-                      <button
-                        onClick={() => handleSwitchRole(user.id, user.role)}
+                    {user.role !== 'admin' && user.role !== 'super_admin' ? (
+                      <select
+                        value={user.role}
                         disabled={switchingRole}
-                        className="text-xs px-3 py-1.5 rounded-xl bg-muted hover:bg-muted/80 border border-border text-foreground font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                        title={`Convert to ${user.role === 'student' ? 'Driver' : 'Student'}`}
+                        onChange={(e) => handleSwitchRole(user.id, e.target.value)}
+                        className="text-xs px-2.5 py-1.5 rounded-xl bg-muted hover:bg-muted/80 border border-border text-foreground font-semibold cursor-pointer focus:outline-none focus:border-gold"
                       >
-                        <SteeringWheel weight="duotone" className="w-4 h-4 text-gold" />
-                        <span>Make {user.role === 'student' ? 'Driver' : 'Student'}</span>
-                      </button>
+                        <option value="student">Student</option>
+                        <option value="lecturer">Lecturer</option>
+                        <option value="driver">Driver</option>
+                      </select>
                     ) : (
                       <span className="text-xs text-muted-foreground font-mono">Protected</span>
                     )}
@@ -741,21 +831,52 @@ const AdminUsersPage = () => {
                       </div>
 
                       {/* Right: Quick Role Switcher (4 cols) */}
-                      {(userDetails.user?.role === 'student' || userDetails.user?.role === 'driver') && (
+                      {userDetails.user?.role !== 'admin' && userDetails.user?.role !== 'super_admin' && (
                         <div className="lg:col-span-4 p-5 rounded-2xl bg-gold/10 border border-gold/20 flex flex-col justify-between gap-3">
                           <div>
                             <p className="text-xs font-bold text-gold uppercase tracking-wider">Account Role</p>
                             <p className="text-xs text-foreground mt-0.5">
-                              Currently registered as <strong className="capitalize">{userDetails.user.role}</strong>. Convert if needed.
+                              Currently registered as <strong className="capitalize">{userDetails.user.role}</strong>.
+                              {userDetails.user.role === 'student' && userDetails.user.year_of_study && (
+                                <span> (Year {userDetails.user.year_of_study})</span>
+                              )}
                             </p>
                           </div>
-                          <button
-                            onClick={() => handleSwitchRole(userDetails.user.id, userDetails.user.role)}
-                            disabled={switchingRole}
-                            className="px-4 py-2.5 rounded-xl bg-gold text-zinc-950 font-bold text-xs shadow-md hover:bg-gold/90 transition-colors cursor-pointer w-full text-center"
-                          >
-                            {switchingRole ? 'Switching...' : `Make ${userDetails.user.role === 'student' ? 'Driver' : 'Student'}`}
-                          </button>
+                          <div className="grid grid-cols-3 gap-1.5">
+                            <button
+                              onClick={() => handleSwitchRole(userDetails.user.id, 'student')}
+                              disabled={switchingRole || userDetails.user.role === 'student'}
+                              className={`px-2 py-2 rounded-xl text-xs font-bold transition-all text-center ${
+                                userDetails.user.role === 'student'
+                                  ? 'bg-gold text-zinc-950 shadow-sm'
+                                  : 'bg-muted hover:bg-muted/80 text-foreground border border-border cursor-pointer'
+                              }`}
+                            >
+                              Student
+                            </button>
+                            <button
+                              onClick={() => handleSwitchRole(userDetails.user.id, 'lecturer')}
+                              disabled={switchingRole || userDetails.user.role === 'lecturer'}
+                              className={`px-2 py-2 rounded-xl text-xs font-bold transition-all text-center ${
+                                userDetails.user.role === 'lecturer'
+                                  ? 'bg-gold text-zinc-950 shadow-sm'
+                                  : 'bg-muted hover:bg-muted/80 text-foreground border border-border cursor-pointer'
+                              }`}
+                            >
+                              Lecturer
+                            </button>
+                            <button
+                              onClick={() => handleSwitchRole(userDetails.user.id, 'driver')}
+                              disabled={switchingRole || userDetails.user.role === 'driver'}
+                              className={`px-2 py-2 rounded-xl text-xs font-bold transition-all text-center ${
+                                userDetails.user.role === 'driver'
+                                  ? 'bg-gold text-zinc-950 shadow-sm'
+                                  : 'bg-muted hover:bg-muted/80 text-foreground border border-border cursor-pointer'
+                              }`}
+                            >
+                              Driver
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>

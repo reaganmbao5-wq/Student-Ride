@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { GlassCard, GlassInput, GoldButton, LoadingSpinner } from '../components/common/GlassComponents';
-import { Phone, Lock, User, Mail, CheckCircle } from 'lucide-react';
+import { Phone, Lock, User, Mail, CheckCircle, GraduationCap } from 'lucide-react';
 import { Car } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { getOnlineWebUrl, openExternalUrl, getBackendUrl } from '../utils/urlHelpers';
@@ -48,6 +48,9 @@ export default function CompleteProfilePage() {
     const [email] = useState(state.email || '');
     const [phone, setPhone] = useState(state.phone || '');
     const [isDriver, setIsDriver] = useState(false);
+    const [passengerRole, setPassengerRole] = useState('student');
+    const [yearOfStudy, setYearOfStudy] = useState('1');
+    const [programType, setProgramType] = useState('standard');
     const [loading, setLoading] = useState(false);
     const [agreedToTerms, setAgreedToTerms] = useState(false);
     const token = state.token;
@@ -72,11 +75,16 @@ export default function CompleteProfilePage() {
 
         setLoading(true);
         try {
-            // Update the user profile with phone, gender and preferences
+            // Update the user profile with phone, role, year_of_study, and preferences
             const updateBody = { 
                 phone,
+                role: isDriver ? 'student' : passengerRole,
                 ...(state.gender ? { gender: state.gender } : {})
             };
+            if (!isDriver && passengerRole === 'student') {
+                updateBody.year_of_study = parseInt(yearOfStudy);
+                updateBody.program_type = programType;
+            }
             if (state.themeMode) localStorage.setItem('mulu_theme_mode', state.themeMode);
             if (state.accentColor) localStorage.setItem('mulu_accent_color', state.accentColor);
             if (state.mapThemeMode) localStorage.setItem('map_theme_mode', state.mapThemeMode);
@@ -206,6 +214,71 @@ export default function CompleteProfilePage() {
                                 autoFocus
                             />
                         </div>
+
+                        {/* Passenger Role & Year of Study Selector */}
+                        {!isDriver && (
+                            <div className="space-y-3 p-3.5 bg-muted/60 rounded-xl border border-border/50">
+                                <div>
+                                    <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Account Type</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setPassengerRole('student')}
+                                            className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${
+                                                passengerRole === 'student'
+                                                    ? 'bg-gold/15 border-gold text-gold shadow-sm shadow-gold/10'
+                                                    : 'bg-card border-border text-muted-foreground hover:border-border/80'
+                                            }`}
+                                        >
+                                            <User className="w-3.5 h-3.5" />
+                                            <span>Student</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setPassengerRole('lecturer')}
+                                            className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${
+                                                passengerRole === 'lecturer'
+                                                    ? 'bg-gold/15 border-gold text-gold shadow-sm shadow-gold/10'
+                                                    : 'bg-card border-border text-muted-foreground hover:border-border/80'
+                                            }`}
+                                        >
+                                            <GraduationCap className="w-3.5 h-3.5" />
+                                            <span>Lecturer</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {passengerRole === 'student' && (
+                                    <div className="grid grid-cols-2 gap-2 pt-1">
+                                        <div>
+                                            <label className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Year of Study</label>
+                                            <select
+                                                value={yearOfStudy}
+                                                onChange={(e) => setYearOfStudy(e.target.value)}
+                                                className="w-full bg-card border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-gold/50 cursor-pointer"
+                                            >
+                                                <option value="1">1st Year</option>
+                                                <option value="2">2nd Year</option>
+                                                <option value="3">3rd Year</option>
+                                                <option value="4">4th Year</option>
+                                                <option value="5">5th Year</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Program</label>
+                                            <select
+                                                value={programType}
+                                                onChange={(e) => setProgramType(e.target.value)}
+                                                className="w-full bg-card border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-gold/50 cursor-pointer"
+                                            >
+                                                <option value="standard">Standard (4-Yr)</option>
+                                                <option value="engineering">Engineering (5-Yr)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
                         {/* Driver toggle */}
                         <div className="flex items-center justify-between p-4 bg-muted rounded-xl">

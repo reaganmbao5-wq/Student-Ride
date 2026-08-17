@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, ArrowLeft, Mail, Phone, User as UserIcon, Lock, UploadCloud, FileText, CheckCircle2, Camera as CameraIcon } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, Mail, Phone, User as UserIcon, Lock, UploadCloud, FileText, CheckCircle2, Camera as CameraIcon, GraduationCap } from 'lucide-react';
 import { Car } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -76,6 +76,9 @@ const AuthPage = () => {
   const [mode, setMode] = useState(isRegisterParam ? 'register' : 'login');
   const [direction, setDirection] = useState(isRegisterParam ? 1 : -1);
   const [isDriver, setIsDriver] = useState(searchParams.get('mode') === 'driver');
+  const [passengerRole, setPassengerRole] = useState('student');
+  const [yearOfStudy, setYearOfStudy] = useState('1');
+  const [programType, setProgramType] = useState('standard');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -232,7 +235,9 @@ const AuthPage = () => {
             formData.email,
             formData.phone,
             formData.password,
-            'student'
+            passengerRole,
+            passengerRole === 'student' ? yearOfStudy : null,
+            passengerRole === 'student' ? programType : null
           );
           toast.success('Account created successfully!');
           navigate('/dashboard');
@@ -584,6 +589,70 @@ const AuthPage = () => {
                   required
                 />
               </div>
+            )}
+
+            {mode === 'register' && !isDriver && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-3 pt-1">
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">Passenger Role</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPassengerRole('student')}
+                      className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${
+                        passengerRole === 'student'
+                          ? 'bg-gold/15 border-gold text-gold shadow-sm shadow-gold/10'
+                          : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                      }`}
+                    >
+                      <UserIcon className="w-3.5 h-3.5" />
+                      <span>Student</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPassengerRole('lecturer')}
+                      className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${
+                        passengerRole === 'lecturer'
+                          ? 'bg-gold/15 border-gold text-gold shadow-sm shadow-gold/10'
+                          : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                      }`}
+                    >
+                      <GraduationCap className="w-3.5 h-3.5" />
+                      <span>Lecturer</span>
+                    </button>
+                  </div>
+                </div>
+
+                {passengerRole === 'student' && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="grid grid-cols-2 gap-2 pt-1">
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1">Year of Study</label>
+                      <select
+                        value={yearOfStudy}
+                        onChange={(e) => setYearOfStudy(e.target.value)}
+                        className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-gold/50 cursor-pointer"
+                      >
+                        <option value="1">1st Year</option>
+                        <option value="2">2nd Year</option>
+                        <option value="3">3rd Year</option>
+                        <option value="4">4th Year</option>
+                        <option value="5">5th Year</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1">Program</label>
+                      <select
+                        value={programType}
+                        onChange={(e) => setProgramType(e.target.value)}
+                        className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-gold/50 cursor-pointer"
+                      >
+                        <option value="standard">Standard (4-Yr)</option>
+                        <option value="engineering">Engineering (5-Yr)</option>
+                      </select>
+                    </div>
+                  </motion.div>
+                )}
+              </motion.div>
             )}
 
             {mode === 'register' && isDriver && (

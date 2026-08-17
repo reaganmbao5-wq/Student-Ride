@@ -157,14 +157,19 @@ export const AuthProvider = ({ children }) => {
     return userData;
   };
 
-  const register = async (name, email, phone, password, role = 'student') => {
-    const response = await api.post('/auth/register', {
+  const register = async (name, email, phone, password, role = 'student', year_of_study = null, program_type = 'standard') => {
+    const payload = {
       name,
       email,
       phone,
       password,
       role
-    });
+    };
+    if (role === 'student' && year_of_study) {
+      payload.year_of_study = parseInt(year_of_study);
+      payload.program_type = program_type || 'standard';
+    }
+    const response = await api.post('/auth/register', payload);
 
     const { access_token, user: userData } = response.data;
 
