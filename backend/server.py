@@ -4286,52 +4286,140 @@ async def search_places(q: str = Query(..., min_length=1)):
                 "source": r["source"]
             })
 
-        # 2. Hybrid Search Enhancement: Query Mapbox Geocoding API v5 for real-time address & POI matches
+        # 2. Online Cache Layer: Check MongoDB places_search_cache (hits cache first to save 100% API credits)
         try:
-            import urllib.parse
-            mapbox_token = os.environ.get(
-                "MAPBOX_ACCESS_TOKEN",
-                "pk.eyJ1IjoiamFleSIsImEiOiJjbXNocmV5ZXAwM3JlMnhzZ29raTB3eGc5In0.riXZQNEurCaETWjZt02R6A"
-            )
-            encoded_query = urllib.parse.quote(search_term)
-            url = f"https://api.mapbox.com/geocoding/v5/mapbox.places/{encoded_query}.json"
-            params = {
-                "access_token": mapbox_token,
-                "country": "zm",
-                "proximity": "28.549662,-14.294646",
-                "autocomplete": "true",
-                "types": "address,poi,neighborhood,locality,place"
-            }
-            from services.osrm_service import get_http_client
-            client = get_http_client()
-            resp = await client.get(url, params=params)
+            cached_places = await db.places_search_cache.find(
+                {"$or": [
+                    {"display_name": {"$regex": search_term, "$options": "i"}},
+                    {"category": {"$regex": search_term, "$options": "i"}}
+                ]},
+                {"_id": 0}
+            ).sort("hit_count", -1).to_list(10)
             
-            if resp.status_code == 200:
-                mapbox_data = resp.json()
-                features = mapbox_data.get("features", [])
-                for f in features:
-                    place_name = f.get("place_name", f.get("text", "")).strip()
-                    name_key = place_name.lower()
-                    if not place_name or name_key in seen_names:
-                        continue
+            for cp in cached_places:
+                name_key = cp["display_name"].strip().lower()
+                if name_key not in seen_names:
                     seen_names.add(name_key)
-                    
-                    center = f.get("center", [0.0, 0.0]) # [lng, lat]
                     results.append({
-                        "id": f.get("id", f"mapbox_{len(results)}"),
-                        "display_name": place_name,
-                        "category": f.get("properties", {}).get("category", "Address / POI"),
-                        "lat": round(float(center[1]), 7),
-                        "lon": round(float(center[0]), 7),
-                        "source": "mapbox"
+                        "id": cp.get("id", f"cached_{len(results)}"),
+                        "display_name": cp["display_name"],
+                        "category": cp.get("category", "Cached Place"),
+                        "lat": float(cp["lat"]),
+                        "lon": float(cp["lon"]),
+                        "source": "cache"
                     })
-        except Exception as mb_err:
-            logging.warning(f"Mapbox Geocoding search failed: {mb_err}")
+        except Exception as cache_err:
+            logging.warning(f"Error querying places_search_cache: {cache_err}")
+
+        # 3. External API Fallback: Query Mapbox Geocoding ONLY if local + cache have few matches
+        if len(results) < 4:
+            try:
+                import urllib.parse
+                mapbox_token = os.environ.get(
+                    "MAPBOX_ACCESS_TOKEN",
+                    "pk.eyJ1IjoiamFleSIsImEiOiJjbXNocmV5ZXAwM3JlMnhzZ29raTB3eGc5In0.riXZQNEurCaETWjZt02R6A"
+                )
+                encoded_query = urllib.parse.quote(search_term)
+                url = f"https://api.mapbox.com/geocoding/v5/mapbox.places/{encoded_query}.json"
+                params = {
+                    "access_token": mapbox_token,
+                    "country": "zm",
+                    "proximity": "28.549662,-14.294646",
+                    "autocomplete": "true",
+                    "types": "address,poi,neighborhood,locality,place"
+                }
+                from services.osrm_service import get_http_client
+                client = get_http_client()
+                resp = await client.get(url, params=params)
+                
+                if resp.status_code == 200:
+                    mapbox_data = resp.json()
+                    features = mapbox_data.get("features", [])
+                    for f in features:
+                        place_name = f.get("place_name", f.get("text", "")).strip()
+                        name_key = place_name.lower()
+                        if not place_name or name_key in seen_names:
+                            continue
+                        seen_names.add(name_key)
+                        
+                        center = f.get("center", [0.0, 0.0]) # [lng, lat]
+                        item_cat = f.get("properties", {}).get("category", "Address / POI")
+                        item_lat = round(float(center[1]), 7)
+                        item_lon = round(float(center[0]), 7)
+
+                        results.append({
+                            "id": f.get("id", f"mapbox_{len(results)}"),
+                            "display_name": place_name,
+                            "category": item_cat,
+                            "lat": item_lat,
+                            "lon": item_lon,
+                            "source": "mapbox"
+                        })
+
+                        # Auto-cache into MongoDB so subsequent queries for this place hit the cache directly
+                        try:
+                            await db.places_search_cache.update_one(
+                                {"display_name": place_name},
+                                {
+                                    "$set": {
+                                        "display_name": place_name,
+                                        "category": item_cat,
+                                        "lat": item_lat,
+                                        "lon": item_lon,
+                                        "source": "mapbox",
+                                        "updated_at": datetime.now(timezone.utc).isoformat()
+                                    },
+                                    "$setOnInsert": {
+                                        "created_at": datetime.now(timezone.utc).isoformat(),
+                                        "hit_count": 1
+                                    }
+                                },
+                                upsert=True
+                            )
+                        except Exception:
+                            pass
+            except Exception as mb_err:
+                logging.warning(f"Mapbox Geocoding search failed: {mb_err}")
 
         return results
     except Exception as e:
         logging.error(f"Error searching places.db: {e}")
         return []
+
+@api_router.post("/places/record-visit")
+async def record_place_visit(payload: dict = Body(...)):
+    """Records user visit / selection to cache and boost frequently visited places"""
+    name = payload.get("name") or payload.get("display_name") or payload.get("address")
+    lat = payload.get("lat")
+    lng = payload.get("lng") or payload.get("lon")
+    category = payload.get("category", "Visited Place")
+    
+    if not name or lat is None or lng is None:
+        return {"status": "skipped"}
+    
+    clean_name = str(name).strip().split(",")[0].strip()
+    try:
+        await db.places_search_cache.update_one(
+            {"display_name": clean_name},
+            {
+                "$set": {
+                    "display_name": clean_name,
+                    "category": category,
+                    "lat": float(lat),
+                    "lon": float(lng),
+                    "last_visited_at": datetime.now(timezone.utc).isoformat()
+                },
+                "$inc": {"hit_count": 1},
+                "$setOnInsert": {
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+            },
+            upsert=True
+        )
+        return {"status": "ok", "place": clean_name}
+    except Exception as e:
+        logging.warning(f"Error recording place visit: {e}")
+        return {"status": "error", "message": str(e)}
 
 # ==================== DESTINATIONS MANAGEMENT ====================
 

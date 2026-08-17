@@ -4,8 +4,40 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, Loader2, MapPin } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
-import { searchAddress } from '../../map/services/nominatim';
+import { isNightTheme } from '../../map/styles/MapboxStyles';
 import finalPlaces from '../../data/final_places.json';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "https://student-ride-backend-manual.onrender.com";
+
+// Client-Side LRU Search Cache (Persisted in localStorage)
+const LOCAL_STORAGE_CACHE_KEY = 'SR_SEARCH_CACHE_V1';
+
+const getClientCache = () => {
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_CACHE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
+const saveClientCache = (queryKey, data) => {
+  try {
+    const cache = getClientCache();
+    cache[queryKey.toLowerCase().trim()] = {
+      timestamp: Date.now(),
+      data
+    };
+    // Keep max 100 queries in client cache
+    const keys = Object.keys(cache);
+    if (keys.length > 100) {
+      delete cache[keys[0]];
+    }
+    localStorage.setItem(LOCAL_STORAGE_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // Ignore storage quota limits
+  }
+};
 
 const categoryToMaki = (category, name) => {
   const n = String(name || '').toLowerCase().trim();
@@ -71,35 +103,68 @@ const categoryToMaki = (category, name) => {
   return 'marker';
 };
 
-const getCategoryColor = (makiIcon) => {
-  switch (makiIcon) {
-    case 'lodging':
-      return { bg: 'bg-fuchsia-500/15 dark:bg-fuchsia-500/25', text: 'text-fuchsia-600 dark:text-fuchsia-400', fill: '#C026D3' };
-    case 'hospital':
-      return { bg: 'bg-red-500/15 dark:bg-red-500/25', text: 'text-red-600 dark:text-red-400', fill: '#DC2626' };
-    case 'school':
-    case 'college':
-      return { bg: 'bg-amber-500/15 dark:bg-amber-500/25', text: 'text-amber-600 dark:text-amber-400', fill: '#D97706' };
-    case 'restaurant':
-    case 'cafe':
-    case 'bar':
-      return { bg: 'bg-orange-500/15 dark:bg-orange-500/25', text: 'text-orange-600 dark:text-orange-400', fill: '#EA580C' };
-    case 'bank':
-      return { bg: 'bg-yellow-500/15 dark:bg-yellow-500/25', text: 'text-yellow-600 dark:text-yellow-400', fill: '#CA8A04' };
-    case 'park':
-    case 'pitch':
-      return { bg: 'bg-emerald-500/15 dark:bg-emerald-500/25', text: 'text-emerald-600 dark:text-emerald-400', fill: '#16A34A' };
-    case 'shop':
-    case 'grocery':
-      return { bg: 'bg-blue-500/15 dark:bg-blue-500/25', text: 'text-blue-600 dark:text-blue-400', fill: '#2563EB' };
-    case 'police':
-    case 'post':
-    case 'bus':
-      return { bg: 'bg-indigo-500/15 dark:bg-indigo-500/25', text: 'text-indigo-600 dark:text-indigo-400', fill: '#4F46E5' };
-    case 'place-of-worship':
-      return { bg: 'bg-purple-500/15 dark:bg-purple-500/25', text: 'text-purple-600 dark:text-purple-400', fill: '#7C3AED' };
-    default:
-      return { bg: 'bg-zinc-500/15 dark:bg-zinc-500/25', text: 'text-zinc-600 dark:text-zinc-400', fill: '#64748B' };
+const getCategoryColor = (makiIcon, isNight) => {
+  if (isNight) {
+    switch (makiIcon) {
+      case 'lodging':
+        return { bg: 'bg-fuchsia-500/20', text: 'text-fuchsia-400', border: 'border-fuchsia-500/30' };
+      case 'hospital':
+        return { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30' };
+      case 'school':
+      case 'college':
+        return { bg: 'bg-amber-500/20', text: 'text-amber-400', border: 'border-amber-500/30' };
+      case 'restaurant':
+      case 'cafe':
+      case 'bar':
+        return { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/30' };
+      case 'bank':
+        return { bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30' };
+      case 'park':
+      case 'pitch':
+        return { bg: 'bg-emerald-500/20', text: 'text-emerald-400', border: 'border-emerald-500/30' };
+      case 'shop':
+      case 'grocery':
+        return { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30' };
+      case 'police':
+      case 'post':
+      case 'bus':
+        return { bg: 'bg-indigo-500/20', text: 'text-indigo-400', border: 'border-indigo-500/30' };
+      case 'place-of-worship':
+        return { bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/30' };
+      default:
+        return { bg: 'bg-zinc-700/30', text: 'text-zinc-300', border: 'border-zinc-700/40' };
+    }
+  } else {
+    // Light Mode map high contrast tokens
+    switch (makiIcon) {
+      case 'lodging':
+        return { bg: 'bg-fuchsia-100', text: 'text-fuchsia-800 font-semibold', border: 'border-fuchsia-200' };
+      case 'hospital':
+        return { bg: 'bg-red-100', text: 'text-red-800 font-semibold', border: 'border-red-200' };
+      case 'school':
+      case 'college':
+        return { bg: 'bg-amber-100', text: 'text-amber-900 font-semibold', border: 'border-amber-200' };
+      case 'restaurant':
+      case 'cafe':
+      case 'bar':
+        return { bg: 'bg-orange-100', text: 'text-orange-900 font-semibold', border: 'border-orange-200' };
+      case 'bank':
+        return { bg: 'bg-yellow-100', text: 'text-yellow-900 font-semibold', border: 'border-yellow-200' };
+      case 'park':
+      case 'pitch':
+        return { bg: 'bg-emerald-100', text: 'text-emerald-800 font-semibold', border: 'border-emerald-200' };
+      case 'shop':
+      case 'grocery':
+        return { bg: 'bg-blue-100', text: 'text-blue-800 font-semibold', border: 'border-blue-200' };
+      case 'police':
+      case 'post':
+      case 'bus':
+        return { bg: 'bg-indigo-100', text: 'text-indigo-800 font-semibold', border: 'border-indigo-200' };
+      case 'place-of-worship':
+        return { bg: 'bg-purple-100', text: 'text-purple-800 font-semibold', border: 'border-purple-200' };
+      default:
+        return { bg: 'bg-zinc-100', text: 'text-zinc-700 font-semibold', border: 'border-zinc-200' };
+    }
   }
 };
 
@@ -109,8 +174,10 @@ export const ActionSearchBar = ({
   placeholder = "Search campus places, hostels...",
   className = ""
 }) => {
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
+  const { themeMode } = useTheme();
+  
+  // Directly follow the map's Day/Night style (Daytime = Light Map, Nighttime = Dark Map)
+  const isNight = useMemo(() => isNightTheme(themeMode === 'auto' ? null : themeMode), [themeMode]);
 
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -121,12 +188,12 @@ export const ActionSearchBar = ({
   const inputRef = useRef(null);
   const apiTimeoutRef = useRef(null);
 
-  // Pre-indexed database of campus places + extra locations
+  // Pre-indexed database of campus places & hostels (Instant < 1ms response)
   const preindexedLocations = useMemo(() => {
     const list = [];
     const seen = new Set();
 
-    // 1. Add finalPlaces
+    // 1. Add verified finalPlaces
     if (finalPlaces?.features) {
       finalPlaces.features.forEach((feat, idx) => {
         const coords = feat.geometry?.coordinates || [];
@@ -152,7 +219,7 @@ export const ActionSearchBar = ({
       });
     }
 
-    // 2. Add dynamic locations prop
+    // 2. Add dynamic locations
     if (locations && locations.length > 0) {
       locations.forEach((loc, idx) => {
         const name = loc.name || loc.label || loc.title || '';
@@ -180,7 +247,7 @@ export const ActionSearchBar = ({
     return list;
   }, [locations]);
 
-  // Instant local filtering (< 1ms) + Debounced API search
+  // Two-Layer Search Engine: Instant Local Index -> Online MongoDB Cache -> API
   useEffect(() => {
     const q = query.toLowerCase().trim();
     if (!q) {
@@ -190,7 +257,7 @@ export const ActionSearchBar = ({
       return;
     }
 
-    // 1. INSTANT local results
+    // 1. INSTANT In-Memory Local Search (< 1ms)
     const startsWithName = [];
     const containsName = [];
     const containsCategory = [];
@@ -206,46 +273,67 @@ export const ActionSearchBar = ({
       }
     });
 
-    const instantLocalResults = [...startsWithName, ...containsName, ...containsCategory].slice(0, 10);
-    setResults(instantLocalResults);
+    const instantMatches = [...startsWithName, ...containsName, ...containsCategory].slice(0, 8);
+    setResults(instantMatches);
 
-    // 2. Debounced API search for external addresses if query length >= 3
+    // 2. Check Client Cache
+    const clientCache = getClientCache();
+    if (clientCache[q] && Date.now() - clientCache[q].timestamp < 3600000) {
+      const cachedList = clientCache[q].data;
+      if (Array.isArray(cachedList) && cachedList.length > 0) {
+        setResults((prev) => {
+          const seenNames = new Set(prev.map(p => p.name.toLowerCase()));
+          const extra = cachedList.filter(p => !seenNames.has(p.name.toLowerCase()));
+          return [...prev, ...extra].slice(0, 10);
+        });
+        setLoadingApi(false);
+        return;
+      }
+    }
+
+    // 3. Debounced Online Backend & MongoDB Cache Search (300ms)
     if (apiTimeoutRef.current) clearTimeout(apiTimeoutRef.current);
 
     if (q.length >= 3) {
       setLoadingApi(true);
       apiTimeoutRef.current = setTimeout(async () => {
         try {
-          const apiData = await searchAddress(q);
-          if (apiData && Array.isArray(apiData)) {
-            const externalResults = apiData.map((item, idx) => {
-              const primaryName = item.display_name.split(',')[0].trim();
-              const category = item.type || item.class || 'Address';
-              const makiIcon = categoryToMaki(category, primaryName);
-              return {
-                id: `api_${item.place_id || idx}`,
-                name: primaryName,
-                category: category,
-                makiIcon: makiIcon,
-                lat: parseFloat(item.lat),
-                lng: parseFloat(item.lon),
-                address: item.display_name,
-                isLocal: false
-              };
-            });
+          const res = await fetch(`${BACKEND_URL}/api/places/search?q=${encodeURIComponent(q)}`);
+          if (res.ok) {
+            const apiData = await res.json();
+            if (Array.isArray(apiData)) {
+              const formatted = apiData.map((item, idx) => {
+                const primaryName = item.display_name ? item.display_name.split(',')[0].trim() : item.name;
+                const category = item.category || 'Location';
+                const makiIcon = categoryToMaki(category, primaryName);
+                return {
+                  id: `srv_${item.id || idx}`,
+                  name: primaryName,
+                  category: category,
+                  makiIcon: makiIcon,
+                  lat: parseFloat(item.lat),
+                  lng: parseFloat(item.lon || item.lng),
+                  address: item.display_name || item.name,
+                  isLocal: false
+                };
+              });
 
-            setResults((prev) => {
-              const seenNames = new Set(prev.map(p => p.name.toLowerCase()));
-              const filteredApi = externalResults.filter(p => !seenNames.has(p.name.toLowerCase()));
-              return [...prev, ...filteredApi].slice(0, 12);
-            });
+              // Save to Client Cache to preserve credits
+              saveClientCache(q, formatted);
+
+              setResults((prev) => {
+                const seenNames = new Set(prev.map(p => p.name.toLowerCase()));
+                const extra = formatted.filter(p => !seenNames.has(p.name.toLowerCase()));
+                return [...prev, ...extra].slice(0, 12);
+              });
+            }
           }
         } catch (err) {
-          console.error('API search error:', err);
+          console.warn('Online place search error:', err);
         } finally {
           setLoadingApi(false);
         }
-      }, 350);
+      }, 300);
     } else {
       setLoadingApi(false);
     }
@@ -266,7 +354,7 @@ export const ActionSearchBar = ({
     }
   }, [isOpen]);
 
-  // Close on outside click
+  // Close on outside click / tap
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
@@ -291,6 +379,21 @@ export const ActionSearchBar = ({
   };
 
   const handleSelect = (item) => {
+    // Fire-and-forget: Record place visit to boost frequently visited places and cache online
+    try {
+      fetch(`${BACKEND_URL}/api/places/record-visit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: item.name,
+          address: item.address,
+          lat: item.lat,
+          lng: item.lng,
+          category: item.category
+        })
+      }).catch(() => {});
+    } catch {}
+
     if (onSelectLocation) {
       onSelectLocation({
         lat: item.lat,
@@ -321,15 +424,15 @@ export const ActionSearchBar = ({
             }
           }}
           className={`w-11 h-11 z-20 rounded-full border shadow-lg grid place-items-center transition-transform active:scale-95 cursor-pointer ${
-            isDark
-              ? "bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white"
-              : "bg-white border-zinc-200 text-zinc-700 hover:text-zinc-950"
+            isNight
+              ? "bg-zinc-900 border-zinc-700/80 text-zinc-300 hover:text-white"
+              : "bg-white border-zinc-300/90 text-zinc-800 hover:text-zinc-950"
           }`}
         >
           {isOpen ? (
-            <X className="w-5 h-5 text-zinc-400 dark:text-zinc-300" />
+            <X className={`w-5 h-5 ${isNight ? "text-zinc-300" : "text-zinc-700"}`} />
           ) : (
-            <Search className="w-5 h-5 text-zinc-600 dark:text-zinc-300" />
+            <Search className={`w-5 h-5 ${isNight ? "text-zinc-300" : "text-zinc-700"}`} />
           )}
         </button>
 
@@ -347,9 +450,9 @@ export const ActionSearchBar = ({
               }}
               transition={{ type: "spring", stiffness: 280, damping: 26 }}
               className={`absolute top-0 left-0 h-11 rounded-full border shadow-2xl overflow-hidden flex items-center z-10 ${
-                isDark
-                  ? "bg-zinc-900/98 border-zinc-800 text-white"
-                  : "bg-white/98 border-zinc-200 text-zinc-900"
+                isNight
+                  ? "bg-zinc-900/98 border-zinc-700/80 text-white"
+                  : "bg-white/98 border-zinc-300/90 text-zinc-950"
               }`}
             >
               {/* Left spacer matching the circle button */}
@@ -363,7 +466,11 @@ export const ActionSearchBar = ({
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder={placeholder}
-                  className="w-full bg-transparent text-sm border-none outline-none focus:outline-none focus:ring-0 focus:border-none focus-visible:outline-none focus-visible:ring-0 shadow-none text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 font-medium pr-2"
+                  className={`w-full bg-transparent text-sm border-none outline-none focus:outline-none focus:ring-0 focus:border-none focus-visible:outline-none focus-visible:ring-0 shadow-none font-semibold pr-2 ${
+                    isNight
+                      ? "text-white placeholder:text-zinc-400"
+                      : "text-zinc-950 placeholder:text-zinc-500"
+                  }`}
                   style={{ outline: "none", boxShadow: "none", border: "none" }}
                 />
               </div>
@@ -373,7 +480,7 @@ export const ActionSearchBar = ({
                 {loadingApi ? (
                   <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
                 ) : (
-                  <Search className="w-4 h-4 text-zinc-400 dark:text-zinc-500" />
+                  <Search className={`w-4 h-4 ${isNight ? "text-zinc-400" : "text-zinc-600"}`} />
                 )}
               </div>
             </motion.div>
@@ -381,7 +488,7 @@ export const ActionSearchBar = ({
         </AnimatePresence>
       </div>
 
-      {/* Results Dropdown */}
+      {/* Results Dropdown (Clean, high-visibility frosted glass, NO black scrollbar) */}
       <AnimatePresence>
         {isOpen && results.length > 0 && (
           <motion.div
@@ -389,10 +496,11 @@ export const ActionSearchBar = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-            className={`absolute left-0 top-14 w-[300px] sm:w-[340px] max-h-64 overflow-y-auto rounded-2xl border shadow-2xl p-2 z-40 backdrop-blur-2xl ${
-              isDark
-                ? "bg-zinc-950/98 border-zinc-800 text-white"
-                : "bg-white/98 border-zinc-200 text-zinc-900"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            className={`absolute left-0 top-14 w-[300px] sm:w-[340px] max-h-64 overflow-y-auto rounded-2xl border p-2 z-40 backdrop-blur-2xl scrollbar-none [&::-webkit-scrollbar]:hidden ${
+              isNight
+                ? "bg-[#121824]/98 border-zinc-700/60 text-white shadow-[0_20px_50px_rgba(0,0,0,0.6)]"
+                : "bg-white/98 border-zinc-200/90 text-zinc-950 shadow-[0_20px_50px_rgba(0,0,0,0.18)]"
             }`}
           >
             <motion.ul
@@ -408,7 +516,7 @@ export const ActionSearchBar = ({
               className="space-y-1"
             >
               {results.map((item, idx) => {
-                const colorToken = getCategoryColor(item.makiIcon);
+                const colorToken = getCategoryColor(item.makiIcon, isNight);
                 return (
                   <motion.li
                     key={item.id || idx}
@@ -418,19 +526,19 @@ export const ActionSearchBar = ({
                     }}
                     onClick={() => handleSelect(item)}
                     className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-colors ${
-                      isDark
-                        ? "hover:bg-zinc-900/90 text-zinc-200 active:bg-zinc-800"
-                        : "hover:bg-zinc-100 text-zinc-800 active:bg-zinc-200"
+                      isNight
+                        ? "hover:bg-zinc-800/80 active:bg-zinc-700/80 text-zinc-100"
+                        : "hover:bg-zinc-100/90 active:bg-zinc-200/90 text-zinc-950"
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       
                       {/* Category Maki Icon Badge */}
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${colorToken.bg}`}>
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${colorToken.bg} ${colorToken.border}`}>
                         <img
                           src={`/icons/${item.makiIcon}.svg`}
                           alt={item.category}
-                          className="w-4 h-4 object-contain filter drop-shadow-sm"
+                          className={`w-4 h-4 object-contain filter drop-shadow-sm ${isNight ? 'brightness-125' : 'brightness-90'}`}
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';
                             if (e.currentTarget.nextSibling) {
@@ -438,12 +546,12 @@ export const ActionSearchBar = ({
                             }
                           }}
                         />
-                        <MapPin className="w-4 h-4 hidden text-zinc-400" />
+                        <MapPin className={`w-4 h-4 hidden ${isNight ? 'text-zinc-400' : 'text-zinc-600'}`} />
                       </div>
 
                       {/* Name & Category Label */}
                       <div className="truncate min-w-0">
-                        <p className="text-sm font-semibold truncate leading-tight">
+                        <p className={`text-sm font-bold truncate leading-tight ${isNight ? 'text-white' : 'text-zinc-950'}`}>
                           {item.name}
                         </p>
                         <p className={`text-xs capitalize truncate mt-0.5 ${colorToken.text}`}>
