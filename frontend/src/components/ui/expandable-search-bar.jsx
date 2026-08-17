@@ -84,9 +84,9 @@ export default function ExpandableSearchBar(props) {
         aria-label={open ? 'Close search' : 'Open search'}
         onClick={() => setOpen((s) => !s)}
         className={cn(
-          'absolute inset-0 z-20 grid place-items-center rounded-full border shadow-md',
-          'bg-white text-zinc-800 hover:text-black transition-colors',
-          'dark:bg-zinc-900 dark:text-zinc-200 dark:hover:text-white dark:border-zinc-800'
+          'absolute inset-0 z-20 grid place-items-center rounded-full border shadow-lg',
+          'bg-white text-zinc-700 hover:text-zinc-950 border-zinc-200/90 transition-colors',
+          'dark:bg-zinc-900 dark:text-zinc-300 dark:hover:text-white dark:border-zinc-800'
         )}
       >
         {open ? <X className='w-4 h-4' /> : <Search className='w-4 h-4' />}
@@ -98,7 +98,9 @@ export default function ExpandableSearchBar(props) {
             key='form'
             onSubmit={handleSubmit}
             className={cn(
-              'absolute top-0 h-10 rounded-full border bg-white dark:bg-zinc-950 text-foreground shadow-xl overflow-hidden flex items-center dark:border-zinc-800',
+              'absolute top-0 h-10 rounded-full border shadow-xl overflow-hidden flex items-center',
+              'bg-white text-zinc-900 border-zinc-200/90',
+              'dark:bg-zinc-900 dark:text-zinc-100 dark:border-zinc-800',
               expandDirection === 'left' ? 'right-0' : 'left-0'
             )}
             initial={{ width: COLLAPSED_SIZE, opacity: 0.98 }}
@@ -111,7 +113,7 @@ export default function ExpandableSearchBar(props) {
             transition={{ type: 'spring', stiffness: 260, damping: 26 }}
           >
             {/* Absolutely positioned left search icon */}
-            <span className='absolute left-3 z-10 text-muted-foreground'>
+            <span className='absolute left-3 z-10 text-zinc-400 dark:text-zinc-400'>
               <Search className='w-4 h-4' />
             </span>
 
@@ -123,9 +125,10 @@ export default function ExpandableSearchBar(props) {
                 onChange={(e) => setValue(e.target.value)}
                 placeholder={placeholder}
                 className={cn(
-                  'w-full bg-transparent text-sm outline-none placeholder-transparent whitespace-nowrap overflow-x-auto text-zinc-900 dark:text-zinc-100',
+                  'w-full bg-transparent text-sm border-none outline-none focus:outline-none focus:ring-0 focus:border-none focus-visible:outline-none focus-visible:ring-0 shadow-none placeholder-transparent whitespace-nowrap overflow-x-auto text-zinc-900 dark:text-zinc-100',
                   inputPadding
                 )}
+                style={{ outline: 'none', boxShadow: 'none', border: 'none' }}
               />
 
               <AnimatePresence>
