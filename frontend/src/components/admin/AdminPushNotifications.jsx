@@ -121,19 +121,25 @@ export const AdminPushNotifications = () => {
 
                     {/* Conditional Year of Study Selector */}
                     {formData.target_role === 'year_of_study' && (
-                        <div className="p-3 bg-muted/60 rounded-xl border border-border space-y-1">
-                            <label className="block text-muted-foreground font-bold mb-1">Select Year of Study</label>
-                            <select
-                                value={formData.year_of_study}
-                                onChange={e => setFormData({ ...formData, year_of_study: Number(e.target.value) })}
-                                className="w-full bg-card border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-gold cursor-pointer text-xs"
-                            >
-                                <option value={1}>1st Year Students</option>
-                                <option value={2}>2nd Year Students</option>
-                                <option value={3}>3rd Year Students</option>
-                                <option value={4}>4th Year Students</option>
-                                <option value={5}>5th Year Students</option>
-                            </select>
+                        <div className="p-3 bg-muted/60 rounded-xl border border-border space-y-2">
+                            <label className="block text-muted-foreground font-bold text-xs">Target Year of Study</label>
+                            <div className="grid grid-cols-5 gap-1.5">
+                                {[1, 2, 3, 4, 5].map((yr) => (
+                                    <button
+                                        key={yr}
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, year_of_study: yr })}
+                                        className={`py-2 rounded-xl text-xs font-bold border transition-all flex flex-col items-center justify-center cursor-pointer ${
+                                            formData.year_of_study === yr
+                                                ? 'bg-gold border-gold text-white shadow-none'
+                                                : 'bg-card border-border text-muted-foreground hover:border-border/80 hover:text-foreground'
+                                        }`}
+                                    >
+                                        <span>{yr === 1 ? '1st' : yr === 2 ? '2nd' : yr === 3 ? '3rd' : `${yr}th`}</span>
+                                        <span className="text-[9px] font-semibold opacity-75">Year</span>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     )}
 

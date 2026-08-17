@@ -185,12 +185,12 @@ video::-webkit-media-controls-enclosure {
 
 /* Gold glow effect */
 .gold-glow {
-  box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+  box-shadow: none !important;
 }
 
 /* Text gradient */
 .text-gold-gradient {
-  background: linear-gradient(135deg, #D4AF37 0%, #F5E6B2 50%, #D4AF37 100%);
+  background: var(--color-accent, #3B82F6);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -213,11 +213,11 @@ video::-webkit-media-controls-enclosure {
 
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4);
+    opacity: 1;
   }
 
   50% {
-    box-shadow: 0 0 20px 5px rgba(212, 175, 55, 0.2);
+    opacity: 0.6;
   }
 }
 

@@ -125,11 +125,11 @@ const AppRoutes = () => {
         <Route path="/terms" element={<TermsOfServicePage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
 
-        {/* Student Routes */}
+        {/* Passenger (Student & Lecturer) Routes */}
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute allowedRoles={['student', 'lecturer']}>
               <StudentDashboard />
             </ProtectedRoute>
           }
@@ -137,7 +137,7 @@ const AppRoutes = () => {
         <Route
           path="/ride"
           element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute allowedRoles={['student', 'lecturer']}>
               <RideRequestPage />
             </ProtectedRoute>
           }
@@ -145,7 +145,7 @@ const AppRoutes = () => {
         <Route
           path="/history"
           element={
-            <ProtectedRoute allowedRoles={['student', 'driver']}>
+            <ProtectedRoute allowedRoles={['student', 'lecturer', 'driver']}>
               <RideHistoryPage />
             </ProtectedRoute>
           }
@@ -153,7 +153,7 @@ const AppRoutes = () => {
         <Route
           path="/ride/chat/:rideId"
           element={
-            <ProtectedRoute allowedRoles={['student', 'driver']}>
+            <ProtectedRoute allowedRoles={['student', 'lecturer', 'driver']}>
               <ChatPage />
             </ProtectedRoute>
           }
@@ -171,7 +171,7 @@ const AppRoutes = () => {
         <Route
           path="/driver/register"
           element={
-            <ProtectedRoute allowedRoles={['student', 'driver']}>
+            <ProtectedRoute allowedRoles={['student', 'lecturer', 'driver']}>
               <DriverRegisterPage />
             </ProtectedRoute>
           }

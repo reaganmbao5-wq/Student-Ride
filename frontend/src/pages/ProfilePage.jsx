@@ -49,6 +49,8 @@ const ProfilePage = () => {
   const [editName, setEditName] = useState(user?.name || '');
   const [editPhone, setEditPhone] = useState(user?.phone || '');
   const [editAvatar, setEditAvatar] = useState(user?.avatar_url || '');
+  const [editYearOfStudy, setEditYearOfStudy] = useState(user?.year_of_study || 1);
+  const [editProgramType, setEditProgramType] = useState(user?.program_type || 'standard');
   const [isSaving, setIsSaving] = useState(false);
 
   // Push & Vibration Settings State
@@ -90,6 +92,8 @@ const ProfilePage = () => {
       setEditName(user.name || '');
       setEditPhone(user.phone || '');
       setEditAvatar(user.avatar_url || '');
+      setEditYearOfStudy(user.year_of_study || 1);
+      setEditProgramType(user.program_type || 'standard');
     }
   }, [user]);
 
@@ -181,7 +185,11 @@ const ProfilePage = () => {
       const payload = {
         name: editName.trim(),
         phone: editPhone.trim(),
-        avatar_url: editAvatar
+        avatar_url: editAvatar,
+        ...(user?.role === 'student' ? {
+          year_of_study: Number(editYearOfStudy),
+          program_type: editProgramType
+        } : {})
       };
 
       const response = await api.patch('/users/me', payload);
@@ -196,6 +204,8 @@ const ProfilePage = () => {
       setEditName(updatedUser.name || editName);
       setEditPhone(updatedUser.phone || editPhone);
       setEditAvatar(updatedUser.avatar_url || editAvatar);
+      if (updatedUser.year_of_study) setEditYearOfStudy(updatedUser.year_of_study);
+      if (updatedUser.program_type) setEditProgramType(updatedUser.program_type);
 
       if (fetchUser) {
         fetchUser();
@@ -392,6 +402,62 @@ const ProfilePage = () => {
                 </div>
               </div>
 
+              {/* Student Year of Study & Program Type (if student) */}
+              {user?.role === 'student' && (
+                <div className="space-y-3 pt-1">
+                  <div>
+                    <label className="block text-xs text-muted-foreground mb-1.5 font-medium">Year of Study</label>
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {['1', '2', '3', '4', '5'].map((yr) => (
+                        <button
+                          key={yr}
+                          type="button"
+                          onClick={() => setEditYearOfStudy(Number(yr))}
+                          className={`py-2 rounded-xl text-xs font-extrabold border transition-all flex flex-col items-center justify-center cursor-pointer ${
+                            Number(editYearOfStudy) === Number(yr)
+                              ? 'bg-gold border-gold text-white font-bold shadow-none scale-[1.02]'
+                              : 'bg-muted/60 border-border text-muted-foreground hover:border-border/80 hover:text-foreground'
+                          }`}
+                        >
+                          <span>{yr === '1' ? '1st' : yr === '2' ? '2nd' : yr === '3' ? '3rd' : `${yr}th`}</span>
+                          <span className="text-[9px] font-semibold opacity-75">Year</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-muted-foreground mb-1.5 font-medium">Program Type</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditProgramType('standard')}
+                        className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all flex flex-col items-center justify-center cursor-pointer ${
+                          editProgramType === 'standard'
+                            ? 'bg-gold/15 border-gold text-gold shadow-none'
+                            : 'bg-muted/60 border-border text-muted-foreground hover:border-border/80'
+                        }`}
+                      >
+                        <span>Standard</span>
+                        <span className="text-[10px] font-medium opacity-80">(4-Year Degree)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditProgramType('engineering')}
+                        className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all flex flex-col items-center justify-center cursor-pointer ${
+                          editProgramType === 'engineering'
+                            ? 'bg-gold/15 border-gold text-gold shadow-none'
+                            : 'bg-muted/60 border-border text-muted-foreground hover:border-border/80'
+                        }`}
+                      >
+                        <span>Engineering</span>
+                        <span className="text-[10px] font-medium opacity-80">(5-Year Degree)</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
@@ -469,7 +535,17 @@ const ProfilePage = () => {
               {user?.name || 'User Name'}
             </h1>
             <p className="text-xs font-medium text-gold/90 bg-gold/10 px-3 py-1 rounded-full border border-gold/20 inline-block mt-1 capitalize">
-              {isSuperAdmin ? 'Super Admin' : isAdmin ? 'Administrator' : isDriver ? 'Driver' : 'Student'}
+              {isSuperAdmin 
+                ? 'Super Admin' 
+                : isAdmin 
+                  ? 'Administrator' 
+                  : isDriver 
+                    ? 'Driver' 
+                    : user?.role === 'lecturer' 
+                      ? 'Lecturer' 
+                      : user?.year_of_study 
+                        ? `Student • Year ${user.year_of_study}` 
+                        : 'Student'}
             </p>
           </div>
         </div>

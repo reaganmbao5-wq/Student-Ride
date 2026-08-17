@@ -83,7 +83,7 @@ const PWAInstallPrompt = () => {
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={handleInstall}
-            className="bg-gold text-black text-xs font-semibold px-4 py-2 rounded-lg hover:bg-gold/90 transition-colors"
+            className="bg-gold text-white text-xs font-bold px-4 py-2 rounded-lg hover:brightness-105 transition-all shadow-none"
           >
             {isIOS ? 'How?' : 'Install'}
           </button>

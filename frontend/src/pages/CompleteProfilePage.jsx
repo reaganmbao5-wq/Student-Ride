@@ -224,9 +224,9 @@ export default function CompleteProfilePage() {
                                         <button
                                             type="button"
                                             onClick={() => setPassengerRole('student')}
-                                            className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${
+                                            className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 cursor-pointer ${
                                                 passengerRole === 'student'
-                                                    ? 'bg-gold/15 border-gold text-gold shadow-sm shadow-gold/10'
+                                                    ? 'bg-gold/15 border-gold text-gold shadow-none'
                                                     : 'bg-card border-border text-muted-foreground hover:border-border/80'
                                             }`}
                                         >
@@ -236,9 +236,9 @@ export default function CompleteProfilePage() {
                                         <button
                                             type="button"
                                             onClick={() => setPassengerRole('lecturer')}
-                                            className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${
+                                            className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 cursor-pointer ${
                                                 passengerRole === 'lecturer'
-                                                    ? 'bg-gold/15 border-gold text-gold shadow-sm shadow-gold/10'
+                                                    ? 'bg-gold/15 border-gold text-gold shadow-none'
                                                     : 'bg-card border-border text-muted-foreground hover:border-border/80'
                                             }`}
                                         >
@@ -249,31 +249,56 @@ export default function CompleteProfilePage() {
                                 </div>
 
                                 {passengerRole === 'student' && (
-                                    <div className="grid grid-cols-2 gap-2 pt-1">
+                                    <div className="space-y-3 pt-1">
                                         <div>
-                                            <label className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Year of Study</label>
-                                            <select
-                                                value={yearOfStudy}
-                                                onChange={(e) => setYearOfStudy(e.target.value)}
-                                                className="w-full bg-card border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-gold/50 cursor-pointer"
-                                            >
-                                                <option value="1">1st Year</option>
-                                                <option value="2">2nd Year</option>
-                                                <option value="3">3rd Year</option>
-                                                <option value="4">4th Year</option>
-                                                <option value="5">5th Year</option>
-                                            </select>
+                                            <label className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Year of Study</label>
+                                            <div className="grid grid-cols-5 gap-1.5">
+                                                {['1', '2', '3', '4', '5'].map((yr) => (
+                                                    <button
+                                                        key={yr}
+                                                        type="button"
+                                                        onClick={() => setYearOfStudy(yr)}
+                                                        className={`py-2 rounded-xl text-xs font-extrabold border transition-all flex flex-col items-center justify-center cursor-pointer ${
+                                                            String(yearOfStudy) === yr
+                                                                ? 'bg-gold border-gold text-white font-bold shadow-none scale-[1.02]'
+                                                                : 'bg-card border-border text-muted-foreground hover:border-border/80 hover:text-foreground'
+                                                        }`}
+                                                    >
+                                                        <span>{yr === '1' ? '1st' : yr === '2' ? '2nd' : yr === '3' ? '3rd' : `${yr}th`}</span>
+                                                        <span className="text-[9px] font-semibold opacity-75">Year</span>
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
+
                                         <div>
-                                            <label className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Program</label>
-                                            <select
-                                                value={programType}
-                                                onChange={(e) => setProgramType(e.target.value)}
-                                                className="w-full bg-card border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-gold/50 cursor-pointer"
-                                            >
-                                                <option value="standard">Standard (4-Yr)</option>
-                                                <option value="engineering">Engineering (5-Yr)</option>
-                                            </select>
+                                            <label className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Academic Program</label>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setProgramType('standard')}
+                                                    className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all flex flex-col items-center justify-center cursor-pointer ${
+                                                        programType === 'standard'
+                                                            ? 'bg-gold/15 border-gold text-gold shadow-none'
+                                                            : 'bg-card border-border text-muted-foreground hover:border-border/80'
+                                                    }`}
+                                                >
+                                                    <span>Standard</span>
+                                                    <span className="text-[10px] font-medium opacity-80">(4-Year Degree)</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setProgramType('engineering')}
+                                                    className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all flex flex-col items-center justify-center cursor-pointer ${
+                                                        programType === 'engineering'
+                                                            ? 'bg-gold/15 border-gold text-gold shadow-none'
+                                                            : 'bg-card border-border text-muted-foreground hover:border-border/80'
+                                                    }`}
+                                                >
+                                                    <span>Engineering</span>
+                                                    <span className="text-[10px] font-medium opacity-80">(5-Year Degree)</span>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 )}

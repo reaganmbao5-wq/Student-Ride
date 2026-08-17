@@ -17,9 +17,9 @@ module.exports = {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         gold: {
-          DEFAULT: 'var(--color-accent, #EAB308)',
-          light: 'var(--color-accent-light, #FDE047)',
-          dark: 'var(--color-accent-dark, #CA8A04)',
+          DEFAULT: 'var(--color-accent, #3B82F6)',
+          light: 'var(--color-accent-light, var(--color-accent, #3B82F6))',
+          dark: 'var(--color-accent-dark, var(--color-accent, #3B82F6))',
         },
         card: {
           DEFAULT: 'hsl(var(--card))',
@@ -76,8 +76,8 @@ module.exports = {
           '50%': { transform: 'translateY(-10px)' },
         },
         'pulse-gold': {
-          '0%, 100%': { boxShadow: '0 0 0 0 rgba(212, 175, 55, 0.4)' },
-          '50%': { boxShadow: '0 0 20px 5px rgba(212, 175, 55, 0.2)' },
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.6' },
         },
         shimmer: {
           '0%': { backgroundPosition: '-200% 0' },
@@ -85,7 +85,7 @@ module.exports = {
         }
       },
       boxShadow: {
-        'gold': '0 0 30px rgba(212, 175, 55, 0.3)',
+        'gold': 'none',
         'glass': '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
       },
       backgroundImage: {

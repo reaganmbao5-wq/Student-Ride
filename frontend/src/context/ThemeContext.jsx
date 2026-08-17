@@ -64,10 +64,16 @@ export const ThemeProvider = ({ children }) => {
       hexColor = '#3B82F6'; // Default Blue accent
     } else if (accentColor === 'gold' || accentColor === 'yellow') {
       hexColor = '#EAB308'; // Gold accent option
+    } else if (accentColor === 'pink') {
+      hexColor = '#EC4899'; // Vibrant Pink accent
     }
 
     root.style.setProperty('--color-accent', hexColor);
+    root.style.setProperty('--color-accent-light', hexColor);
+    root.style.setProperty('--color-accent-dark', hexColor);
     root.style.setProperty('--color-gold', hexColor);
+    root.style.setProperty('--color-gold-light', hexColor);
+    root.style.setProperty('--color-gold-dark', hexColor);
   }, [accentColor, theme]);
 
   const setThemeMode = (mode) => {

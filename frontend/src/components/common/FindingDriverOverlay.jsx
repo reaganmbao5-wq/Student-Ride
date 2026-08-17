@@ -24,7 +24,7 @@ const FindingDriverOverlay = ({ pickup, dropoff, onCancel }) => {
               transition={{ duration: 2, repeat: Infinity, ease: "easeOut", delay: 0.5 }}
               className="absolute inset-4 bg-gold rounded-full"
             />
-            <div className="w-16 h-16 bg-gold text-black rounded-full z-10 flex items-center justify-center shadow-lg shadow-gold/40">
+            <div className="w-16 h-16 bg-gold text-white rounded-full z-10 flex items-center justify-center shadow-lg">
               <Compass weight="duotone" className="w-8 h-8 animate-spin" style={{ animationDuration: '6s' }} />
             </div>
           </div>

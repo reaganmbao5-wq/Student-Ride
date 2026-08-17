@@ -234,7 +234,7 @@ export const SwipableRideCard = ({
                             e.stopPropagation();
                             onRateClick(ride);
                           }}
-                          className="px-4 py-2 rounded-xl bg-gold text-black font-semibold text-xs hover:bg-gold-dark transition-all cursor-pointer shadow-md"
+                          className="px-4 py-2 rounded-xl bg-gold text-white font-bold text-xs hover:brightness-105 active:scale-95 transition-all cursor-pointer shadow-none"
                         >
                           ★ Rate Driver
                         </button>

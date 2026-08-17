@@ -153,7 +153,7 @@ const DriverRegisterPage = () => {
                   className="hidden"
                 />
                 <label htmlFor="reg_profile_photo_upload" className="block relative cursor-pointer">
-                  <div className={`w-24 h-24 rounded-full border-2 overflow-hidden flex items-center justify-center transition-all ${profilePhotoPreview ? 'border-gold shadow-lg shadow-gold/20' : 'border-dashed border-zinc-700 bg-zinc-900 hover:border-gold'}`}>
+                  <div className={`w-24 h-24 rounded-full border-2 overflow-hidden flex items-center justify-center transition-all ${profilePhotoPreview ? 'border-gold shadow-none' : 'border-dashed border-zinc-700 bg-zinc-900 hover:border-gold'}`}>
                     {profilePhotoPreview ? (
                       <img src={profilePhotoPreview} alt="Driver Preview" className="w-full h-full object-cover" />
                     ) : (

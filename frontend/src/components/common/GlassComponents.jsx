@@ -39,31 +39,31 @@ GlassInput.displayName = "GlassInput";
 
 export const GoldButton = React.forwardRef(({ className, children, variant = "primary", size = "default", ...props }, ref) => {
   const variants = {
-    primary: "bg-gold text-black hover:bg-gold-dark shadow-gold",
+    primary: "bg-gold text-white font-bold hover:brightness-105 active:scale-[0.98] shadow-none",
     secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border backdrop-blur-md",
     ghost: "text-gold hover:bg-gold/10"
   };
 
   const sizes = {
-    default: "px-8 py-3 text-base",
+    default: "px-8 py-3.5 text-base",
     sm: "px-4 py-2 text-sm",
     lg: "px-10 py-4 text-lg",
     icon: "p-3"
   };
 
-  const { onClick, ...otherProps } = props;
+  const { onClick, disabled, ...otherProps } = props;
 
   return (
     <button
       ref={ref}
+      disabled={disabled}
       onClick={(e) => {
         haptics.primaryButton();
         if (onClick) onClick(e);
       }}
       className={cn(
-        "rounded-full font-semibold transition-all duration-300",
-        "hover:scale-105 active:scale-95",
-        "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100",
+        "rounded-full font-bold transition-all duration-150 cursor-pointer",
+        "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100",
         variants[variant],
         sizes[size],
         className

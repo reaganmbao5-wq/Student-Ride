@@ -760,7 +760,7 @@ const StudentDashboard = () => {
                             <img 
                               src={activeRide.driver.user?.avatar_url || activeRide.driver.avatar_url} 
                               alt={activeRide.driver.user?.name || 'Driver'} 
-                              className="w-16 h-16 rounded-full object-cover border-2 border-gold shadow-lg shadow-gold/20" 
+                              className="w-16 h-16 rounded-full object-cover border-2 border-gold shadow-md" 
                             />
                           ) : (
                             <div className="w-16 h-16 rounded-full bg-gold/20 border-2 border-gold flex items-center justify-center">

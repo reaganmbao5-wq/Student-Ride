@@ -189,7 +189,7 @@ export const MultiPlatformInstallSection = () => {
                     <div className="flex justify-end mt-2">
                         <button
                             onClick={() => setShowIOSModal(false)}
-                            className="px-6 py-2 rounded-lg bg-gold text-black font-semibold hover:bg-gold/90 transition-colors"
+                            className="px-6 py-2 rounded-lg bg-gold text-white font-bold hover:brightness-105 transition-all shadow-none"
                         >
                             Got it
                         </button>
@@ -230,7 +230,7 @@ export const MultiPlatformInstallSection = () => {
                     <div className="flex justify-end mt-2">
                         <button
                             onClick={() => setShowAndroidModal(false)}
-                            className="px-6 py-2 rounded-lg bg-gold text-black font-semibold hover:bg-gold/90 transition-colors"
+                            className="px-6 py-2 rounded-lg bg-gold text-white font-bold hover:brightness-105 transition-all shadow-none"
                         >
                             Got it
                         </button>
