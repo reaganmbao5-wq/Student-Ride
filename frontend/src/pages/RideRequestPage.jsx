@@ -452,13 +452,13 @@ const RideRequestPage = () => {
         )}
       </div>
 
-      {/* Map Layer */}
-      <div className={step === 'confirm' && isCollapsing ? "absolute inset-0 z-0" : "flex-1 relative z-0"}>
+      {/* Map Layer - Absolute Inset Pinned */}
+      <div className="absolute inset-0 z-0">
         <PlatformMap 
           center={mapCenter}
           selectionLocation={selectionTarget}
           bounds={bounds}
-          bottomPadding={step === 'confirm' ? (sheetHeight || 320) : 0}
+          bottomPadding={step === 'confirm' ? (sheetHeight || 320) : (sheetHeight || 260)}
           cameraMode={
             step === 'pickup' ? CAMERA_MODES.PICKUP_SELECTION :
             step === 'dropoff' ? CAMERA_MODES.DESTINATION_SELECTION :
@@ -515,11 +515,11 @@ const RideRequestPage = () => {
         )}
       </div>
 
-      {/* Bottom Sheet */}
+      {/* Bottom Sheet - Anchored to bottom */}
       <motion.div 
         ref={sheetRef}
         layoutId="student-bottom-sheet"
-        className={`${step === 'confirm' && isCollapsing ? 'absolute bottom-0 left-0 right-0' : 'relative'} z-20 bg-white dark:bg-zinc-950 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden`}
+        className="absolute bottom-0 left-0 right-0 z-20 bg-white dark:bg-zinc-950 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden max-h-[85vh]"
         initial={{ y: "100%" }}
         animate={{ y: isCollapsing ? "calc(100% - 115px)" : 0 }}
         transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}

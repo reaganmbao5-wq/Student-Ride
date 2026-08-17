@@ -4324,6 +4324,7 @@ async def search_places(q: str = Query(..., min_length=1)):
                 params = {
                     "access_token": mapbox_token,
                     "country": "zm",
+                    "bbox": "28.20,-14.60,28.85,-13.80",
                     "proximity": "28.549662,-14.294646",
                     "autocomplete": "true",
                     "types": "address,poi,neighborhood,locality,place"
