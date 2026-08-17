@@ -14,9 +14,6 @@
     "PushNotifications": {
       "presentationOptions": ["badge", "sound", "alert"],
       "iconColor": "#F5A623"
-    },
-    "Keyboard": {
-      "resize": "none"
     }
   },
   "server": {
