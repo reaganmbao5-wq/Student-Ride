@@ -3778,23 +3778,6 @@
   {
    "type": "Feature",
    "properties": {
-    "name": "Kabwe",
-    "category": "hostel",
-    "category_raw": "hostel",
-    "source": "gm",
-    "icon": "\ud83d\udecc"
-   },
-   "geometry": {
-    "type": "Point",
-    "coordinates": [
-     28.559411,
-     -14.295229
-    ]
-   }
-  },
-  {
-   "type": "Feature",
-   "properties": {
     "name": "Kafue Hostel",
     "category": "hostel",
     "category_raw": "student_accommodation",
@@ -10844,23 +10827,6 @@
     "coordinates": [
      28.554933,
      -14.295899
-    ]
-   }
-  },
-  {
-   "type": "Feature",
-   "properties": {
-    "name": "Kingdom hall Mulungushi",
-    "category": "unknown",
-    "category_raw": "unknown",
-    "source": "gm",
-    "icon": "\ud83d\udccd"
-   },
-   "geometry": {
-    "type": "Point",
-    "coordinates": [
-     28.559744,
-     -14.295049
     ]
    }
   },
