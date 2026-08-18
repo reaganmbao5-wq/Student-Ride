@@ -588,64 +588,56 @@ const RideRequestPage = () => {
               <h2 className="text-xl font-bold font-heading">Pickup Location</h2>
               
               {/* 🔒 FIXED HEIGHT CONTENT SLOT (Exact height for Pickup & Dropoff - Prevents Canvas Resize) */}
-              <div className="w-full h-[120px] flex items-center justify-between">
-                <div className="flex-1 min-w-0 pr-3">
-                  <Stepper
-                    value={1}
-                    orientation="vertical"
-                    className="w-full"
-                    indicators={{
-                      completed: <Check className="w-3.5 h-3.5 text-white stroke-[3]" />,
-                    }}
-                  >
-                    <StepperNav className="w-full gap-0">
-                      {/* Step 1: Current Address (Active) */}
-                      <StepperItem step={1} className="relative items-start w-full">
-                        <StepperTrigger className="items-start w-full gap-3 cursor-default">
-                          <StepperIndicator className="w-6 h-6 rounded-full text-xs font-bold shrink-0 bg-black text-white dark:bg-white dark:text-black shadow-sm">
-                            1
-                          </StepperIndicator>
-                          <div className="flex-1 min-w-0 text-left">
-                            <StepperTitle className="text-xs uppercase tracking-wider font-bold text-foreground">
-                              Current Address
-                            </StepperTitle>
-                            <StepperDescription className="text-sm font-medium text-muted-foreground truncate block max-w-[200px] xs:max-w-[240px]">
-                              {currentAddress || (isGeocoding ? 'Fetching address...' : 'Mulungushi University')}
-                            </StepperDescription>
-                          </div>
-                        </StepperTrigger>
-                        <StepperSeparator className="absolute top-6 left-3 -translate-x-1/2 h-6 w-0.5 bg-zinc-200 dark:bg-zinc-800 m-0" />
-                      </StepperItem>
+              <div className="w-full min-h-[140px] max-h-[140px] flex flex-col justify-between">
+                {/* ROW 1: Current Address + GPS Button on top-right */}
+                <div className="flex items-start justify-between w-full">
+                  <div className="flex items-start gap-3 flex-1 min-w-0 pr-3">
+                    {/* Node 1 & Connector Line */}
+                    <div className="flex flex-col items-center shrink-0">
+                      <div className="w-7 h-7 rounded-full bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold text-xs shadow-md">
+                        1
+                      </div>
+                      <div className="w-0.5 h-10 mt-1 bg-zinc-300 dark:bg-zinc-800" />
+                    </div>
 
-                      {/* Step 2: Destination (Inactive/Pending) */}
-                      <StepperItem step={2} className="relative items-start w-full pt-2">
-                        <StepperTrigger className="items-start w-full gap-3 cursor-default opacity-50">
-                          <StepperIndicator className="w-6 h-6 rounded-full text-xs font-medium shrink-0 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 border border-zinc-200 dark:border-zinc-700">
-                            2
-                          </StepperIndicator>
-                          <div className="flex-1 min-w-0 text-left">
-                            <StepperTitle className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
-                              Destination
-                            </StepperTitle>
-                            <StepperDescription className="text-sm font-normal text-muted-foreground/60 truncate block">
-                              Destination...
-                            </StepperDescription>
-                          </div>
-                        </StepperTrigger>
-                      </StepperItem>
-                    </StepperNav>
-                  </Stepper>
+                    {/* Node 1 Text */}
+                    <div className="flex-1 min-w-0 pt-0.5 text-left">
+                      <p className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white">
+                        Current Address
+                      </p>
+                      <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300 truncate mt-0.5">
+                        {currentAddress || (isGeocoding ? 'Fetching address...' : 'Mulungushi University')}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* GPS Navigation Button (Aligned to Row 1 Top) */}
+                  <button
+                    onClick={() => refreshLocation()}
+                    disabled={geoLoading}
+                    className="w-11 h-11 flex-shrink-0 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl flex items-center justify-center active:scale-95 transition-transform shadow-sm"
+                    title="Center to my location"
+                  >
+                    <Navigation className={`w-5 h-5 text-black dark:text-white ${geoLoading ? 'animate-pulse' : ''}`} />
+                  </button>
                 </div>
 
-                {/* GPS Navigation Button (Row 1 alignment) */}
-                <button
-                  onClick={() => refreshLocation()}
-                  disabled={geoLoading}
-                  className="w-11 h-11 flex-shrink-0 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl flex items-center justify-center active:scale-95 transition-transform shadow-sm"
-                  title="Center to my location"
-                >
-                  <Navigation className={`w-5 h-5 text-black dark:text-white ${geoLoading ? 'animate-pulse' : ''}`} />
-                </button>
+                {/* ROW 2: Destination (Pending) */}
+                <div className="flex items-start gap-3 w-full pr-14">
+                  <div className="shrink-0">
+                    <div className="w-7 h-7 rounded-full bg-zinc-100 dark:bg-zinc-900 text-zinc-400 dark:text-zinc-600 border border-zinc-300 dark:border-zinc-800 flex items-center justify-center font-semibold text-xs">
+                      2
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0 pt-0.5 text-left">
+                    <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-600">
+                      Destination
+                    </p>
+                    <p className="text-sm font-medium text-zinc-400 dark:text-zinc-600 truncate mt-0.5">
+                      Destination...
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <button 
@@ -663,57 +655,49 @@ const RideRequestPage = () => {
               <h2 className="text-xl font-bold font-heading">Set Destination</h2>
               
               {/* 🔒 FIXED HEIGHT CONTENT SLOT (100% Identical height to Pickup) */}
-              <div className="w-full h-[120px] flex items-center justify-between">
-                <div className="flex-1 min-w-0 pr-3">
-                  <Stepper
-                    value={2}
-                    orientation="vertical"
-                    className="w-full"
-                    indicators={{
-                      completed: <Check className="w-3.5 h-3.5 text-white stroke-[3]" />,
-                    }}
-                  >
-                    <StepperNav className="w-full gap-0">
-                      {/* Step 1: Pickup (Completed - Vibrant Emerald Green Badge & Green Line) */}
-                      <StepperItem step={1} completed={true} className="relative items-start w-full">
-                        <StepperTrigger className="items-start w-full gap-3 cursor-default">
-                          <StepperIndicator className="w-6 h-6 rounded-full text-xs font-bold shrink-0 bg-emerald-500 text-white shadow-sm">
-                            <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
-                          </StepperIndicator>
-                          <div className="flex-1 min-w-0 text-left">
-                            <StepperTitle className="text-xs uppercase tracking-wider font-bold text-emerald-600 dark:text-emerald-400">
-                              Pickup
-                            </StepperTitle>
-                            <StepperDescription className="text-sm font-medium text-foreground truncate block max-w-[200px] xs:max-w-[240px]">
-                              {pickup?.address || 'Pickup Point'}
-                            </StepperDescription>
-                          </div>
-                        </StepperTrigger>
-                        <StepperSeparator className="absolute top-6 left-3 -translate-x-1/2 h-6 w-0.5 bg-emerald-500 m-0" />
-                      </StepperItem>
+              <div className="w-full min-h-[140px] max-h-[140px] flex flex-col justify-between">
+                {/* ROW 1: Completed Pickup */}
+                <div className="flex items-start justify-between w-full">
+                  <div className="flex items-start gap-3 flex-1 min-w-0 pr-3">
+                    {/* Node 1 & Green Connector Line */}
+                    <div className="flex flex-col items-center shrink-0">
+                      <div className="w-7 h-7 rounded-full bg-green-500 text-white flex items-center justify-center font-bold text-xs shadow-md">
+                        <Check className="w-4 h-4 text-white stroke-[3]" />
+                      </div>
+                      <div className="w-0.5 h-10 mt-1 bg-green-500" />
+                    </div>
 
-                      {/* Step 2: Destination (Active - White in dark / Black in light) */}
-                      <StepperItem step={2} className="relative items-start w-full pt-2">
-                        <StepperTrigger className="items-start w-full gap-3 cursor-default">
-                          <StepperIndicator className="w-6 h-6 rounded-full text-xs font-bold shrink-0 bg-black text-white dark:bg-white dark:text-black shadow-sm">
-                            2
-                          </StepperIndicator>
-                          <div className="flex-1 min-w-0 text-left">
-                            <StepperTitle className="text-xs uppercase tracking-wider font-bold text-foreground">
-                              Destination
-                            </StepperTitle>
-                            <StepperDescription className="text-sm font-medium text-muted-foreground truncate block max-w-[200px] xs:max-w-[240px]">
-                              {currentAddress || (isGeocoding ? 'Fetching address...' : 'Select destination')}
-                            </StepperDescription>
-                          </div>
-                        </StepperTrigger>
-                      </StepperItem>
-                    </StepperNav>
-                  </Stepper>
+                    {/* Node 1 Text */}
+                    <div className="flex-1 min-w-0 pt-0.5 text-left">
+                      <p className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white">
+                        Pickup
+                      </p>
+                      <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300 truncate mt-0.5">
+                        {pickup?.address || 'Pickup Point'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Invisible spacer for GPS button to keep layout / width 100% mathematically identical */}
+                  <div className="w-11 h-11 flex-shrink-0 opacity-0 pointer-events-none" />
                 </div>
 
-                {/* Invisible placeholder for GPS button to keep layout / width 100% mathematically identical */}
-                <div className="w-11 h-11 flex-shrink-0 opacity-0 pointer-events-none" />
+                {/* ROW 2: Active Destination */}
+                <div className="flex items-start gap-3 w-full pr-14">
+                  <div className="shrink-0">
+                    <div className="w-7 h-7 rounded-full bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold text-xs shadow-md">
+                      2
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0 pt-0.5 text-left">
+                    <p className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white">
+                      Destination
+                    </p>
+                    <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300 truncate mt-0.5">
+                      {currentAddress || (isGeocoding ? 'Fetching address...' : 'Select destination')}
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <button 
