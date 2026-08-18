@@ -85,6 +85,7 @@ const ProfilePage = () => {
 
 
   const fileInputRef = useRef(null);
+  const [avatarImgError, setAvatarImgError] = useState(false);
 
   // Sync state if user loads/changes
   useEffect(() => {
@@ -92,6 +93,7 @@ const ProfilePage = () => {
       setEditName(user.name || '');
       setEditPhone(user.phone || '');
       setEditAvatar(user.avatar_url || '');
+      setAvatarImgError(false);
       setEditYearOfStudy(user.year_of_study || 1);
       setEditProgramType(user.program_type || 'standard');
     }
@@ -493,11 +495,12 @@ const ProfilePage = () => {
         <div className="flex flex-col items-center text-center pt-4 pb-2 space-y-3">
           <div className="relative group">
             <div className="w-24 h-24 rounded-full bg-zinc-900 border-2 border-gold/40 flex items-center justify-center overflow-hidden shadow-2xl ring-4 ring-gold/10">
-              {editAvatar || user?.avatar_url ? (
+              {!avatarImgError && (editAvatar || user?.avatar_url) ? (
                 <img
                   src={editAvatar || user?.avatar_url}
-                  alt={user?.name || 'Profile'}
+                  alt=""
                   className="w-full h-full object-cover"
+                  onError={() => setAvatarImgError(true)}
                 />
               ) : isSuperAdmin ? (
                 <Shield className="w-12 h-12 text-gold" />

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Search, Check, X, Star, AlertCircle, Wallet, Plus, Loader2, 
   FileText, Eye, Calendar, RefreshCw, Ban, CheckCircle, Shield, Edit3, DollarSign,
-  Mail, Phone
+  Mail, Phone, ExternalLink
 } from 'lucide-react';
 import { SteeringWheel, Car } from '@phosphor-icons/react';
 import { GlassCard, GlassInput, GoldButton, EmptyState } from '../components/common/GlassComponents';
@@ -23,6 +23,31 @@ const MONTH_NAMES = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
+const DriverAvatar = ({ src, name, size = "w-11 h-11", textSize = "text-base" }) => {
+  const [imgError, setImgError] = useState(!src);
+
+  useEffect(() => {
+    setImgError(!src);
+  }, [src]);
+
+  return (
+    <div className={`${size} rounded-2xl bg-muted border border-gold/30 overflow-hidden flex items-center justify-center shrink-0`}>
+      {!imgError && src ? (
+        <img
+          src={src}
+          alt=""
+          className="w-full h-full object-cover"
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        <span className={`font-heading font-bold ${textSize} text-gold`}>
+          {(name || 'D').charAt(0).toUpperCase()}
+        </span>
+      )}
+    </div>
+  );
+};
+
 const AdminDriversPage = () => {
   const { api, token } = useAuth();
   const [drivers, setDrivers] = useState(() => AppCache.get('admin_drivers') || []);
@@ -37,6 +62,7 @@ const AdminDriversPage = () => {
 
   // Selected Driver Details / Modal
   const [inspectedDriver, setInspectedDriver] = useState(null);
+  const [previewDoc, setPreviewDoc] = useState(null); // { title: string, url: string }
 
   // Settlement / Clear Wallet Modal State
   const [settleModalOpen, setSettleModalOpen] = useState(false);
@@ -405,15 +431,12 @@ const AdminDriversPage = () => {
                 >
                   {/* Col 1: Driver Profile */}
                   <div className="lg:col-span-4 flex items-center gap-3.5">
-                    <div className="w-11 h-11 rounded-2xl bg-muted border border-gold/30 overflow-hidden flex items-center justify-center shrink-0">
-                      {driver.user?.avatar_url || driver.avatar_url ? (
-                        <img src={driver.user?.avatar_url || driver.avatar_url} alt="Driver" className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="font-heading font-bold text-base text-gold">
-                          {(driver.user?.name || 'D').charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
+                    <DriverAvatar 
+                      src={driver.user?.avatar_url || driver.avatar_url} 
+                      name={driver.user?.name} 
+                      size="w-11 h-11" 
+                      textSize="text-base" 
+                    />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <p className="font-bold text-foreground text-sm truncate">{driver.user?.name || 'Driver'}</p>
@@ -547,15 +570,12 @@ const AdminDriversPage = () => {
                   {/* Identity Banner */}
                   <div className="p-5 rounded-2xl bg-muted/40 border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4 min-w-0">
-                      <div className="w-16 h-16 rounded-2xl bg-muted border border-gold/30 overflow-hidden flex items-center justify-center shrink-0">
-                        {inspectedDriver.user?.avatar_url || inspectedDriver.avatar_url ? (
-                          <img src={inspectedDriver.user?.avatar_url || inspectedDriver.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="font-heading font-bold text-2xl text-gold">
-                            {(inspectedDriver.user?.name || 'D').charAt(0).toUpperCase()}
-                          </span>
-                        )}
-                      </div>
+                      <DriverAvatar 
+                        src={inspectedDriver.user?.avatar_url || inspectedDriver.avatar_url} 
+                        name={inspectedDriver.user?.name} 
+                        size="w-16 h-16" 
+                        textSize="text-2xl" 
+                      />
                       <div className="min-w-0">
                         <h3 className="text-lg font-bold text-foreground truncate">{inspectedDriver.user?.name}</h3>
                         <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5 truncate">
@@ -595,6 +615,129 @@ const AdminDriversPage = () => {
                       <div className="p-4 rounded-xl bg-card border border-border">
                         <p className="text-muted-foreground text-[10px] uppercase font-bold">Total Earnings</p>
                         <p className="font-bold text-emerald-400 text-sm mt-1">ZMW {inspectedDriver.total_earnings?.toFixed(2) || '0.00'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Driver Verification Documents & KYC Section */}
+                  <div className="p-6 rounded-2xl bg-muted/40 border border-border space-y-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <FileText className="w-4 h-4 text-gold" />
+                        Verification Documents & KYC Records
+                      </p>
+                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${
+                        inspectedDriver.verification_docs?.license || inspectedDriver.verification_docs?.registration
+                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                          : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                      }`}>
+                        {inspectedDriver.verification_docs?.license || inspectedDriver.verification_docs?.registration
+                          ? 'Documents Submitted'
+                          : 'No Documents Uploaded'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Driver's License Document Card */}
+                      <div className="p-4 rounded-xl bg-card border border-border flex flex-col justify-between gap-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center text-gold shrink-0">
+                              <FileText className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <p className="font-bold text-foreground text-xs">Driver's License</p>
+                              <p className="text-[10px] text-muted-foreground">Official Government Permit</p>
+                            </div>
+                          </div>
+                          {inspectedDriver.verification_docs?.license ? (
+                            <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
+                              Uploaded
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-semibold text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded">
+                              Missing
+                            </span>
+                          )}
+                        </div>
+
+                        {inspectedDriver.verification_docs?.license ? (
+                          <div className="flex items-center gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewDoc({
+                                title: `${inspectedDriver.user?.name || 'Driver'} — Driver's License`,
+                                url: inspectedDriver.verification_docs.license
+                              })}
+                              className="flex-1 py-2 px-3 rounded-lg bg-gold/10 hover:bg-gold/20 text-gold border border-gold/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              Inspect License
+                            </button>
+                            <a
+                              href={inspectedDriver.verification_docs.license}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-2 rounded-lg bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border transition-colors flex items-center justify-center"
+                              title="Open Original Image"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-zinc-500 italic">No driver license uploaded yet.</p>
+                        )}
+                      </div>
+
+                      {/* Vehicle Registration Document Card */}
+                      <div className="p-4 rounded-xl bg-card border border-border flex flex-col justify-between gap-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center text-gold shrink-0">
+                              <Car weight="duotone" className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <p className="font-bold text-foreground text-xs">Vehicle Registration</p>
+                              <p className="text-[10px] text-muted-foreground">White Book & Ownership</p>
+                            </div>
+                          </div>
+                          {inspectedDriver.verification_docs?.registration ? (
+                            <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
+                              Uploaded
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-semibold text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded">
+                              Missing
+                            </span>
+                          )}
+                        </div>
+
+                        {inspectedDriver.verification_docs?.registration ? (
+                          <div className="flex items-center gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewDoc({
+                                title: `${inspectedDriver.user?.name || 'Driver'} — Vehicle Registration`,
+                                url: inspectedDriver.verification_docs.registration
+                              })}
+                              className="flex-1 py-2 px-3 rounded-lg bg-gold/10 hover:bg-gold/20 text-gold border border-gold/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              Inspect Registration
+                            </button>
+                            <a
+                              href={inspectedDriver.verification_docs.registration}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-2 rounded-lg bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border transition-colors flex items-center justify-center"
+                              title="Open Original Image"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-zinc-500 italic">No vehicle registration uploaded yet.</p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -645,6 +788,48 @@ const AdminDriversPage = () => {
             </div>
           </div>
         )}
+
+        {/* Document Full-Resolution Preview Dialog */}
+        <Dialog open={Boolean(previewDoc)} onOpenChange={(open) => { if (!open) setPreviewDoc(null); }}>
+          <DialogContent className="bg-card text-foreground border-border max-w-2xl p-6 rounded-3xl z-[9999]">
+            <DialogHeader className="border-b border-border pb-3 flex flex-row items-center justify-between">
+              <DialogTitle className="text-base font-bold flex items-center gap-2">
+                <FileText className="w-5 h-5 text-gold" />
+                <span>{previewDoc?.title || 'Document Inspection'}</span>
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="py-4 flex flex-col items-center justify-center">
+              <div className="w-full max-h-[65vh] rounded-2xl overflow-hidden bg-black/60 border border-border flex items-center justify-center p-2">
+                <img
+                  src={previewDoc?.url}
+                  alt={previewDoc?.title || 'Document Preview'}
+                  className="max-w-full max-h-[60vh] object-contain rounded-xl shadow-lg"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </div>
+              <div className="w-full flex items-center justify-between mt-4">
+                <a
+                  href={previewDoc?.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-bold text-gold hover:underline flex items-center gap-1.5"
+                >
+                  <ExternalLink className="w-4 h-4" /> Open Full-Resolution File
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setPreviewDoc(null)}
+                  className="px-5 py-2 rounded-xl bg-muted text-foreground text-xs font-bold hover:bg-muted/80 transition-colors"
+                >
+                  Close Preview
+                </button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Clear Wallet / Settle Commission Dialog */}
         <Dialog open={settleModalOpen} onOpenChange={setSettleModalOpen}>

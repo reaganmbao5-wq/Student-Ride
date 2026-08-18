@@ -25,6 +25,33 @@ const MONTH_NAMES = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
+const UserAvatar = ({ src, name, role, size = "w-11 h-11", textSize = "text-base" }) => {
+  const [imgError, setImgError] = useState(!src);
+
+  useEffect(() => {
+    setImgError(!src);
+  }, [src]);
+
+  return (
+    <div className={`${size} rounded-2xl bg-muted border border-border overflow-hidden flex items-center justify-center shrink-0`}>
+      {!imgError && src ? (
+        <img
+          src={src}
+          alt=""
+          className="w-full h-full object-cover"
+          onError={() => setImgError(true)}
+        />
+      ) : role === 'super_admin' ? (
+        <Shield className="w-5 h-5 text-gold" />
+      ) : (
+        <span className={`text-foreground font-heading font-bold ${textSize}`}>
+          {(name || 'U').charAt(0).toUpperCase()}
+        </span>
+      )}
+    </div>
+  );
+};
+
 const AdminUsersPage = () => {
   const { api, isSuperAdmin } = useAuth();
   const [users, setUsers] = useState(() => AppCache.get('admin_users') || []);
@@ -628,17 +655,13 @@ const AdminUsersPage = () => {
                 >
                   {/* Col 1: User Profile Info */}
                   <div className="lg:col-span-4 flex items-center gap-3.5">
-                    <div className="w-11 h-11 rounded-2xl bg-muted border border-border overflow-hidden flex items-center justify-center shrink-0">
-                      {user.avatar_url ? (
-                        <img src={user.avatar_url} alt={user.name} className="w-full h-full object-cover" />
-                      ) : user.role === 'super_admin' ? (
-                        <Shield className="w-5 h-5 text-gold" />
-                      ) : (
-                        <span className="text-foreground font-heading font-bold text-base">
-                          {(user.name || 'U').charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
+                    <UserAvatar 
+                      src={user.avatar_url} 
+                      name={user.name} 
+                      role={user.role} 
+                      size="w-11 h-11" 
+                      textSize="text-base" 
+                    />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <p className="font-bold text-foreground text-sm truncate">{user.name}</p>
@@ -805,15 +828,13 @@ const AdminUsersPage = () => {
                       {/* Left: User Identity Card (8 cols) */}
                       <div className="lg:col-span-8 p-5 rounded-2xl bg-muted/40 border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-4 min-w-0">
-                          <div className="w-16 h-16 rounded-2xl bg-muted border border-gold/30 overflow-hidden flex items-center justify-center shrink-0">
-                            {userDetails.user?.avatar_url ? (
-                              <img src={userDetails.user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                            ) : (
-                              <span className="font-heading font-bold text-2xl text-gold">
-                                {(userDetails.user?.name || 'U').charAt(0).toUpperCase()}
-                              </span>
-                            )}
-                          </div>
+                          <UserAvatar 
+                            src={userDetails.user?.avatar_url} 
+                            name={userDetails.user?.name} 
+                            role={userDetails.user?.role} 
+                            size="w-16 h-16" 
+                            textSize="text-2xl" 
+                          />
                           <div className="min-w-0">
                             <h3 className="text-lg font-bold text-foreground truncate">{userDetails.user?.name}</h3>
                             <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5 truncate">
