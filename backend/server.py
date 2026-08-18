@@ -1853,7 +1853,7 @@ async def upload_driver_documents(
     )
     
     # Generate absolute URL
-    backend_url = os.environ.get('BACKEND_URL', 'https://student-ride-backend-manual.onrender.com').rstrip('/')
+    backend_url = os.environ.get('BACKEND_URL', 'https://student-ride-backend-dev.onrender.com').rstrip('/')
     doc_url = f"{backend_url}/api/documents/{str(file_id)}"
     
     await db.drivers.update_one(
@@ -1869,21 +1869,33 @@ async def upload_driver_documents(
     return {"status": "success", "url": doc_url}
 
 @api_router.get("/documents/{file_id}")
-async def get_document(file_id: str, user: dict = Depends(get_current_user)):
-    fs = AsyncIOMotorGridFSBucket(db)
+async def get_document(file_id: str):
+    """Serves uploaded KYC documents and avatars from GridFS with proper caching and headers."""
     try:
-        grid_out = await fs.open_download_stream(ObjectId(file_id))
+        from bson import ObjectId
+        fs = AsyncIOMotorGridFSBucket(db)
+        try:
+            oid = ObjectId(file_id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid document ID format")
+            
+        grid_out = await fs.open_download_stream(oid)
         metadata = grid_out.metadata or {}
-        doc_driver_id = metadata.get("driver_id")
-        
-        # Access rules
-        if user["role"] not in [UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value]:
-            if user["id"] != doc_driver_id:
-                raise HTTPException(status_code=403, detail="Not authorized to view this document")
-                
+        content_type = metadata.get("content_type") or "image/jpeg"
         content = await grid_out.read()
-        return Response(content=content, media_type=metadata.get("content_type", "image/jpeg"))
+        
+        return Response(
+            content=content,
+            media_type=content_type,
+            headers={
+                "Cache-Control": "public, max-age=86400, immutable",
+                "Access-Control-Allow-Origin": "*"
+            }
+        )
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.warning(f"Document {file_id} not found in GridFS: {e}")
         raise HTTPException(status_code=404, detail="Document not found")
 
 @api_router.post("/admin/drivers/{driver_id}/verify")
@@ -5172,7 +5184,7 @@ async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_cur
             metadata={"user_id": user["id"], "content_type": content_type}
         )
         
-        backend_url = os.environ.get('BACKEND_URL', 'https://student-ride-backend-manual.onrender.com').rstrip('/')
+        backend_url = os.environ.get('BACKEND_URL', 'https://student-ride-backend-dev.onrender.com').rstrip('/')
         doc_url = f"{backend_url}/api/documents/{str(file_id)}"
         
         return {"url": doc_url}

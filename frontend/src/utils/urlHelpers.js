@@ -57,3 +57,30 @@ export const openExternalUrl = (path = '') => {
     window.open(targetUrl, '_blank', 'noopener,noreferrer');
   }
 };
+
+/**
+ * Normalizes media, document, and avatar URLs so that legacy domains,
+ * relative API paths, or misconfigured backend hosts always resolve
+ * to the correct, working live backend instance.
+ */
+export const resolveMediaUrl = (url) => {
+  if (!url || typeof url !== 'string') return '';
+  if (url.startsWith('blob:') || url.startsWith('data:')) return url;
+
+  // Replace legacy manual backend URL if present in legacy records
+  if (url.includes('student-ride-backend-manual.onrender.com')) {
+    url = url.replace('student-ride-backend-manual.onrender.com', 'student-ride-backend-dev.onrender.com');
+  }
+
+  // If URL is relative
+  if (url.startsWith('/api')) {
+    const base = getBackendUrl();
+    return `${base}${url}`;
+  }
+  if (url.startsWith('/documents/')) {
+    const base = getBackendUrl();
+    return `${base}/api${url}`;
+  }
+
+  return url;
+};

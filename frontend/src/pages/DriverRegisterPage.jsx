@@ -4,6 +4,7 @@ import { ArrowLeft, Loader2, UploadCloud, FileText, CheckCircle2, Camera } from 
 import { GlassCard, GlassInput, GoldButton } from '../components/common/GlassComponents';
 import { useAuth } from '../context/AuthContext';
 import { compressImage } from '../utils/imageCompressor';
+import { resolveMediaUrl } from '../utils/urlHelpers';
 import { toast } from 'sonner';
 import { showFriendlyError } from '../utils/errorHandler';
 
@@ -18,6 +19,7 @@ const DriverRegisterPage = () => {
     registration: null
   });
   const [profilePhotoPreview, setProfilePhotoPreview] = useState(user?.avatar_url || driverProfile?.avatar_url || null);
+  const [previewError, setPreviewError] = useState(false);
   
   const [uploadingDocs, setUploadingDocs] = useState(false);
 
@@ -53,6 +55,7 @@ const DriverRegisterPage = () => {
     if (file) {
       setDocs(prev => ({ ...prev, [e.target.name]: file }));
       if (e.target.name === 'profile_photo') {
+        setPreviewError(false);
         setProfilePhotoPreview(URL.createObjectURL(file));
       }
     }
@@ -180,9 +183,14 @@ const DriverRegisterPage = () => {
                   className="hidden"
                 />
                 <label htmlFor="reg_profile_photo_upload" className="block relative cursor-pointer">
-                  <div className={`w-24 h-24 rounded-full border-2 overflow-hidden flex items-center justify-center transition-all ${profilePhotoPreview ? 'border-gold shadow-none' : 'border-dashed border-zinc-700 bg-zinc-900 hover:border-gold'}`}>
-                    {profilePhotoPreview ? (
-                      <img src={profilePhotoPreview} alt="Driver Preview" className="w-full h-full object-cover" />
+                  <div className={`w-24 h-24 rounded-full border-2 overflow-hidden flex items-center justify-center transition-all ${profilePhotoPreview && !previewError ? 'border-gold shadow-none' : 'border-dashed border-zinc-700 bg-zinc-900 hover:border-gold'}`}>
+                    {profilePhotoPreview && !previewError ? (
+                      <img 
+                        src={resolveMediaUrl(profilePhotoPreview)} 
+                        alt="" 
+                        className="w-full h-full object-cover" 
+                        onError={() => setPreviewError(true)}
+                      />
                     ) : (
                       <div className="flex flex-col items-center gap-1 text-zinc-500 hover:text-gold transition-colors">
                         <Camera className="w-7 h-7" />

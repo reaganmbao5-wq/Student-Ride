@@ -10,6 +10,7 @@ import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
 import { AdminDriversSkeleton } from '../components/common/PageSkeletons';
 import { AppCache } from '../utils/AppCache';
+import { resolveMediaUrl } from '../utils/urlHelpers';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -432,7 +433,7 @@ const AdminDriversPage = () => {
                   {/* Col 1: Driver Profile */}
                   <div className="lg:col-span-4 flex items-center gap-3.5">
                     <DriverAvatar 
-                      src={driver.user?.avatar_url || driver.avatar_url} 
+                      src={resolveMediaUrl(driver.user?.avatar_url || driver.avatar_url)} 
                       name={driver.user?.name} 
                       size="w-11 h-11" 
                       textSize="text-base" 
@@ -571,7 +572,7 @@ const AdminDriversPage = () => {
                   <div className="p-5 rounded-2xl bg-muted/40 border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4 min-w-0">
                       <DriverAvatar 
-                        src={inspectedDriver.user?.avatar_url || inspectedDriver.avatar_url} 
+                        src={resolveMediaUrl(inspectedDriver.user?.avatar_url || inspectedDriver.avatar_url)} 
                         name={inspectedDriver.user?.name} 
                         size="w-16 h-16" 
                         textSize="text-2xl" 
@@ -666,12 +667,12 @@ const AdminDriversPage = () => {
                             <div
                               onClick={() => setPreviewDoc({
                                 title: `${inspectedDriver.user?.name || 'Driver'} — Driver's License`,
-                                url: inspectedDriver.verification_docs.license
+                                url: resolveMediaUrl(inspectedDriver.verification_docs.license)
                               })}
                               className="relative group rounded-xl overflow-hidden border border-white/10 max-w-full bg-black cursor-pointer shadow-lg aspect-video flex items-center justify-center"
                             >
                               <img
-                                src={inspectedDriver.verification_docs.license}
+                                src={resolveMediaUrl(inspectedDriver.verification_docs.license)}
                                 alt="Driver's License"
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               />
@@ -686,7 +687,7 @@ const AdminDriversPage = () => {
                                 type="button"
                                 onClick={() => setPreviewDoc({
                                   title: `${inspectedDriver.user?.name || 'Driver'} — Driver's License`,
-                                  url: inspectedDriver.verification_docs.license
+                                  url: resolveMediaUrl(inspectedDriver.verification_docs.license)
                                 })}
                                 className="flex-1 py-2 px-3 rounded-lg bg-gold/10 hover:bg-gold/20 text-gold border border-gold/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                               >
@@ -694,7 +695,7 @@ const AdminDriversPage = () => {
                                 Inspect License
                               </button>
                               <a
-                                href={inspectedDriver.verification_docs.license}
+                                href={resolveMediaUrl(inspectedDriver.verification_docs.license)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="p-2 rounded-lg bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border transition-colors flex items-center justify-center"
@@ -737,12 +738,12 @@ const AdminDriversPage = () => {
                             <div
                               onClick={() => setPreviewDoc({
                                 title: `${inspectedDriver.user?.name || 'Driver'} — Vehicle Registration`,
-                                url: inspectedDriver.verification_docs.registration
+                                url: resolveMediaUrl(inspectedDriver.verification_docs.registration)
                               })}
                               className="relative group rounded-xl overflow-hidden border border-white/10 max-w-full bg-black cursor-pointer shadow-lg aspect-video flex items-center justify-center"
                             >
                               <img
-                                src={inspectedDriver.verification_docs.registration}
+                                src={resolveMediaUrl(inspectedDriver.verification_docs.registration)}
                                 alt="Vehicle Registration"
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               />
@@ -757,7 +758,7 @@ const AdminDriversPage = () => {
                                 type="button"
                                 onClick={() => setPreviewDoc({
                                   title: `${inspectedDriver.user?.name || 'Driver'} — Vehicle Registration`,
-                                  url: inspectedDriver.verification_docs.registration
+                                  url: resolveMediaUrl(inspectedDriver.verification_docs.registration)
                                 })}
                                 className="flex-1 py-2 px-3 rounded-lg bg-gold/10 hover:bg-gold/20 text-gold border border-gold/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                               >
@@ -765,7 +766,7 @@ const AdminDriversPage = () => {
                                 Inspect Registration
                               </button>
                               <a
-                                href={inspectedDriver.verification_docs.registration}
+                                href={resolveMediaUrl(inspectedDriver.verification_docs.registration)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="p-2 rounded-lg bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border transition-colors flex items-center justify-center"
