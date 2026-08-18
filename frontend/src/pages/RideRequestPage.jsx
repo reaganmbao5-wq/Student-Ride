@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, Navigation, TrendingUp, Search, MapPin, Flag, Zap } from 'lucide-react';
+import { ArrowLeft, Loader2, Navigation, TrendingUp, Search, MapPin, Flag, Zap, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useGeolocation } from '../map/hooks/useGeolocation';
@@ -22,6 +22,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select';
+import {
+  Stepper,
+  StepperItem,
+  StepperTrigger,
+  StepperIndicator,
+  StepperTitle,
+  StepperDescription,
+  StepperSeparator,
+  StepperNav
+} from '../components/ui/stepper';
 
 const RideRequestPage = () => {
   const navigate = useNavigate();
@@ -550,8 +560,9 @@ const RideRequestPage = () => {
           </div>
         )}
       </div>
-
-      {/* Bottom Sheet */}
+      {/* ========================================================================= */}
+      {/* 🔒 LOCKED ENGINE: DO NOT TOUCH POSITION, HEIGHT, TRANSITIONS, OR WRAPPERS */}
+      {/* ========================================================================= */}
       <motion.div 
         ref={sheetRef}
         layoutId="student-bottom-sheet"
@@ -560,7 +571,7 @@ const RideRequestPage = () => {
         animate={{ y: isCollapsing ? "calc(100% - 115px)" : 0 }}
         transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
       >
-        {/* Drag handle pill */}
+        {/* 🔒 LOCKED DRAG HANDLE */}
         <div 
           onClick={() => step === 'confirm' && setIsSheetExpanded(!isSheetExpanded)}
           className="w-full flex justify-center pt-3 pb-2 cursor-pointer active:opacity-70"
@@ -568,50 +579,95 @@ const RideRequestPage = () => {
           <div className="w-12 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full" />
         </div>
 
+        {/* 🔒 LOCKED CONTENT VIEWPORT CONTAINER */}
         <motion.div 
           className="px-5 pb-5 flex flex-col gap-4"
           animate={{ opacity: isCollapsing ? 0 : 1 }}
           transition={{ duration: 0.5 }}
         >
+          {/* --------------------------------------------------------------------- */}
+          {/* 🔓 MODIFIABLE CONTENT SLOT: Only edit inner elements/steppers below   */}
+          {/* --------------------------------------------------------------------- */}
           {step === 'pickup' && (
             <>
-              <h2 className="text-xl font-bold font-heading">Pickup Location</h2>
+              <h2 className="text-xl font-bold font-heading">
+                Pickup Location
+              </h2>
               
-              <div className="flex items-center gap-3 bg-zinc-100 dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800">
-                <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center shrink-0">
-                  <MapPin className="w-4 h-4 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                   <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Current Address</p>
-                   <p className="text-sm font-medium truncate">{currentAddress || 'Fetching address...'}</p>
-                </div>
-              </div>
-              
-              <div className="w-full flex items-center gap-2">
-                <div className="flex-1">
-                  <AddressSearch
-                    placeholder="Search for a pickup..."
-                    onLocationSelect={(loc) => {
-                      suppressConfirmUntilRef.current = Date.now() + 600;
-                      isExplicitSelectionRef.current = true;
-                      setSelectionTarget({ lat: loc.lat, lng: loc.lng, ts: Date.now() });
-                      setMapCenter({ lat: loc.lat, lng: loc.lng });
-                      setCurrentAddress(loc.address);
-                      setSelectedDestination(null);
-                    }}
-                  />
-                </div>
-                <button
-                  onClick={() => refreshLocation()}
-                  disabled={geoLoading}
-                  className="w-12 h-12 flex-shrink-0 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl flex items-center justify-center active:scale-95 transition-transform"
+              {/* Clean 2-Step Transit Stepper for Pickup */}
+              <div className="w-full flex flex-col pt-1">
+                <Stepper
+                  orientation="vertical"
+                  value={1}
+                  className="w-full gap-0"
+                  indicators={{
+                    completed: <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
+                  }}
                 >
-                  <Navigation className={`w-5 h-5 text-black dark:text-white ${geoLoading ? 'animate-pulse' : ''}`} />
-                </button>
+                  <StepperNav className="w-full gap-0">
+                    {/* Node 1: Current Address */}
+                    <StepperItem
+                      step={1}
+                      completed={false}
+                      className="relative items-start not-last:flex-1 w-full"
+                    >
+                      <StepperTrigger className="items-center pb-4 w-full gap-3 cursor-default">
+                        <StepperIndicator className="data-[state=active]:bg-black dark:data-[state=active]:bg-white data-[state=active]:text-white dark:data-[state=active]:text-black">
+                          1
+                        </StepperIndicator>
+                        <div className="flex-1 min-w-0">
+                          <StepperTitle className="text-[10px] tracking-wider text-muted-foreground font-bold uppercase">
+                            Current Address
+                          </StepperTitle>
+                          <StepperDescription className="text-sm font-bold text-foreground truncate mt-0.5">
+                            {isGeocoding ? 'Locating...' : (currentAddress || 'Move map to select')}
+                          </StepperDescription>
+                        </div>
+
+                        {/* GPS Current Location button ONLY on Pickup step on Row 1 */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            refreshLocation();
+                          }}
+                          disabled={geoLoading}
+                          title="Use current location"
+                          className="w-10 h-10 shrink-0 rounded-full bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center active:scale-90 transition-transform shadow-xs cursor-pointer"
+                        >
+                          <Navigation className={`w-4 h-4 text-foreground ${geoLoading ? 'animate-spin' : ''}`} />
+                        </button>
+                      </StepperTrigger>
+                      <StepperSeparator className="absolute top-6 left-3 -order-1 m-0 -translate-x-1/2 group-data-[orientation=vertical]/stepper-nav:h-8 bg-zinc-200 dark:bg-zinc-800 w-0.5" />
+                    </StepperItem>
+
+                    {/* Node 2: Destination */}
+                    <StepperItem
+                      step={2}
+                      completed={false}
+                      className="relative items-start w-full"
+                    >
+                      <StepperTrigger className="items-center w-full gap-3 cursor-default">
+                        <StepperIndicator className="bg-zinc-100 dark:bg-zinc-800/80 text-zinc-400 border border-zinc-300 dark:border-zinc-700">
+                          2
+                        </StepperIndicator>
+                        <div className="flex-1 min-w-0">
+                          <StepperTitle className="text-[10px] tracking-wider text-muted-foreground font-bold uppercase">
+                            Destination
+                          </StepperTitle>
+                          <StepperDescription className="text-sm font-normal text-zinc-400 dark:text-zinc-500 truncate mt-0.5">
+                            Destination...
+                          </StepperDescription>
+                        </div>
+                      </StepperTrigger>
+                    </StepperItem>
+                  </StepperNav>
+                </Stepper>
               </div>
 
+              {/* Confirm Action Button */}
               <button 
-                className="w-full py-4 bg-black text-white rounded-xl font-bold text-lg active:scale-95 transition-transform disabled:opacity-50"
+                className="w-full py-4 bg-black dark:bg-white text-white dark:text-black rounded-2xl font-bold text-base shadow-lg active:scale-98 transition-transform disabled:opacity-50 mt-1 cursor-pointer"
                 onClick={handleConfirmLocation}
                 disabled={isGeocoding || !currentAddress || currentAddress === 'Unable to fetch address'}
               >
@@ -622,36 +678,70 @@ const RideRequestPage = () => {
 
           {step === 'dropoff' && (
             <>
-              <h2 className="text-xl font-bold font-heading">Set Destination</h2>
+              <h2 className="text-xl font-bold font-heading">
+                Drop-off Location
+              </h2>
               
-              <div className="flex items-center gap-3 bg-zinc-100 dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800">
-                <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center shrink-0">
-                  <Flag className="w-4 h-4 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                   <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Dropoff Address</p>
-                   <p className="text-sm font-medium truncate">{currentAddress || 'Fetching address...'}</p>
-                </div>
-              </div>
-
-              <div className="w-full">
-                <AddressSearch
-                  placeholder="Search for a destination..."
-                  onLocationSelect={(loc) => {
-                    suppressConfirmUntilRef.current = Date.now() + 600;
-                    isExplicitSelectionRef.current = true;
-                    explicitSelectedLocationRef.current = { lat: loc.lat, lng: loc.lng, address: loc.address };
-                    setSelectionTarget({ lat: loc.lat, lng: loc.lng, ts: Date.now() });
-                    setMapCenter({ lat: loc.lat, lng: loc.lng });
-                    setCurrentAddress(loc.address);
-                    setDropoff({ lat: loc.lat, lng: loc.lng, address: loc.address });
-                    setSelectedDestination(null);
+              {/* Clean 2-Step Transit Stepper for Dropoff */}
+              <div className="w-full flex flex-col pt-1">
+                <Stepper
+                  orientation="vertical"
+                  value={2}
+                  className="w-full gap-0"
+                  indicators={{
+                    completed: <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
                   }}
-                />
+                >
+                  <StepperNav className="w-full gap-0">
+                    {/* Node 1: Completed Pickup */}
+                    <StepperItem
+                      step={1}
+                      completed={true}
+                      className="relative items-start not-last:flex-1 w-full"
+                    >
+                      <StepperTrigger className="items-center pb-4 w-full gap-3 cursor-default">
+                        <StepperIndicator className="bg-emerald-500 text-white">
+                          <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
+                        </StepperIndicator>
+                        <div className="flex-1 min-w-0">
+                          <StepperTitle className="text-[10px] tracking-wider text-muted-foreground font-bold uppercase">
+                            Pickup
+                          </StepperTitle>
+                          <StepperDescription className="text-sm font-bold text-foreground truncate mt-0.5">
+                            {pickup?.address || 'Pickup Location'}
+                          </StepperDescription>
+                        </div>
+                      </StepperTrigger>
+                      <StepperSeparator className="absolute top-6 left-3 -order-1 m-0 -translate-x-1/2 group-data-[orientation=vertical]/stepper-nav:h-8 bg-emerald-500 w-0.5" />
+                    </StepperItem>
+
+                    {/* Node 2: Active Destination */}
+                    <StepperItem
+                      step={2}
+                      completed={false}
+                      className="relative items-start w-full"
+                    >
+                      <StepperTrigger className="items-center w-full gap-3 cursor-default">
+                        <StepperIndicator className="data-[state=active]:bg-black dark:data-[state=active]:bg-white data-[state=active]:text-white dark:data-[state=active]:text-black">
+                          2
+                        </StepperIndicator>
+                        <div className="flex-1 min-w-0">
+                          <StepperTitle className="text-[10px] tracking-wider text-muted-foreground font-bold uppercase">
+                            Destination
+                          </StepperTitle>
+                          <StepperDescription className="text-sm font-bold text-foreground truncate mt-0.5">
+                            {isGeocoding ? 'Locating destination...' : (currentAddress || 'Move map or search above')}
+                          </StepperDescription>
+                        </div>
+                      </StepperTrigger>
+                    </StepperItem>
+                  </StepperNav>
+                </Stepper>
               </div>
 
+              {/* Confirm Action Button */}
               <button 
-                className="w-full py-4 bg-black text-white rounded-xl font-bold text-lg active:scale-95 transition-transform disabled:opacity-50"
+                className="w-full py-4 bg-black dark:bg-white text-white dark:text-black rounded-2xl font-bold text-base shadow-lg active:scale-98 transition-transform disabled:opacity-50 mt-1 cursor-pointer"
                 onClick={handleConfirmLocation}
                 disabled={isGeocoding || !currentAddress || currentAddress === 'Unable to fetch address'}
               >
@@ -660,42 +750,63 @@ const RideRequestPage = () => {
             </>
           )}
 
-        {step === 'confirm' && (
-             <>
-               {(() => {
-                 const savePercent = fareEstimate && fareEstimate.private_fare > 0 && fareEstimate.shared_fare < fareEstimate.private_fare
-                   ? Math.round((1 - fareEstimate.shared_fare / fareEstimate.private_fare) * 100)
-                   : 30;
+          {step === 'confirm' && (
+            <>
+              {(() => {
+                const savePercent = fareEstimate && fareEstimate.private_fare > 0 && fareEstimate.shared_fare < fareEstimate.private_fare
+                  ? Math.round((1 - fareEstimate.shared_fare / fareEstimate.private_fare) * 100)
+                  : 30;
 
-                 return (
-                   <>
-                     <div className="flex items-center justify-between gap-2">
-                       <h2 className="text-xl font-bold font-heading shrink-0">Confirm Ride</h2>
-                       <span className="text-[11px] font-medium text-zinc-400 text-right select-none">
-                         {rideMode === 'shared' 
-                           ? 'Tap/Swipe to switch to Private' 
-                           : 'Tap/Swipe to switch to Shared'}
-                       </span>
-                     </div>
-                     
-                     {/* Locations summary */}
-                     <div className="bg-zinc-100 dark:bg-zinc-900 p-3 rounded-2xl flex flex-col gap-2 border border-zinc-200 dark:border-zinc-800">
-                        <div className="flex items-center gap-3">
-                           <div className="w-5 h-5 rounded-full bg-black flex items-center justify-center shrink-0">
-                             <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                           </div>
-                           <p className="font-medium text-xs truncate flex-1"><span className="text-muted-foreground font-normal">Pickup: </span>{pickup?.address}</p>
-                        </div>
-                        
-                        <div className="flex items-center gap-3">
-                           <div className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center shrink-0">
-                             <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                           </div>
-                           <p className="font-medium text-xs truncate flex-1"><span className="text-muted-foreground font-normal">Dropoff: </span>{dropoff?.address}</p>
-                        </div>
-                     </div>
+                return (
+                  <>
+                    <div className="flex items-center justify-between gap-2">
+                      <h2 className="text-xl font-bold font-heading shrink-0">Confirm Ride</h2>
+                      <span className="text-[11px] font-medium text-zinc-400 text-right select-none">
+                        {rideMode === 'shared' 
+                          ? 'Tap/Swipe to switch to Private' 
+                          : 'Tap/Swipe to switch to Shared'}
+                      </span>
+                    </div>
+                    
+                    {/* Locations Stepper Summary */}
+                    <div className="w-full flex flex-col pb-1">
+                      <Stepper
+                        orientation="vertical"
+                        value={2}
+                        className="w-full gap-0"
+                        indicators={{
+                          completed: <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
+                        }}
+                      >
+                        <StepperNav className="w-full gap-0">
+                          <StepperItem step={1} completed={true} className="relative items-start not-last:flex-1 w-full">
+                            <StepperTrigger className="items-start pb-2 w-full gap-3 cursor-default">
+                              <StepperIndicator className="bg-emerald-500 text-white">
+                                <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
+                              </StepperIndicator>
+                              <div className="flex-1 min-w-0">
+                                <StepperTitle className="text-[10px] tracking-wider text-muted-foreground font-bold uppercase">Pickup</StepperTitle>
+                                <StepperDescription className="text-xs font-bold text-foreground truncate">{pickup?.address}</StepperDescription>
+                              </div>
+                            </StepperTrigger>
+                            <StepperSeparator className="absolute top-5 left-3 -order-1 m-0 -translate-x-1/2 group-data-[orientation=vertical]/stepper-nav:h-5 bg-emerald-500 w-0.5" />
+                          </StepperItem>
+                          <StepperItem step={2} completed={false} className="relative items-start w-full">
+                            <StepperTrigger className="items-start w-full gap-3 cursor-default">
+                              <StepperIndicator className="bg-red-600 text-white border-0">
+                                <Flag className="w-3 h-3 text-white" />
+                              </StepperIndicator>
+                              <div className="flex-1 min-w-0">
+                                <StepperTitle className="text-[10px] tracking-wider text-muted-foreground font-bold uppercase">Dropoff</StepperTitle>
+                                <StepperDescription className="text-xs font-bold text-foreground truncate">{dropoff?.address}</StepperDescription>
+                              </div>
+                            </StepperTrigger>
+                          </StepperItem>
+                        </StepperNav>
+                      </Stepper>
+                    </div>
 
-                     {/* Fare loading or display */}
+                    {/* Fare loading or display */}
                      {loading ? (
                        <div className="py-4 flex justify-center">
                          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
