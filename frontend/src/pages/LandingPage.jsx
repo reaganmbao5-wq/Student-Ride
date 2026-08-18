@@ -220,11 +220,10 @@ const LandingPage = () => {
 
       if (storedToken && cachedUser) {
         const role = cachedUser.role;
-        const driverProfileComplete = cachedUser.driver_profile_complete || AppCache.get('driver_profile_complete') || (driverProfile && driverProfile.id);
         if (role === 'admin' || role === 'super_admin') {
           navigate('/admin', { replace: true });
         } else if (role === 'driver') {
-          navigate(driverProfileComplete ? '/driver' : '/driver/register', { replace: true });
+          navigate('/driver', { replace: true });
         } else {
           navigate('/dashboard', { replace: true });
         }
@@ -371,7 +370,6 @@ const LandingPage = () => {
       } else {
         const role = data.user.role;
         window.location.href = role === 'admin' || role === 'super_admin' ? '/admin'
-          : role === 'driver' && !data.driver_profile_complete ? '/driver/register'
           : role === 'driver' ? '/driver' : '/dashboard';
       }
     } catch (err) {

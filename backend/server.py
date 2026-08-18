@@ -661,6 +661,7 @@ class DestinationResponse(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    driver_profile_complete: Optional[bool] = None
     user: UserResponse
 
 # ==================== HELPER FUNCTIONS ====================
@@ -1290,9 +1291,18 @@ async def login(credentials: UserLogin):
         raise HTTPException(status_code=403, detail="Account suspended")
     
     token = create_token(user["id"], user["role"])
+
+    driver_profile_complete = None
+    if user.get("role") == UserRole.DRIVER.value:
+        driver_doc = await db.drivers.find_one({"user_id": user["id"]})
+        if driver_doc:
+            driver_profile_complete = bool(driver_doc.get("is_approved") or (driver_doc.get("plate_number") and driver_doc.get("vehicle_model")))
+        else:
+            driver_profile_complete = False
     
     return TokenResponse(
         access_token=token,
+        driver_profile_complete=driver_profile_complete,
         user=UserResponse(
             id=user["id"],
             email=user["email"],
@@ -1765,12 +1775,15 @@ async def get_my_driver_profile(user: dict = Depends(require_driver)):
         await db.drivers.insert_one(driver)
     
     # Compute if setup is needed
-    driver["needs_setup"] = bool(
-        driver.get("needs_setup") or
-        not driver.get("plate_number") or
-        not driver.get("vehicle_model") or
-        (driver.get("vehicle_model") == "Campus Shuttle" and str(driver.get("plate_number", "")).startswith("MR-"))
-    )
+    if driver.get("is_approved"):
+        driver["needs_setup"] = False
+    else:
+        driver["needs_setup"] = bool(
+            driver.get("needs_setup") or
+            not driver.get("plate_number") or
+            not driver.get("vehicle_model") or
+            (driver.get("vehicle_model") == "Campus Shuttle" and str(driver.get("plate_number", "")).startswith("MR-"))
+        )
     
     settings = await get_platform_settings()
     driver["max_commission_owed_limit"] = settings.get("max_commission_owed_limit", 500.0)
@@ -1931,7 +1944,8 @@ async def verify_driver(
         {"id": driver_id},
         {"$set": {
             "verification_status": status,
-            "is_approved": status == "approved"
+            "is_approved": status == "approved",
+            "needs_setup": False if status == "approved" else True
         }}
     )
     
@@ -4157,7 +4171,7 @@ async def get_all_drivers(user: dict = Depends(require_admin)):
 async def approve_driver(driver_id: str, user: dict = Depends(require_admin)):
     result = await db.drivers.update_one(
         {"id": driver_id},
-        {"$set": {"is_approved": True}}
+        {"$set": {"is_approved": True, "needs_setup": False}}
     )
     if result.modified_count == 0:
         raise HTTPException(status_code=404, detail="Driver not found")

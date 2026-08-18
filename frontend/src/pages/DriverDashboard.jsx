@@ -177,15 +177,8 @@ const DriverDashboard = () => {
       }
       
       const profile = await refreshDriverProfile();
-      if (!profile && !driverProfile) {
-        navigate('/driver/register');
-        return;
-      }
     } catch (error) {
       console.error('Error fetching data:', error);
-      if (error.response?.status === 404) {
-        navigate('/driver/register');
-      }
     } finally {
       setLoading(false);
     }
@@ -700,8 +693,8 @@ const DriverDashboard = () => {
     return <DriverDashboardSkeleton />;
   }
 
-  // 1. Incomplete Setup State (Needs Vehicle Info & Docs)
-  if (!driverProfile || driverProfile.needs_setup || !driverProfile.plate_number || !driverProfile.vehicle_model) {
+  // 1. Incomplete Setup State (Needs Vehicle Info & Docs - only for unapproved drivers who lack info)
+  if (driverProfile && !driverProfile.is_approved && (driverProfile.needs_setup || !driverProfile.plate_number || !driverProfile.vehicle_model)) {
     return (
       <Layout>
         <div className="p-4 md:p-8 max-w-lg mx-auto" data-testid="driver-needs-setup">
