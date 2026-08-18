@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Search, Check, X, Star, AlertCircle, Wallet, Plus, Loader2, 
   FileText, Eye, Calendar, RefreshCw, Ban, CheckCircle, Shield, Edit3, DollarSign,
-  Mail, Phone, ExternalLink
+  Mail, Phone, ExternalLink, ZoomIn
 } from 'lucide-react';
 import { SteeringWheel, Car } from '@phosphor-icons/react';
 import { GlassCard, GlassInput, GoldButton, EmptyState } from '../components/common/GlassComponents';
@@ -639,7 +639,7 @@ const AdminDriversPage = () => {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {/* Driver's License Document Card */}
-                      <div className="p-4 rounded-xl bg-card border border-border flex flex-col justify-between gap-3">
+                      <div className="p-4 rounded-xl bg-card border border-border space-y-3">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-2.5">
                             <div className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center text-gold shrink-0">
@@ -662,35 +662,55 @@ const AdminDriversPage = () => {
                         </div>
 
                         {inspectedDriver.verification_docs?.license ? (
-                          <div className="flex items-center gap-2 pt-1">
-                            <button
-                              type="button"
+                          <div className="space-y-2">
+                            <div
                               onClick={() => setPreviewDoc({
                                 title: `${inspectedDriver.user?.name || 'Driver'} — Driver's License`,
                                 url: inspectedDriver.verification_docs.license
                               })}
-                              className="flex-1 py-2 px-3 rounded-lg bg-gold/10 hover:bg-gold/20 text-gold border border-gold/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                              className="relative group rounded-xl overflow-hidden border border-white/10 max-w-full bg-black cursor-pointer shadow-lg aspect-video flex items-center justify-center"
                             >
-                              <Eye className="w-3.5 h-3.5" />
-                              Inspect License
-                            </button>
-                            <a
-                              href={inspectedDriver.verification_docs.license}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="p-2 rounded-lg bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border transition-colors flex items-center justify-center"
-                              title="Open Original Image"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </a>
+                              <img
+                                src={inspectedDriver.verification_docs.license}
+                                alt="Driver's License"
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white font-semibold text-xs">
+                                <ZoomIn className="w-5 h-5 text-gold" />
+                                <span>Click to Expand</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 pt-1">
+                              <button
+                                type="button"
+                                onClick={() => setPreviewDoc({
+                                  title: `${inspectedDriver.user?.name || 'Driver'} — Driver's License`,
+                                  url: inspectedDriver.verification_docs.license
+                                })}
+                                className="flex-1 py-2 px-3 rounded-lg bg-gold/10 hover:bg-gold/20 text-gold border border-gold/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                              >
+                                <ZoomIn className="w-3.5 h-3.5" />
+                                Inspect License
+                              </button>
+                              <a
+                                href={inspectedDriver.verification_docs.license}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-2 rounded-lg bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border transition-colors flex items-center justify-center"
+                                title="Open Original File"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            </div>
                           </div>
                         ) : (
-                          <p className="text-[11px] text-zinc-500 italic">No driver license uploaded yet.</p>
+                          <p className="text-[11px] text-zinc-500 italic py-3 text-center">No driver license uploaded yet.</p>
                         )}
                       </div>
 
                       {/* Vehicle Registration Document Card */}
-                      <div className="p-4 rounded-xl bg-card border border-border flex flex-col justify-between gap-3">
+                      <div className="p-4 rounded-xl bg-card border border-border space-y-3">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-2.5">
                             <div className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center text-gold shrink-0">
@@ -713,30 +733,50 @@ const AdminDriversPage = () => {
                         </div>
 
                         {inspectedDriver.verification_docs?.registration ? (
-                          <div className="flex items-center gap-2 pt-1">
-                            <button
-                              type="button"
+                          <div className="space-y-2">
+                            <div
                               onClick={() => setPreviewDoc({
                                 title: `${inspectedDriver.user?.name || 'Driver'} — Vehicle Registration`,
                                 url: inspectedDriver.verification_docs.registration
                               })}
-                              className="flex-1 py-2 px-3 rounded-lg bg-gold/10 hover:bg-gold/20 text-gold border border-gold/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                              className="relative group rounded-xl overflow-hidden border border-white/10 max-w-full bg-black cursor-pointer shadow-lg aspect-video flex items-center justify-center"
                             >
-                              <Eye className="w-3.5 h-3.5" />
-                              Inspect Registration
-                            </button>
-                            <a
-                              href={inspectedDriver.verification_docs.registration}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="p-2 rounded-lg bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border transition-colors flex items-center justify-center"
-                              title="Open Original Image"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </a>
+                              <img
+                                src={inspectedDriver.verification_docs.registration}
+                                alt="Vehicle Registration"
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white font-semibold text-xs">
+                                <ZoomIn className="w-5 h-5 text-gold" />
+                                <span>Click to Expand</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 pt-1">
+                              <button
+                                type="button"
+                                onClick={() => setPreviewDoc({
+                                  title: `${inspectedDriver.user?.name || 'Driver'} — Vehicle Registration`,
+                                  url: inspectedDriver.verification_docs.registration
+                                })}
+                                className="flex-1 py-2 px-3 rounded-lg bg-gold/10 hover:bg-gold/20 text-gold border border-gold/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                              >
+                                <ZoomIn className="w-3.5 h-3.5" />
+                                Inspect Registration
+                              </button>
+                              <a
+                                href={inspectedDriver.verification_docs.registration}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-2 rounded-lg bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border transition-colors flex items-center justify-center"
+                                title="Open Original File"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            </div>
                           </div>
                         ) : (
-                          <p className="text-[11px] text-zinc-500 italic">No vehicle registration uploaded yet.</p>
+                          <p className="text-[11px] text-zinc-500 italic py-3 text-center">No vehicle registration uploaded yet.</p>
                         )}
                       </div>
                     </div>
@@ -789,47 +829,50 @@ const AdminDriversPage = () => {
           </div>
         )}
 
-        {/* Document Full-Resolution Preview Dialog */}
-        <Dialog open={Boolean(previewDoc)} onOpenChange={(open) => { if (!open) setPreviewDoc(null); }}>
-          <DialogContent className="bg-card text-foreground border-border max-w-2xl p-6 rounded-3xl z-[9999]">
-            <DialogHeader className="border-b border-border pb-3 flex flex-row items-center justify-between">
-              <DialogTitle className="text-base font-bold flex items-center gap-2">
-                <FileText className="w-5 h-5 text-gold" />
-                <span>{previewDoc?.title || 'Document Inspection'}</span>
-              </DialogTitle>
-            </DialogHeader>
+        {/* Expandable Document Lightbox Modal (Bug Report style) */}
+        {previewDoc && (
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+            <div className="absolute inset-0 cursor-pointer" onClick={() => setPreviewDoc(null)} />
+            
+            <div className="relative z-10 max-w-5xl w-full flex flex-col items-center gap-3">
+              {/* Top Bar */}
+              <div className="w-full flex items-center justify-between text-white bg-zinc-900/90 p-4 rounded-2xl border border-white/10 shadow-xl">
+                <span className="text-sm font-semibold flex items-center gap-2">
+                  <ZoomIn className="w-4 h-4 text-gold" />
+                  {previewDoc.title || 'Verification Document Preview'}
+                </span>
+                <div className="flex items-center gap-3">
+                  <a
+                    href={previewDoc.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-gold hover:underline flex items-center gap-1 font-semibold"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" /> Open Original
+                  </a>
+                  <button
+                    onClick={() => setPreviewDoc(null)}
+                    className="p-1.5 text-zinc-400 hover:text-white rounded-full hover:bg-white/10 transition-colors cursor-pointer"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
 
-            <div className="py-4 flex flex-col items-center justify-center">
-              <div className="w-full max-h-[65vh] rounded-2xl overflow-hidden bg-black/60 border border-border flex items-center justify-center p-2">
+              {/* High Res Image Container */}
+              <div className="w-full max-h-[80vh] flex items-center justify-center overflow-auto rounded-2xl border border-white/10 bg-black p-2 shadow-2xl">
                 <img
-                  src={previewDoc?.url}
-                  alt={previewDoc?.title || 'Document Preview'}
-                  className="max-w-full max-h-[60vh] object-contain rounded-xl shadow-lg"
+                  src={previewDoc.url}
+                  alt={previewDoc.title || 'Expanded Document'}
+                  className="max-w-full max-h-[75vh] object-contain rounded-xl"
                   onError={(e) => {
-                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.alt = "Unable to load document image";
                   }}
                 />
               </div>
-              <div className="w-full flex items-center justify-between mt-4">
-                <a
-                  href={previewDoc?.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs font-bold text-gold hover:underline flex items-center gap-1.5"
-                >
-                  <ExternalLink className="w-4 h-4" /> Open Full-Resolution File
-                </a>
-                <button
-                  type="button"
-                  onClick={() => setPreviewDoc(null)}
-                  className="px-5 py-2 rounded-xl bg-muted text-foreground text-xs font-bold hover:bg-muted/80 transition-colors"
-                >
-                  Close Preview
-                </button>
-              </div>
             </div>
-          </DialogContent>
-        </Dialog>
+          </div>
+        )}
 
         {/* Clear Wallet / Settle Commission Dialog */}
         <Dialog open={settleModalOpen} onOpenChange={setSettleModalOpen}>
