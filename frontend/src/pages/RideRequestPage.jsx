@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, Navigation, TrendingUp, Search, MapPin, Flag, Zap } from 'lucide-react';
+import { ArrowLeft, Loader2, Navigation, TrendingUp, Search, MapPin, Flag, Zap, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useGeolocation } from '../map/hooks/useGeolocation';
@@ -15,6 +15,16 @@ import ActionSearchBar from '../components/ui/ActionSearchBar';
 import finalPlaces from '../data/final_places.json';
 import { TilePreloader } from '../map/services/TilePreloader';
 import { haptics } from '../utils/haptics';
+import {
+  Stepper,
+  StepperItem,
+  StepperTrigger,
+  StepperIndicator,
+  StepperSeparator,
+  StepperTitle,
+  StepperDescription,
+  StepperNav,
+} from '../components/ui/stepper';
 import {
   Select,
   SelectContent,
@@ -577,34 +587,62 @@ const RideRequestPage = () => {
             <>
               <h2 className="text-xl font-bold font-heading">Pickup Location</h2>
               
-              <div className="flex items-center gap-3 bg-zinc-100 dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800">
-                <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center shrink-0">
-                  <MapPin className="w-4 h-4 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                   <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Current Address</p>
-                   <p className="text-sm font-medium truncate">{currentAddress || 'Fetching address...'}</p>
-                </div>
-              </div>
-              
-              <div className="w-full flex items-center gap-2">
-                <div className="flex-1">
-                  <AddressSearch
-                    placeholder="Search for a pickup..."
-                    onLocationSelect={(loc) => {
-                      suppressConfirmUntilRef.current = Date.now() + 600;
-                      isExplicitSelectionRef.current = true;
-                      setSelectionTarget({ lat: loc.lat, lng: loc.lng, ts: Date.now() });
-                      setMapCenter({ lat: loc.lat, lng: loc.lng });
-                      setCurrentAddress(loc.address);
-                      setSelectedDestination(null);
+              {/* 🔒 FIXED HEIGHT CONTENT SLOT (Exact height for Pickup & Dropoff - Prevents Canvas Resize) */}
+              <div className="w-full h-[120px] flex items-center justify-between">
+                <div className="flex-1 min-w-0 pr-3">
+                  <Stepper
+                    value={1}
+                    orientation="vertical"
+                    className="w-full"
+                    indicators={{
+                      completed: <Check className="w-3.5 h-3.5 text-white stroke-[3]" />,
                     }}
-                  />
+                  >
+                    <StepperNav className="w-full gap-0">
+                      {/* Step 1: Current Address (Active) */}
+                      <StepperItem step={1} className="relative items-start w-full">
+                        <StepperTrigger className="items-start w-full gap-3 cursor-default">
+                          <StepperIndicator className="w-6 h-6 rounded-full text-xs font-bold shrink-0 bg-black text-white dark:bg-white dark:text-black shadow-sm">
+                            1
+                          </StepperIndicator>
+                          <div className="flex-1 min-w-0 text-left">
+                            <StepperTitle className="text-xs uppercase tracking-wider font-bold text-foreground">
+                              Current Address
+                            </StepperTitle>
+                            <StepperDescription className="text-sm font-medium text-muted-foreground truncate block max-w-[200px] xs:max-w-[240px]">
+                              {currentAddress || (isGeocoding ? 'Fetching address...' : 'Mulungushi University')}
+                            </StepperDescription>
+                          </div>
+                        </StepperTrigger>
+                        <StepperSeparator className="absolute top-6 left-3 -translate-x-1/2 h-6 w-0.5 bg-zinc-200 dark:bg-zinc-800 m-0" />
+                      </StepperItem>
+
+                      {/* Step 2: Destination (Inactive/Pending) */}
+                      <StepperItem step={2} className="relative items-start w-full pt-2">
+                        <StepperTrigger className="items-start w-full gap-3 cursor-default opacity-50">
+                          <StepperIndicator className="w-6 h-6 rounded-full text-xs font-medium shrink-0 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 border border-zinc-200 dark:border-zinc-700">
+                            2
+                          </StepperIndicator>
+                          <div className="flex-1 min-w-0 text-left">
+                            <StepperTitle className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
+                              Destination
+                            </StepperTitle>
+                            <StepperDescription className="text-sm font-normal text-muted-foreground/60 truncate block">
+                              Destination...
+                            </StepperDescription>
+                          </div>
+                        </StepperTrigger>
+                      </StepperItem>
+                    </StepperNav>
+                  </Stepper>
                 </div>
+
+                {/* GPS Navigation Button (Row 1 alignment) */}
                 <button
                   onClick={() => refreshLocation()}
                   disabled={geoLoading}
-                  className="w-12 h-12 flex-shrink-0 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl flex items-center justify-center active:scale-95 transition-transform"
+                  className="w-11 h-11 flex-shrink-0 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl flex items-center justify-center active:scale-95 transition-transform shadow-sm"
+                  title="Center to my location"
                 >
                   <Navigation className={`w-5 h-5 text-black dark:text-white ${geoLoading ? 'animate-pulse' : ''}`} />
                 </button>
@@ -624,30 +662,58 @@ const RideRequestPage = () => {
             <>
               <h2 className="text-xl font-bold font-heading">Set Destination</h2>
               
-              <div className="flex items-center gap-3 bg-zinc-100 dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800">
-                <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center shrink-0">
-                  <Flag className="w-4 h-4 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                   <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Dropoff Address</p>
-                   <p className="text-sm font-medium truncate">{currentAddress || 'Fetching address...'}</p>
-                </div>
-              </div>
+              {/* 🔒 FIXED HEIGHT CONTENT SLOT (100% Identical height to Pickup) */}
+              <div className="w-full h-[120px] flex items-center justify-between">
+                <div className="flex-1 min-w-0 pr-3">
+                  <Stepper
+                    value={2}
+                    orientation="vertical"
+                    className="w-full"
+                    indicators={{
+                      completed: <Check className="w-3.5 h-3.5 text-white stroke-[3]" />,
+                    }}
+                  >
+                    <StepperNav className="w-full gap-0">
+                      {/* Step 1: Pickup (Completed - Vibrant Emerald Green Badge & Green Line) */}
+                      <StepperItem step={1} completed={true} className="relative items-start w-full">
+                        <StepperTrigger className="items-start w-full gap-3 cursor-default">
+                          <StepperIndicator className="w-6 h-6 rounded-full text-xs font-bold shrink-0 bg-emerald-500 text-white shadow-sm">
+                            <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
+                          </StepperIndicator>
+                          <div className="flex-1 min-w-0 text-left">
+                            <StepperTitle className="text-xs uppercase tracking-wider font-bold text-emerald-600 dark:text-emerald-400">
+                              Pickup
+                            </StepperTitle>
+                            <StepperDescription className="text-sm font-medium text-foreground truncate block max-w-[200px] xs:max-w-[240px]">
+                              {pickup?.address || 'Pickup Point'}
+                            </StepperDescription>
+                          </div>
+                        </StepperTrigger>
+                        <StepperSeparator className="absolute top-6 left-3 -translate-x-1/2 h-6 w-0.5 bg-emerald-500 m-0" />
+                      </StepperItem>
 
-              <div className="w-full">
-                <AddressSearch
-                  placeholder="Search for a destination..."
-                  onLocationSelect={(loc) => {
-                    suppressConfirmUntilRef.current = Date.now() + 600;
-                    isExplicitSelectionRef.current = true;
-                    explicitSelectedLocationRef.current = { lat: loc.lat, lng: loc.lng, address: loc.address };
-                    setSelectionTarget({ lat: loc.lat, lng: loc.lng, ts: Date.now() });
-                    setMapCenter({ lat: loc.lat, lng: loc.lng });
-                    setCurrentAddress(loc.address);
-                    setDropoff({ lat: loc.lat, lng: loc.lng, address: loc.address });
-                    setSelectedDestination(null);
-                  }}
-                />
+                      {/* Step 2: Destination (Active - White in dark / Black in light) */}
+                      <StepperItem step={2} className="relative items-start w-full pt-2">
+                        <StepperTrigger className="items-start w-full gap-3 cursor-default">
+                          <StepperIndicator className="w-6 h-6 rounded-full text-xs font-bold shrink-0 bg-black text-white dark:bg-white dark:text-black shadow-sm">
+                            2
+                          </StepperIndicator>
+                          <div className="flex-1 min-w-0 text-left">
+                            <StepperTitle className="text-xs uppercase tracking-wider font-bold text-foreground">
+                              Destination
+                            </StepperTitle>
+                            <StepperDescription className="text-sm font-medium text-muted-foreground truncate block max-w-[200px] xs:max-w-[240px]">
+                              {currentAddress || (isGeocoding ? 'Fetching address...' : 'Select destination')}
+                            </StepperDescription>
+                          </div>
+                        </StepperTrigger>
+                      </StepperItem>
+                    </StepperNav>
+                  </Stepper>
+                </div>
+
+                {/* Invisible placeholder for GPS button to keep layout / width 100% mathematically identical */}
+                <div className="w-11 h-11 flex-shrink-0 opacity-0 pointer-events-none" />
               </div>
 
               <button 
