@@ -14,9 +14,8 @@ The following core modules and files are **STRICTLY LOCKED AND PROVEN STABLE**:
 4. **Camera & Zoom Control**:
    - `CameraEngine.jsx`, `ZoomController.js`.
 5. **No Straight Lines Policy**:
-6. **Bottom Sheet Shell & Map Viewport Engine (`RideRequestPage.jsx`)**:
-   - Page container layout (`h-[100dvh] flex flex-col`), Map container flex wrapper (`step === 'confirm' && isCollapsing ? 'absolute inset-0 z-0' : 'flex-1 relative z-0'`), Bottom sheet outer `motion.div` (`rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] relative z-20 flex flex-col overflow-hidden`), drag handle pill, and `px-5 pb-5 flex flex-col gap-4` animation container.
-   - **Constraint**: Only the child content/logic inside the inner content slot can ever be edited. All outer container styles, layout positioning, height calculations, and animation transitions are permanently locked.
+6. **Student Ride Request Engine & Transit Stepper (`RideRequestPage.jsx`, `stepper.jsx`)**:
+   - Complete page layout, Map Viewport Engine, Bottom Sheet Shell, GPS Alignment, and 2-step transit Stepper (`step === 'pickup'`, `step === 'dropoff'`, `step === 'confirm'`) are **PERMANENTLY LOCKED AND PROVEN STABLE**. No further edits allowed without explicit user permission.
 
 ### 🛡️ ZERO REGRESSION & COMPLETE ISOLATION GUARANTEE:
 - **Zero Modifications to Ride Logic**: No Admin fixes, optimizations, or refactors are permitted to modify, alter, or touch any active ride state machines, driver acceptance pipelines, student request handlers, or pricing algorithms.
