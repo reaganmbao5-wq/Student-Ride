@@ -12,19 +12,41 @@ def calculate_bearing(lat1, lon1, lat2, lon2):
     y = math.sin(dlon) * math.cos(lat2)
     x = math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(lat2) * math.cos(dlon)
     bearing = math.atan2(y, x)
-    return (math.degrees(bearing) + 360) % 360
+MAPBOX_ACCESS_TOKEN = os.environ.get(
+    "MAPBOX_ACCESS_TOKEN",
+    "pk.eyJ1IjoiamFleSIsImEiOiJjbXNocmV5ZXAwM3JlMnhzZ29raTB3eGc5In0.riXZQNEurCaETWjZt02R6A"
+)
 
 async def drive_route(client, driver_user_id, start_coords, end_coords):
     start_lat, start_lng = start_coords["lat"], start_coords["lng"]
     end_lat, end_lng = end_coords["lat"], end_coords["lng"]
     
-    osrm_url = f"http://router.project-osrm.org/route/v1/driving/{start_lng},{start_lat};{end_lng},{end_lat}?overview=full&geometries=geojson"
+    route_coords = None
+    # 1. Primary Engine: Mapbox Directions API
     try:
-        route_resp = await client.get(osrm_url)
-        route_coords = route_resp.json()["routes"][0]["geometry"]["coordinates"]
+        mapbox_url = f"https://api.mapbox.com/directions/v5/mapbox/driving/{start_lng},{start_lat};{end_lng},{end_lat}"
+        params = {
+            "overview": "full",
+            "geometries": "geojson",
+            "access_token": MAPBOX_ACCESS_TOKEN
+        }
+        resp = await client.get(mapbox_url, params=params, timeout=10.0)
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get("routes") and len(data["routes"]) > 0:
+                route_coords = data["routes"][0]["geometry"]["coordinates"]
     except Exception as e:
-        print("Failed to get OSRM route, falling back to straight line.")
-        route_coords = [[start_lng, start_lat], [end_lng, end_lat]]
+        print(f"Mapbox route error ({e}), falling back to secondary.")
+
+    if not route_coords:
+        try:
+            osrm_url = f"http://router.project-osrm.org/route/v1/driving/{start_lng},{start_lat};{end_lng},{end_lat}?overview=full&geometries=geojson"
+            route_resp = await client.get(osrm_url, timeout=6.0)
+            if route_resp.status_code == 200:
+                route_coords = route_resp.json()["routes"][0]["geometry"]["coordinates"]
+        except Exception as e:
+            print("Failed to get OSRM route, falling back to straight line.")
+            route_coords = [[start_lng, start_lat], [end_lng, end_lat]]
 
     for i in range(len(route_coords) - 1):
         curr_lng, curr_lat = route_coords[i]
@@ -40,18 +62,20 @@ async def drive_route(client, driver_user_id, start_coords, end_coords):
             }
         }
         
-        backend_url = os.environ.get("BACKEND_URL", "https://student-ride-backend-manual.onrender.com")
+        backend_url = os.environ.get("BACKEND_URL", "https://student-ride-backend-dev.onrender.com")
         await client.post(f"{backend_url}/api/test/inject_drivers", json={"drivers": payload})
         print(f"Driving... {curr_lat:.5f}, {curr_lng:.5f} (Heading: {heading:.1f})")
-        await asyncio.sleep(1.5)
+        await asyncio.sleep(0.5)
 
 async def main():
     parser = argparse.ArgumentParser(description="Simulate a physical ride by moving the driver pin")
     parser.add_argument("--email", required=True, help="The driver's email address")
     args = parser.parse_args()
 
+    load_dotenv('backend/.env')
+    load_dotenv('.env')
     load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
-    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+    mongo_url = os.environ.get('MONGO_URL', 'mongodb+srv://admin:reaganmbao31?@cluster0.mucpxu8.mongodb.net/?appName=Cluster0')
     db_client = AsyncIOMotorClient(mongo_url)
     db = db_client[os.environ.get('DB_NAME', 'mulungushi_rides')]
 

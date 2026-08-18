@@ -2720,16 +2720,16 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
     background_tasks.add_task(DriverTripManager.handle_ride_accepted, driver["id"], ride_id, db)
     background_tasks.add_task(internal_bus.publish, "ride_accepted", {"driver_id": driver["id"], "ride_id": ride_id})
     
-    # Notify student
+    # Notify student / lecturer
     background_tasks.add_task(
         manager.send_personal_message,
         {
             "ride_mode": ride_mode,
             "type": "ride_accepted",
-            "ride": target_ride,
+            "ride": ride,
             "driver": driver
         },
-        target_ride["student_id"]
+        ride["student_id"]
     )
 
     async def safe_broadcast_route(d_id):
@@ -3442,7 +3442,7 @@ async def get_active_ride(user: dict = Depends(get_current_user)):
                 ride["driver"] = DriverResponse(**driver)
                 
                 # Phase 4 ETA Restoration on Refresh via MongoDB Cache (Phase 01)
-                if user["role"] == UserRole.STUDENT.value:
+                if user["role"] in [UserRole.STUDENT.value, UserRole.LECTURER.value]:
                     try:
                         trip = await db.driver_trips.find_one({"driver_id": driver["id"]})
                         if trip and "passenger_briefings" in trip:

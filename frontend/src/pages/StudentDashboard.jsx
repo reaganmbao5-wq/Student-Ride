@@ -381,7 +381,7 @@ const StudentDashboard = () => {
               : (isSameRide ? (prev?.eta_text || null) : null)
           };
         });
-      } else {
+      } else if (!activeRes.data || activeRes.data.status === 'cancelled' || cancelledRideIdsRef.current.has(activeRes.data?.id)) {
         setPassengerBriefing(null);
       }
       
@@ -628,12 +628,19 @@ const StudentDashboard = () => {
       displayRouteGeometry = requestedRouteGeometry || [];
       routeState = displayRouteGeometry.length > 0 ? 'ROUTE AVAILABLE' : 'Loading route...';
     } else if (activeRide && activeRide.status !== 'cancelled') {
-      if ((!passengerBriefing || passengerBriefing.ride_id !== currentRideId) && activeRide.ride_mode === 'shared') {
-        routeState = 'Loading route...';
-        activeBriefingText = 'Loading route...';
-      } else if (isBriefingForThisRide && Array.isArray(passengerBriefing?.route_geometry) && passengerBriefing.route_geometry.length > 2) {
+      if (isBriefingForThisRide && Array.isArray(passengerBriefing?.route_geometry) && passengerBriefing.route_geometry.length > 2) {
         routeState = 'ROUTE AVAILABLE';
         displayRouteGeometry = passengerBriefing.route_geometry;
+      } else if (Array.isArray(activeRide.verified_geometry) && activeRide.verified_geometry.length > 2) {
+        // Safe immediate fallback to verified route geometry from booking so map is never empty
+        routeState = 'ROUTE AVAILABLE';
+        displayRouteGeometry = activeRide.verified_geometry;
+      } else if (Array.isArray(activeRide.route_geometry) && activeRide.route_geometry.length > 2) {
+        routeState = 'ROUTE AVAILABLE';
+        displayRouteGeometry = activeRide.route_geometry;
+      } else if ((!passengerBriefing || passengerBriefing.ride_id !== currentRideId) && activeRide.ride_mode === 'shared') {
+        routeState = 'Loading route...';
+        activeBriefingText = 'Loading route...';
       } else {
         routeState = 'ROUTE UNAVAILABLE';
       }

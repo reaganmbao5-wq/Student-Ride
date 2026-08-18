@@ -40,30 +40,53 @@ def calculate_bearing(lat1, lon1, lat2, lon2):
     bearing = math.atan2(y, x)
     return (math.degrees(bearing) + 360) % 360
 
+MAPBOX_ACCESS_TOKEN = os.environ.get(
+    "MAPBOX_ACCESS_TOKEN",
+    "pk.eyJ1IjoiamFleSIsImEiOiJjbXNocmV5ZXAwM3JlMnhzZ29raTB3eGc5In0.riXZQNEurCaETWjZt02R6A"
+)
+
 async def get_route(client, start_coords, end_coords):
     start_lat, start_lng = start_coords["lat"], start_coords["lng"]
     end_lat, end_lng = end_coords["lat"], end_coords["lng"]
     
-    osrm_url = f"http://router.project-osrm.org/route/v1/driving/{start_lng},{start_lat};{end_lng},{end_lat}?overview=full&geometries=geojson"
     raw_coords = None
+    # 1. Primary Engine: Mapbox Directions API v5
     try:
-        route_resp = await client.get(osrm_url, timeout=5.0)
+        mapbox_url = f"https://api.mapbox.com/directions/v5/mapbox/driving/{start_lng},{start_lat};{end_lng},{end_lat}"
+        params = {
+            "overview": "full",
+            "geometries": "geojson",
+            "access_token": MAPBOX_ACCESS_TOKEN
+        }
+        route_resp = await client.get(mapbox_url, params=params, timeout=10.0)
         if route_resp.status_code == 200:
             data = route_resp.json()
-            if data.get("routes"):
+            if data.get("routes") and len(data["routes"]) > 0:
                 raw_coords = data["routes"][0]["geometry"]["coordinates"]
     except Exception as e:
-        print(f"[SIMULATION] OSRM query network exception ({e}). Utilizing fallback points.")
+        print(f"[SIMULATION] Mapbox Directions API exception ({e}). Falling back to secondary.")
+        
+    # 2. Secondary Engine Fallback: OSRM
+    if not raw_coords:
+        try:
+            osrm_url = f"http://router.project-osrm.org/route/v1/driving/{start_lng},{start_lat};{end_lng},{end_lat}?overview=full&geometries=geojson"
+            route_resp = await client.get(osrm_url, timeout=6.0)
+            if route_resp.status_code == 200:
+                data = route_resp.json()
+                if data.get("routes"):
+                    raw_coords = data["routes"][0]["geometry"]["coordinates"]
+        except Exception as e:
+            print(f"[SIMULATION] OSRM query network exception ({e}).")
         
     if not raw_coords:
         raw_coords = [[start_lng, start_lat], [end_lng, end_lat]]
         
-    # Smooth out route_coords by interpolating between each OSRM point
+    # Smooth out route_coords by interpolating between each turn/waypoint
     smooth_coords = [[start_lng, start_lat]]
     for i in range(len(raw_coords) - 1):
         p1_lng, p1_lat = raw_coords[i]
         p2_lng, p2_lat = raw_coords[i+1]
-        smooth_coords.extend(interpolate_points(p1_lat, p1_lng, p2_lat, p2_lng, step_meters=150))
+        smooth_coords.extend(interpolate_points(p1_lat, p1_lng, p2_lat, p2_lng, step_meters=35))
         
     return smooth_coords
 
@@ -189,7 +212,7 @@ async def dynamic_driver_loop(db, client, backend_url, driver_id, driver_user_id
                 print("\n[SIMULATION] Queue changed mid-route! (Cancellation or Shared Ride detected). Recalculating...")
                 break # Break to re-evaluate the new queue
                 
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.5)
             
         # If we reached the target, pause and wait for the driver to click the app button
         if reached_target:
@@ -229,11 +252,11 @@ async def main():
         
     email = input("Enter driver's email (e.g., driver@test.com): ")
 
-    load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
-    load_dotenv(os.path.join(os.path.dirname(__file__), '..', 'backend', '.env'))
     load_dotenv('backend/.env')
     load_dotenv('.env')
-    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+    load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+    load_dotenv(os.path.join(os.path.dirname(__file__), '..', 'backend', '.env'))
+    mongo_url = os.environ.get('MONGO_URL', 'mongodb+srv://admin:reaganmbao31?@cluster0.mucpxu8.mongodb.net/?appName=Cluster0')
     db_client = AsyncIOMotorClient(mongo_url)
     db = db_client[os.environ.get('DB_NAME', 'mulungushi_rides')]
 
@@ -249,7 +272,7 @@ async def main():
         return
         
     driver_id = driver_profile["id"]
-    backend_url = os.environ.get("BACKEND_URL", "https://student-ride-backend-manual.onrender.com")
+    backend_url = os.environ.get("BACKEND_URL", "https://student-ride-backend-dev.onrender.com")
     
     print(f"[OK] Loaded Driver: {driver_user['name']}")
     
