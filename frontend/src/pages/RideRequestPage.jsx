@@ -588,56 +588,53 @@ const RideRequestPage = () => {
               <h2 className="text-xl font-bold font-heading">Pickup Location</h2>
               
               {/* 🔒 FIXED HEIGHT CONTENT SLOT (Exact height for Pickup & Dropoff - Prevents Canvas Resize) */}
-              <div className="w-full min-h-[140px] max-h-[140px] flex flex-col justify-between">
-                {/* ROW 1: Current Address + GPS Button on top-right */}
-                <div className="flex items-start justify-between w-full">
-                  <div className="flex items-start gap-3 flex-1 min-w-0 pr-3">
-                    {/* Node 1 & Connector Line */}
-                    <div className="flex flex-col items-center shrink-0">
-                      <div className="w-7 h-7 rounded-full bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold text-xs shadow-md">
-                        1
-                      </div>
-                      <div className="w-0.5 h-10 mt-1 bg-zinc-300 dark:bg-zinc-800" />
+              <div className="w-full h-[100px] flex items-start justify-between">
+                {/* Left: Connected Stepper Track + Text */}
+                <div className="flex items-start gap-3 flex-1 min-w-0 pr-3">
+                  {/* Left Column: Seamlessly Connected Nodes & Line */}
+                  <div className="flex flex-col items-center shrink-0">
+                    <div className="w-6 h-6 rounded-full bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold text-xs shadow-sm">
+                      1
                     </div>
-
-                    {/* Node 1 Text */}
-                    <div className="flex-1 min-w-0 pt-0.5 text-left">
-                      <p className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white">
-                        Current Address
-                      </p>
-                      <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300 truncate mt-0.5">
-                        {currentAddress || (isGeocoding ? 'Fetching address...' : 'Mulungushi University')}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* GPS Navigation Button (Aligned to Row 1 Top) */}
-                  <button
-                    onClick={() => refreshLocation()}
-                    disabled={geoLoading}
-                    className="w-11 h-11 flex-shrink-0 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl flex items-center justify-center active:scale-95 transition-transform shadow-sm"
-                    title="Center to my location"
-                  >
-                    <Navigation className={`w-5 h-5 text-black dark:text-white ${geoLoading ? 'animate-pulse' : ''}`} />
-                  </button>
-                </div>
-
-                {/* ROW 2: Destination (Pending) */}
-                <div className="flex items-start gap-3 w-full pr-14">
-                  <div className="shrink-0">
-                    <div className="w-7 h-7 rounded-full bg-zinc-100 dark:bg-zinc-900 text-zinc-400 dark:text-zinc-600 border border-zinc-300 dark:border-zinc-800 flex items-center justify-center font-semibold text-xs">
+                    <div className="w-0.5 h-7 my-1 bg-zinc-300 dark:bg-zinc-800" />
+                    <div className="w-6 h-6 rounded-full bg-zinc-100 dark:bg-zinc-900 text-zinc-400 dark:text-zinc-600 border border-zinc-300 dark:border-zinc-800 flex items-center justify-center font-semibold text-xs">
                       2
                     </div>
                   </div>
-                  <div className="flex-1 min-w-0 pt-0.5 text-left">
-                    <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-600">
-                      Destination
-                    </p>
-                    <p className="text-sm font-medium text-zinc-400 dark:text-zinc-600 truncate mt-0.5">
-                      Destination...
-                    </p>
+
+                  {/* Middle Column: Text Lines for Row 1 and Row 2 */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-between h-[84px] text-left">
+                    {/* Row 1 Text */}
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white leading-none">
+                        Current Address
+                      </p>
+                      <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300 truncate mt-1">
+                        {currentAddress || (isGeocoding ? 'Fetching address...' : 'Mulungushi University')}
+                      </p>
+                    </div>
+
+                    {/* Row 2 Text */}
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-600 leading-none">
+                        Destination
+                      </p>
+                      <p className="text-sm font-medium text-zinc-400 dark:text-zinc-600 truncate mt-1">
+                        Destination...
+                      </p>
+                    </div>
                   </div>
                 </div>
+
+                {/* Right: GPS Navigation Button (Aligned to Row 1 Top) */}
+                <button
+                  onClick={() => refreshLocation()}
+                  disabled={geoLoading}
+                  className="w-11 h-11 flex-shrink-0 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl flex items-center justify-center active:scale-95 transition-transform shadow-sm mt-0.5"
+                  title="Center to my location"
+                >
+                  <Navigation className={`w-5 h-5 text-black dark:text-white ${geoLoading ? 'animate-pulse' : ''}`} />
+                </button>
               </div>
 
               <button 
@@ -655,49 +652,46 @@ const RideRequestPage = () => {
               <h2 className="text-xl font-bold font-heading">Set Destination</h2>
               
               {/* 🔒 FIXED HEIGHT CONTENT SLOT (100% Identical height to Pickup) */}
-              <div className="w-full min-h-[140px] max-h-[140px] flex flex-col justify-between">
-                {/* ROW 1: Completed Pickup */}
-                <div className="flex items-start justify-between w-full">
-                  <div className="flex items-start gap-3 flex-1 min-w-0 pr-3">
-                    {/* Node 1 & Green Connector Line */}
-                    <div className="flex flex-col items-center shrink-0">
-                      <div className="w-7 h-7 rounded-full bg-green-500 text-white flex items-center justify-center font-bold text-xs shadow-md">
-                        <Check className="w-4 h-4 text-white stroke-[3]" />
-                      </div>
-                      <div className="w-0.5 h-10 mt-1 bg-green-500" />
+              <div className="w-full h-[100px] flex items-start justify-between">
+                {/* Left: Connected Stepper Track + Text */}
+                <div className="flex items-start gap-3 flex-1 min-w-0 pr-3">
+                  {/* Left Column: Seamlessly Connected Nodes & Green Line */}
+                  <div className="flex flex-col items-center shrink-0">
+                    <div className="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+                      <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
                     </div>
-
-                    {/* Node 1 Text */}
-                    <div className="flex-1 min-w-0 pt-0.5 text-left">
-                      <p className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white">
-                        Pickup
-                      </p>
-                      <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300 truncate mt-0.5">
-                        {pickup?.address || 'Pickup Point'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Invisible spacer for GPS button to keep layout / width 100% mathematically identical */}
-                  <div className="w-11 h-11 flex-shrink-0 opacity-0 pointer-events-none" />
-                </div>
-
-                {/* ROW 2: Active Destination */}
-                <div className="flex items-start gap-3 w-full pr-14">
-                  <div className="shrink-0">
-                    <div className="w-7 h-7 rounded-full bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold text-xs shadow-md">
+                    <div className="w-0.5 h-7 my-1 bg-green-500" />
+                    <div className="w-6 h-6 rounded-full bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold text-xs shadow-sm">
                       2
                     </div>
                   </div>
-                  <div className="flex-1 min-w-0 pt-0.5 text-left">
-                    <p className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white">
-                      Destination
-                    </p>
-                    <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300 truncate mt-0.5">
-                      {currentAddress || (isGeocoding ? 'Fetching address...' : 'Select destination')}
-                    </p>
+
+                  {/* Middle Column: Text Lines for Row 1 and Row 2 */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-between h-[84px] text-left">
+                    {/* Row 1 Text */}
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white leading-none">
+                        Pickup
+                      </p>
+                      <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300 truncate mt-1">
+                        {pickup?.address || 'Pickup Point'}
+                      </p>
+                    </div>
+
+                    {/* Row 2 Text */}
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white leading-none">
+                        Destination
+                      </p>
+                      <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300 truncate mt-1">
+                        {currentAddress || (isGeocoding ? 'Fetching address...' : 'Select destination')}
+                      </p>
+                    </div>
                   </div>
                 </div>
+
+                {/* Right: Invisible Spacer matching GPS button width */}
+                <div className="w-11 h-11 flex-shrink-0 opacity-0 pointer-events-none mt-0.5" />
               </div>
 
               <button 
