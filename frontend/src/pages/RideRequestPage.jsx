@@ -55,6 +55,7 @@ const RideRequestPage = () => {
   const [selectedDestination, setSelectedDestination] = useState(null);
   const [selectionTarget, setSelectionTarget] = useState(null);
   const [fareEstimate, setFareEstimate] = useState(null);
+  const [isEstimatingFare, setIsEstimatingFare] = useState(false);
   const [routeGeometry, setRouteGeometry] = useState(null);
   
   const [loading, setLoading] = useState(false);
@@ -213,27 +214,7 @@ const RideRequestPage = () => {
     const d = dropoffLoc || dropoff;
     if (!p || !d) return;
 
-    // Instant local Haversine estimate so UI renders immediately (< 100ms)
-    const lat1 = p.lat, lon1 = p.lng, lat2 = d.lat, lon2 = d.lng;
-    const R = 6371;
-    const dlat = (lat2 - lat1) * Math.PI / 180;
-    const dlon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dlat/2) * Math.sin(dlat/2) + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dlon/2) * Math.sin(dlon/2);
-    const estDist = Math.max(0.5, R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
-    const estDuration = Math.max(2, Math.round(estDist * 2.2 + 1));
-    
-    const estPrivateFare = Math.max(20, Math.round(15 + estDist * 5));
-    const estSharedFare = Math.max(15, Math.round(estPrivateFare * 0.7));
-
-    setFareEstimate({
-      private_fare: estPrivateFare,
-      shared_fare: estSharedFare,
-      distance_km: parseFloat(estDist.toFixed(1)),
-      distance: parseFloat(estDist.toFixed(1)),
-      duration_mins: estDuration,
-      duration_min: estDuration,
-      duration: estDuration
-    });
+    setIsEstimatingFare(true);
 
     try {
       const response = await api.post('/rides/estimate', {
@@ -246,15 +227,16 @@ const RideRequestPage = () => {
       const data = response.data;
       if (data) {
         setFareEstimate({
-          private_fare: data.private?.estimated_fare || data.private?.fare || estPrivateFare,
-          shared_fare: data.shared?.estimated_fare || data.shared?.fare || estSharedFare,
-          distance_km: data.verified_distance || data.distance_km || parseFloat(estDist.toFixed(1)),
-          duration_mins: data.verified_duration || data.duration_mins || estDuration,
-          duration_min: data.duration_min || data.verified_duration || data.duration_mins || estDuration,
-          duration: data.duration || data.verified_duration || data.duration_mins || estDuration,
-          distance: data.distance || data.verified_distance || data.distance_km || parseFloat(estDist.toFixed(1)),
+          private_fare: data.private?.estimated_fare || data.private?.fare || 0,
+          shared_fare: data.shared?.estimated_fare || data.shared?.fare || 0,
+          distance_km: data.verified_distance || data.distance_km || 0,
+          duration_mins: data.verified_duration || data.duration_mins || 1,
+          duration_min: data.duration_min || data.verified_duration || data.duration_mins || 1,
+          duration: data.duration || data.verified_duration || data.duration_mins || 1,
+          distance: data.distance || data.verified_distance || data.distance_km || 0,
           private_surge: data.private?.surge_reason,
-          shared_surge: data.shared?.surge_reason
+          shared_surge: data.shared?.surge_reason,
+          is_fixed: data.shared?.is_fixed || data.private?.is_fixed
         });
 
         if (data.geometry && Array.isArray(data.geometry) && data.geometry.length > 2) {
@@ -263,6 +245,8 @@ const RideRequestPage = () => {
       }
     } catch (error) {
       console.error('Background fare calc error:', error);
+    } finally {
+      setIsEstimatingFare(false);
     }
   }, [pickup, dropoff, api, selectedDestination]);
 
@@ -744,67 +728,90 @@ const RideRequestPage = () => {
                        <div className="py-4 flex justify-center">
                          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                        </div>
-                     ) : fareEstimate ? (
-                       <div className="flex items-stretch gap-3 min-h-[105px]">
+                     ) : (
+                        <div className="flex items-stretch gap-3 min-h-[105px]">
                           {/* Animated Swipeable & Tap-Toggleable Stationary Ride Mode Selector Card */}
                           <div 
                             onTouchStart={handleTouchStart}
                             onTouchMove={handleTouchMove}
                             onTouchEnd={handleTouchEnd}
                             onClick={() => {
-                              setRideMode(prev => prev === 'shared' ? 'private' : 'shared');
-                              haptics.swipeSnap();
+                              if (!isEstimatingFare && fareEstimate) {
+                                setRideMode(prev => prev === 'shared' ? 'private' : 'shared');
+                                haptics.swipeSnap();
+                              }
                             }}
                             style={{ touchAction: 'none' }}
-                            className={`flex-1 p-3.5 rounded-2xl cursor-pointer select-none transition-colors duration-300 relative overflow-hidden flex flex-col justify-between border-2 touch-none ${
-                              rideMode === 'shared' 
-                                ? 'bg-card text-card-foreground border-blue-500 shadow-md' 
-                                : 'bg-card text-card-foreground border-border shadow-md'
+                            className={`flex-1 p-3.5 rounded-2xl select-none transition-colors duration-300 relative overflow-hidden flex flex-col justify-between border-2 touch-none ${
+                              !fareEstimate || isEstimatingFare 
+                                ? 'bg-card text-card-foreground border-border shadow-sm cursor-wait'
+                                : rideMode === 'shared' 
+                                  ? 'bg-card text-card-foreground border-blue-500 shadow-md cursor-pointer' 
+                                  : 'bg-card text-card-foreground border-border shadow-md cursor-pointer'
                             }`}
                           >
-                            {/* Original embedded Save Badge flush on top-right corner */}
-                            {rideMode === 'shared' && fareEstimate.shared_fare < fareEstimate.private_fare && (
-                              <div className="absolute top-0 right-0 bg-blue-500 text-white text-[9px] font-extrabold px-2.5 py-1 rounded-bl-xl shadow z-10">
-                                Save {savePercent}%
-                              </div>
-                            )}
-
-                            <AnimatePresence mode="wait">
-                              <motion.div
-                                key={rideMode}
-                                initial={{ y: 15, opacity: 0 }}
-                                animate={{ y: 0, opacity: 1 }}
-                                exit={{ y: -15, opacity: 0 }}
-                                transition={{ duration: 0.2, ease: "easeInOut" }}
-                                className="w-full flex flex-col justify-between h-full"
-                              >
+                            {/* Loading Skeleton */}
+                            {(!fareEstimate || isEstimatingFare) ? (
+                              <div className="w-full flex flex-col justify-between h-full py-0.5 animate-pulse">
                                 <div className="flex items-start justify-between gap-2 mb-1">
                                   <div>
-                                    <span className={`text-[10px] font-extrabold uppercase tracking-wider ${rideMode === 'shared' ? 'text-blue-500 dark:text-blue-400' : 'text-muted-foreground'}`}>
-                                      {rideMode} FARE
-                                    </span>
-                                    <div className="text-xl font-bold font-heading text-foreground">
-                                      K{rideMode === 'shared' ? fareEstimate.shared_fare?.toFixed(2) : fareEstimate.private_fare?.toFixed(2)}
-                                    </div>
+                                    <div className="h-2.5 w-16 bg-muted rounded mb-1.5" />
+                                    <div className="h-6 w-24 bg-muted/80 rounded-lg" />
                                   </div>
-                                  {/* Shifted ETA & Distance comfortably below Save badge */}
-                                  <div className={`flex flex-col items-end shrink-0 ${rideMode === 'shared' ? 'pt-3.5' : 'pt-0.5'}`}>
-                                    <p className="text-xs text-foreground font-semibold">
-                                      {Math.ceil(fareEstimate.duration_min ?? fareEstimate.duration ?? fareEstimate.verified_duration ?? 1)} min
-                                    </p>
-                                    <p className="text-[10px] text-muted-foreground">
-                                      {(fareEstimate.distance_km ?? fareEstimate.verified_distance ?? fareEstimate.distance ?? 0.8).toFixed(2)} km
-                                    </p>
+                                  <div className="flex flex-col items-end gap-1 pt-1">
+                                    <div className="h-3 w-12 bg-muted rounded" />
+                                    <div className="h-2.5 w-10 bg-muted/60 rounded" />
                                   </div>
                                 </div>
+                                <div className="h-2.5 w-3/4 bg-muted/60 rounded mt-2" />
+                              </div>
+                            ) : (
+                              <>
+                                {/* Embedded Save Badge flush on top-right corner */}
+                                {rideMode === 'shared' && fareEstimate.shared_fare < fareEstimate.private_fare && (
+                                  <div className="absolute top-0 right-0 bg-blue-500 text-white text-[9px] font-extrabold px-2.5 py-1 rounded-bl-xl shadow z-10">
+                                    Save {savePercent}%
+                                  </div>
+                                )}
 
-                                <p className="text-[10px] text-muted-foreground leading-tight mt-1">
-                                  {rideMode === 'shared'
-                                    ? 'Lower fare. Ride may include other passengers.'
-                                    : 'Entire vehicle reserved. No additional platform passengers.'}
-                                </p>
-                              </motion.div>
-                            </AnimatePresence>
+                                <AnimatePresence mode="wait">
+                                  <motion.div
+                                    key={rideMode}
+                                    initial={{ y: 15, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    exit={{ y: -15, opacity: 0 }}
+                                    transition={{ duration: 0.2, ease: "easeInOut" }}
+                                    className="w-full flex flex-col justify-between h-full"
+                                  >
+                                    <div className="flex items-start justify-between gap-2 mb-1">
+                                      <div>
+                                        <span className={`text-[10px] font-extrabold uppercase tracking-wider ${rideMode === 'shared' ? 'text-blue-500 dark:text-blue-400' : 'text-muted-foreground'}`}>
+                                          {rideMode} FARE
+                                        </span>
+                                        <div className="text-xl font-bold font-heading text-foreground">
+                                          K{rideMode === 'shared' ? fareEstimate.shared_fare?.toFixed(2) : fareEstimate.private_fare?.toFixed(2)}
+                                        </div>
+                                      </div>
+                                      {/* Shifted ETA & Distance comfortably below Save badge */}
+                                      <div className={`flex flex-col items-end shrink-0 ${rideMode === 'shared' && fareEstimate.shared_fare < fareEstimate.private_fare ? 'pt-3.5' : 'pt-0.5'}`}>
+                                        <p className="text-xs text-foreground font-semibold">
+                                          {Math.ceil(fareEstimate.duration_min ?? fareEstimate.duration ?? fareEstimate.verified_duration ?? 1)} min
+                                        </p>
+                                        <p className="text-[10px] text-muted-foreground">
+                                          {(fareEstimate.distance_km ?? fareEstimate.verified_distance ?? fareEstimate.distance ?? 0.8).toFixed(2)} km
+                                        </p>
+                                      </div>
+                                    </div>
+
+                                    <p className="text-[10px] text-muted-foreground leading-tight mt-1">
+                                      {rideMode === 'shared'
+                                        ? 'Lower fare. Ride may include other passengers.'
+                                        : 'Entire vehicle reserved. No additional platform passengers.'}
+                                    </p>
+                                  </motion.div>
+                                </AnimatePresence>
+                              </>
+                            )}
                           </div>
 
                           {/* Request Ride Action Button (Placed DOWN at bottom of row) */}
@@ -822,9 +829,9 @@ const RideRequestPage = () => {
                               'Request Ride'
                             )}
                           </button>
-                       </div>
-                     ) : null}
-                   </>
+                        </div>
+                      )}
+                    </>
                  );
                })()}
              </>

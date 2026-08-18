@@ -579,8 +579,9 @@ class FixedRouteBase(BaseModel):
     pickup_coordinates: Dict[str, Any] # GeoJSON Point
     dropoff_coordinates: Dict[str, Any] # GeoJSON Point
     tolerance_radius_meters: float = Field(..., ge=50, le=2000)
-    fixed_price: float = Field(..., gt=0)
-    flat_commission: Optional[float] = Field(5.0, ge=0.0)
+    fixed_price: float = Field(..., gt=0) # Shared / Per-Seat Driver Base Fare
+    flat_commission: Optional[float] = Field(5.0, ge=0.0) # Flat Commission for Shared Ride
+    private_fixed_price: Optional[float] = Field(None, gt=0) # Optional Custom Driver Base Fare for Private Ride
     is_active: bool = True
 
 class FixedRouteResponse(FixedRouteBase):
@@ -862,25 +863,40 @@ async def calculate_ride_fare(pickup_loc: Dict[str, Any], dropoff_loc: Dict[str,
         tolerance_km = route["tolerance_radius_meters"] / 1000.0
         
         if p_dist <= tolerance_km and d_dist <= tolerance_km:
-            fixed_driver_base = route["fixed_price"]
-            fixed_commission = route.get("flat_commission", round(fixed_driver_base * commission_rate, 2))
-            if fixed_commission is None:
-                fixed_commission = round(fixed_driver_base * commission_rate, 2)
-            total_student_fare = round(fixed_driver_base + fixed_commission, 2)
+            shared_fixed_driver = float(route["fixed_price"])
+            shared_commission = float(route.get("flat_commission") if route.get("flat_commission") is not None else round(shared_fixed_driver * commission_rate, 2))
             
-            logger.info(f"Fixed Route Match: {route['pickup_name']} -> {route['dropoff_name']} | Driver Base: {fixed_driver_base}, Comm: {fixed_commission}, Student Total: {total_student_fare}")
+            is_private = (ride_mode == RideMode.PRIVATE or str(ride_mode).lower() == "private")
+            
+            if is_private:
+                # Private Ride ("In Taka" Whole Car)
+                # If custom private fixed price exists, use it; otherwise, multiply shared price * private_multiplier (3.5x)
+                if route.get("private_fixed_price") is not None and float(route["private_fixed_price"]) > 0:
+                    driver_earning = float(route["private_fixed_price"])
+                else:
+                    driver_earning = round(shared_fixed_driver * private_mult, 2)
+                    
+                commission = round(driver_earning * commission_rate, 2)
+                total_student_fare = round(driver_earning + commission, 2)
+            else:
+                # Shared Ride (Per Seat)
+                driver_earning = shared_fixed_driver
+                commission = shared_commission
+                total_student_fare = round(driver_earning + commission, 2)
+            
+            logger.info(f"Fixed Route Match: {route['pickup_name']} -> {route['dropoff_name']} | Mode: {ride_mode} | Driver: {driver_earning}, Comm: {commission}, Student Total: {total_student_fare}")
             return {
                 "fare": total_student_fare,
-                "driver_earning": fixed_driver_base,
-                "commission": fixed_commission,
+                "driver_earning": driver_earning,
+                "commission": commission,
                 "is_fixed": True,
                 "route_name": f"{route['pickup_name']} to {route['dropoff_name']}",
                 "breakdown": {
-                    "base": fixed_driver_base,
+                    "base": driver_earning,
                     "distance": 0,
                     "time": 0,
                     "surge": 0,
-                    "commission": fixed_commission,
+                    "commission": commission,
                     "student_fare": total_student_fare
                 }
             }
