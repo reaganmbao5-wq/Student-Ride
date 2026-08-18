@@ -3463,6 +3463,55 @@ async def get_active_ride(user: dict = Depends(get_current_user)):
     
     return None
 
+@api_router.get("/rides/{ride_id}", response_model=RideResponse)
+async def get_ride_by_id(ride_id: str, user: dict = Depends(get_current_user)):
+    ride = await db.rides.find_one({"id": ride_id}, {"_id": 0})
+    if not ride:
+        raise HTTPException(status_code=404, detail="Ride not found")
+        
+    is_student = ride.get("student_id") == user["id"]
+    is_driver = False
+    if ride.get("driver_id"):
+        driver_doc = await db.drivers.find_one({"id": ride["driver_id"]})
+        if driver_doc and driver_doc.get("user_id") == user["id"]:
+            is_driver = True
+    is_admin = user.get("role") in [UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value]
+    
+    if not (is_student or is_driver or is_admin):
+        raise HTTPException(status_code=403, detail="Not authorized to view this ride")
+        
+    student = await db.users.find_one({"id": ride["student_id"]}, {"_id": 0})
+    if student:
+        ride["student"] = UserResponse(
+            id=student["id"],
+            email=student["email"],
+            name=student["name"],
+            phone=student.get("phone", ""),
+            avatar_url=student.get("avatar_url"),
+            role=UserRole(student["role"]),
+            created_at=student.get("created_at", ""),
+            is_active=student.get("is_active", True)
+        )
+    
+    if ride.get("driver_id"):
+        driver = await db.drivers.find_one({"id": ride["driver_id"]}, {"_id": 0})
+        if driver:
+            driver_user = await db.users.find_one({"id": driver["user_id"]}, {"_id": 0})
+            if driver_user:
+                driver["user"] = UserResponse(
+                    id=driver_user["id"],
+                    email=driver_user["email"],
+                    name=driver_user["name"],
+                    phone=driver_user.get("phone", ""),
+                    avatar_url=driver_user.get("avatar_url"),
+                    role=UserRole(driver_user["role"]),
+                    created_at=driver_user.get("created_at", datetime.now().isoformat()),
+                    is_active=driver_user.get("is_active", True)
+                )
+            ride["driver"] = DriverResponse(**driver)
+            
+    return RideResponse(**ride)
+
 @api_router.get("/rides/history", response_model=List[RideResponse])
 async def get_ride_history(
     limit: int = Query(20, ge=1, le=100),
@@ -3567,55 +3616,109 @@ async def get_pending_rides(user: dict = Depends(require_driver)):
 
 # ==================== CHAT ROUTES ====================
 @api_router.post("/chat/send", response_model=MessageResponse)
-async def send_message(message: MessageCreate, user: dict = Depends(get_current_user)):
+async def send_message(message: MessageCreate, background_tasks: BackgroundTasks, user: dict = Depends(get_current_user)):
     ride = await db.rides.find_one({"id": message.ride_id}, {"_id": 0})
     if not ride:
         raise HTTPException(status_code=404, detail="Ride not found")
     
-    # Check if user is part of ride
-    is_student = ride["student_id"] == user["id"]
+    # Check if user is passenger (student/lecturer), driver, or admin
+    is_student = ride.get("student_id") == user["id"]
     is_driver = False
-    if ride["driver_id"]:
-        driver = await db.drivers.find_one({"id": ride["driver_id"]}, {"_id": 0})
-        is_driver = driver and driver["user_id"] == user["id"]
+    driver_user_id = None
+    if ride.get("driver_id"):
+        driver_doc = await db.drivers.find_one({"id": ride["driver_id"]})
+        if driver_doc:
+            driver_user_id = driver_doc.get("user_id")
+            if driver_user_id == user["id"]:
+                is_driver = True
     
-    if not is_student and not is_driver:
-        raise HTTPException(status_code=403, detail="Not authorized")
+    is_admin = user.get("role") in [UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value]
+    
+    if not (is_student or is_driver or is_admin):
+        raise HTTPException(status_code=403, detail="Not authorized for this chat")
     
     msg_id = str(uuid.uuid4())
     msg = {
         "id": msg_id,
         "ride_id": message.ride_id,
         "sender_id": user["id"],
-        "sender_name": user["name"],
-        "content": message.content,
+        "sender_name": user.get("name", "User"),
+        "content": message.content.strip(),
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.messages.insert_one(msg)
     
-    # Send to other party
-    recipient_id = ride["student_id"] if is_driver else None
-    if not is_driver and ride["driver_id"]:
-        driver = await db.drivers.find_one({"id": ride["driver_id"]}, {"_id": 0})
-        if driver:
-            recipient_id = driver["user_id"]
+    # Determine recipient user ID
+    recipient_id = None
+    if is_student:
+        recipient_id = driver_user_id
+    elif is_driver:
+        recipient_id = ride.get("student_id")
     
-    if recipient_id:
-        background_tasks.add_task(manager.send_personal_message, {
-        "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
+    # Broadcast to Ride Room via WebSocket
+    background_tasks.add_task(
+        manager.broadcast_to_ride,
+        {
             "type": "new_message",
-            "message": msg
-        }, recipient_id)
+            "message": msg,
+            "ride_id": message.ride_id
+        },
+        message.ride_id
+    )
+    
+    # Send Direct Personal Message via WebSocket to recipient if present
+    if recipient_id:
+        background_tasks.add_task(
+            manager.send_personal_message,
+            {
+                "type": "new_message",
+                "message": msg,
+                "ride_id": message.ride_id
+            },
+            recipient_id
+        )
+        
+        # Send Push Notification to Recipient
+        async def send_chat_push(target_user_id, sender_name, content, r_id):
+            try:
+                await notification_service.send(
+                    user_id=target_user_id,
+                    type="chat_message",
+                    payload={
+                        "title": f"💬 Message from {sender_name}",
+                        "body": content[:120],
+                        "url": f"/ride/chat/{r_id}",
+                        "icon": "/logo192.png",
+                        "badge": "/favicon-32x32.png",
+                        "tag": f"chat-{r_id}"
+                    }
+                )
+            except Exception as e:
+                logger.error(f"Failed to send chat push notification: {e}")
+                
+        background_tasks.add_task(send_chat_push, recipient_id, user.get("name", "User"), message.content.strip(), message.ride_id)
     
     return MessageResponse(**msg)
 
 @api_router.get("/chat/{ride_id}", response_model=List[MessageResponse])
-async def get_chat_messages(ride_id: str, user: dict = Depends(get_current_user)):
+async def get_chat_history(ride_id: str, user: dict = Depends(get_current_user)):
     ride = await db.rides.find_one({"id": ride_id}, {"_id": 0})
     if not ride:
         raise HTTPException(status_code=404, detail="Ride not found")
     
-    messages = await db.messages.find({"ride_id": ride_id}, {"_id": 0}).sort("created_at", 1).to_list(100)
+    is_student = ride.get("student_id") == user["id"]
+    is_driver_user = False
+    if ride.get("driver_id"):
+        driver = await db.drivers.find_one({"id": ride["driver_id"]})
+        if driver and driver.get("user_id") == user["id"]:
+            is_driver_user = True
+            
+    is_admin = user.get("role") in [UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value]
+    
+    if not (is_student or is_driver_user or is_admin):
+        raise HTTPException(status_code=403, detail="Not authorized")
+         
+    messages = await db.messages.find({"ride_id": ride_id}, {"_id": 0}).sort("created_at", 1).to_list(1000)
     return [MessageResponse(**m) for m in messages]
 
 # ==================== ADMIN ROUTES ====================
@@ -4791,66 +4894,6 @@ async def estimate_fare(data: dict, user: dict = Depends(get_current_user)):
         "eta_text": f"{max(1, int(round(duration_min)))} min",
         "geometry": verified_geometry
     }
-
-# ==================== CHAT ROUTES ====================
-@api_router.post("/chat/send", response_model=MessageResponse)
-async def send_message(message: MessageCreate, user: dict = Depends(get_current_user)):
-    # Verify user is part of the ride
-    ride = await db.rides.find_one({"id": message.ride_id}, {"_id": 0})
-    if not ride:
-        raise HTTPException(status_code=404, detail="Ride not found")
-    
-    # Check if user is student or driver for this ride (or admin)
-    is_student = ride["student_id"] == user["id"]
-    is_driver = ride.get("driver_id") and ride["driver_id"] == (await db.drivers.find_one({"user_id": user["id"]}))["id"]
-    
-    if not (is_student or is_driver):
-        raise HTTPException(status_code=403, detail="Not authorized for this chat")
-    
-    msg_id = str(uuid.uuid4())
-    new_message = {
-        "id": msg_id,
-        "ride_id": message.ride_id,
-        "sender_id": user["id"],
-        "sender_name": user["name"],
-        "content": message.content,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "expires_at": datetime.now(timezone.utc)
-    }
-    
-    await db.messages.insert_one(new_message)
-    
-    # Broadcast via WebSocket
-    await manager.broadcast_to_ride({
-        "type": "new_message",
-        "message": new_message,
-        "ride_id": message.ride_id
-    }, message.ride_id)
-    
-    return MessageResponse(**new_message)
-
-@api_router.get("/chat/{ride_id}", response_model=List[MessageResponse])
-async def get_chat_history(ride_id: str, user: dict = Depends(get_current_user)):
-    ride = await db.rides.find_one({"id": ride_id}, {"_id": 0})
-    if not ride:
-        raise HTTPException(status_code=404, detail="Ride not found")
-    
-    # Check authorization
-    is_student = ride["student_id"] == user["id"]
-    is_driver_user = False
-    
-    if ride.get("driver_id"):
-        driver = await db.drivers.find_one({"id": ride["driver_id"]})
-        if driver and driver["user_id"] == user["id"]:
-            is_driver_user = True
-            
-    is_admin = user["role"] in [UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value]
-    
-    if not (is_student or is_driver_user or is_admin):
-         raise HTTPException(status_code=403, detail="Not authorized")
-         
-    messages = await db.messages.find({"ride_id": ride_id}, {"_id": 0}).sort("created_at", 1).to_list(1000)
-    return [MessageResponse(**m) for m in messages]
 
 # ==================== WEBSOCKET ENDPOINT ====================
 # ==================== WEBSOCKET ENDPOINT ====================

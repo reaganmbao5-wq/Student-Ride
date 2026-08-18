@@ -1,17 +1,12 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
 import { GlassCard, GlassInput, GoldButton } from '../common/GlassComponents';
-import { MapPin, Navigation, Trash2, Plus, Edit2, Check, X, Flag } from 'lucide-react';
+import { MapPin, Navigation, Trash2, Flag, X } from 'lucide-react';
 import { toast } from 'sonner';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
-
-const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1IjoiamFleSIsImEiOiJjbXNocmV5ZXAwM3JlMnhzZ29raTB3eGc5In0.riXZQNEurCaETWjZt02R6A';
+import { PlatformMap } from '../../map/components/PlatformMap';
 
 const FixedRouteManager = () => {
     const { api } = useAuth();
-    const { theme } = useTheme();
     const [routes, setRoutes] = useState([]);
     const [loading, setLoading] = useState(false);
 
@@ -25,7 +20,8 @@ const FixedRouteManager = () => {
         tolerance_radius_meters: 500
     });
 
-    // Map Selection State
+    // Map Center & Selection State
+    const [mapCenter, setMapCenter] = useState({ lat: -14.294896, lng: 28.559798 });
     const [pickupCoords, setPickupCoords] = useState(null);
     const [dropoffCoords, setDropoffCoords] = useState(null);
     const [selectionMode, setSelectionMode] = useState(null); // 'pickup' | 'dropoff' | null
@@ -35,23 +31,6 @@ const FixedRouteManager = () => {
     const [pickupResults, setPickupResults] = useState([]);
     const [dropoffSearch, setDropoffSearch] = useState('');
     const [dropoffResults, setDropoffResults] = useState([]);
-
-    // Mapbox References
-    const mapContainerRef = useRef(null);
-    const mapInstanceRef = useRef(null);
-    const pickupMarkerRef = useRef(null);
-    const dropoffMarkerRef = useRef(null);
-    const selectionModeRef = useRef(selectionMode);
-
-    useEffect(() => {
-        selectionModeRef.current = selectionMode;
-        if (mapInstanceRef.current) {
-            const canvas = mapInstanceRef.current.getCanvas();
-            if (canvas) {
-                canvas.style.cursor = selectionMode ? 'crosshair' : '';
-            }
-        }
-    }, [selectionMode]);
 
     const fetchRoutes = useCallback(async () => {
         try {
@@ -66,104 +45,26 @@ const FixedRouteManager = () => {
         fetchRoutes();
     }, [fetchRoutes]);
 
-    // Initialize Mapbox Map
-    useEffect(() => {
-        if (!mapContainerRef.current) return;
-
-        mapboxgl.accessToken = MAPBOX_TOKEN;
-
-        const map = new mapboxgl.Map({
-            container: mapContainerRef.current,
-            style: theme === 'light' ? 'mapbox://styles/mapbox/streets-v12' : 'mapbox://styles/mapbox/dark-v11',
-            center: [28.45, -14.43], // Kabwe / Mulungushi Region
-            zoom: 12.5,
-            attributionControl: false
-        });
-
-        map.addControl(new mapboxgl.NavigationControl({ showCompass: true }), 'top-right');
-
-        map.on('click', (e) => {
-            const mode = selectionModeRef.current;
-            const latlng = { lat: e.lngLat.lat, lng: e.lngLat.lng };
-            if (mode === 'pickup') {
-                setPickupCoords(latlng);
-                toast.success("Pickup location set on map");
-                setSelectionMode(null);
-            } else if (mode === 'dropoff') {
-                setDropoffCoords(latlng);
-                toast.success("Dropoff location set on map");
-                setSelectionMode(null);
-            }
-        });
-
-        mapInstanceRef.current = map;
-
-        return () => {
-            if (pickupMarkerRef.current) pickupMarkerRef.current.remove();
-            if (dropoffMarkerRef.current) dropoffMarkerRef.current.remove();
-            map.remove();
-        };
-    }, [theme]);
-
-    // Update Pickup Marker on Map
-    useEffect(() => {
-        if (!mapInstanceRef.current) return;
-        const map = mapInstanceRef.current;
-
+    const markers = useMemo(() => {
+        const list = [];
         if (pickupCoords) {
-            if (!pickupMarkerRef.current) {
-                const el = document.createElement('div');
-                el.className = 'w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-xl border-2 border-white cursor-pointer';
-                el.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>';
-                
-                pickupMarkerRef.current = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
-                    .setLngLat([pickupCoords.lng, pickupCoords.lat])
-                    .addTo(map);
-            } else {
-                pickupMarkerRef.current.setLngLat([pickupCoords.lng, pickupCoords.lat]);
-            }
-        } else if (pickupMarkerRef.current) {
-            pickupMarkerRef.current.remove();
-            pickupMarkerRef.current = null;
+            list.push({
+                id: 'fixed-route-pickup',
+                lat: pickupCoords.lat,
+                lng: pickupCoords.lng,
+                iconType: 'pickup'
+            });
         }
-
-        // Adjust bounds if both markers exist
-        if (pickupCoords && dropoffCoords) {
-            const bounds = new mapboxgl.LngLatBounds();
-            bounds.extend([pickupCoords.lng, pickupCoords.lat]);
-            bounds.extend([dropoffCoords.lng, dropoffCoords.lat]);
-            map.fitBounds(bounds, { padding: 60, maxZoom: 15 });
-        } else if (pickupCoords) {
-            map.flyTo({ center: [pickupCoords.lng, pickupCoords.lat], zoom: 14 });
-        }
-    }, [pickupCoords, dropoffCoords]);
-
-    // Update Dropoff Marker on Map
-    useEffect(() => {
-        if (!mapInstanceRef.current) return;
-        const map = mapInstanceRef.current;
-
         if (dropoffCoords) {
-            if (!dropoffMarkerRef.current) {
-                const el = document.createElement('div');
-                el.className = 'w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center shadow-xl border-2 border-white cursor-pointer';
-                el.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>';
-                
-                dropoffMarkerRef.current = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
-                    .setLngLat([dropoffCoords.lng, dropoffCoords.lat])
-                    .addTo(map);
-            } else {
-                dropoffMarkerRef.current.setLngLat([dropoffCoords.lng, dropoffCoords.lat]);
-            }
-        } else if (dropoffMarkerRef.current) {
-            dropoffMarkerRef.current.remove();
-            dropoffMarkerRef.current = null;
+            list.push({
+                id: 'fixed-route-dropoff',
+                lat: dropoffCoords.lat,
+                lng: dropoffCoords.lng,
+                iconType: 'dropoff'
+            });
         }
-
-        if (dropoffCoords && !pickupCoords) {
-            map.flyTo({ center: [dropoffCoords.lng, dropoffCoords.lat], zoom: 14 });
-        }
-    }, [dropoffCoords, pickupCoords]);
+        return list;
+    }, [pickupCoords, dropoffCoords]);
 
     const searchPlaces = async (query, setResults) => {
         if (!query || query.trim().length < 2) {
@@ -179,7 +80,8 @@ const FixedRouteManager = () => {
     };
 
     const handleSelectPlace = (place, type) => {
-        const coords = { lat: place.lat, lng: place.lon };
+        const coords = { lat: parseFloat(place.lat), lng: parseFloat(place.lon) };
+        setMapCenter(coords);
         if (type === 'pickup') {
             setPickupCoords(coords);
             setForm(prev => ({ ...prev, pickup_name: place.display_name }));
@@ -195,15 +97,22 @@ const FixedRouteManager = () => {
         }
     };
 
-    const handleMapSelect = (latlng) => {
+    const handleConfirmCenterAsLocation = () => {
         if (selectionMode === 'pickup') {
-            setPickupCoords(latlng);
-            toast.success("Pickup location set on map");
+            setPickupCoords(mapCenter);
+            if (!form.pickup_name) {
+                setForm(prev => ({ ...prev, pickup_name: `Point (${mapCenter.lat.toFixed(4)}, ${mapCenter.lng.toFixed(4)})` }));
+            }
+            toast.success("Pickup pinned to map center");
+            setSelectionMode(null);
         } else if (selectionMode === 'dropoff') {
-            setDropoffCoords(latlng);
-            toast.success("Dropoff location set on map");
+            setDropoffCoords(mapCenter);
+            if (!form.dropoff_name) {
+                setForm(prev => ({ ...prev, dropoff_name: `Point (${mapCenter.lat.toFixed(4)}, ${mapCenter.lng.toFixed(4)})` }));
+            }
+            toast.success("Dropoff pinned to map center");
+            setSelectionMode(null);
         }
-        setSelectionMode(null);
     };
 
     const handleSubmit = async (e) => {
@@ -221,14 +130,8 @@ const FixedRouteManager = () => {
                 flat_commission: parseFloat(form.flat_commission || 5.0),
                 private_fixed_price: form.private_fixed_price ? parseFloat(form.private_fixed_price) : null,
                 tolerance_radius_meters: parseInt(form.tolerance_radius_meters),
-                pickup_coordinates: {
-                    type: "Point",
-                    coordinates: [pickupCoords.lng, pickupCoords.lat]
-                },
-                dropoff_coordinates: {
-                    type: "Point",
-                    coordinates: [dropoffCoords.lng, dropoffCoords.lat]
-                }
+                pickup_coordinates: { type: "Point", coordinates: [pickupCoords.lng, pickupCoords.lat] },
+                dropoff_coordinates: { type: "Point", coordinates: [dropoffCoords.lng, dropoffCoords.lat] }
             };
 
             await api.post('/admin/fixed-routes', payload);
@@ -236,8 +139,6 @@ const FixedRouteManager = () => {
             setForm({ pickup_name: '', dropoff_name: '', fixed_price: '', flat_commission: '5.00', private_fixed_price: '', tolerance_radius_meters: 500 });
             setPickupCoords(null);
             setDropoffCoords(null);
-            setPickupSearch('');
-            setDropoffSearch('');
             fetchRoutes();
         } catch (error) {
             toast.error("Failed to create route");
@@ -266,10 +167,8 @@ const FixedRouteManager = () => {
                 </h2>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Form Side */}
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {/* Pickup Selection */}
                             <div className="relative">
                                 <label className="block text-xs text-muted-foreground mb-1">Pickup Name / Search Place</label>
                                 <GlassInput
@@ -285,29 +184,23 @@ const FixedRouteManager = () => {
                                 {pickupResults.length > 0 && (
                                     <div className="absolute left-0 right-0 top-full mt-1 bg-black/90 border border-gold/30 rounded-xl max-h-40 overflow-y-auto z-[2000] shadow-xl">
                                         {pickupResults.map(p => (
-                                            <div
-                                                key={p.id}
-                                                onClick={() => handleSelectPlace(p, 'pickup')}
-                                                className="p-2 hover:bg-gold/20 text-xs text-foreground cursor-pointer transition-colors border-b border-white/5"
-                                            >
+                                            <div key={p.id} onClick={() => handleSelectPlace(p, 'pickup')} className="p-2 hover:bg-gold/20 text-xs text-foreground cursor-pointer transition-colors border-b border-white/5">
                                                 <div className="font-semibold">{p.display_name}</div>
-                                                <div className="text-[10px] text-muted-foreground">{p.category}</div>
                                             </div>
                                         ))}
                                     </div>
                                 )}
                                 <button
                                     type="button"
-                                    onClick={() => setSelectionMode('pickup')}
+                                    onClick={() => setSelectionMode(selectionMode === 'pickup' ? null : 'pickup')}
                                     className={`mt-2 w-full py-1.5 px-3 rounded-xl text-xs transition-colors flex items-center justify-center gap-2
-                                        ${pickupCoords ? 'bg-emerald-500/20 text-emerald-400' : selectionMode === 'pickup' ? 'bg-gold text-black animate-pulse' : 'bg-muted text-foreground'}`}
+                                        ${pickupCoords ? 'bg-emerald-500/20 text-emerald-400 font-semibold' : selectionMode === 'pickup' ? 'bg-gold text-black animate-pulse font-bold' : 'bg-muted text-foreground'}`}
                                 >
                                     <MapPin className="w-3.5 h-3.5" />
-                                    {pickupCoords ? `Pickup Set (${pickupCoords.lat.toFixed(4)})` : selectionMode === 'pickup' ? 'Click on Map...' : 'Pin on Map'}
+                                    {pickupCoords ? `Pickup Set (${pickupCoords.lat.toFixed(4)})` : selectionMode === 'pickup' ? 'Aim on Map Center...' : 'Pin on Map'}
                                 </button>
                             </div>
 
-                            {/* Dropoff Selection */}
                             <div className="relative">
                                 <label className="block text-xs text-muted-foreground mb-1">Dropoff Name / Search Place</label>
                                 <GlassInput
@@ -323,25 +216,20 @@ const FixedRouteManager = () => {
                                 {dropoffResults.length > 0 && (
                                     <div className="absolute left-0 right-0 top-full mt-1 bg-black/90 border border-gold/30 rounded-xl max-h-40 overflow-y-auto z-[2000] shadow-xl">
                                         {dropoffResults.map(p => (
-                                            <div
-                                                key={p.id}
-                                                onClick={() => handleSelectPlace(p, 'dropoff')}
-                                                className="p-2 hover:bg-gold/20 text-xs text-foreground cursor-pointer transition-colors border-b border-white/5"
-                                            >
+                                            <div key={p.id} onClick={() => handleSelectPlace(p, 'dropoff')} className="p-2 hover:bg-gold/20 text-xs text-foreground cursor-pointer transition-colors border-b border-white/5">
                                                 <div className="font-semibold">{p.display_name}</div>
-                                                <div className="text-[10px] text-muted-foreground">{p.category}</div>
                                             </div>
                                         ))}
                                     </div>
                                 )}
                                 <button
                                     type="button"
-                                    onClick={() => setSelectionMode('dropoff')}
+                                    onClick={() => setSelectionMode(selectionMode === 'dropoff' ? null : 'dropoff')}
                                     className={`mt-2 w-full py-1.5 px-3 rounded-xl text-xs transition-colors flex items-center justify-center gap-2
-                                        ${dropoffCoords ? 'bg-red-500/20 text-red-400' : selectionMode === 'dropoff' ? 'bg-gold text-black animate-pulse' : 'bg-muted text-foreground'}`}
+                                        ${dropoffCoords ? 'bg-red-500/20 text-red-400 font-semibold' : selectionMode === 'dropoff' ? 'bg-gold text-black animate-pulse font-bold' : 'bg-muted text-foreground'}`}
                                 >
-                                    <MapPin className="w-3.5 h-3.5" />
-                                    {dropoffCoords ? `Dropoff Set (${dropoffCoords.lat.toFixed(4)})` : selectionMode === 'dropoff' ? 'Click on Map...' : 'Pin on Map'}
+                                    <Flag className="w-3.5 h-3.5" />
+                                    {dropoffCoords ? `Dropoff Set (${dropoffCoords.lat.toFixed(4)})` : selectionMode === 'dropoff' ? 'Aim on Map Center...' : 'Pin on Map'}
                                 </button>
                             </div>
                         </div>
@@ -349,45 +237,19 @@ const FixedRouteManager = () => {
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             <div>
                                 <label className="block text-xs text-muted-foreground mb-1">Shared Driver (K)</label>
-                                <GlassInput
-                                    type="number"
-                                    step="1"
-                                    value={form.fixed_price}
-                                    onChange={e => setForm({ ...form, fixed_price: e.target.value })}
-                                    placeholder="e.g. 50"
-                                    required
-                                />
+                                <GlassInput type="number" step="1" value={form.fixed_price} onChange={e => setForm({ ...form, fixed_price: e.target.value })} placeholder="e.g. 50" required />
                             </div>
                             <div>
                                 <label className="block text-xs text-muted-foreground mb-1">Platform Fee (K)</label>
-                                <GlassInput
-                                    type="number"
-                                    step="0.5"
-                                    value={form.flat_commission}
-                                    onChange={e => setForm({ ...form, flat_commission: e.target.value })}
-                                    placeholder="e.g. 5"
-                                    required
-                                />
+                                <GlassInput type="number" step="0.5" value={form.flat_commission} onChange={e => setForm({ ...form, flat_commission: e.target.value })} placeholder="e.g. 5" required />
                             </div>
                             <div>
-                                <label className="block text-xs text-muted-foreground mb-1">Private Base (K) <span className="text-[10px] text-muted-foreground/60">(Opt)</span></label>
-                                <GlassInput
-                                    type="number"
-                                    step="1"
-                                    value={form.private_fixed_price}
-                                    onChange={e => setForm({ ...form, private_fixed_price: e.target.value })}
-                                    placeholder="Auto 3.5x"
-                                />
+                                <label className="block text-xs text-muted-foreground mb-1">Private Base (K)</label>
+                                <GlassInput type="number" step="1" value={form.private_fixed_price} onChange={e => setForm({ ...form, private_fixed_price: e.target.value })} placeholder="Auto 3.5x" />
                             </div>
                             <div>
                                 <label className="block text-xs text-muted-foreground mb-1">Tolerance (m)</label>
-                                <GlassInput
-                                    type="number"
-                                    step="50"
-                                    value={form.tolerance_radius_meters}
-                                    onChange={e => setForm({ ...form, tolerance_radius_meters: e.target.value })}
-                                    required
-                                />
+                                <GlassInput type="number" step="50" value={form.tolerance_radius_meters} onChange={e => setForm({ ...form, tolerance_radius_meters: e.target.value })} required />
                             </div>
                         </div>
 
@@ -400,20 +262,50 @@ const FixedRouteManager = () => {
                         </div>
                     </form>
 
-                    {/* Mapbox Map Side */}
-                    <div className="h-[400px] rounded-xl overflow-hidden border border-white/10 relative shadow-inner">
-                        <div ref={mapContainerRef} className="w-full h-full" />
+                    <div className="h-[400px] rounded-2xl overflow-hidden border border-border relative shadow-lg">
+                        <PlatformMap
+                            center={mapCenter}
+                            zoom={13}
+                            markers={markers}
+                            onCenterChanged={(c) => setMapCenter(c)}
+                            interactive={true}
+                            className="w-full h-full"
+                        />
 
                         {selectionMode && (
-                            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/90 text-white px-4 py-2 rounded-full z-[1000] shadow-lg border border-gold/50 animate-pulse text-xs font-semibold">
-                                Click Mapbox map to set <strong>{selectionMode.toUpperCase()}</strong> location
+                            <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center z-20">
+                                <div className={`w-9 h-9 rounded-full flex items-center justify-center shadow-2xl border-2 border-white ${selectionMode === 'pickup' ? 'bg-emerald-500 text-white' : 'bg-red-600 text-white'} animate-bounce`}>
+                                    {selectionMode === 'pickup' ? <MapPin className="w-5 h-5" /> : <Flag className="w-5 h-5" />}
+                                </div>
+                                <div className="w-2.5 h-1 bg-black/40 rounded-full blur-[1px] mt-1" />
+                            </div>
+                        )}
+
+                        {selectionMode && (
+                            <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-black/90 text-white px-4 py-2 rounded-full z-30 shadow-2xl border border-gold/50 flex items-center gap-3">
+                                <span className="text-xs font-semibold">
+                                    Aim at <strong>{selectionMode.toUpperCase()}</strong>
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={handleConfirmCenterAsLocation}
+                                    className="px-3 py-1 bg-gold text-black rounded-lg text-xs font-bold active:scale-95 shadow cursor-pointer hover:bg-gold/90 transition-transform"
+                                >
+                                    Confirm Here
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectionMode(null)}
+                                    className="text-white/60 hover:text-white text-xs p-1"
+                                >
+                                    <X className="w-3.5 h-3.5" />
+                                </button>
                             </div>
                         )}
                     </div>
                 </div>
             </GlassCard>
 
-            {/* List */}
             <GlassCard className="p-6">
                 <h3 className="text-lg font-semibold text-foreground mb-4">Existing Fixed Routes</h3>
                 <div className="overflow-x-auto">
@@ -424,7 +316,6 @@ const FixedRouteManager = () => {
                                 <th className="pb-3">Shared Fare</th>
                                 <th className="pb-3">Private Fare</th>
                                 <th className="pb-3">Tolerance</th>
-                                <th className="pb-3">Status</th>
                                 <th className="pb-3 text-right">Actions</th>
                             </tr>
                         </thead>
@@ -435,41 +326,18 @@ const FixedRouteManager = () => {
                                 const privTotal = privBase + Math.round(privBase * 0.1);
                                 return (
                                     <tr key={route.id} className="border-b border-border hover:bg-muted/50 transition-colors">
-                                        <td className="py-3 pr-4">
-                                            <div className="font-medium">{route.pickup_name} → {route.dropoff_name}</div>
-                                        </td>
-                                        <td className="py-3">
-                                            <span className="font-bold text-foreground font-mono">K{sharedTotal.toFixed(2)}</span>
-                                            <span className="text-[10px] text-muted-foreground block font-mono">K{route.fixed_price.toFixed(2)} + K{(route.flat_commission || 5).toFixed(2)} fee</span>
-                                        </td>
-                                        <td className="py-3">
-                                            <span className="font-bold text-gold font-mono">K{privTotal.toFixed(2)}</span>
-                                            <span className="text-[10px] text-muted-foreground block font-mono">
-                                                {route.private_fixed_price ? 'Custom Private' : '3.5x Multiplier'}
-                                            </span>
-                                        </td>
+                                        <td className="py-3 pr-4 font-medium">{route.pickup_name} → {route.dropoff_name}</td>
+                                        <td className="py-3 font-mono font-bold">K{sharedTotal.toFixed(2)}</td>
+                                        <td className="py-3 font-mono font-bold text-gold">K{privTotal.toFixed(2)}</td>
                                         <td className="py-3">{route.tolerance_radius_meters}m</td>
-                                        <td className="py-3">
-                                            <span className={`px-2 py-1 rounded text-xs ${route.is_active ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                                                {route.is_active ? 'Active' : 'Inactive'}
-                                            </span>
-                                        </td>
                                         <td className="py-3 text-right">
-                                            <button
-                                                onClick={() => handleDelete(route.id)}
-                                                className="p-2 hover:bg-muted/50 rounded-lg text-muted-foreground hover:text-red-500 transition-colors"
-                                            >
+                                            <button onClick={() => handleDelete(route.id)} className="p-2 hover:bg-muted/50 rounded-lg text-muted-foreground hover:text-red-500 transition-colors">
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
                                         </td>
                                     </tr>
                                 );
                             })}
-                            {routes.length === 0 && (
-                                <tr>
-                                    <td colSpan="6" className="py-8 text-center text-muted-foreground">No fixed routes defined.</td>
-                                </tr>
-                            )}
                         </tbody>
                     </table>
                 </div>
