@@ -479,6 +479,7 @@ class DriverResponse(BaseModel):
     max_commission_owed_limit: float = 500.0
     verification_docs: Optional[Dict[str, str]] = None # {"license": "url", "id": "url"}
     verification_status: str = "none" # none, pending, approved, rejected
+    needs_setup: bool = False
     created_at: Optional[str] = None
 
 class NearbyDriverResponse(BaseModel):
@@ -1296,6 +1297,10 @@ async def get_me(user: dict = Depends(get_current_user)):
         phone=user["phone"],
         avatar_url=user.get("avatar_url"),
         role=UserRole(user["role"]),
+        year_of_study=user.get("year_of_study"),
+        program_type=user.get("program_type"),
+        is_archived=user.get("is_archived", False),
+        archived_at=user.get("archived_at"),
         created_at=user["created_at"],
         is_active=user.get("is_active", True)
     )
@@ -1636,14 +1641,33 @@ async def get_nearby_drivers(
 
 @api_router.post("/drivers/register", response_model=DriverResponse)
 async def register_driver(profile: DriverProfile, user: dict = Depends(get_current_user)):
-    # Check if already a driver
     existing = await db.drivers.find_one({"user_id": user["id"]})
-    if existing:
-        raise HTTPException(status_code=400, detail="Already registered as driver")
     
     avatar_url = profile.avatar_url or (profile.verification_docs.get("profile_photo") if profile.verification_docs else None)
     if avatar_url:
         await db.users.update_one({"id": user["id"]}, {"$set": {"avatar_url": avatar_url}})
+
+    if existing:
+        # Update existing driver record with real vehicle credentials
+        update_fields = {
+            "vehicle_type": profile.vehicle_type.value,
+            "plate_number": profile.plate_number.upper(),
+            "vehicle_model": profile.vehicle_model,
+            "vehicle_color": profile.vehicle_color,
+            "vehicle_capacity": profile.vehicle_capacity,
+            "verification_docs": profile.verification_docs or {},
+            "verification_status": "pending",
+            "needs_setup": False,
+            "is_approved": False
+        }
+        if avatar_url:
+            update_fields["avatar_url"] = avatar_url
+            
+        await db.drivers.update_one({"user_id": user["id"]}, {"$set": update_fields})
+        await db.users.update_one({"id": user["id"]}, {"$set": {"role": UserRole.DRIVER.value}})
+        updated_driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
+        updated_driver["needs_setup"] = False
+        return DriverResponse(**updated_driver)
 
     driver_id = str(uuid.uuid4())
     driver = {
@@ -1660,6 +1684,7 @@ async def register_driver(profile: DriverProfile, user: dict = Depends(get_curre
         "total_earnings": 0.0,
         "is_online": False,
         "is_approved": False,
+        "needs_setup": False,
         "accepts_shared_rides": True,
         "current_ride_id": None, # For locking
         "current_location": None,
@@ -1677,22 +1702,59 @@ async def register_driver(profile: DriverProfile, user: dict = Depends(get_curre
         await db.drivers.insert_one(driver)
     except Exception as e:
         logger.error(f"Error checking driver existence: {e}")
-        # Could be duplicate key if concurrent
         existing = await db.drivers.find_one({"user_id": user["id"]})
         if existing:
-             raise HTTPException(status_code=400, detail="Already registered as driver")
+            await db.drivers.update_one({"user_id": user["id"]}, {"$set": {
+                "vehicle_type": profile.vehicle_type.value,
+                "plate_number": profile.plate_number.upper(),
+                "vehicle_model": profile.vehicle_model,
+                "vehicle_color": profile.vehicle_color,
+                "vehicle_capacity": profile.vehicle_capacity,
+                "verification_docs": profile.verification_docs or {},
+                "verification_status": "pending",
+                "needs_setup": False,
+                "is_approved": False
+            }})
+            updated_driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
+            updated_driver["needs_setup"] = False
+            return DriverResponse(**updated_driver)
         raise HTTPException(status_code=500, detail="Registration failed")
     
     # Update user role
     await db.users.update_one({"id": user["id"]}, {"$set": {"role": UserRole.DRIVER.value}})
-    
+    driver["needs_setup"] = False
     return DriverResponse(**driver)
 
 @api_router.get("/drivers/me", response_model=DriverResponse)
 async def get_my_driver_profile(user: dict = Depends(require_driver)):
     driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
     if not driver:
-        raise HTTPException(status_code=404, detail="Driver profile not found")
+        # Create empty placeholder driver marked as needs_setup
+        driver = {
+            "id": str(uuid.uuid4()),
+            "user_id": user["id"],
+            "vehicle_type": "Car",
+            "vehicle_model": "",
+            "vehicle_color": "",
+            "plate_number": "",
+            "is_approved": False,
+            "needs_setup": True,
+            "is_online": False,
+            "rating": 5.0,
+            "total_rides": 0,
+            "total_earnings": 0.0,
+            "verification_status": "unsubmitted",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.drivers.insert_one(driver)
+    
+    # Compute if setup is needed
+    driver["needs_setup"] = bool(
+        driver.get("needs_setup") or
+        not driver.get("plate_number") or
+        not driver.get("vehicle_model") or
+        (driver.get("vehicle_model") == "Campus Shuttle" and str(driver.get("plate_number", "")).startswith("MR-"))
+    )
     
     settings = await get_platform_settings()
     driver["max_commission_owed_limit"] = settings.get("max_commission_owed_limit", 500.0)
@@ -1703,6 +1765,9 @@ async def get_my_driver_profile(user: dict = Depends(require_driver)):
         name=user["name"],
         phone=user["phone"],
         role=UserRole(user["role"]),
+        year_of_study=user.get("year_of_study"),
+        program_type=user.get("program_type"),
+        is_archived=user.get("is_archived", False),
         created_at=user["created_at"],
         is_active=user.get("is_active", True)
     )
@@ -1747,8 +1812,11 @@ async def toggle_online_status(user: dict = Depends(require_driver)):
     if not driver:
         raise HTTPException(status_code=404, detail="Driver profile not found")
     
-    if not driver["is_approved"]:
-        raise HTTPException(status_code=403, detail="Driver not approved yet")
+    if driver.get("needs_setup") or not driver.get("plate_number") or not driver.get("vehicle_model") or (driver.get("vehicle_model") == "Campus Shuttle" and str(driver.get("plate_number", "")).startswith("MR-")):
+        raise HTTPException(status_code=403, detail="Please complete your vehicle registration before going online.")
+
+    if not driver.get("is_approved"):
+        raise HTTPException(status_code=403, detail="Driver account is pending admin approval.")
     
     if driver.get("wallet_status") == WalletStatus.RESTRICTED.value:
         raise HTTPException(status_code=403, detail="Wallet restricted. Please top up to go online.")
@@ -3745,21 +3813,34 @@ async def switch_user_role(user_id: str, request: SwitchRoleRequest, admin: dict
                 "id": str(uuid.uuid4()),
                 "user_id": user_id,
                 "vehicle_type": "Car",
-                "vehicle_model": "Campus Shuttle",
-                "vehicle_color": "White",
-                "plate_number": "MR-" + str(uuid.uuid4())[:4].upper(),
-                "license_number": "LIC-" + str(uuid.uuid4())[:6].upper(),
-                "is_approved": True,
+                "vehicle_model": "",
+                "vehicle_color": "",
+                "plate_number": "",
+                "license_number": "",
+                "is_approved": False,
+                "needs_setup": True,
                 "is_online": False,
                 "is_active": True,
                 "rating": 5.0,
                 "total_trips": 0,
                 "total_earnings": 0.0,
+                "verification_status": "unsubmitted",
                 "created_at": datetime.now(timezone.utc).isoformat()
             }
             await db.drivers.insert_one(driver_doc)
         else:
-            await db.drivers.update_one({"user_id": user_id}, {"$set": {"is_approved": True}})
+            has_vehicle = bool(
+                existing_driver.get("plate_number") and 
+                existing_driver.get("vehicle_model") and 
+                existing_driver.get("vehicle_model") != "Campus Shuttle" and
+                not str(existing_driver.get("plate_number", "")).startswith("MR-")
+            )
+            if not has_vehicle:
+                await db.drivers.update_one({"user_id": user_id}, {"$set": {
+                    "needs_setup": True,
+                    "is_approved": False,
+                    "verification_status": "unsubmitted"
+                }})
     elif new_role in [UserRole.STUDENT.value, UserRole.LECTURER.value]:
         await db.drivers.update_one({"user_id": user_id}, {"$set": {"is_online": False}})
         

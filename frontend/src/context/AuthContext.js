@@ -96,6 +96,41 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     fetchUser();
+
+    // 1. Sync on window focus / app resume
+    const handleFocus = () => {
+      fetchUser();
+    };
+
+    // 2. Sync on tab / app visibility change
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchUser();
+      }
+    };
+
+    // 3. Custom event for instant on-demand refresh across components
+    const handleCustomRefresh = () => {
+      fetchUser();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('mulu-refresh-user', handleCustomRefresh);
+
+    // 4. Background heartbeat sync every 20s while authenticated
+    const interval = setInterval(() => {
+      if (localStorage.getItem('token') && document.visibilityState === 'visible') {
+        fetchUser();
+      }
+    }, 20000);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('mulu-refresh-user', handleCustomRefresh);
+      clearInterval(interval);
+    };
   }, [fetchUser]);
 
   const subscribeUserToPush = async (accessToken) => {
