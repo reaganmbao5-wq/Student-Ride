@@ -679,31 +679,28 @@ export const PlatformMap = ({
       {mapLoaded && mapRef.current && (
 
         routes && routes.length > 0 ? (
+          routes.map((route, idx) => {
+            // CRITICAL ACTIVE LEG ISOLATION:
+            // In a multi-segment route array (e.g. [seg-0 (Driver -> Pickup), seg-1 (Pickup -> Dropoff)]):
+            // Only the FIRST active segment should track and slice by the driver GPS.
+            // All subsequent legs are future legs that must NOT be sliced by driverLocation, keeping them 100% intact between waypoints!
+            const segmentDriverLoc = (route.isActiveLeg === true || (route.isActiveLeg !== false && idx === 0))
+              ? driverLocation
+              : null;
 
-          routes.map((route, idx) => (
-
-             <RouteEngine 
-
-               key={`route-${route.rideId || idx}`}
-
-               id={`route-${route.rideId || idx}`}
-
-               map={mapRef.current}
-
-               geometry={route.geometry}
-
-               color={route.color}
-
-               driverLocation={driverLocation}
-
-               status={route.status || rideStatus}
-
-               onAnimationChange={onRouteAnimationChange}
-
-             />
-
-          ))
-
+            return (
+              <RouteEngine 
+                key={`route-${route.rideId || idx}`}
+                id={`route-${route.rideId || idx}`}
+                map={mapRef.current}
+                geometry={route.geometry}
+                color={route.color}
+                driverLocation={segmentDriverLoc}
+                status={route.status || rideStatus}
+                onAnimationChange={onRouteAnimationChange}
+              />
+            );
+          })
         ) : (
 
           routeGeometry && routeGeometry.length > 0 && (

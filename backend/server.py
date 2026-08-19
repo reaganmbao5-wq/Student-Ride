@@ -270,6 +270,7 @@ class UserRole(str, Enum):
     DRIVER = "driver"
     ADMIN = "admin"
     SUPER_ADMIN = "super_admin"
+    ACCOUNTANT = "accountant"
 
 class RideStatus(str, Enum):
     # LEGACY STATES (Preserved for safe migration/compatibility)
@@ -736,6 +737,12 @@ async def require_admin(user: dict = Depends(get_current_user)) -> dict:
     role = user.get("role", UserRole.STUDENT.value)
     if role not in [UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value]:
         raise HTTPException(status_code=403, detail="Admin access required")
+    return user
+
+async def require_accountant_or_admin(user: dict = Depends(get_current_user)) -> dict:
+    role = user.get("role", UserRole.STUDENT.value)
+    if role not in [UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value, UserRole.ACCOUNTANT.value]:
+        raise HTTPException(status_code=403, detail="Accountant or Admin access required")
     return user
 
 @api_router.get("/users/me", response_model=UserResponse)
@@ -2236,7 +2243,7 @@ async def topup_driver_wallet(driver_id: str, topup: WalletTopUp, user: dict = D
 
 
 @api_router.post("/admin/settlement/daily")
-async def run_daily_settlement(user: dict = Depends(require_admin)):
+async def run_daily_settlement(user: dict = Depends(require_accountant_or_admin)):
     """
     Cron-like endpoint to settle accumulated commissions for all drivers.
     Idempotent: Resets 'total_commission_due' to 0 and adds to 'total_commission_paid'.
@@ -2286,7 +2293,7 @@ async def run_daily_settlement(user: dict = Depends(require_admin)):
     }
 
 @api_router.post("/admin/drivers/{driver_id}/settle-commission")
-async def settle_single_driver_commission(driver_id: str, data: dict = Body({}), user: dict = Depends(require_admin)):
+async def settle_single_driver_commission(driver_id: str, data: dict = Body({}), user: dict = Depends(require_accountant_or_admin)):
     """
     Admin clears/settles a specific driver's accumulated commission debt (remittance payment).
     Resets total_commission_due, increments total_commission_paid, restores wallet_status to ACTIVE.
@@ -2348,7 +2355,7 @@ COMPLETED_RIDE_STATUSES = [
 ]
 
 @api_router.get("/admin/analytics")
-async def get_admin_analytics(user: dict = Depends(require_admin)):
+async def get_admin_analytics(user: dict = Depends(require_accountant_or_admin)):
     """
     Detailed analytics for the admin dashboard with resilient date parsing and aggregation.
     """
@@ -3745,7 +3752,7 @@ async def get_chat_history(ride_id: str, user: dict = Depends(get_current_user))
 
 # ==================== ADMIN ROUTES ====================
 @api_router.get("/admin/stats")
-async def get_admin_stats(user: dict = Depends(require_admin)):
+async def get_admin_stats(user: dict = Depends(require_accountant_or_admin)):
     total_users = await db.users.count_documents({})
     total_drivers = await db.drivers.count_documents({})
     pending_drivers = await db.drivers.count_documents({"is_approved": False})
@@ -4143,7 +4150,7 @@ async def get_admin_user_details(user_id: str, admin: dict = Depends(require_adm
     }
 
 @api_router.get("/admin/drivers", response_model=List[DriverResponse])
-async def get_all_drivers(user: dict = Depends(require_admin)):
+async def get_all_drivers(user: dict = Depends(require_accountant_or_admin)):
     drivers = await db.drivers.find({}, {"_id": 0}).to_list(1000)
     user_ids = [d["user_id"] for d in drivers if d.get("user_id")]
     users_list = await db.users.find({"id": {"$in": user_ids}}, {"_id": 0, "password": 0}).to_list(len(user_ids)) if user_ids else []
@@ -4247,7 +4254,7 @@ async def delete_ride_by_admin(ride_id: str, admin: dict = Depends(require_admin
 async def get_all_rides(
     status: Optional[str] = None,
     limit: int = Query(100, ge=1, le=500),
-    user: dict = Depends(require_admin)
+    user: dict = Depends(require_accountant_or_admin)
 ):
     query = {}
     if status:
@@ -4260,7 +4267,7 @@ async def get_all_rides(
     return await batch_hydrate_rides(rides)
 
 @api_router.get("/admin/active-rides", response_model=List[RideResponse])
-async def get_admin_active_rides(user: dict = Depends(require_admin)):
+async def get_admin_active_rides(user: dict = Depends(require_accountant_or_admin)):
     active_statuses = [
         RideStatus.REQUESTED.value,
         RideStatus.ACCEPTED.value,
@@ -4312,7 +4319,7 @@ async def update_settings(settings: PlatformSettings, user: dict = Depends(requi
 # ==================== PRICING & FIXED ROUTE MANAGEMENT ====================
 
 @api_router.get("/admin/pricing-settings", response_model=PricingSettings)
-async def get_pricing_settings(user: dict = Depends(require_admin)):
+async def get_pricing_settings(user: dict = Depends(require_accountant_or_admin)):
     settings = await db.pricing_settings.find_one({})
     if not settings:
         # Should be initialized on startup, but fail-safe
@@ -4414,6 +4421,7 @@ async def create_admin(admin_data: UserCreate, user: dict = Depends(require_supe
     if existing:
         raise HTTPException(status_code=400, detail="Email already exists")
     
+    assigned_role = admin_data.role.value if admin_data.role in [UserRole.ADMIN, UserRole.ACCOUNTANT] else UserRole.ADMIN.value
     user_id = str(uuid.uuid4())
     new_admin = {
         "id": user_id,
@@ -4421,15 +4429,15 @@ async def create_admin(admin_data: UserCreate, user: dict = Depends(require_supe
         "name": admin_data.name,
         "phone": admin_data.phone,
         "password": hash_password(admin_data.password),
-        "role": UserRole.ADMIN.value,
+        "role": assigned_role,
         "is_active": True,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.users.insert_one(new_admin)
     
-    await log_admin_action(user["id"], user["name"], "create_admin", user_id, f"Created admin: {admin_data.email}")
+    await log_admin_action(user["id"], user["name"], "create_staff", user_id, f"Created {assigned_role}: {admin_data.email}")
     
-    return {"status": "created", "user_id": user_id}
+    return {"status": "created", "user_id": user_id, "role": assigned_role}
 
 @api_router.delete("/admin/delete-admin/{admin_id}")
 async def delete_admin(admin_id: str, user: dict = Depends(require_super_admin)):

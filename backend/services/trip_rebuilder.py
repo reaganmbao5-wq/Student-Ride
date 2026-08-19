@@ -152,7 +152,8 @@ class DriverTripRebuilder:
                         "rideId": f"seg-{i}",
                         "geometry": leg_geo,
                         "color": leg_color,
-                        "status": "active"
+                        "status": "active",
+                        "isActiveLeg": (i == 0)
                     })
 
             # 5. Build Passenger-Specific Briefings and Route Projections (Phase X.1 Passive Consumer Architecture)
@@ -279,7 +280,7 @@ class DriverTripRebuilder:
                         # CLIP DRIVER ROUTE SEGMENTS AT MY FINAL DESTINATION (dropoff_idx)
                         student_segments = []
                         if dropoff_idx != -1:
-                            student_segments = full_driver_segments[:dropoff_idx + 1]
+                            student_segments = [{**seg, "isActiveLeg": (s_idx == 0)} for s_idx, seg in enumerate(full_driver_segments[:dropoff_idx + 1])]
 
                         # Concatenate geometries of clipped segments for backwards compatibility
                         student_geo = []

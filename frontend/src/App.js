@@ -32,6 +32,10 @@ import AdminRidesPage from "./pages/AdminRidesPage";
 import AdminSettingsPage from "./pages/AdminSettingsPage";
 import AdminPricingPage from "./pages/AdminPricingPage";
 import AdminBugReportsPage from "./pages/AdminBugReportsPage";
+import AccountantDashboard from "./pages/AccountantDashboard";
+import AccountantLedgerPage from "./pages/AccountantLedgerPage";
+import AccountantSettlementsPage from "./pages/AccountantSettlementsPage";
+import AccountantPricingPage from "./pages/AccountantPricingPage";
 import ChatPage from "./pages/ChatPage";
 import ProfilePage from "./pages/ProfilePage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
@@ -45,7 +49,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
     // Show role-appropriate skeleton while auth validates in background
     const role = user?.role || '';
     if (role === 'driver') return <DriverDashboardSkeleton />;
-    if (role === 'admin' || role === 'super_admin') return <AdminDashboardSkeleton />;
+    if (role === 'admin' || role === 'super_admin' || role === 'accountant') return <AdminDashboardSkeleton />;
     // Default: student skeleton (covers brand new sessions too)
     return <StudentDashboardSkeleton />;
   }
@@ -58,6 +62,8 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
     // Redirect to appropriate dashboard based on role
     if (user?.role === 'admin' || user?.role === 'super_admin') {
       return <Navigate to="/admin" replace />;
+    } else if (user?.role === 'accountant') {
+      return <Navigate to="/accountant" replace />;
     } else if (user?.role === 'driver') {
       return <Navigate to="/driver" replace />;
     } else {
@@ -80,6 +86,8 @@ const PublicRoute = ({ children }) => {
     // Redirect to appropriate dashboard
     if (user?.role === 'admin' || user?.role === 'super_admin') {
       return <Navigate to="/admin" replace />;
+    } else if (user?.role === 'accountant') {
+      return <Navigate to="/accountant" replace />;
     } else if (user?.role === 'driver') {
       return <Navigate to="/driver" replace />;
     } else {
@@ -255,6 +263,40 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
               <AdminBugReportsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Accountant Routes */}
+        <Route
+          path="/accountant"
+          element={
+            <ProtectedRoute allowedRoles={['accountant', 'admin', 'super_admin']}>
+              <AccountantDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/accountant/ledger"
+          element={
+            <ProtectedRoute allowedRoles={['accountant', 'admin', 'super_admin']}>
+              <AccountantLedgerPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/accountant/settlements"
+          element={
+            <ProtectedRoute allowedRoles={['accountant', 'admin', 'super_admin']}>
+              <AccountantSettlementsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/accountant/pricing"
+          element={
+            <ProtectedRoute allowedRoles={['accountant', 'admin', 'super_admin']}>
+              <AccountantPricingPage />
             </ProtectedRoute>
           }
         />

@@ -74,7 +74,8 @@ const AdminUsersPage = () => {
     name: '',
     email: '',
     phone: '',
-    password: ''
+    password: '',
+    role: 'admin'
   });
   
   // User Inspection & Management Drawer State
@@ -338,12 +339,12 @@ const AdminUsersPage = () => {
     setAddingAdmin(true);
     try {
       await api.post('/admin/create-admin', adminForm);
-      toast.success('Admin created successfully');
+      toast.success(adminForm.role === 'accountant' ? 'Accountant created successfully' : 'Admin created successfully');
       setShowAddAdmin(false);
-      setAdminForm({ name: '', email: '', phone: '', password: '' });
+      setAdminForm({ name: '', email: '', phone: '', password: '', role: 'admin' });
       fetchUsers(false);
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to create admin');
+      toast.error(error.response?.data?.detail || 'Failed to create staff account');
     } finally {
       setAddingAdmin(false);
     }
@@ -389,74 +390,63 @@ const AdminUsersPage = () => {
       // Archived Filter
       if (archivedFilter === 'active' && user.is_archived === true) {
         return false;
-      } else if (archivedFilter === 'archived' && user.is_archived !== true) {
+      }
+      if (archivedFilter === 'archived' && user.is_archived !== true) {
         return false;
       }
 
-      // Date / Month / Year Filters
-      if (user.created_at) {
-        const dateObj = new Date(user.created_at);
-        if (selectedYear !== 'all' && dateObj.getFullYear() !== parseInt(selectedYear, 10)) {
-          return false;
-        }
-        if (selectedMonth !== 'all' && dateObj.getMonth() !== parseInt(selectedMonth, 10)) {
-          return false;
-        }
+      // Month Filter
+      if (selectedMonth !== 'all') {
+        if (!user.created_at) return false;
+        const userMonth = new Date(user.created_at).getMonth();
+        if (userMonth !== parseInt(selectedMonth)) return false;
+      }
+
+      // Year Filter
+      if (selectedYear !== 'all') {
+        if (!user.created_at) return false;
+        const userYear = new Date(user.created_at).getFullYear();
+        if (userYear !== parseInt(selectedYear)) return false;
       }
 
       return true;
     });
 
     // Sorting
-    result.sort((a, b) => {
-      if (sortOrder === 'newest') {
-        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
-      } else if (sortOrder === 'oldest') {
-        return new Date(a.created_at || 0) - new Date(b.created_at || 0);
-      } else if (sortOrder === 'name') {
-        return (a.name || '').localeCompare(b.name || '');
-      }
-      return 0;
-    });
+    if (sortOrder === 'newest') {
+      result.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    } else if (sortOrder === 'oldest') {
+      result.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+    } else if (sortOrder === 'name') {
+      result.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    }
 
     return result;
   }, [users, searchQuery, roleFilter, yearOfStudyFilter, archivedFilter, selectedMonth, selectedYear, sortOrder]);
 
-  if (loading && users.length === 0) {
-    return <AdminUsersSkeleton />;
-  }
-
   return (
     <Layout>
-      <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto" data-testid="admin-users-page">
+      <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto pb-24 md:pb-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="font-heading text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground font-heading">
               User Management
             </h1>
             <p className="text-muted-foreground text-sm">
-              Manage accounts, roles, access controls & view detailed trip histories
+              Manage accounts, driver approvals, verification status & platform roles
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => fetchUsers(false)}
-              className="p-2.5 rounded-2xl bg-muted border border-border text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
-              title="Refresh Users"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </button>
-
+          <div className="flex items-center gap-3">
             {isSuperAdmin && (
               <button
                 onClick={handleArchiveGraduated}
                 disabled={archivingGraduated}
-                className="px-4 py-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-500 hover:bg-amber-500/20 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-sm"
-                title="Archive students who exceeded degree years"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted border border-border text-xs font-semibold transition-all cursor-pointer disabled:opacity-50"
+                title="Archive students whose expected graduation year has passed"
               >
-                <Archive className="w-4 h-4" />
+                <Archive className="w-4 h-4 text-amber-500" />
                 <span>{archivingGraduated ? 'Archiving...' : 'Archive Graduated'}</span>
               </button>
             )}
@@ -466,14 +456,25 @@ const AdminUsersPage = () => {
                 <DialogTrigger asChild>
                   <GoldButton data-testid="add-admin-btn">
                     <UserPlus className="w-4 h-4 mr-2" />
-                    Add Admin
+                    Add Staff
                   </GoldButton>
                 </DialogTrigger>
                 <DialogContent className="bg-card border-border sm:max-w-md">
                   <DialogHeader>
-                    <DialogTitle className="text-foreground font-heading">Create New Admin</DialogTitle>
+                    <DialogTitle className="text-foreground font-heading">Create Staff Account</DialogTitle>
                   </DialogHeader>
                   <form onSubmit={handleAddAdmin} className="space-y-4 mt-4">
+                    <div>
+                      <label className="block text-xs text-muted-foreground mb-1.5 font-medium">Staff Role</label>
+                      <select
+                        value={adminForm.role}
+                        onChange={(e) => setAdminForm({ ...adminForm, role: e.target.value })}
+                        className="w-full bg-muted/60 text-foreground text-sm rounded-2xl px-3 py-2.5 border border-border focus:outline-none focus:border-gold cursor-pointer"
+                      >
+                        <option value="admin">Administrator</option>
+                        <option value="accountant">Accountant (Financial Suite)</option>
+                      </select>
+                    </div>
                     <GlassInput
                       type="text"
                       placeholder="Full Name"
@@ -503,7 +504,7 @@ const AdminUsersPage = () => {
                       required
                     />
                     <GoldButton type="submit" className="w-full" disabled={addingAdmin}>
-                      {addingAdmin ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create Admin'}
+                      {addingAdmin ? <Loader2 className="w-4 h-4 animate-spin" /> : (adminForm.role === 'accountant' ? 'Create Accountant' : 'Create Admin')}
                     </GoldButton>
                   </form>
                 </DialogContent>
@@ -537,6 +538,7 @@ const AdminUsersPage = () => {
               <option value="student">Students</option>
               <option value="lecturer">Lecturers</option>
               <option value="driver">Drivers</option>
+              <option value="accountant">Accountants</option>
               <option value="admin">Admins</option>
             </select>
           </div>

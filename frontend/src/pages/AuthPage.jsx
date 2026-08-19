@@ -248,6 +248,8 @@ const AuthPage = () => {
 
         if (user.role === 'admin' || user.role === 'super_admin') {
           navigate('/admin');
+        } else if (user.role === 'accountant') {
+          navigate('/accountant');
         } else if (user.role === 'driver') {
           navigate('/driver');
         } else {
@@ -292,6 +294,7 @@ const AuthPage = () => {
       } else {
         const role = data.user.role;
         window.location.href = role === 'admin' || role === 'super_admin' ? '/admin'
+          : role === 'accountant' ? '/accountant'
           : role === 'driver' ? '/driver' : '/dashboard';
       }
 
@@ -346,6 +349,7 @@ const AuthPage = () => {
           } else {
             const role = data.user.role;
             window.location.href = role === 'admin' || role === 'super_admin' ? '/admin'
+              : role === 'accountant' ? '/accountant'
               : role === 'driver' ? '/driver' : '/dashboard';
           }
         }
