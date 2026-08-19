@@ -2375,7 +2375,8 @@ async def get_admin_analytics(user: dict = Depends(require_accountant_or_admin))
             daily_stats[date] = {"date": date, "revenue": 0.0, "gross_fare": 0.0, "rides": 0}
             
         fare_val = float(ride.get("fare") or 0.0)
-        commission_val = float(ride.get("commission") or (fare_val * 0.15))
+        raw_comm = float(ride.get("commission") or 0.0)
+        commission_val = raw_comm if raw_comm >= (fare_val * 0.05) else round(fare_val * 0.10, 2)
         
         # Platform revenue = commission profit
         daily_stats[date]["revenue"] = round(daily_stats[date]["revenue"] + commission_val, 2)
@@ -2523,12 +2524,9 @@ async def request_ride(ride_data: RideRequest, user: dict = Depends(get_current_
         
         calculated_fare = pricing_result["fare"]
         
-        # Commission calculation
-        settings = await get_platform_settings()
-        commission_rate = settings.get("commission_rate", DEFAULT_COMMISSION_RATE)
-        
-        commission = calculated_fare * (commission_rate / 100)
-        driver_earning = calculated_fare - commission
+        # Commission & driver earning from pricing engine
+        commission = round(pricing_result.get("commission", calculated_fare * 0.10), 2)
+        driver_earning = round(pricing_result.get("driver_earning", calculated_fare - commission), 2)
         
         ride_id = str(uuid.uuid4())
         ride = {
@@ -3763,7 +3761,11 @@ async def get_admin_stats(user: dict = Depends(require_accountant_or_admin)):
     # Calculate earnings
     rides = await db.rides.find({"status": {"$in": COMPLETED_RIDE_STATUSES}}, {"_id": 0}).to_list(10000)
     total_gross_volume = sum(float(r.get("fare") or 0.0) for r in rides)
-    total_commission = sum(float(r.get("commission") or (float(r.get("fare") or 0.0) * 0.15)) for r in rides)
+    total_commission = sum(
+        float(r.get("commission")) if float(r.get("commission") or 0.0) >= (float(r.get("fare") or 0.0) * 0.05)
+        else round(float(r.get("fare") or 0.0) * 0.10, 2)
+        for r in rides
+    )
     
     settings = await get_platform_settings()
     

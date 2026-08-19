@@ -90,6 +90,8 @@ export const StatusBadge = ({ status }) => {
     ongoing: { label: 'Ongoing', className: 'text-emerald-600 dark:text-emerald-400 font-bold' },
     completed: { label: 'Completed', className: 'text-emerald-600 dark:text-emerald-400 font-bold' },
     ride_completed: { label: 'Completed', className: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+    settlement: { label: 'Completed', className: 'text-emerald-600 dark:text-emerald-400 font-bold' },
+    ride_archived: { label: 'Completed', className: 'text-emerald-600 dark:text-emerald-400 font-bold' },
     cancelled: { label: 'Cancelled', className: 'text-red-600 dark:text-red-500 font-bold' }
   };
 

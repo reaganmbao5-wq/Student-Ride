@@ -37,7 +37,19 @@ const AccountantLedgerPage = () => {
       const dName = (r.driver?.user?.name || '').toLowerCase();
       const q = searchQuery.toLowerCase();
       const matchesSearch = sName.includes(q) || dName.includes(q) || (r.id && r.id.toLowerCase().includes(q));
-      const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
+      
+      const isCompleted = ['completed', 'ride_completed', 'settlement', 'ride_archived'].includes(r.status);
+      const isCancelled = r.status === 'cancelled';
+      
+      let matchesStatus = true;
+      if (statusFilter === 'completed') {
+        matchesStatus = isCompleted;
+      } else if (statusFilter === 'cancelled') {
+        matchesStatus = isCancelled;
+      } else if (statusFilter !== 'all') {
+        matchesStatus = r.status === statusFilter;
+      }
+      
       return matchesSearch && matchesStatus;
     });
   }, [rides, searchQuery, statusFilter]);
@@ -50,18 +62,27 @@ const AccountantLedgerPage = () => {
     }
 
     const headers = ['Transaction ID', 'Date', 'Passenger', 'Driver', 'Mode', 'Distance (km)', 'Gross Fare (ZMW)', 'Driver Earning (ZMW)', 'Platform Profit (ZMW)', 'Status'];
-    const rows = processedRides.map(r => [
-      r.id,
-      r.created_at ? new Date(r.created_at).toISOString() : '',
-      `"${r.student?.name || 'Passenger'}"`,
-      `"${r.driver?.user?.name || 'Driver'}"`,
-      r.ride_mode || 'shared',
-      r.distance_km?.toFixed(2) || '0.00',
-      r.fare?.toFixed(2) || '0.00',
-      r.driver_earning?.toFixed(2) || (r.fare * 0.9).toFixed(2),
-      (r.fare - (r.driver_earning || (r.fare * 0.9))).toFixed(2),
-      r.status
-    ]);
+    const rows = processedRides.map(r => {
+      const gross = Number(r.fare || 0);
+      let comm = Number(r.commission || 0);
+      if (gross > 0 && (comm <= 0 || comm < gross * 0.05)) {
+        comm = gross * 0.10;
+      }
+      const driverEarn = (gross - comm);
+
+      return [
+        r.id,
+        r.created_at ? new Date(r.created_at).toISOString() : '',
+        `"${r.student?.name || 'Passenger'}"`,
+        `"${r.driver?.user?.name || 'Driver'}"`,
+        r.ride_mode || 'shared',
+        r.distance_km?.toFixed(2) || '0.00',
+        gross.toFixed(2),
+        driverEarn.toFixed(2),
+        comm.toFixed(2),
+        r.status
+      ];
+    });
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
@@ -140,9 +161,12 @@ const AccountantLedgerPage = () => {
               </thead>
               <tbody className="divide-y divide-border/40">
                 {processedRides.map((ride) => {
-                  const gross = ride.fare || 0;
-                  const driverShare = ride.driver_earning || (gross * 0.9);
-                  const commission = gross - driverShare;
+                  const gross = Number(ride.fare || 0);
+                  let comm = Number(ride.commission || 0);
+                  if (gross > 0 && (comm <= 0 || comm < gross * 0.05)) {
+                    comm = gross * 0.10;
+                  }
+                  const driverShare = (gross - comm);
 
                   return (
                     <tr key={ride.id} className="hover:bg-muted/30 transition-colors">
@@ -155,7 +179,7 @@ const AccountantLedgerPage = () => {
                       <td className="p-4 capitalize text-xs">{ride.ride_mode || 'shared'}</td>
                       <td className="p-4 text-right font-bold text-foreground">K{gross.toFixed(2)}</td>
                       <td className="p-4 text-right text-emerald-400 font-medium">K{driverShare.toFixed(2)}</td>
-                      <td className="p-4 text-right text-gold font-bold">K{commission.toFixed(2)}</td>
+                      <td className="p-4 text-right text-gold font-bold">K{comm.toFixed(2)}</td>
                       <td className="p-4 text-center">
                         <StatusBadge status={ride.status} />
                       </td>
