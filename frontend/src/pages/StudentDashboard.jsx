@@ -469,11 +469,12 @@ const StudentDashboard = () => {
     // 1. Determine which drivers to show
     // If we have an active ride with an actual driver assigned, ONLY show that assigned driver.
     // Otherwise, show all roaming nearby drivers.
-    const assignedDriverMarker = (driverPos && activeRide?.driver) ? { 
+    const effectiveDriverLoc = driverPos || activeRide?.driver?.current_location || null;
+    const assignedDriverMarker = (effectiveDriverLoc && activeRide?.driver) ? { 
       id: activeRide.driver.user_id || 'driver-1', 
-      latitude: driverPos.lat, 
-      longitude: driverPos.lng, 
-      heading: driverPos.heading || 0 
+      latitude: effectiveDriverLoc.lat, 
+      longitude: effectiveDriverLoc.lng, 
+      heading: effectiveDriverLoc.heading || 0 
     } : null;
 
     const driversArray = assignedDriverMarker ? [assignedDriverMarker] : nearbyDrivers;
@@ -598,7 +599,7 @@ const StudentDashboard = () => {
     let cameraMode = CAMERA_MODES.FREE;
     if (activeRide.status === 'requested' || isPriorStopsActive) {
       cameraMode = CAMERA_MODES.OVERVIEW;
-    } else if (['driver_accepted', 'driver_en_route_to_pickup', 'driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination'].includes(activeRide.status)) {
+    } else if (['driver_accepted', 'driver_en_route_to_pickup', 'driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination', 'ongoing', 'accepted'].includes(activeRide.status)) {
       cameraMode = CAMERA_MODES.FOLLOW_DRIVER;
     }
 
@@ -658,11 +659,11 @@ const StudentDashboard = () => {
             center={
               (activeRide && activeRide.status === 'requested' && activeRide.pickup_location)
                 ? activeRide.pickup_location
-                : (driverPos || userLocation || { lat: -14.4087, lng: 28.2849 })
+                : (effectiveDriverLoc || userLocation || activeRide.pickup_location || { lat: -14.4087, lng: 28.2849 })
             }
             bounds={bounds}
             cameraMode={cameraMode}
-            driverLocation={driverPos}
+            driverLocation={effectiveDriverLoc}
             zoom={15}
             markers={mapMarkers}
             drivers={driversArray}

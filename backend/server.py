@@ -501,6 +501,8 @@ class DriverWalletTransaction(BaseModel):
 class LocationUpdate(BaseModel):
     latitude: float
     longitude: float
+    heading: Optional[float] = 0.0
+    speed: Optional[float] = 0.0
 
 class WalletTopUp(BaseModel):
     amount: float
@@ -1072,11 +1074,12 @@ class ConnectionManager:
         
         # Also update drivers collection
         driver = await db.drivers.find_one_and_update(
-            {"user_id": driver_id},
+            {"$or": [{"user_id": driver_id}, {"id": driver_id}]},
             {"$set": {
                 "current_location": location,
                 "location": geo_location
-            }}
+            }},
+            return_document=True
         )
         
         # Broadcast to student if driver is in an active ride
@@ -1959,7 +1962,12 @@ async def verify_driver(
 
 @api_router.post("/drivers/location")
 async def update_location(location: LocationUpdate, user: dict = Depends(require_driver)):
-    loc_data = {"lat": location.latitude, "lng": location.longitude}
+    loc_data = {
+        "lat": location.latitude,
+        "lng": location.longitude,
+        "heading": getattr(location, "heading", 0.0) or 0.0,
+        "speed": getattr(location, "speed", 0.0) or 0.0
+    }
     await manager.update_driver_location(user["id"], loc_data)
     return {"status": "updated"}
 

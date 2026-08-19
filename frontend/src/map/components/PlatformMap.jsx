@@ -492,14 +492,35 @@ export const PlatformMap = ({
         const containerWidth = containerRect?.width || (typeof window !== 'undefined' ? window.innerWidth : 400);
         const isMiniMap = !interactive || containerHeight < 250;
 
+        if (isMiniMap) {
+          try {
+            mapRef.current.resize();
+            const miniCamera = mapRef.current.cameraForBounds([
+              [minLng, minLat],
+              [maxLng, maxLat]
+            ], {
+              padding: { top: 16, bottom: 16, left: 16, right: 16 }
+            });
+            if (miniCamera && typeof miniCamera.zoom === 'number') {
+              mapRef.current.jumpTo({
+                center: miniCamera.center,
+                zoom: Math.min(15.5, miniCamera.zoom),
+                pitch: 0,
+                bearing: 0
+              });
+              return;
+            }
+          } catch (e) {}
+        }
+
         // Top clearance for header and back button (110px on mobile to clear top status bar and back button)
-        const calcTop = isMiniMap ? 14 : 110;
+        const calcTop = 110;
         // Dynamic bottom padding to place route safely above the bottom sheet card
-        const calcBottom = isMiniMap ? 14 : ((typeof bottomPadding === 'number' && bottomPadding > 0)
+        const calcBottom = (typeof bottomPadding === 'number' && bottomPadding > 0)
           ? Math.min(bottomPadding + 25, Math.round(containerHeight * 0.48))
-          : Math.max(220, Math.round(containerHeight * 0.38)));
+          : Math.max(220, Math.round(containerHeight * 0.38));
         // Generous side margins so pins with labels/icons on far edges are NEVER clipped (15% width clearance)
-        const calcSide = isMiniMap ? 14 : Math.max(55, Math.min(95, Math.round(containerWidth * 0.15)));
+        const calcSide = Math.max(55, Math.min(95, Math.round(containerWidth * 0.15)));
 
         // Skip re-fitting if coordinates haven't shifted significantly (eliminates jerking on landing/polling)
         const prev = lastFittedBoundsRef.current;
