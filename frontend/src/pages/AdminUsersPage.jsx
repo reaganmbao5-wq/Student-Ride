@@ -5,7 +5,7 @@ import {
   MapPin, Clock, Phone, Mail, CheckCircle, AlertCircle, RefreshCw, X, 
   ShieldAlert, Edit3, ChevronDown, ChevronUp, Key, DollarSign, GraduationCap, Archive
 } from 'lucide-react';
-import { SteeringWheel, Car, User, Sparkle } from '@phosphor-icons/react';
+import { SteeringWheel, Car, User } from '@phosphor-icons/react';
 import { GlassCard, GlassInput, GoldButton, EmptyState, StatusBadge } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';

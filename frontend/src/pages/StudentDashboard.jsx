@@ -184,6 +184,7 @@ const StudentDashboard = () => {
   const [driverName, setDriverName] = useState('');
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [requestedRouteGeometry, setRequestedRouteGeometry] = useState(null);
+  const effectiveDriverLoc = driverPos || activeRide?.driver?.current_location || null;
 
   // Fetch route geometry for requested (searching) state from cache or backend estimate (auto-retry straight lines)
   useEffect(() => {
@@ -230,7 +231,39 @@ const StudentDashboard = () => {
     return () => {
       if (retryInterval) clearInterval(retryInterval);
     };
-  }, [activeRide, api]);
+  }, [activeRide?.status, activeRide?.pickup_location, activeRide?.dropoff_location]);
+
+  const [approachRouteGeometry, setApproachRouteGeometry] = useState(null);
+
+  // Fetch approach route (driver location -> student pickup) during driver_accepted / driver_en_route_to_pickup
+  useEffect(() => {
+    if (!activeRide || !['accepted', 'driver_accepted', 'driver_en_route_to_pickup', 'driver_arrived'].includes(activeRide.status)) {
+      setApproachRouteGeometry(null);
+      return;
+    }
+
+    if (effectiveDriverLoc && activeRide.pickup_location) {
+      const p = { lat: effectiveDriverLoc.lat, lng: effectiveDriverLoc.lng };
+      const d = activeRide.pickup_location;
+      
+      const cached = routeCache.getRoute(p, d);
+      if (cached && cached.length > 2) {
+        setApproachRouteGeometry(cached);
+      } else {
+        api.post('/rides/estimate-fare', { pickup: p, dropoff: d })
+          .then(res => {
+            const geo = res.data?.geometry;
+            if (geo && geo.length > 0) {
+              setApproachRouteGeometry(geo);
+              if (geo.length > 2) {
+                routeCache.setRoute(p, d, geo);
+              }
+            }
+          })
+          .catch(() => {});
+      }
+    }
+  }, [activeRide?.status, effectiveDriverLoc?.lat, effectiveDriverLoc?.lng, activeRide?.pickup_location, api]);
 
   // Expandable & Swipable Ride History States
   const [expandedRideId, setExpandedRideId] = useState(null);
@@ -469,7 +502,6 @@ const StudentDashboard = () => {
     // 1. Determine which drivers to show
     // If we have an active ride with an actual driver assigned, ONLY show that assigned driver.
     // Otherwise, show all roaming nearby drivers.
-    const effectiveDriverLoc = driverPos || activeRide?.driver?.current_location || null;
     const assignedDriverMarker = (effectiveDriverLoc && activeRide?.driver) ? { 
       id: activeRide.driver.user_id || 'driver-1', 
       latitude: effectiveDriverLoc.lat, 
@@ -630,7 +662,11 @@ const StudentDashboard = () => {
     let displayRouteGeometry = [];
     
     if (activeRide?.status === 'requested') {
-      displayRouteGeometry = requestedRouteGeometry || [];
+      displayRouteGeometry = (Array.isArray(activeRide.verified_geometry) && activeRide.verified_geometry.length > 2)
+        ? activeRide.verified_geometry
+        : ((Array.isArray(activeRide.route_geometry) && activeRide.route_geometry.length > 2)
+          ? activeRide.route_geometry
+          : (requestedRouteGeometry || []));
       routeState = displayRouteGeometry.length > 0 ? 'ROUTE AVAILABLE' : 'Loading route...';
     } else if (activeRide && activeRide.status !== 'cancelled') {
       if (isBriefingForThisRide && Array.isArray(passengerBriefing?.route_geometry) && passengerBriefing.route_geometry.length > 2) {
@@ -651,8 +687,44 @@ const StudentDashboard = () => {
       }
     }
 
+    let dynamicEtaText = null;
+    if (effectiveDriverLoc) {
+      const targetPt = ['accepted', 'driver_accepted', 'driver_en_route_to_pickup', 'driver_arrived'].includes(activeRide?.status)
+        ? activeRide?.pickup_location
+        : activeRide?.dropoff_location;
+      if (targetPt && targetPt.lat && targetPt.lng) {
+        const dLat = (targetPt.lat - effectiveDriverLoc.lat) * (Math.PI / 180);
+        const dLon = (targetPt.lng - effectiveDriverLoc.lng) * (Math.PI / 180);
+        const a = Math.sin(dLat/2)**2 + Math.cos(effectiveDriverLoc.lat * Math.PI/180) * Math.cos(targetPt.lat * Math.PI/180) * Math.sin(dLon/2)**2;
+        const distM = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        if (distM < 50) {
+          dynamicEtaText = 'Arrived';
+        } else {
+          const mins = Math.max(1, Math.ceil((distM / 1000) / 25 * 60));
+          dynamicEtaText = `${mins} min`;
+        }
+      }
+    }
+
     const displayRouteSegments = (isBriefingForThisRide && passengerBriefing?.route_segments && passengerBriefing.route_segments.length > 0)
       ? passengerBriefing.route_segments
+      : (['accepted', 'driver_accepted', 'driver_en_route_to_pickup', 'driver_arrived'].includes(activeRide?.status) && effectiveDriverLoc && activeRide?.pickup_location)
+      ? [
+          {
+            rideId: 'approach-leg',
+            geometry: approachRouteGeometry || [[effectiveDriverLoc.lng, effectiveDriverLoc.lat], [activeRide.pickup_location.lng, activeRide.pickup_location.lat]],
+            color: '#3b82f6',
+            isActiveLeg: true
+          },
+          {
+            rideId: activeRide.id,
+            geometry: (Array.isArray(activeRide.verified_geometry) && activeRide.verified_geometry.length > 2)
+              ? activeRide.verified_geometry
+              : (requestedRouteGeometry || []),
+            color: '#10b981',
+            isActiveLeg: false
+          }
+        ]
       : [];
 
     return (
@@ -733,16 +805,16 @@ const StudentDashboard = () => {
               <div className="text-right shrink-0 min-w-[4.5rem] flex flex-col justify-center items-end">
                 <AnimatePresence mode="wait">
                   <motion.div
-                    key={passengerBriefing?.eta_text || 'Calculating...'}
+                    key={passengerBriefing?.eta_text || dynamicEtaText || 'Calculating...'}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
                     className="whitespace-nowrap"
                   >
-                    {passengerBriefing?.eta_text ? (
+                    {(passengerBriefing?.eta_text || dynamicEtaText) ? (
                       <span className="text-2xl font-bold font-heading text-gold">
-                        {passengerBriefing.eta_text}
+                        {passengerBriefing?.eta_text || dynamicEtaText}
                       </span>
                     ) : (
                       <span className="text-xs font-semibold text-muted-foreground tracking-wider uppercase animate-pulse">
