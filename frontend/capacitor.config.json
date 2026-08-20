@@ -10,6 +10,10 @@
       "scopes": ["profile", "email"],
       "serverClientId": "613545438163-5eo9e0tpustjgotq6u7m7elsas8gkjst.apps.googleusercontent.com",
       "forceCodeForRefreshToken": false
+    },
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"],
+      "iconColor": "#F5A623"
     }
   },
   "server": {

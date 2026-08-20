@@ -460,7 +460,7 @@ const StudentDashboard = () => {
         location: userLocation,
         message: "User triggered SOS from phone"
       });
-      toast.error('Emergency alert sent to admins.', {
+      toast.success('Emergency alert sent to admins.', {
         description: 'Help is on the way.',
         duration: 10000
       });
