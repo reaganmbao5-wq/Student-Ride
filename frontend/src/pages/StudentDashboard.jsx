@@ -312,21 +312,32 @@ const StudentDashboard = () => {
         setActiveRide(prev => prev ? { ...prev, status: 'ongoing' } : null);
         systemNotification.notifyRideStarted();
       } else if (rideUpdate.type === 'completed') {
+        const completedId = activeRide?.id || rideUpdate.ride_id;
+        if (completedId) {
+          cancelledRideIdsRef.current.add(completedId);
+        }
         systemNotification.notifyRideCompleted();
-        setRatingRideId(activeRide?.id || rideUpdate.ride_id);
+        setRatingRideId(completedId);
         setDriverName(activeRide?.driver?.user?.name || rideUpdate.driver_name || 'your driver');
         setShowRatingModal(true);
         setActiveRide(null);
         setPassengerBriefing(null);
-        fetchData();
+        setDriverPos(null);
+        AppCache.remove('active_ride');
       } else if (rideUpdate.type === 'cancelled') {
+        const cancelledId = activeRide?.id || rideUpdate.ride_id;
+        if (cancelledId) {
+          cancelledRideIdsRef.current.add(cancelledId);
+        }
         systemNotification.notifyRideCancelled('The ride was cancelled');
         setActiveRide(null);
         setPassengerBriefing(null);
+        setDriverPos(null);
         AppCache.remove('active_ride');
       } else if (rideUpdate.type === 'reassigning') {
         systemNotification.notifyRideCancelled('Driver cancelled. Finding a new driver...');
         setActiveRide(prev => prev ? { ...prev, status: 'requested', driver_id: null, driver: null } : null);
+        AppCache.remove('active_ride');
       }
       clearRideUpdate();
     }
@@ -365,7 +376,12 @@ const StudentDashboard = () => {
 
       setActiveRide(prev => {
         if (!activeRes.data) return null;
-        if (activeRes.data.status === 'cancelled' || cancelledRideIdsRef.current.has(activeRes.data.id)) {
+        if (activeRes.data.status === 'cancelled' || 
+            activeRes.data.status === 'completed' || 
+            activeRes.data.status === 'ride_completed' || 
+            activeRes.data.status === 'ride_archived' ||
+            cancelledRideIdsRef.current.has(activeRes.data.id)) {
+          AppCache.remove('active_ride');
           return null;
         }
         // Server status is authoritative — allow transition from requested -> accepted/arrived/ongoing
@@ -1088,12 +1104,24 @@ const StudentDashboard = () => {
 
       <RatingModal
         isOpen={showRatingModal}
-        onClose={() => setShowRatingModal(false)}
+        onClose={() => {
+          setShowRatingModal(false);
+          setRatingRideId(null);
+          AppCache.remove('active_ride');
+          fetchData();
+        }}
         driverName={driverName}
         rideId={ratingRideId}
         onSubmit={async (data) => {
-          await api.post(`/rides/${ratingRideId}/rate`, data);
-          toast.success('Rating submitted successfully');
+          try {
+            await api.post(`/rides/${ratingRideId}/rate`, data);
+            toast.success('Rating submitted successfully');
+          } catch (e) {
+            console.error('Failed to submit rating:', e);
+          }
+          setShowRatingModal(false);
+          setRatingRideId(null);
+          AppCache.remove('active_ride');
           fetchData(); 
         }}
       />

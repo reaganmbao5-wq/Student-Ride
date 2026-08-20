@@ -241,7 +241,7 @@ def validate_ride_transition(current_state: str, next_state: str) -> bool:
 ACTIVE_RIDE_STATES = [
     "requested", "accepted", "driver_accepted", "driver_en_route_to_pickup",
     "driver_arrived", "passenger_boarding", "ride_started", "ongoing",
-    "ride_in_progress", "arriving_destination", "ride_completed", "settlement"
+    "ride_in_progress", "arriving_destination"
 ]
 
 def get_active_ride_states():
@@ -3081,6 +3081,7 @@ async def cancel_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
 
     if is_driver:
         # Driver cancelled: put the ride back in the pool
+        driver_id_to_notify = ride.get("driver_id")
         await db.rides.update_one(
             {"id": ride_id},
             {"$set": {
@@ -3089,19 +3090,20 @@ async def cancel_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
             }}
         )
         
-        # Notify the student
-        background_tasks.add_task(
-            manager.send_personal_message,
-            {
-                "type": "driver_cancelled_reassigning",
-                "ride_id": ride_id,
-                "message": "Your driver had to cancel. Finding a new driver..."
-            },
-            ride["student_id"]
-        )
+        # Notify the student immediately (<10ms)
+        try:
+            await manager.send_personal_message(
+                {
+                    "type": "driver_cancelled_reassigning",
+                    "ride_id": ride_id,
+                    "message": "Your driver had to cancel. Finding a new driver..."
+                },
+                ride["student_id"]
+            )
+        except Exception as e:
+            logger.error(f"Failed direct send driver_cancelled_reassigning to student: {e}")
         
         # Broadcast to pool that ride is back available
-        driver_id_to_notify = ride.get("driver_id")
         ride["status"] = RideStatus.REQUESTED.value
         ride["driver_id"] = None
         await populate_ride_student(ride)
@@ -3111,8 +3113,12 @@ async def cancel_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
         }, ride.get("pickup_location"))
         
         if driver_id_to_notify:
-            background_tasks.add_task(DriverTripRebuilder.rebuild, driver_id_to_notify, db)
-            background_tasks.add_task(broadcast_route_queue, driver_id_to_notify)
+            try:
+                await DriverTripRebuilder.rebuild(driver_id_to_notify, db)
+                await broadcast_route_queue(driver_id_to_notify)
+            except Exception as e:
+                logger.error(f"Failed DriverTripRebuilder on driver cancel: {e}")
+
         return {"status": "reassigned"}
     else:
         # Rider cancelled: terminate the ride completely
@@ -3141,14 +3147,22 @@ async def cancel_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
                     try:
                         await manager.send_personal_message(cancel_msg, driver_doc["user_id"])
                     except Exception as e:
-                        logger.error(f"Failed direct send cancel to driver: {e}")
-                background_tasks.add_task(broadcast_route_queue, driver_doc["id"])
+                        logger.error(f"Failed direct send cancel to driver user_id: {e}")
+                try:
+                    await manager.send_personal_message(cancel_msg, driver_doc["id"])
+                except Exception as e:
+                    logger.error(f"Failed direct send cancel to driver id: {e}")
+                
+                try:
+                    await DriverTripRebuilder.rebuild(driver_doc["id"], db)
+                    await broadcast_route_queue(driver_doc["id"])
+                except Exception as e:
+                    logger.error(f"Failed DriverTripRebuilder on rider cancel: {e}")
             else:
-                background_tasks.add_task(
-                    manager.send_personal_message,
-                    cancel_msg,
-                    ride["driver_id"]
-                )
+                try:
+                    await manager.send_personal_message(cancel_msg, ride["driver_id"])
+                except Exception as e:
+                    logger.error(f"Failed direct send cancel fallback: {e}")
         else:
             # If no driver was assigned, broadcast cancellation to the shared pool
             background_tasks.add_task(manager.broadcast_to_nearby_drivers, {

@@ -274,8 +274,18 @@ const DriverDashboard = () => {
     } else if (rideUpdate.type === 'completed') {
       setActiveRides(prev => {
         const remaining = prev.filter(r => getRideId(r) !== rideUpdate.ride_id);
-        if (activeRide && getRideId(activeRide) === rideUpdate.ride_id) {
-          setActiveRide(remaining.length > 0 ? remaining[0] : null);
+        if (remaining.length === 0) {
+          localStorage.removeItem('driver_active_rides');
+          localStorage.removeItem('driver_active_ride');
+          setActiveRide(null);
+          setRouteQueue([]);
+          setRoutesData([]);
+        } else {
+          localStorage.setItem('driver_active_rides', JSON.stringify(remaining));
+          localStorage.setItem('driver_active_ride', JSON.stringify(remaining[0]));
+          if (activeRide && getRideId(activeRide) === rideUpdate.ride_id) {
+            setActiveRide(remaining[0]);
+          }
         }
         return remaining;
       });
@@ -289,12 +299,18 @@ const DriverDashboard = () => {
         const cancelledId = rideUpdate.ride_id || rideUpdate.ride?.id;
         setActiveRides(prev => {
           const remaining = prev.filter(r => getRideId(r) !== cancelledId);
-          if (activeRide && getRideId(activeRide) === cancelledId) {
-            setActiveRide(remaining.length > 0 ? remaining[0] : null);
-          }
           if (remaining.length === 0) {
+            localStorage.removeItem('driver_active_rides');
+            localStorage.removeItem('driver_active_ride');
+            setActiveRide(null);
             setRouteQueue([]);
             setRoutesData([]);
+          } else {
+            localStorage.setItem('driver_active_rides', JSON.stringify(remaining));
+            localStorage.setItem('driver_active_ride', JSON.stringify(remaining[0]));
+            if (activeRide && getRideId(activeRide) === cancelledId) {
+              setActiveRide(remaining[0]);
+            }
           }
           return remaining;
         });
@@ -656,8 +672,18 @@ const DriverDashboard = () => {
     // Optimistic UI update: instantly transition to remaining student ride if any
     setActiveRides(prev => {
       const remaining = prev.filter(r => getRideId(r) !== targetId);
-      if (activeRide && getRideId(activeRide) === targetId) {
-        setActiveRide(remaining.length > 0 ? remaining[0] : null);
+      if (remaining.length === 0) {
+        localStorage.removeItem('driver_active_rides');
+        localStorage.removeItem('driver_active_ride');
+        setActiveRide(null);
+        setRouteQueue([]);
+        setRoutesData([]);
+      } else {
+        localStorage.setItem('driver_active_rides', JSON.stringify(remaining));
+        localStorage.setItem('driver_active_ride', JSON.stringify(remaining[0]));
+        if (activeRide && getRideId(activeRide) === targetId) {
+          setActiveRide(remaining[0]);
+        }
       }
       return remaining;
     });

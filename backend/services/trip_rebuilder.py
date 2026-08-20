@@ -144,15 +144,14 @@ class DriverTripRebuilder:
                     leg_color = get_color_for_ride(dest.get("ride_id"))
                     
                     # HARDENING RULE: Only accept detailed road geometries (len > 2).
-                    # Never accept 2-point straight lines if detailed cached geometry is available.
+                    # NEVER produce 2-point straight lines. If unavailable, use cached or empty.
                     if isinstance(leg_geo, Exception) or not leg_geo or len(leg_geo) <= 2:
                         if i < len(prev_driver_segments) and prev_driver_segments[i].get("geometry") and len(prev_driver_segments[i]["geometry"]) > 2:
                             leg_geo = prev_driver_segments[i]["geometry"]
                         else:
-                            # Fallback to connected waypoint endpoints to preserve topological route continuity
-                            leg_geo = [[orig["lat"], orig["lng"]], [dest["lat"], dest["lng"]]]
+                            leg_geo = []
                     
-                    if leg_geo and len(leg_geo) >= 2:
+                    if leg_geo and len(leg_geo) > 2:
                         full_driver_segments.append({
                             "rideId": f"seg-{i}",
                             "geometry": leg_geo,
@@ -261,10 +260,11 @@ class DriverTripRebuilder:
                             stops_count_str = f"1 stop remaining before your {stop_label_type}." if stops_remaining == 1 else f"{stops_remaining} stops remaining before your {stop_label_type}."
                             carousel_messages = [stops_count_str, briefing_text, "Shared Ride"] if len(active_rides) > 1 else [stops_count_str, briefing_text]
 
-                        # Extract intermediate stops prior to and including student's final dropoff
+                        # Extract intermediate stops prior to and including student's target stop
                         intermediate_stops = []
-                        if dropoff_idx != -1:
-                            for i in range(dropoff_idx + 1):
+                        clip_stop_idx = dropoff_idx if is_onboard else target_idx
+                        if clip_stop_idx != -1:
+                            for i in range(clip_stop_idx + 1):
                                 st = route_queue[i]
                                 st_c = st.get("coordinates", {})
                                 if st_c and "lat" in st_c and "lng" in st_c:
@@ -281,10 +281,17 @@ class DriverTripRebuilder:
                                         "color": get_color_for_ride(st.get("ride_id"))
                                     })
 
-                        # CLIP DRIVER ROUTE SEGMENTS AT MY FINAL DESTINATION (dropoff_idx)
+                        # CLIP DRIVER ROUTE SEGMENTS AT STUDENT TARGET (pickup if waiting, dropoff if onboard)
                         student_segments = []
-                        if dropoff_idx != -1:
-                            student_segments = full_driver_segments[:dropoff_idx + 1]
+                        if clip_stop_idx != -1:
+                            raw_segments = full_driver_segments[:clip_stop_idx + 1]
+                            student_segments = [
+                                {
+                                    **seg,
+                                    "color": '#3b82f6'
+                                }
+                                for seg in raw_segments
+                            ]
 
                         # Concatenate geometries of clipped segments for backwards compatibility
                         student_geo = []
