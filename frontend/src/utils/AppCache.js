@@ -32,6 +32,20 @@ export const AppCache = {
     }
   },
 
+  remove: (key) => {
+    if (key) {
+      MEMORY_CACHE.delete(key);
+      localStorage.removeItem(`mulurides_cache_${key}`);
+    }
+  },
+
+  delete: (key) => {
+    if (key) {
+      MEMORY_CACHE.delete(key);
+      localStorage.removeItem(`mulurides_cache_${key}`);
+    }
+  },
+
   clear: (key) => {
     if (key) {
       MEMORY_CACHE.delete(key);
