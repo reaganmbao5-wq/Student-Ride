@@ -34,8 +34,22 @@ const DriverDashboard = () => {
   const hardCooldownRef = useRef(0);
 
   const [isOnline, setIsOnline] = useState(false);
-  const [activeRide, setActiveRide] = useState(null);
-  const [activeRides, setActiveRides] = useState([]);
+  const [activeRide, setActiveRide] = useState(() => {
+    try {
+      const cached = localStorage.getItem('driver_active_ride');
+      return cached ? JSON.parse(cached) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+  const [activeRides, setActiveRides] = useState(() => {
+    try {
+      const cached = localStorage.getItem('driver_active_rides');
+      return cached ? JSON.parse(cached) : [];
+    } catch (e) {
+      return [];
+    }
+  });
   const [pendingRides, setPendingRides] = useState([]);
   const [masterSharedRidePool, setMasterSharedRidePool] = useState([]);
   const [routesData, setRoutesData] = useState([]);
@@ -135,10 +149,16 @@ const DriverDashboard = () => {
       if (ridesArray.length === 0) {
         setRouteQueue([]);
         setRoutesData([]);
-      } else if (tripRes?.data?.route_queue) {
-        setRouteQueue(tripRes.data.route_queue);
-        if (Array.isArray(tripRes.data.full_driver_segments)) {
-          setRoutesData(tripRes.data.full_driver_segments);
+        localStorage.removeItem('driver_active_rides');
+        localStorage.removeItem('driver_active_ride');
+      } else {
+        localStorage.setItem('driver_active_rides', JSON.stringify(ridesArray));
+        localStorage.setItem('driver_active_ride', JSON.stringify(ridesArray[0]));
+        if (tripRes?.data?.route_queue) {
+          setRouteQueue(tripRes.data.route_queue);
+          if (Array.isArray(tripRes.data.full_driver_segments)) {
+            setRoutesData(tripRes.data.full_driver_segments);
+          }
         }
       }
     } catch (err) {
@@ -160,6 +180,11 @@ const DriverDashboard = () => {
       if (ridesArray.length === 0) {
         setRouteQueue([]);
         setRoutesData([]);
+        localStorage.removeItem('driver_active_rides');
+        localStorage.removeItem('driver_active_ride');
+      } else {
+        localStorage.setItem('driver_active_rides', JSON.stringify(ridesArray));
+        localStorage.setItem('driver_active_ride', JSON.stringify(ridesArray[0]));
       }
       setEarnings(earningsRes.data);
       if (tripRes?.data) {
@@ -514,7 +539,16 @@ const DriverDashboard = () => {
 
     try {
       const response = await api.post(`/rides/${rideId}/accept`);
-      if (response.data) setActiveRide(response.data);
+      if (response.data) {
+        setActiveRide(response.data);
+        setActiveRides(prev => {
+          const updated = prev.map(r => getRideId(r) === rideId ? response.data : r);
+          if (!updated.some(r => getRideId(r) === rideId)) updated.push(response.data);
+          localStorage.setItem('driver_active_rides', JSON.stringify(updated));
+          return updated;
+        });
+        localStorage.setItem('driver_active_ride', JSON.stringify(response.data));
+      }
       const tripRes = await api.get('/rides/driver/trip');
       if (tripRes.data?.route_queue) setRouteQueue(tripRes.data.route_queue);
       if (tripRes.data?.full_driver_segments && Array.isArray(tripRes.data.full_driver_segments) && tripRes.data.full_driver_segments.length > 0) {
@@ -542,7 +576,16 @@ const DriverDashboard = () => {
     
     try {
       const response = await api.post(`/rides/${rideId}/accept`);
-      if (response.data) setActiveRide(response.data);
+      if (response.data) {
+        setActiveRide(response.data);
+        setActiveRides(prev => {
+          const updated = prev.map(r => getRideId(r) === rideId ? response.data : r);
+          if (!updated.some(r => getRideId(r) === rideId)) updated.push(response.data);
+          localStorage.setItem('driver_active_rides', JSON.stringify(updated));
+          return updated;
+        });
+        localStorage.setItem('driver_active_ride', JSON.stringify(response.data));
+      }
       const tripRes = await api.get('/rides/driver/trip');
       if (tripRes.data?.route_queue) setRouteQueue(tripRes.data.route_queue);
       if (tripRes.data?.full_driver_segments && Array.isArray(tripRes.data.full_driver_segments) && tripRes.data.full_driver_segments.length > 0) {

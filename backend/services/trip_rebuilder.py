@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import math
 from typing import List, Dict, Any
@@ -128,32 +129,36 @@ class DriverTripRebuilder:
                     driver_waypoints.append({"lat": st_c["lat"], "lng": st_c["lng"], "ride_id": st.get("ride_id"), "stop_id": st.get("stop_id")})
 
             full_driver_segments = []
-            for i in range(len(driver_waypoints) - 1):
-                orig = driver_waypoints[i]
-                dest = driver_waypoints[i+1]
-                leg_color = get_color_for_ride(dest.get("ride_id"))
-                leg_geo = []
-                try:
-                    leg_geo = await get_multi_waypoint_route([orig, dest])
-                except Exception as ex:
-                    logger.error(f"Leg route error {orig}->{dest}: {ex}")
+            if len(driver_waypoints) >= 2:
+                leg_tasks = []
+                for i in range(len(driver_waypoints) - 1):
+                    orig = driver_waypoints[i]
+                    dest = driver_waypoints[i+1]
+                    leg_tasks.append(get_multi_waypoint_route([orig, dest]))
                 
-                # HARDENING RULE: Only accept detailed road geometries (len > 2).
-                # Never accept 2-point straight lines if detailed cached geometry is available.
-                # If OSRM fails and cache fails, fallback to straight line to guarantee segment array integrity.
-                if not leg_geo or len(leg_geo) <= 2:
-                    if i < len(prev_driver_segments) and prev_driver_segments[i].get("geometry") and len(prev_driver_segments[i]["geometry"]) > 2:
-                        leg_geo = prev_driver_segments[i]["geometry"]
-                    else:
-                        leg_geo = None
+                leg_results = await asyncio.gather(*leg_tasks, return_exceptions=True)
                 
-                if leg_geo and len(leg_geo) > 2:
-                    full_driver_segments.append({
-                        "rideId": f"seg-{i}",
-                        "geometry": leg_geo,
-                        "color": leg_color,
-                        "status": "active"
-                    })
+                for i, leg_geo in enumerate(leg_results):
+                    orig = driver_waypoints[i]
+                    dest = driver_waypoints[i+1]
+                    leg_color = get_color_for_ride(dest.get("ride_id"))
+                    
+                    # HARDENING RULE: Only accept detailed road geometries (len > 2).
+                    # Never accept 2-point straight lines if detailed cached geometry is available.
+                    if isinstance(leg_geo, Exception) or not leg_geo or len(leg_geo) <= 2:
+                        if i < len(prev_driver_segments) and prev_driver_segments[i].get("geometry") and len(prev_driver_segments[i]["geometry"]) > 2:
+                            leg_geo = prev_driver_segments[i]["geometry"]
+                        else:
+                            # Fallback to connected waypoint endpoints to preserve topological route continuity
+                            leg_geo = [[orig["lat"], orig["lng"]], [dest["lat"], dest["lng"]]]
+                    
+                    if leg_geo and len(leg_geo) >= 2:
+                        full_driver_segments.append({
+                            "rideId": f"seg-{i}",
+                            "geometry": leg_geo,
+                            "color": leg_color,
+                            "status": "active"
+                        })
 
             # 5. Build Passenger-Specific Briefings and Route Projections (Phase X.1 Passive Consumer Architecture)
             passenger_briefings = {}

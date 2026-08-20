@@ -1,5 +1,11 @@
 # AGENTS.md - Workspace Rules
 
+## 🛑 STRICT WORKSPACE ENFORCEMENT & BAN POLICY
+- **`Student-Ride` workspace is STRICTLY BANNED from any changes, commands, analysis, or edits in this conversation.**
+- **ALL actions, investigations, code modifications, tests, builds, and analysis MUST strictly and exclusively target `C:\Users\Reaga\OneDrive\Documents\VS Codes\Projects\Mapbox stable`.**
+
+---
+
 ## 🔒 LOCKED STABLE MODULES & STRICT USER PERMISSION REQUIREMENT
 
 The following core modules and files are **STRICTLY LOCKED AND PROVEN STABLE**:

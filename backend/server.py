@@ -2563,16 +2563,29 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
     background_tasks.add_task(DriverTripManager.handle_ride_accepted, driver["id"], ride_id, db)
     background_tasks.add_task(internal_bus.publish, "ride_accepted", {"driver_id": driver["id"], "ride_id": ride_id})
     
-    # Notify student
+    # Populate driver info with user details for instant frontend rendering
+    driver_user = await db.users.find_one({"id": driver.get("user_id")}, {"_id": 0, "password": 0})
+    driver_payload = dict(driver)
+    if driver_user:
+        driver_payload["user"] = {
+            "id": driver_user.get("id"),
+            "name": driver_user.get("name"),
+            "email": driver_user.get("email"),
+            "phone": driver_user.get("phone", ""),
+            "avatar_url": driver_user.get("avatar_url"),
+            "role": driver_user.get("role", "driver")
+        }
+
+    # Notify student immediately via WebSocket with updated driver_accepted status
     background_tasks.add_task(
         manager.send_personal_message,
         {
             "ride_mode": ride_mode,
             "type": "ride_accepted",
-            "ride": target_ride,
-            "driver": driver
+            "ride": ride,
+            "driver": driver_payload
         },
-        target_ride["student_id"]
+        ride["student_id"]
     )
 
     async def safe_broadcast_route(d_id):
@@ -2610,7 +2623,7 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
     manager.add_to_ride(ride_id, user["id"])
     
     await populate_ride_student(ride)
-    ride["driver"] = driver # Include driver details in response if needed, though schema has driver_id
+    ride["driver"] = driver_payload # Include full driver details in response
     return RideResponse(**ride)
 
 @api_router.post("/rides/{ride_id}/arrived")

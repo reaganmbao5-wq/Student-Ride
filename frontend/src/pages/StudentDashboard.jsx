@@ -290,10 +290,17 @@ const StudentDashboard = () => {
   useEffect(() => {
     if (rideUpdate) {
       if (rideUpdate.type === 'accepted') {
-        setActiveRide(prev => ({ ...prev, ...rideUpdate.ride, driver: rideUpdate.driver }));
+        const fullDriver = rideUpdate.driver || null;
+        const updatedRide = {
+          ...(rideUpdate.ride || {}),
+          status: rideUpdate.ride?.status && rideUpdate.ride.status !== 'requested' ? rideUpdate.ride.status : 'driver_accepted',
+          driver: fullDriver
+        };
+        setActiveRide(prev => ({ ...(prev || {}), ...updatedRide }));
+        AppCache.set('active_ride', updatedRide);
         systemNotification.notifyDriverAccepted(
-          rideUpdate.driver?.user?.name,
-          `${rideUpdate.driver?.vehicle_color || ''} ${rideUpdate.driver?.vehicle_model || ''}`
+          fullDriver?.user?.name,
+          `${fullDriver?.vehicle_color || ''} ${fullDriver?.vehicle_model || ''}`
         );
         fetchData();
       } else if (rideUpdate.type === 'driver_arrived') {
