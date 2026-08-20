@@ -33,7 +33,11 @@ export const preloadMakiIcons = () => {
 // Immediate self-trigger on module load
 preloadMakiIcons();
 
-const categoryToMakiIcon = (category) => {
+const categoryToMakiIcon = (category, name) => {
+  const n = String(name || '').toLowerCase().trim();
+  if (n.includes('hostel') || n.includes('dormitory') || n.includes('student accommodation') || n.includes('hall of residence')) {
+    return 'lodging';
+  }
   const cat = String(category || '').toLowerCase().trim().replace(/_/g, ' ');
   
   if (['hospital', 'clinic', 'medical laboratory', 'community health center', 'health consultant', 'health post', 'health_post', 'health'].includes(cat)) {
@@ -45,7 +49,7 @@ const categoryToMakiIcon = (category) => {
   if (['school', 'kindergarten', 'private educational institution'].includes(cat)) {
     return 'school';
   }
-  if (['university', 'college', 'educational institution', 'educational_institution', 'education center', 'auditorium', 'library'].includes(cat)) {
+  if (['university', 'college', 'educational institution', 'educational_institution', 'education center', 'auditorium', 'library', 'lecture theatre', 'lecture hall', 'hall'].includes(cat)) {
     return 'college';
   }
   if (['restaurant', 'fast food', 'diner', 'fast_food'].includes(cat)) {
@@ -123,34 +127,100 @@ const categoryToMakiIcon = (category) => {
 const iconColorExpression = [
   'match',
   ['get', 'maki_icon'],
-  'hospital', '#EF4444',
-  'lodging', '#EC4899',
-  'school', '#EAB308',
-  'college', '#EAB308',
-  'restaurant', '#F97316',
-  'bar', '#F97316',
-  'cafe', '#F97316',
-  'fuel', '#FFD93D',
-  'grocery', '#0EA5E9',
-  'shop', '#0EA5E9',
-  'bank', '#10B981',
-  'place-of-worship', '#8B5CF6',
-  'police', '#3B82F6',
-  'bus', '#6B7280',
-  'post', '#3B82F6',
-  'park', '#10B981',
-  'veterinary', '#EF4444',
-  'town-hall', '#6B7280',
-  'campsite', '#10B981',
-  'car-repair', '#6B7280',
-  'car', '#6B7280',
+  'lodging', '#C24488',          // Mapbox standard magenta/plum for hostels & dorms
+  'school', '#EA5545',           // Mapbox standard coral/warm terracotta for education
+  'college', '#EA5545',          // Mapbox standard coral/warm terracotta for university halls & lectures
+  'restaurant', '#F28E2B',       // Mapbox standard warm amber-orange for food & dining
+  'bar', '#F28E2B',
+  'cafe', '#F28E2B',
+  'fuel', '#FFB800',             // Mapbox standard fuel yellow
+  'grocery', '#4E79A7',          // Mapbox standard commercial slate-blue
+  'shop', '#4E79A7',             // Mapbox standard commercial slate-blue
+  'bank', '#059669',             // Mapbox standard bank teal
+  'place-of-worship', '#8B5CF6', // Mapbox standard violet
+  'police', '#3B82F6',           // Mapbox standard blue
+  'bus', '#0284C7',              // Mapbox standard transit cyan-blue
+  'post', '#3B82F6',             // Mapbox standard postal blue
+  'park', '#22C55E',             // Mapbox standard emerald green for outdoor & fields
+  'campsite', '#22C55E',         // Mapbox standard emerald green
+  'pitch', '#22C55E',            // Mapbox standard sports green
+  'hospital', '#E15759',         // Mapbox standard medical crimson-red
+  'veterinary', '#E15759',
   'art-gallery', '#8B5CF6',
   'attraction', '#F59E0B',
-  'pitch', '#10B981',
-  'prison', '#6B7280',
-  'shelter', '#6B7280',
-  'communications-tower', '#6B7280',
-  '#D4AF37' // Default signature gold
+  'town-hall', '#64748B',
+  'car-repair', '#64748B',
+  'car', '#64748B',
+  'prison', '#64748B',
+  'shelter', '#64748B',
+  'communications-tower', '#64748B',
+  '#D4AF37'                      // Default signature gold
+];
+
+const textColorExpressionLight = [
+  'match',
+  ['get', 'maki_icon'],
+  'lodging', '#86198F',          // Deep plum/magenta-pink for hostel & dorm names (e.g. "Chambeshi Hostel")
+  'school', '#C2410C',           // Warm terracotta-amber for academic & school names
+  'college', '#C2410C',          // Warm terracotta-amber for lecture halls & departments
+  'restaurant', '#EA580C',       // Warm dining orange for cafeteria & restaurant names
+  'bar', '#EA580C',
+  'cafe', '#EA580C',
+  'fuel', '#B45309',             // Amber-gold for fuel stations
+  'grocery', '#1D4ED8',          // Crisp slate-blue for grocery & supermarket names
+  'shop', '#1D4ED8',             // Crisp slate-blue for shop & store names
+  'bank', '#047857',             // Emerald teal for banks & ATMs
+  'place-of-worship', '#6D28D9', // Violet-purple for religious & worship places
+  'police', '#1D4ED8',           // Blue for police & security
+  'bus', '#0284C7',              // Cyan-blue for transit & bus stops
+  'post', '#1D4ED8',             // Blue for post offices
+  'park', '#15803D',             // Forest green for parks, fields & pitches
+  'campsite', '#15803D',
+  'pitch', '#15803D',
+  'hospital', '#B91C1C',         // Crimson red for clinic & medical names
+  'veterinary', '#B91C1C',
+  'art-gallery', '#6D28D9',
+  'attraction', '#B45309',
+  'town-hall', '#334155',
+  'car-repair', '#334155',
+  'car', '#334155',
+  'prison', '#334155',
+  'shelter', '#334155',
+  'communications-tower', '#334155',
+  '#334155'                      // Default dark slate
+];
+
+const textColorExpressionDark = [
+  'match',
+  ['get', 'maki_icon'],
+  'lodging', '#F472B6',          // Soft vibrant pink/magenta for hostel & dorm names
+  'school', '#FDBA74',           // Warm peach/amber for academic & school names
+  'college', '#FDBA74',          // Warm peach/amber for lecture halls & departments
+  'restaurant', '#FB923C',       // Vibrant orange for dining & cafeterias
+  'bar', '#FB923C',
+  'cafe', '#FB923C',
+  'fuel', '#FDE047',             // Bright yellow for fuel stations
+  'grocery', '#60A5FA',          // Soft sky blue for shops & grocery
+  'shop', '#60A5FA',
+  'bank', '#34D399',             // Bright emerald teal for banks
+  'place-of-worship', '#A78BFA', // Soft violet for places of worship
+  'police', '#60A5FA',
+  'bus', '#38BDF8',
+  'post', '#60A5FA',
+  'park', '#4ADE80',             // Bright green for parks & fields
+  'campsite', '#4ADE80',
+  'pitch', '#4ADE80',
+  'hospital', '#F87171',         // Soft coral red for clinics & health centers
+  'veterinary', '#F87171',
+  'art-gallery', '#A78BFA',
+  'attraction', '#FBBF24',
+  'town-hall', '#94A3B8',
+  'car-repair', '#94A3B8',
+  'car', '#94A3B8',
+  'prison', '#94A3B8',
+  'shelter', '#94A3B8',
+  'communications-tower', '#94A3B8',
+  '#F8FAFC'                      // Default crisp off-white
 ];
 
 // Combine GeoJSON features once statically
@@ -158,8 +228,9 @@ const combinedFeatures = [
   ...(finalPlaces.features || []),
   ...(campusLandmarks.features || [])
 ].map((f, idx) => {
+  const nameVal = f.properties?.name || '';
   const categoryVal = f.properties?.category || f.properties?.category_raw || 'location';
-  const makiIcon = categoryToMakiIcon(categoryVal);
+  const makiIcon = categoryToMakiIcon(categoryVal, nameVal);
   return {
     type: 'Feature',
     id: idx,
@@ -193,8 +264,11 @@ export const POILayer = ({ map, isNight = false, onPlaceSelect = null }) => {
     if (!map || !map.style) return;
     try {
       if (map.getLayer(LAYER_LABELS_ID)) {
-        map.setPaintProperty(LAYER_LABELS_ID, 'text-color', isNight ? '#F8FAFC' : '#0F172A');
+        map.setPaintProperty(LAYER_LABELS_ID, 'text-color', isNight ? '#FFFFFF' : textColorExpressionLight);
         map.setPaintProperty(LAYER_LABELS_ID, 'text-halo-color', isNight ? '#0F172A' : '#FFFFFF');
+        map.setPaintProperty(LAYER_LABELS_ID, 'text-halo-width', 2);
+        map.setPaintProperty(LAYER_LABELS_ID, 'text-halo-blur', 0.5);
+        map.setPaintProperty(LAYER_LABELS_ID, 'icon-color', isNight ? '#FFFFFF' : iconColorExpression);
       }
     } catch (err) {
       console.warn('Error updating POI layer paint properties:', err);
@@ -270,19 +344,22 @@ export const POILayer = ({ map, isNight = false, onPlaceSelect = null }) => {
                 'interpolate',
                 ['linear'],
                 ['zoom'],
-                14.5, 0,
-                15, 11,
-                18, 12
+                14, 0,
+                14.5, 10.5,
+                16, 11.5,
+                18, 12.5
               ],
-              'text-offset': [0, 1.3],
+              'text-letter-spacing': 0.01,
+              'text-offset': [0, 1.25],
               'text-anchor': 'top',
               'text-allow-overlap': false
             },
             paint: {
-              'icon-color': iconColorExpression,
-              'text-color': isNightRef.current ? '#F8FAFC' : '#0F172A',
+              'icon-color': isNightRef.current ? '#FFFFFF' : iconColorExpression,
+              'text-color': isNightRef.current ? '#FFFFFF' : textColorExpressionLight,
               'text-halo-color': isNightRef.current ? '#0F172A' : '#FFFFFF',
-              'text-halo-width': 2
+              'text-halo-width': 2,
+              'text-halo-blur': 0.5
             }
           });
         }
