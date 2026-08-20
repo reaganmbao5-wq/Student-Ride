@@ -683,8 +683,16 @@ const DriverDashboard = () => {
     // Optimistic UI update: filter out cancelled ride immediately without dumping driver to home page
     setActiveRides(prev => {
       const remaining = prev.filter(r => getRideId(r) !== targetId);
-      if (activeRide && getRideId(activeRide) === targetId) {
-        setActiveRide(remaining.length > 0 ? remaining[0] : null);
+      if (remaining.length === 0) {
+        localStorage.removeItem('driver_active_rides');
+        localStorage.removeItem('driver_active_ride');
+        setActiveRide(null);
+      } else {
+        localStorage.setItem('driver_active_rides', JSON.stringify(remaining));
+        localStorage.setItem('driver_active_ride', JSON.stringify(remaining[0]));
+        if (activeRide && getRideId(activeRide) === targetId) {
+          setActiveRide(remaining[0]);
+        }
       }
       return remaining;
     });

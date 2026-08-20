@@ -87,7 +87,6 @@ export class RouteProgress {
       const ptOnSegment = this.getClosestPointOnSegment(driverPt, A, B);
       const dist = this.getDistance(driverPt, ptOnSegment);
       
-      // Allow some snapping tolerance
       if (dist < minDistance) {
         minDistance = dist;
         closestSegmentIdx = i;
@@ -95,7 +94,27 @@ export class RouteProgress {
       }
     }
 
-    // Split paths
+    // GATING FOR MULTI-SEGMENT QUEUES:
+    // If the driver is more than 150m away from this segment, determine if it's an upcoming or past segment
+    if (minDistance > 0.15) {
+      const startPt = this.getPointCoord(geometry[0]);
+      const endPt = this.getPointCoord(geometry[geometry.length - 1]);
+      const distToStart = this.getDistance(driverPt, startPt);
+      const distToEnd = this.getDistance(driverPt, endPt);
+
+      if (distToStart < distToEnd) {
+        // Upcoming segment: entire geometry is remaining
+        return {
+          travelledPath: [],
+          remainingPath: geometry,
+          distanceLeftKm: 0,
+          percentageComplete: 0,
+          minDistanceKm: minDistance
+        };
+      }
+    }
+
+    // Split paths for actively driven segment:
     // Travelled path: all points before the closest segment + the exact closest point
     const travelledPath = geometry.slice(0, closestSegmentIdx + 1);
     travelledPath.push(closestPoint);

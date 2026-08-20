@@ -137,11 +137,11 @@ export const VehicleRenderer = ({ map, driver }) => {
 
       animState.currentLat = lerp(animState.startLat, animState.targetLat, easedProgress);
       animState.currentLng = lerp(animState.startLng, animState.targetLng, easedProgress);
-      animState.currentHeading = animState.targetHeading;
+      animState.currentHeading = lerpHeading(animState.startHeading, animState.targetHeading, easedProgress);
 
       if (markerRef.current) {
         markerRef.current.setLngLat([animState.currentLng, animState.currentLat]);
-        markerRef.current.setRotation(animState.targetHeading);
+        markerRef.current.setRotation(animState.currentHeading);
       }
 
       if (progress < 1) {

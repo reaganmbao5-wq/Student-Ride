@@ -323,6 +323,7 @@ const StudentDashboard = () => {
         systemNotification.notifyRideCancelled('The ride was cancelled');
         setActiveRide(null);
         setPassengerBriefing(null);
+        AppCache.remove('active_ride');
       } else if (rideUpdate.type === 'reassigning') {
         systemNotification.notifyRideCancelled('Driver cancelled. Finding a new driver...');
         setActiveRide(prev => prev ? { ...prev, status: 'requested', driver_id: null, driver: null } : null);
@@ -422,6 +423,7 @@ const StudentDashboard = () => {
       setActiveRide(null);
       setDriverPos(null);
       setPassengerBriefing(null);
+      AppCache.remove('active_ride');
       await api.post(`/rides/${rideIdToCancel}/cancel`);
       toast.success('Ride cancelled');
       fetchData();
@@ -529,9 +531,8 @@ const StudentDashboard = () => {
     }
 
     const isSharedRide = activeRide.ride_mode === 'shared' || activeRide.ride_type === 'shared' || Boolean(passengerBriefing?.is_shared);
-    const stopsRemaining = passengerBriefing?.stops_remaining ?? 0;
-    const briefingMentionsAnother = passengerBriefing?.briefing_text && /another/i.test(passengerBriefing.briefing_text);
-    const isPriorStopsActive = (isSharedRide || briefingMentionsAnother) && (stopsRemaining > 0 || briefingMentionsAnother) && ['accepted', 'driver_accepted', 'driver_en_route_to_pickup', 'ongoing', 'ride_started'].includes(currentStatus);
+    const stopsRemaining = (isBriefingForThisRide && passengerBriefing?.stops_remaining !== undefined) ? passengerBriefing.stops_remaining : 0;
+    const isPriorStopsActive = isSharedRide && stopsRemaining > 0 && ['accepted', 'driver_accepted', 'driver_en_route_to_pickup', 'ongoing', 'ride_started'].includes(currentStatus);
 
     let bounds = [];
     if (driverPos) bounds.push([driverPos.lat, driverPos.lng]);

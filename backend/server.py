@@ -2362,6 +2362,7 @@ async def request_ride(ride_data: RideRequest, user: dict = Depends(get_current_
             "verified_distance": round(dist, 2),
             "verified_duration": round(duration, 1),
             "verified_geometry": route_data["geometry"],
+            "route_geometry": route_data["geometry"],
             "route_source": route_data["source"],
             "rating": None,
             "review": None,
@@ -2576,17 +2577,27 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
             "role": driver_user.get("role", "driver")
         }
 
-    # Notify student immediately via WebSocket with updated driver_accepted status
-    background_tasks.add_task(
-        manager.send_personal_message,
-        {
-            "ride_mode": ride_mode,
-            "type": "ride_accepted",
-            "ride": ride,
-            "driver": driver_payload
-        },
-        ride["student_id"]
-    )
+    # Notify student immediately via WebSocket with updated driver_accepted status (<10ms in-memory dispatch)
+    try:
+        await manager.send_personal_message(
+            {
+                "ride_mode": ride_mode,
+                "type": "ride_accepted",
+                "ride": ride,
+                "driver": driver_payload
+            },
+            ride["student_id"]
+        )
+    except Exception as e:
+        logger.error(f"Failed direct websocket send to student: {e}")
+
+    try:
+        await manager.broadcast_to_all_active_connections({
+            "type": "shared_ride_accepted_by_other",
+            "ride_id": ride_id
+        })
+    except Exception as e:
+        logger.error(f"Failed direct broadcast to pool: {e}")
 
     async def safe_broadcast_route(d_id):
         try:
@@ -2657,15 +2668,18 @@ async def driver_arrived(ride_id: str, background_tasks: BackgroundTasks, user: 
             return {"status": "arrived"}
         raise HTTPException(status_code=400, detail="Invalid transition or double update.")
     
-    background_tasks.add_task(
-        manager.send_personal_message,
-        {
-            "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value),
-            "type": "driver_arrived",
-            "ride_id": ride_id
-        },
-        ride["student_id"]
-    )
+    # Instant direct WebSocket dispatch to student (<10ms)
+    try:
+        await manager.send_personal_message(
+            {
+                "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value),
+                "type": "driver_arrived",
+                "ride_id": ride_id
+            },
+            ride["student_id"]
+        )
+    except Exception as e:
+        logger.error(f"Failed direct websocket send driver_arrived: {e}")
     
     async def send_arrived_push(student_id, r_id):
         await notification_service.send(
@@ -2719,15 +2733,18 @@ async def start_ride(ride_id: str, background_tasks: BackgroundTasks, user: dict
             return {"status": "ongoing"}
         raise HTTPException(status_code=400, detail="Invalid transition or double update.")
     
-    background_tasks.add_task(
-        manager.send_personal_message,
-        {
-            "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value),
-            "type": "ride_started",
-            "ride_id": ride_id
-        },
-        ride["student_id"]
-    )
+    # Instant direct WebSocket dispatch to student (<10ms)
+    try:
+        await manager.send_personal_message(
+            {
+                "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value),
+                "type": "ride_started",
+                "ride_id": ride_id
+            },
+            ride["student_id"]
+        )
+    except Exception as e:
+        logger.error(f"Failed direct websocket send ride_started: {e}")
     
     background_tasks.add_task(DriverTripRebuilder.rebuild, driver["id"], db)
     
@@ -2836,17 +2853,32 @@ async def complete_ride(ride_id: str, background_tasks: BackgroundTasks, user: d
     }
     await db.driver_wallet_transactions.insert_one(transaction)
     
-    background_tasks.add_task(
-        manager.send_personal_message,
-        {
-            "type": "ride_completed",
-            "ride_id": ride_id,
-            "fare": ride["fare"]
-        },
-        ride["student_id"]
-    )
-    
-    # Notify Driver of Wallet Update and Ride Completion
+    # Direct immediate WebSocket dispatch (<10ms)
+    try:
+        await manager.send_personal_message(
+            {
+                "type": "ride_completed",
+                "ride_id": ride_id,
+                "fare": ride["fare"]
+            },
+            ride["student_id"]
+        )
+    except Exception as e:
+        logger.error(f"Failed direct websocket send ride_completed to student: {e}")
+
+    try:
+        await manager.send_personal_message(
+            {
+                "type": "ride_completed",
+                "ride_id": ride_id,
+                "fare": ride["fare"]
+            },
+            user["id"]
+        )
+    except Exception as e:
+        logger.error(f"Failed direct websocket send ride_completed to driver: {e}")
+
+    # Notify Driver of Wallet Update asynchronously
     background_tasks.add_task(
         manager.send_personal_message,
         {
@@ -2854,16 +2886,6 @@ async def complete_ride(ride_id: str, background_tasks: BackgroundTasks, user: d
             "wallet_balance": -total_due,
             "total_commission_due": total_due,
             "wallet_status": wallet_status
-        },
-        user["id"]
-    )
-    
-    background_tasks.add_task(
-        manager.send_personal_message,
-        {
-            "type": "ride_completed",
-            "ride_id": ride_id,
-            "fare": ride["fare"]
         },
         user["id"]
     )
@@ -3106,25 +3128,20 @@ async def cancel_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
             "message": "Student cancelled the ride"
         }
 
-        # Broadcast to room sockets joined to this ride
-        background_tasks.add_task(manager.broadcast_to_ride, cancel_msg, ride_id)
+        # Direct immediate WebSocket dispatch (<10ms)
+        try:
+            await manager.broadcast_to_ride(cancel_msg, ride_id)
+        except Exception as e:
+            logger.error(f"Failed direct broadcast_to_ride cancel: {e}")
         
         if ride.get("driver_id"):
             driver_doc = await db.drivers.find_one({"id": ride["driver_id"]})
             if driver_doc:
-                # Send personal message to driver's user_id (for instant WebSocket UI update & toast)
                 if driver_doc.get("user_id"):
-                    background_tasks.add_task(
-                        manager.send_personal_message,
-                        cancel_msg,
-                        driver_doc["user_id"]
-                    )
-                # Fallback to driver_doc id
-                background_tasks.add_task(
-                    manager.send_personal_message,
-                    cancel_msg,
-                    driver_doc["id"]
-                )
+                    try:
+                        await manager.send_personal_message(cancel_msg, driver_doc["user_id"])
+                    except Exception as e:
+                        logger.error(f"Failed direct send cancel to driver: {e}")
                 background_tasks.add_task(broadcast_route_queue, driver_doc["id"])
             else:
                 background_tasks.add_task(
