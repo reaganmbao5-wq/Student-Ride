@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, UploadCloud, FileText, CheckCircle2, Camera } from 'lucide-react';
 import { GlassCard, GlassInput, GoldButton } from '../components/common/GlassComponents';
 import { useAuth } from '../context/AuthContext';
 import { compressImage } from '../utils/imageCompressor';
+import { resolveMediaUrl } from '../utils/urlHelpers';
 import { toast } from 'sonner';
 import { showFriendlyError } from '../utils/errorHandler';
 
 const DriverRegisterPage = () => {
   const navigate = useNavigate();
-  const { registerDriver, api } = useAuth();
+  const { user, driverProfile, registerDriver, api, fetchUser } = useAuth();
   const [loading, setLoading] = useState(false);
   
   const [docs, setDocs] = useState({
@@ -17,17 +18,33 @@ const DriverRegisterPage = () => {
     license: null,
     registration: null
   });
-  const [profilePhotoPreview, setProfilePhotoPreview] = useState(null);
+  const [profilePhotoPreview, setProfilePhotoPreview] = useState(user?.avatar_url || driverProfile?.avatar_url || null);
+  const [previewError, setPreviewError] = useState(false);
   
   const [uploadingDocs, setUploadingDocs] = useState(false);
 
   const [formData, setFormData] = useState({
-    vehicle_type: 'car',
-    plate_number: '',
-    vehicle_model: '',
-    vehicle_color: '',
-    vehicle_capacity: 4
+    vehicle_type: driverProfile?.vehicle_type || 'car',
+    plate_number: driverProfile?.plate_number && !driverProfile.plate_number.startsWith('MR-') ? driverProfile.plate_number : '',
+    vehicle_model: driverProfile?.vehicle_model && driverProfile.vehicle_model !== 'Campus Shuttle' ? driverProfile.vehicle_model : '',
+    vehicle_color: driverProfile?.vehicle_color && driverProfile.vehicle_color !== 'White' ? driverProfile.vehicle_color : '',
+    vehicle_capacity: driverProfile?.vehicle_capacity || 4
   });
+
+  useEffect(() => {
+    if (driverProfile) {
+      setFormData({
+        vehicle_type: driverProfile.vehicle_type || 'car',
+        plate_number: driverProfile.plate_number && !driverProfile.plate_number.startsWith('MR-') ? driverProfile.plate_number : '',
+        vehicle_model: driverProfile.vehicle_model && driverProfile.vehicle_model !== 'Campus Shuttle' ? driverProfile.vehicle_model : '',
+        vehicle_color: driverProfile.vehicle_color && driverProfile.vehicle_color !== 'White' ? driverProfile.vehicle_color : '',
+        vehicle_capacity: driverProfile.vehicle_capacity || 4
+      });
+      if (driverProfile.avatar_url || user?.avatar_url) {
+        setProfilePhotoPreview(driverProfile.avatar_url || user?.avatar_url);
+      }
+    }
+  }, [driverProfile, user]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -38,6 +55,7 @@ const DriverRegisterPage = () => {
     if (file) {
       setDocs(prev => ({ ...prev, [e.target.name]: file }));
       if (e.target.name === 'profile_photo') {
+        setPreviewError(false);
         setProfilePhotoPreview(URL.createObjectURL(file));
       }
     }
@@ -56,7 +74,7 @@ const DriverRegisterPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!docs.profile_photo) {
+    if (!docs.profile_photo && !profilePhotoPreview) {
       toast.error('Please upload your driver profile photo');
       return;
     }
@@ -66,9 +84,9 @@ const DriverRegisterPage = () => {
 
     try {
       // 1. Upload the documents & profile photo
-      let profilePhotoUrl = "";
-      let licenseUrl = "";
-      let registrationUrl = "";
+      let profilePhotoUrl = profilePhotoPreview && !docs.profile_photo ? profilePhotoPreview : "";
+      let licenseUrl = driverProfile?.verification_docs?.license || "";
+      let registrationUrl = driverProfile?.verification_docs?.registration || "";
       
       if (docs.profile_photo) {
         profilePhotoUrl = await uploadFile(docs.profile_photo);
@@ -93,8 +111,11 @@ const DriverRegisterPage = () => {
       };
 
       await registerDriver(payload);
+      window.dispatchEvent(new Event('mulu-refresh-user'));
+      if (fetchUser) await fetchUser();
+      
       setUploadingDocs(false);
-      toast.success('Driver profile created! You are now a driver.');
+      toast.success('Vehicle details submitted successfully!');
       setTimeout(() => {
         navigate('/driver', { replace: true });
       }, 500);
@@ -103,6 +124,15 @@ const DriverRegisterPage = () => {
       showFriendlyError(error, 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
+      setUploadingDocs(false);
+    }
+  };
+
+  const handleBack = () => {
+    if (user?.role === 'driver') {
+      navigate('/profile');
+    } else {
+      navigate('/dashboard');
     }
   };
 
@@ -115,7 +145,7 @@ const DriverRegisterPage = () => {
 
       {/* Back Button */}
       <button
-        onClick={() => navigate('/dashboard')}
+        onClick={handleBack}
         className="absolute top-6 left-6 flex items-center gap-2 text-muted-foreground/60 hover:text-muted-foreground transition-colors z-20"
         data-testid="back-btn"
       >
@@ -153,9 +183,14 @@ const DriverRegisterPage = () => {
                   className="hidden"
                 />
                 <label htmlFor="reg_profile_photo_upload" className="block relative cursor-pointer">
-                  <div className={`w-24 h-24 rounded-full border-2 overflow-hidden flex items-center justify-center transition-all ${profilePhotoPreview ? 'border-gold shadow-lg shadow-gold/20' : 'border-dashed border-zinc-700 bg-zinc-900 hover:border-gold'}`}>
-                    {profilePhotoPreview ? (
-                      <img src={profilePhotoPreview} alt="Driver Preview" className="w-full h-full object-cover" />
+                  <div className={`w-24 h-24 rounded-full border-2 overflow-hidden flex items-center justify-center transition-all ${profilePhotoPreview && !previewError ? 'border-gold shadow-none' : 'border-dashed border-zinc-700 bg-zinc-900 hover:border-gold'}`}>
+                    {profilePhotoPreview && !previewError ? (
+                      <img 
+                        src={resolveMediaUrl(profilePhotoPreview)} 
+                        alt="" 
+                        className="w-full h-full object-cover" 
+                        onError={() => setPreviewError(true)}
+                      />
                     ) : (
                       <div className="flex flex-col items-center gap-1 text-zinc-500 hover:text-gold transition-colors">
                         <Camera className="w-7 h-7" />

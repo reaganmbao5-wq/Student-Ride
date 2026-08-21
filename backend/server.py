@@ -1753,21 +1753,33 @@ async def upload_driver_documents(
     return {"status": "success", "url": doc_url}
 
 @api_router.get("/documents/{file_id}")
-async def get_document(file_id: str, user: dict = Depends(get_current_user)):
-    fs = AsyncIOMotorGridFSBucket(db)
+async def get_document(file_id: str):
+    """Serves uploaded KYC documents and avatars from GridFS with proper caching and headers."""
     try:
-        grid_out = await fs.open_download_stream(ObjectId(file_id))
+        from bson import ObjectId
+        fs = AsyncIOMotorGridFSBucket(db)
+        try:
+            oid = ObjectId(file_id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid document ID format")
+            
+        grid_out = await fs.open_download_stream(oid)
         metadata = grid_out.metadata or {}
-        doc_driver_id = metadata.get("driver_id")
-        
-        # Access rules
-        if user["role"] not in [UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value]:
-            if user["id"] != doc_driver_id:
-                raise HTTPException(status_code=403, detail="Not authorized to view this document")
-                
+        content_type = metadata.get("content_type") or "image/jpeg"
         content = await grid_out.read()
-        return Response(content=content, media_type=metadata.get("content_type", "image/jpeg"))
+        
+        return Response(
+            content=content,
+            media_type=content_type,
+            headers={
+                "Cache-Control": "public, max-age=86400, immutable",
+                "Access-Control-Allow-Origin": "*"
+            }
+        )
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.warning(f"Document {file_id} not found in GridFS: {e}")
         raise HTTPException(status_code=404, detail="Document not found")
 
 @api_router.post("/admin/drivers/{driver_id}/verify")
@@ -2168,66 +2180,6 @@ async def settle_single_driver_commission(driver_id: str, data: dict = Body({}),
         "settled_amount": settle_amount,
         "remaining_due": new_due,
         "wallet_status": WalletStatus.ACTIVE.value
-    }
-
-@api_router.get("/admin/analytics")
-async def get_admin_analytics(user: dict = Depends(require_admin)):
-    """
-    Detailed analytics for the admin dashboard.
-    """
-    # 1. Revenue & Ride Trends (Last 30 days)
-    thirty_days_ago = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
-    
-    # Simple aggregation using python since we're using Motor and small dataset
-    # For large scale, we'd use MongoDB aggregation framework
-    rides = await db.rides.find({
-        "created_at": {"$gte": thirty_days_ago},
-        "status": RideStatus.COMPLETED.value
-    }).to_list(5000)
-    
-    daily_stats = {}
-    dest_stats = {}
-    
-    for ride in rides:
-        # Daily Stats
-        date = datetime.fromisoformat(ride["created_at"]).strftime("%Y-%m-%d")
-        if date not in daily_stats:
-            daily_stats[date] = {"date": date, "revenue": 0.0, "rides": 0}
-        daily_stats[date]["revenue"] += ride.get("fare", 0.0)
-        daily_stats[date]["rides"] += 1
-        
-        # Destination Stats
-        dest_name = ride["dropoff_location"].get("address", "Unknown")
-        # Try to find common name if address is long
-        if "," in dest_name:
-            dest_name = dest_name.split(",")[0]
-            
-        if dest_name not in dest_stats:
-            dest_stats[dest_name] = {"name": dest_name, "value": 0}
-        dest_stats[dest_name]["value"] += 1
-        
-    revenue_chart = sorted(daily_stats.values(), key=lambda x: x["date"])
-    destination_chart = sorted(dest_stats.values(), key=lambda x: x["value"], reverse=True)[:10]
-    
-    # Online Drivers vs Busy Drivers (Centralized Logic)
-    online_drivers_list = await db.drivers.find({"is_online": True}).to_list(1000)
-    online_drivers = len(online_drivers_list)
-    busy_drivers = 0
-    
-    for d in online_drivers_list:
-        active_state = await get_driver_active_state(d["id"])
-        eligibility = is_driver_eligible(d, active_state)
-        if not eligibility["visibility"]:
-            busy_drivers += 1
-            
-    return {
-        "revenue_trends": revenue_chart,
-        "popular_destinations": destination_chart,
-        "driver_activity": {
-            "online": online_drivers,
-            "busy": busy_drivers,
-            "available": online_drivers - busy_drivers
-        }
     }
 
 # ==================== DESTINATION ROUTES ====================
@@ -3788,36 +3740,6 @@ async def delete_ride_by_admin(ride_id: str, admin: dict = Depends(require_admin
     await log_admin_action(admin["id"], admin["name"], "delete_ride", ride_id, f"Deleted ride: {ride_id}")
     return {"status": "deleted", "id": ride_id}
 
-@api_router.get("/documents/{file_id}")
-async def get_document(file_id: str):
-    """Serves uploaded KYC documents and avatars from GridFS with proper caching and headers."""
-    try:
-        from bson import ObjectId
-        fs = AsyncIOMotorGridFSBucket(db)
-        try:
-            oid = ObjectId(file_id)
-        except Exception:
-            raise HTTPException(status_code=400, detail="Invalid document ID format")
-            
-        grid_out = await fs.open_download_stream(oid)
-        metadata = grid_out.metadata or {}
-        content_type = metadata.get("content_type") or "image/jpeg"
-        content = await grid_out.read()
-        
-        return Response(
-            content=content,
-            media_type=content_type,
-            headers={
-                "Cache-Control": "public, max-age=86400, immutable",
-                "Access-Control-Allow-Origin": "*"
-            }
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.warning(f"Document {file_id} not found in GridFS: {e}")
-        raise HTTPException(status_code=404, detail="Document not found")
-
 @api_router.get("/admin/users", response_model=List[UserResponse])
 async def get_all_users(
     role: Optional[str] = Query(None),
@@ -4165,7 +4087,7 @@ async def delete_user(user_id: str, admin: dict = Depends(require_admin)):
 @api_router.get("/admin/rides", response_model=List[RideResponse])
 async def get_all_rides(
     status: Optional[str] = None,
-    limit: int = Query(50, ge=1, le=200),
+    limit: int = Query(50, ge=1, le=500),
     user: dict = Depends(require_admin)
 ):
     query = {}
