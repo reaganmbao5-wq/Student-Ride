@@ -23,12 +23,25 @@ const ChatPage = () => {
   useEffect(() => {
     fetchMessages();
     fetchRide();
+    
+    // Polling fallback to keep chat 100% in sync even if WebSocket reconnects
+    const pollInterval = setInterval(() => {
+      fetchMessages(true);
+    }, 3000);
+
+    return () => clearInterval(pollInterval);
   }, [rideId]);
 
   useEffect(() => {
-    if (newMessage && newMessage.ride_id === rideId) {
-      setMessages(prev => [...prev, newMessage]);
-      clearNewMessage();
+    if (newMessage) {
+      const incoming = newMessage.message || newMessage;
+      if (incoming.ride_id === rideId) {
+        setMessages(prev => {
+          if (prev.some(m => m.id === incoming.id)) return prev;
+          return [...prev, incoming];
+        });
+        clearNewMessage();
+      }
     }
   }, [newMessage, rideId, clearNewMessage]);
 
@@ -36,14 +49,26 @@ const ChatPage = () => {
     scrollToBottom();
   }, [messages]);
 
-  const fetchMessages = async () => {
+  const fetchMessages = async (isBackground = false) => {
     try {
       const response = await api.get(`/chat/${rideId}`);
-      setMessages(response.data || []);
+      if (response.data) {
+        setMessages(prev => {
+          // If lengths match and last message id matches, keep existing to prevent unneeded re-renders
+          if (prev.length === response.data.length && prev.length > 0 && prev[prev.length - 1]?.id === response.data[response.data.length - 1]?.id) {
+            return prev;
+          }
+          return response.data;
+        });
+      }
     } catch (error) {
-      console.error('Error fetching messages:', error);
+      if (!isBackground) {
+        console.error('Error fetching messages:', error);
+      }
     } finally {
-      setLoading(false);
+      if (!isBackground) {
+        setLoading(false);
+      }
     }
   };
 

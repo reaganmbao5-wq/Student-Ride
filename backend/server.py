@@ -4801,15 +4801,18 @@ async def send_message(message: MessageCreate, background_tasks: BackgroundTasks
         raise HTTPException(status_code=403, detail="Not authorized for this chat")
     
     msg_id = str(uuid.uuid4())
+    now_iso = datetime.now(timezone.utc).isoformat()
     msg = {
         "id": msg_id,
         "ride_id": message.ride_id,
         "sender_id": user["id"],
         "sender_name": user.get("name", "User"),
         "content": message.content.strip(),
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": now_iso
     }
-    await db.messages.insert_one(msg)
+    # Insert clone so msg dictionary is never polluted with MongoDB ObjectId
+    await db.messages.insert_one(dict(msg))
+    msg.pop("_id", None)
     
     # Determine recipient user ID
     recipient_id = None
