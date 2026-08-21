@@ -1,9 +1,9 @@
-# 🗺️ STUDENT-RIDE: STABLE MIGRATION & EXECUTION ROADMAP
+# 🗺️ STUDENT-RIDE: MASTER FEATURE MIGRATION ROADMAP
 
 > **Branch Target**: Strictly `Mapbox-stable` (`origin/Mapbox-stable`)  
 > **Workspace**: Strictly `C:\Users\Reaga\OneDrive\Documents\VS Codes\Projects\Mapbox stable`  
 > **Baseline Commit**: `885a0b1` (*"perf(map): set camera flyTo speed 2x slower to smooth 4.8s glide"*)  
-> **Rule Enforcement**: Andrej Karpathy Guidelines (1. Think Before Coding, 2. Simplicity First, 3. Surgical Changes, 4. Goal-Driven Execution)
+> **Engineering Rule**: Andrej Karpathy Guidelines (1. Think Before Coding, 2. Simplicity First, 3. Surgical Changes, 4. Goal-Driven Execution)
 
 ---
 
@@ -11,108 +11,120 @@
 
 ```mermaid
 graph TD
-    A["Baseline: 885a0b1<br/>(Smooth Map & Physics)"] --> B["Step 1: Map POIs & Snapping<br/>(Commit a9d5168 - LIVE)"]
-    B --> C["Stabilization 1.5:<br/>Fast Sync & No Gaps<br/>(Commit fe39ee9 - LIVE)"]
-    C --> D["Stabilization 1.6:<br/>Camera 2D/3D & Car Smoothing<br/>(Diagnosed - Awaiting Approval)"]
-    D --> E["Step 2:<br/>Notifications & Drawables<br/>(Push, VAPID, Assets)"]
-    E --> F["Step 3:<br/>SearchBar UI & Lecturer Role<br/>(STOP & NOTIFY USER AT LECTURER)"]
-    F --> G["Step 4:<br/>Admin Dashboard & KYC<br/>(Admin UI & Isolated Routes)"]
-    G --> H["🏁 100% Stable Feature-Complete Release"]
+    subgraph COMPLETED BUNDLES
+        B1["✅ Bundle 1: Campus POIs & Proximity Geocoding<br/>(Commit a9d5168)"]
+        B2["✅ Bundle 2: Notification Pipeline & Android Assets<br/>(Commit f969c9a - CURRENT HEAD)"]
+    end
+
+    subgraph REMAINING SAFE FEATURE BUNDLES
+        B3["🔜 Bundle 3: ActionSearchBar & Places Search Cache<br/>(Commits f1af5fe → 37a0079)"]
+        B4["🔜 Bundle 4: Transit Stepper & Clean Ride Request Sheet<br/>(Commits 60232cf → bc5738e)"]
+        B5["🔜 Bundle 5: Lecturer Role & Academic Profiles<br/>(Commits ea6a899 → ebbb722)"]
+        B6["🔜 Bundle 6: Admin Dashboard Overhaul & KYC Lightbox<br/>(Commits 6c24e54 → e2d2d5d)"]
+    end
+
+    subgraph FINAL DEEP VERIFICATION
+        B7["🏁 Bundle 7: Core Ride Cycle Final Testing & Stabilization<br/>(RIDE_CYCLE_DEBUG_CHECKLIST.md)"]
+    end
+
+    B1 --> B2 --> B3 --> B4 --> B5 --> B6 --> B7
 ```
 
 ---
 
-## 🗂️ EXECUTION PHASES & STEP-BY-STEP BREAKDOWN
+## 🟢 PART 1: COMPLETED FEATURE BUNDLES
 
-### ✅ Phase 0: Simulation Baseline & Guidelines (COMPLETED)
-- Updated `master_simulate.py`, `MasterRouteTester.py`, `simulate_physical.py`, and `simulate_shared_rides.py` to target live backend `https://student-ride-backend-dev.onrender.com`.
-- Added Andrej Karpathy Guidelines to `.agents/AGENTS.md`.
-
----
-
-### ✅ Phase 1: Step 1 – Campus POIs, Hostels & Proximity Snapping (COMPLETED)
-* **Unified Commit**: [`a9d5168`](https://github.com/reaganmbao5-wq/Student-Ride/commit/a9d5168)
-* **Included Source Commits**: `e7bd22b`, `557020f`, `5ca041b`, `ea526f9`, `4ae566c`
-* **Features Implemented**:
-  - Updated campus hostel GeoJSON landmarks (`final_places.geojson`, `campus_landmarks.geojson`, `places.json`).
-  - POI layer dark/light mode contrast styling & color-coded categories (`POILayer.jsx`).
-  - Sub-millisecond proximity landmark snapping and clean address formatting (`nominatim.js`).
-  - Proximity reverse geocoding API endpoint in backend (`server.py`).
-* **Deploy Status**: LIVE on Render & Android APK built.
+### ✅ Bundle 1: Campus POIs, Hostels & Proximity Geocoding
+* **Status**: `COMPLETED` *(Merged as commit `a9d5168`)*
+* **Scope**: Landmark GeoJSON data, hostel POI color-coded category palette, sub-millisecond reverse geocoding snapping.
+* **Commits Included**:
+  * `e7bd22b` – *Mapbox standard POI color palette, add Kafue hostel, fix Mweru hostel category*
+  * `557020f` – *Remove rogue Kabwe hostel on campus and duplicate Kingdom Hall*
+  * `5ca041b` – *Apply category-matching text colors for POI names with halo stroke*
+  * `ea526f9` – *Render crisp white text and icons in dark mode*
+  * `4ae566c` – *Proximity landmark snapping and clean address formatting*
 
 ---
 
-### ✅ Phase 1.5: Stabilization Fixes (COMPLETED)
-* **Unified Commit**: [`fe39ee9`](https://github.com/reaganmbao5-wq/Student-Ride/commit/fe39ee9)
-* **Problems Solved**:
-  1. **Student Acceptance Delay (30–45s lag)**: Fixed `accept_ride` in `server.py` to broadcast updated `status: "driver_accepted"` with full driver user info via WebSocket so student screen transitions instantly (<100ms).
-  2. **Driver Refresh Flickering**: Hydrated `activeRide` and `activeRides` state directly from `localStorage` in `DriverDashboard.jsx` on initial mount.
-  3. **Shared Ride Multi-Passenger Sync**: `handleAcceptSharedRide` immediately commits the second student to `activeRides` without requiring a page refresh.
-  4. **Unbroken Continuous Route Polylines**: Parallelized leg fetching via `asyncio.gather` in `trip_rebuilder.py` with fallback topological stitching to eliminate route gaps.
-* **Deploy Status**: Pushed to GitHub `origin/Mapbox-stable` & APK built.
+### ✅ Bundle 2: Notification Pipeline & Android Silhouette Drawables
+* **Status**: `COMPLETED (CURRENT HEAD: f969c9a)`
+* **Scope**: Full VAPID web-push pipeline with auto-purging dead tokens, native FCM Android channels, hardware vibration signatures, and transparent white silhouette notification icons across all screen densities.
+* **Commits Included**:
+  * `7b61be1` – *Comprehensive notifications.md catalog covering push, alerts, and toasts*
+  * `d0686ed` – *Notification architecture, channels, audio/vibration rules, and VAPID key pipeline*
+  * `f5c34f6` – *Auto-purge 401/403 stale VAPID subscriptions*
+  * `1721d05` – *Generate transparent silhouette notification icon (ic_stat_notification) & colors.xml*
 
 ---
 
-### ⏳ Phase 1.6: Camera 2D/3D Stability & Vehicle Corner Smoothing (DIAGNOSED - PENDING APPROVAL)
-* **Current Observations**:
-  1. **2D $\leftrightarrow$ 3D Fighting**: Camera oscillates back and forth because `isPriorStopsActive` was checking rotating carousel text matching `/another/`.
-  2. **Vehicle Corner Shaking / Flickering**: `VehicleRenderer.jsx` interpolated position smoothly over 800ms, but rotation snapped instantly on frame 0 instead of using `lerpHeading`.
-* **Proposed Surgical Solution**:
-  - Gate 2D Overview strictly on structural data (`stopsRemaining > 0`), never transient carousel strings.
-  - Wire `lerpHeading` into `VehicleRenderer.jsx` 60 FPS animation loop for smooth turning on corners.
+## 🔜 PART 2: REMAINING FEATURE BUNDLES (IN EXECUTION ORDER)
 
 ---
 
-### 🔜 Phase 2: Step 2 – Notification Pipeline & Android Assets
-* **Commits to Cherry-Pick**: `7b61be1`, `d0686ed`, `f5c34f6`, `1721d05`
-* **Target Files**:
-  - `notifications.md`
-  - `backend/services/notification_service.py` (VAPID web push & sound triggers)
-  - `frontend/public/service-worker.js`
-  - `frontend/src/utils/haptics.js`
-  - `frontend/android/app/src/main/res/drawable-*/ic_stat_notification.png`
-  - `frontend/android/app/src/main/res/values/colors.xml`
-* **Verification**: Push notification subscription, background alert receive, Android notification icons.
+### 📦 Bundle 3: ActionSearchBar & Places Search Cache
+* **Status**: `REMAINING (NEXT)`
+* **Scope**: Top right-expanding search pill on the Ride Request page, day/night frosted glass appearance, Maki map category icons, and 2-layer MongoDB places cache with visit boosting.
+* **Commits Included**:
+  * `f1af5fe` – *Integrate ExpandableSearchBar component on Ride Request page*
+  * `1f96f8b` – *Remove mobile focus ring and ensure seamless background styling*
+  * `2542777` – *Integrate ActionSearchBar with animated campus places dropdown*
+  * `0dbb683` – *Right-expanding pill with X toggle, search icon, and Maki icons*
+  * `0d54fd8` – *Day/Night frosted glass visibility, 2-layer MongoDB search cache*
+  * `37a0079` – *Dark gray frosted glass appearance and slim internal scrollbar*
 
 ---
 
-### 🔜 Phase 3: Step 3 – ActionSearchBar UI & Roles/Profile
-* **Commits to Cherry-Pick**: `f1af5fe`, `1f96f8b`, `2542777`, `0dbb683`, `0d54fd8`, `37a0079`, `ea6a899`, `ebbb722`
-* **Target Files**:
-  - `frontend/src/components/search/ActionSearchBar.jsx` & dropdown animations.
-  - Profile edit components & avatar sync.
-* **🛑 MANDATORY CHECKPOINT**:
-  - Commit `ebbb722` introduces the **Lecturer Role**.
-  - **WE WILL STOP AND EXPLICITLY NOTIFY THE USER BEFORE PROCEEDING WITH LECTURER INTEGRATION**.
+### 📦 Bundle 4: Transit Stepper & Clean Ride Request Bottom Sheet
+* **Status**: `REMAINING`
+* **Scope**: Removes the duplicate text search box from the bottom sheet in `RideRequestPage.jsx` and adds the sleek vertical 2-step transit nodes (Pickup with Row 1 GPS button, connecting line, Destination node) with locked sheet height.
+* **Commits Included**:
+  * `60232cf` – *Clean 2-step transit stepper with row 1 GPS button and stable bottom sheet height*
+  * `564bd6d` – *Integrate 21st.dev Stepper into pickup and dropoff slots with 100% fixed height*
+  * `37a004d` – *Refine transit stepper layout, align GPS button to Row 1, vibrant green styling*
+  * `66eb6f5` – *Seamlessly connect stepper nodes with zero gap and natural spacing*
+  * `bc5738e` – *Permanently lock RideRequestPage and transit stepper in AGENTS.md*
 
 ---
 
-### 🔜 Phase 4: Step 4 – Admin Dashboard & KYC Lightbox
-* **Commits to Cherry-Pick**: `6c24e54`, `1cac07e`, `85fa21f`, `7b84fec`, `58af819`, `4ffb526`, `e2d2d5d`
-* **Target Files**:
-  - `frontend/src/pages/AdminDashboard.jsx`, `AdminDriversPage.jsx`, `AdminRidesPage.jsx`, `AdminUsersPage.jsx`.
-  - KYC Lightbox document viewer.
-  - Isolated Admin backend routes in `server.py` (`/api/admin/*`).
+### 📦 Bundle 5: Lecturer Role & Academic Profiles
+* **Status**: `REMAINING`
+* **Scope**: Passenger Role selection (Student vs. Lecturer), Year of Study 1–5 pills, `AdminLecturersPage.jsx`, and targeted lecturer push notifications.
+* **Commits Included**:
+  * `ea6a899` – *Native tactile pill selectors for year/program, solid theme colors without glow*
+  * `ebbb722` – *Add Lecturer role, Year of Study (1-5), retention archiving, and targeted push notifications*
 
 ---
 
-## 🚫 EXCLUDED POISON REGRESSIONS (NEVER INJECT)
-
-| Commit | Reason Excluded |
-| :--- | :--- |
-| `02ead86`, `f565d11`, `757b50d`, `564bd6d`, `37a004d`, `66eb6f5`, `bc5738e` | Stepper refactors that broke ride booking flow & layout |
-| `42ab201`, `996d75c` | Driver setup gates that broke zero-flicker optimistic UI locks |
-| `49ee6a9`, `727804d`, `891a080`, `f597f2e`, `bba1e7c`, `d2031a9`, `c016429` | Mutations to `trip_rebuilder.py`, `PlatformMap.jsx`, or core ride state machines |
+### 📦 Bundle 6: Admin Dashboard Overhaul & KYC Document Lightbox
+* **Status**: `REMAINING`
+* **Scope**: Admin analytics dashboard, driver trip stats, user/driver edit modal, popular places hotspots card, and full-screen KYC document inspection lightbox.
+* **Commits Included**:
+  * `6c24e54` – *Complete overhaul of Admin Dashboard, Users, Drivers & Rides with instant caching, date filters, role switcher & Mapbox live map*
+  * `1cac07e` – *Dynamic driver trip stats, full user/driver edit modal, expandable ride history, popular places hotspots card, and clear wallet button*
+  * `85fa21f` – *Enlarged desktop modals with full word wrap, modern duotone icons everywhere, and auto-purging notification pipeline*
+  * `7b84fec` – *Maximum full-screen viewport modal overlay with clean top-right close controls and unclipped layout*
+  * `58af819` – *Driver KYC documents inspection, image preview modal, and robust avatar error fallbacks*
+  * `4ffb526` – *Upgrade driver KYC document viewer to Bug Report lightbox style*
+  * `e2d2d5d` – *Resolve document serving 401 auth gate, correct backend host URL, and add media resolver*
 
 ---
 
-## 📋 VERIFICATION & TESTING CHECKLIST PER STEP
+## 🚫 PART 3: STRICTLY ISOLATED COMMITS (RIDE CYCLE & MAP MUTATIONS)
+*(These commits altered `trip_rebuilder.py`, `PlatformMap.jsx`, vehicle rendering, or the live ride state machines. They are strictly quarantined and will **never** be blindly merged.)*
 
-| Step | Verification Criteria | Status |
+| Commit | Summary / Description | Reason Quarantined |
 | :--- | :--- | :--- |
-| **Step 1 (Map/POIs)** | Hostel markers, Category colors, Proximity snapping, Clean addresses | ✅ Verified |
-| **Step 1.5 (Sync/Fixes)** | Instant ride accept (<100ms), No driver reload flash, Multi-passenger instant render, No polyline gaps | ✅ Verified |
-| **Step 1.6 (Camera/Smooth)** | 2D $\leftrightarrow$ 3D camera stability, Smooth vehicle turning around corners without shaking | ⏳ Ready |
-| **Step 2 (Notifications)** | Push alerts received, Android drawables render in status bar, Audio alerts fire | 🔜 Next |
-| **Step 3 (Search/Lecturer)**| ActionSearchBar auto-suggestions, Profile updates, Lecturer role checkpoint | 🔜 Pending |
-| **Step 4 (Admin/KYC)** | Admin analytics load, KYC documents viewable in modal, Driver verification works | 🔜 Pending |
+| **`49ee6a9`** | Fixed & private pricing engine, Mapbox route manager | Mutated `PlatformMap.jsx` and pricing calculation models. |
+| **`727804d`** | Chat messaging & PlatformMap POI embedding | Mutated `PlatformMap.jsx` landmark lifecycle. |
+| **`891a080`** | Student route geometry fallback & Mapbox Directions API | Mutated route slicing in `trip_rebuilder.py` (caused straight-line/overshoot bug). |
+| **`f597f2e`** | Driver simulation location broadcasting & 3D camera follow | Mutated location broadcasting and camera follow in `PlatformMap.jsx`. |
+| **`bba1e7c`** | Accountant Dashboard & ride cycle alignment | Mutated core ride state machines and trip rebuilder queries. |
+| **`d2031a9`** | Commission division calculation & ride_archived mapping | Mutated driver settlement states. |
+| **`c016429`** | Route rendering persistence & hook cleanup | Mutated route persistence in `PlatformMap.jsx`. |
+| **`42ab201`** | Vehicle setup pipeline & live role sync | Altered driver setup gates and optimistic UI locks. |
+| **`996d75c`** | Driver setup bypass & KYC register gate | Altered driver auth state checks. |
+
+---
+
+## 🏁 PART 4: FINAL RIDE CYCLE TESTING & STABILIZATION
+Once Bundles 3, 4, 5, and 6 are implemented and verified, full attention transfers to [`RIDE_CYCLE_DEBUG_CHECKLIST.md`](file:///C:/Users/Reaga/OneDrive/Documents/VS%20Codes/Projects/Mapbox%20stable/RIDE_CYCLE_DEBUG_CHECKLIST.md) for complete end-to-end testing of single and multi-passenger ride lifecycles, dynamic 60 FPS line erasing behind the vehicle, bidirectional cancellation, and rating modal flows.
