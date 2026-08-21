@@ -3,8 +3,8 @@
 > **Branch Target**: Strictly `Mapbox-stable` (`origin/Mapbox-stable`)  
 > **Workspace**: Strictly `C:\Users\Reaga\OneDrive\Documents\VS Codes\Projects\Mapbox stable`  
 > **Baseline Commit**: `885a0b1` (*"perf(map): set camera flyTo speed 2x slower to smooth 4.8s glide"*)  
-> **Current Head**: Commit `ef31d46` (*"perf(admin-rides): replace sequential N+1 queries with bulk Mongo batching and ensure resilient loading state in UI"*)  
-> **Verification Status**: ✅ **Part 1 (Safe Non-Ride Bundles 1-4) 100% Complete & Stable**
+> **Current Head**: Commit `a06753e` (*"perf(booking-flow): eliminate backdrop-blur GPU overhead, pre-index places globally, and hard-lock 260px bottom-sheet envelope"*)  
+> **Verification Status**: ✅ **Part 1 (Bundles 1-4) & Part 2 (Bundles A & B) 100% Complete & Stable**
 
 ---
 
@@ -12,148 +12,96 @@
 
 ```mermaid
 graph TD
-    subgraph SAFE_NON_RIDE_BUNDLES["🛡️ PART 1: SAFE NON-RIDE BUNDLES (18 Commits - 100% COMPLETED & STABLE)"]
-        B1["✅ Bundle 1: Campus POIs & Proximity Geocoding (5 Commits - a9d5168)"]
-        B2["✅ Bundle 2: Notification Pipeline & Android Assets (4 Commits - f969c9a)"]
-        B3["✅ Bundle 3 (Safe): Lecturer Role & Academic Profiles (2 Commits - 144ec87)"]
-        B4["✅ Bundle 4 (Safe): Admin Dashboard Overhaul & KYC Lightbox (7 Commits - ef31d46 - CURRENT HEAD)"]
+    subgraph COMPLETED_BUNDLES["🛡️ COMPLETED & STABILIZED (100% VERIFIED)"]
+        B1["✅ Safe Bundle 1: Campus POIs & Proximity Geocoding (a9d5168)"]
+        B2["✅ Safe Bundle 2: Notification Pipeline & Android Assets (f969c9a)"]
+        B3["✅ Safe Bundle 3: Lecturer Role & Academic Profiles (144ec87)"]
+        B4["✅ Safe Bundle 4: Admin Dashboard Overhaul & KYC Lightbox (7561769)"]
+        IA["✅ Isolated Bundle A: Destination Search & ActionSearchBar (68fdb09)"]
+        IB["✅ Isolated Bundle B: Transit Stepper UI & 260px Height Lock (a06753e)"]
     end
 
-    subgraph ISOLATED_RIDE_BUNDLES["🚫 PART 2: ISOLATED & QUARANTINED RIDE / BOOKING BUNDLES (26 Commits)"]
-        IA["📦 Isolated Bundle A: Destination Search & ActionSearchBar (6 Commits)"]
-        IB["📦 Isolated Bundle B: Transit Stepper UI & Bottom Sheet (10 Commits)"]
-        IC["📦 Isolated Bundle C: Driver Setup Wizard & Role Activation (2 Commits)"]
-        ID["📦 Isolated Bundle D: Pricing Engines & Commission Settlements (3 Commits)"]
-        IE["📦 Isolated Bundle E: In-Ride Messaging & Camera Follow (2 Commits)"]
-        IF["📦 Isolated Bundle F: Routing Engines & Simulation Suites (3 Commits)"]
+    subgraph REMAINING_SANITIZED_BUNDLES["📦 REMAINING SANITIZED BUNDLES (CHRONOLOGICAL & DECOUPLED)"]
+        IC["📦 Bundle C: Pricing Synchronization, Fixed Route Priority & Shimmer (49ee6a9, 727804d)"]
+        ID["📦 Bundle D: 10% Commission Fix, Historical Repair & Accountant Suite (bba1e7c, d2031a9)"]
+        IE["📦 Bundle E: Driver Onboarding, Vehicle Setup Pipeline & Driver Guard (42ab201, 996d75c, f597f2e)"]
+        IF["📦 Bundle F: Simulation Engine & Quarantined Developer QA Suite (891a080, 11ae78f, c016429)"]
     end
 
     subgraph FINAL_VERIFICATION["🏁 PART 3: FINAL DEEP VERIFICATION"]
         FV["Deep Testing via RIDE_CYCLE_DEBUG_CHECKLIST.md"]
     end
 
-    B1 --> B2 --> B3 --> B4 --> ISOLATED_RIDE_BUNDLES --> FV
+    COMPLETED_BUNDLES --> REMAINING_SANITIZED_BUNDLES --> FINAL_VERIFICATION
 ```
 
 ---
 
-## 🛡️ PART 1: SAFE NON-RIDE FEATURE BUNDLES (18 COMMITS TOTAL)
-*(These bundles have **ZERO touch** with any ride state, passenger booking flow, pickup/destination pages, or active driver states. They only touch Auth, User Profiles, Admin Pages, and Notification channels.)*
+## 🛡️ COMPLETED BUNDLES (100% STABILIZED & LOCKED)
+
+### ✅ Safe Bundles 1–4 (Commits `a9d5168`, `f969c9a`, `144ec87`, `7561769`)
+* Campus POIs, Maki icon categorization, and proximity reverse geocoding.
+* Push notification pipelines, VAPID auto-purging, and transparent Android notification silhouettes.
+* Lecturer passenger role, tactile study year selector (1–5), and targeted push notifications.
+* Admin dashboard overhaul, instant bulk Mongo batching (<30ms), and full-screen KYC inspection lightbox.
+
+### ✅ Isolated Bundles A & B (Commits `68fdb09`, `f18ab1f`, `a06753e`)
+* Top expandable ActionSearchBar with zero GPU blur overhead and global places indexing.
+* 2-Step transit stepper (Pickup $\rightarrow$ Destination) with flush-aligned GPS button.
+* Hard-locked 260px bottom sheet envelope guaranteeing 0% WebGL canvas resize and 0ms blackout flicker across all steps.
 
 ---
 
-### 🟢 1. Completed Safe Bundles (11 Commits on `Mapbox-stable`)
-
-#### ✅ Bundle 1: Campus POIs, Hostels & Proximity Geocoding (5 Commits)
-* **Status**: `COMPLETED` *(Merged as commit `a9d5168`)*
-* **Scope**: Landmark GeoJSON files, hostel POI color-coded category palette, sub-millisecond reverse geocoding snapping.
-* **Commits**:
-  * `e7bd22b` – *fix(map): Mapbox standard POI color palette, add Kafue hostel, fix Mweru hostel category, and enhance label typography*
-  * `557020f` – *fix(map): remove rogue Kabwe hostel on campus and remove duplicate Kingdom hall Mulungushi*
-  * `5ca041b` – *feat(map): apply category-matching text colors for POI landmark names with white/dark halo stroke*
-  * `ea526f9` – *fix(map): render crisp white text and icons in dark mode with category palette in light mode*
-  * `4ae566c` – *feat(geocoding): proximity landmark snapping and clean address formatting*
-
-#### ✅ Bundle 2: Notification Pipeline & Android Silhouette Assets (4 Commits)
-* **Status**: `COMPLETED` *(Merged as commit `f969c9a`)*
-* **Scope**: Full VAPID web-push pipeline with auto-purging dead tokens, native FCM Android channels, hardware vibration signatures, and transparent white silhouette notification icons across all screen densities.
-* **Commits**:
-  * `7b61be1` – *docs: generate comprehensive notifications.md catalog covering push, system alerts, briefings, and toasts*
-  * `d0686ed` – *feat(notifications): implement J Ride notification architecture, channels, strict audio/vibration rules, targeted driver matching, and VAPID key pipeline*
-  * `f5c34f6` – *fix(notifications): auto-purge 401/403 stale VAPID subscriptions*
-  * `1721d05` – *fix(android): generate transparent silhouette notification icon (ic_stat_notification) and configure brand accent color*
-
-#### ✅ Bundle 3 (Safe): Lecturer Role & Academic Profiles (2 Commits)
-* **Status**: `COMPLETED (CURRENT HEAD: 144ec87)`
-* **Scope**: Passenger Role selection (Student vs. Lecturer), Year of Study 1–5 tactile pills, dedicated `AdminLecturersPage.jsx`, targeted lecturer push notifications in admin broadcast, and driver ride card role badges. **Zero touch with booking pages or ride state machines.**
-* **Commits**:
-  * `ea6a899` – *fix(ui): native tactile pill selectors for year/program, solid theme colors without glow, and fix button press color shift*
-  * `ebbb722` – *feat(roles): add Lecturer role, Year of Study (1-5), retention archiving, and targeted push notifications*
+## 📦 REMAINING SANITIZED BUNDLES (CHRONOLOGICAL & TOXICITY-FREE)
 
 ---
 
-### 🔜 2. Remaining Safe Feature Bundles (7 Commits - Next to Implement)
-
-#### ✅ Bundle 4 (Safe): Admin Dashboard Overhaul & KYC Document Lightbox (7 Commits)
-* **Status**: `COMPLETED`
-* **Scope**: Admin analytics dashboard, driver stats, user/driver edit modal, popular places hotspots card, full-screen KYC document inspection lightbox, and `/api/admin/*` backend route isolation. **Zero touch with passenger or active driver ride flows.**
-* **Commits**:
-  * `6c24e54` – *feat(admin): complete overhaul of Admin Dashboard, Users, Drivers & Rides with instant caching, date filters, role switcher & new Mapbox live map*
-  * `1cac07e` – *fix(admin): dynamic driver trip stats, full user/driver edit modal, expandable ride history, popular places hotspots card, and direct clear wallet button*
-  * `85fa21f` – *fix(admin): enlarged desktop modals with full word wrap, modern duotone icons everywhere, and auto-purging notification pipeline*
-  * `7b84fec` – *fix(admin): maximum full-screen viewport modal overlay with clean top-right close controls and unclipped layout*
-  * `58af819` – *feat(admin): add driver KYC documents inspection, image preview modal, and robust avatar error fallbacks*
-  * `4ffb526` – *feat(admin): upgrade driver KYC document viewer to Bug Report lightbox style*
-  * `e2d2d5d` – *fix(media): resolve document serving 401 auth gate, correct backend host URL, and add media resolver*
+### 📦 Bundle C: Pricing Synchronization, Fixed Route Priority & Shimmer (Commits `49ee6a9`, `727804d`)
+* **Core Problem Solved**: Eliminates price flickering where instant distance calculation flashed before fixed campus route pricing loaded.
+* **Key Features**:
+  1. **Backend Fixed Route Priority**: `/rides/estimate` resolves `fixed_routes` priority first before falling back to distance estimation.
+  2. **Fare Loading Shimmer**: Skeleton shimmer animation during fare calculations so only verified prices render cleanly.
+  3. **Admin `FixedRouteManager.jsx` with Mapbox POI Picker**: Visual admin tool for managing fixed campus route polygons and prices.
+  4. **In-Ride Messaging Delivery**: Real-time chat message acknowledgment and notification push.
+* **🛡️ Quarantined / Excluded**: RideRequestPage bottom sheet modifications from `49ee6a9` are strictly ignored to protect our locked `a06753e` layout.
 
 ---
 
-## 🚫 PART 2: ISOLATED & QUARANTINED RIDE / BOOKING BUNDLES (26 COMMITS TOTAL)
-*(These bundles touch `RideRequestPage.jsx`, Pickup/Destination selection, Stepper UI, Map Routing, `trip_rebuilder.py`, `PlatformMap.jsx`, Pricing calculations, or Active Ride states. They are strictly quarantined into modular feature bundles.)*
+### 📦 Bundle D: 10% Commission Fix, Historical Repair & Accountant Suite (Commits `bba1e7c`, `d2031a9`)
+* **Core Problem Solved**: Corrects the critical 0.01% platform commission division bug to true 10.0%, repairs historical MongoDB records, and adds financial reporting.
+* **Key Features**:
+  1. **Commission Math Fix**: Corrects `commission = fare * (commission_rate / 100)` (exact 10% platform share).
+  2. **Historical Data Repair Script**: `repair_ride_commissions.py` to fix past database records so net revenue analytics match reality.
+  3. **Full Accountant Dashboard Suite**:
+     * `AccountantDashboard.jsx` (Revenue KPIs, net profit, driver payouts)
+     * `AccountantLedgerPage.jsx` (Real-time financial audit trail)
+     * `AccountantPricingPage.jsx` (Base fare & commission controls)
+     * `AccountantSettlementsPage.jsx` (Driver settlement processing)
+  4. **Status Normalization**: Maps `ride_archived` status badges to `"Completed"` in all ledger views.
 
 ---
 
-### 📦 Isolated Bundle A: Destination Search & ActionSearchBar Engine (6 Commits)
-* **Scope**: RideRequestPage top search pill, places dropdown, 2-layer MongoDB places cache, Maki icons.
-* **Commits**:
-  * `f1af5fe` – *feat(ui): integrate exact ExpandableSearchBar component below back button on ride request page*
-  * `1f96f8b` – *fix(ui): remove mobile focus ring and ensure seamless background styling on expandable search bar*
-  * `2542777` – *feat(ui): integrate ActionSearchBar with animated campus places dropdown*
-  * `0dbb683` – *feat(ui): right-expanding pill with X toggle, far-right search icon, instant search and map Maki icons*
-  * `0d54fd8` – *feat(search): map-driven day/night frosted glass visibility, 2-layer online MongoDB cache and scrollbar fix*
-  * `37a0079` – *feat(ui): dark gray frosted glass appearance, crisp white text, and slim internal scrollbar*
+### 📦 Bundle E: Driver Onboarding, Vehicle Setup Pipeline & Driver Guard (Commits `42ab201`, `996d75c`, `f597f2e`)
+* **Core Problem Solved**: Provides vehicle setup for promoted drivers while protecting already-approved drivers from seeing onboarding gates.
+* **Key Features**:
+  1. **Approved Driver Protection Guard (`996d75c`)**: Prevents approved drivers from ever seeing setup screens or KYC register gates.
+  2. **Vehicle Setup Pipeline (`42ab201`)**: Step-by-step vehicle registration modal with instant live role synchronization.
+  3. **Mini-Map Centering & GPS Broadcast Optimization (`f597f2e`)**: Smooth driver location updates.
 
 ---
 
-### 📦 Isolated Bundle B: Transit Stepper UI & Bottom Sheet Layout (10 Commits)
-* **Scope**: RideRequestPage 2-step vertical stepper (Pickup with GPS button, connecting line, Destination node), fixed physical viewport height.
-* **Commits**:
-  * `ab54546` – *feat(map): strict bbox restriction to Kabwe/Campus/Kapiri and lock layout against keyboard resize*
-  * `6428125` – *revert: rollback keyboard resize and layout lock changes back to previous working state*
-  * `02ead86` – *feat(ui): freeze bottom sheet position to physical viewport height*
-  * `60232cf` – *feat(ui): clean 2-step transit stepper with row 1 GPS button and stable bottom sheet height*
-  * `f565d11` – *feat(ui): lock bottom sheet shell engine and isolate inner stepper content slot*
-  * `757b50d` – *revert: rollback to stable commit 4ae566c with locked bottom sheet engine rules*
-  * `564bd6d` – *feat(ui): integrate 21st.dev Stepper into pickup and dropoff slots with 100% fixed height*
-  * `37a004d` – *fix(ui): refine transit stepper layout, align GPS button to Row 1, expand node spacing, and use default vibrant green styling*
-  * `66eb6f5` – *fix(ui): seamlessly connect stepper nodes with zero gap and natural spacing*
-  * `bc5738e` – *chore(rules): permanently lock RideRequestPage and transit stepper in AGENTS.md*
-
----
-
-### 📦 Isolated Bundle C: Driver Setup Wizard & Role Activation (2 Commits)
-* **Scope**: Driver onboarding vehicle setup wizard, KYC registration gate, and live driver role synchronization.
-* **Commits**:
-  * `42ab201` – *feat(driver): add complete vehicle setup pipeline, instant live role sync, and setup gate for promoted drivers*
-  * `996d75c` – *fix(driver auth): prevent approved drivers from ever seeing setup screen or KYC register gate*
-
----
-
-### 📦 Isolated Bundle D: Pricing Engines, Route Manager & Commission Settlements (3 Commits)
-* **Scope**: Fixed & private ride pricing multipliers, Mapbox route manager, accountant commission division, and ride status archiving.
-* **Commits**:
-  * `49ee6a9` – *feat(pricing): enhance fixed & private pricing engine, Mapbox route manager, theme logos & shimmer loader*
-  * `bba1e7c` – *feat: implement Accountant Dashboard suite, staff provisioning, and ride cycle stability alignment*
-  * `d2031a9` – *fix: resolve commission division calculation, map ride_archived status badge to Completed, and repair database records*
-
----
-
-### 📦 Isolated Bundle E: In-Ride Messaging, POI Maps & Student Camera Follow (2 Commits)
-* **Scope**: In-ride passenger/driver chat messaging, POI landmarks embedding in route manager, driver location broadcasting, and 3D camera follow.
-* **Commits**:
-  * `727804d` – *fix(chat & map): resolve in-ride messaging, push notifications, and embed PlatformMap with POI landmarks in FixedRouteManager*
-  * `f597f2e` – *fix(driver location & mini-map): resolve simulation location broadcasting, restore student 3D camera follow & route line, and fix mini map centering*
-
----
-
-### 📦 Isolated Bundle F: Routing Engines, Geometry Fallbacks & Simulation Suites (3 Commits)
-* **Scope**: `trip_rebuilder.py` Mapbox Directions API swap, route geometry persistence, MasterRouteTester 15m curve simulation navigation.
-* **Commits**:
-  * `891a080` – *fix(route & simulation): restore student route geometry fallback, add lecturer briefing support, and upgrade driver simulation scripts to Mapbox Directions API*
-  * `c016429` – *fix(core): ensure route rendering persistence, hook cleanup & add master QA/E2E test suite*
-  * `11ae78f` – *fix(simulation): enhance MasterRouteTester with smooth 15m curved road navigation & dual DB injection*
+### 📦 Bundle F: Simulation Engine & Quarantined Developer QA Suite (Commits `891a080`, `11ae78f`, `c016429`)
+* **Core Problem Solved**: Developer simulation and regression testing tools without destabilizing production runtime.
+* **Key Features**:
+  1. **`MasterRouteTester.py` & Simulation Upgrades (`11ae78f`, `891a080`)**: 15-meter curved road navigation via Mapbox Directions API for realistic demo simulation.
+  2. **Quarantined QA Audit Tools (`backend/qa_suite/`)**: Standalone developer test scripts.
+* **🚫 TOXIC ITEMS PERMANENTLY REMOVED**:
+  * ❌ *Purged*: Invasive approach-leg route rendering in `StudentDashboard.jsx` that caused live ride flickering.
+  * ❌ *Purged*: Headless automated browser scripts that flood the DB or wipe production collections.
+  * ❌ *Purged*: In-memory rate limiter overrides that blocked normal login during test runs.
 
 ---
 
 ## 🏁 PART 3: FINAL RIDE CYCLE TESTING & STABILIZATION
-Once Bundle 4 (Safe) is implemented, full verification transfers to [`RIDE_CYCLE_DEBUG_CHECKLIST.md`](file:///C:/Users/Reaga/OneDrive/Documents/VS%20Codes/Projects/Mapbox%20stable/RIDE_CYCLE_DEBUG_CHECKLIST.md) for complete end-to-end testing of single and multi-passenger ride lifecycles, dynamic 60 FPS line erasing behind the vehicle, bidirectional cancellation, and rating modal flows.
+Full verification transfers to [`RIDE_CYCLE_DEBUG_CHECKLIST.md`](file:///C:/Users/Reaga/OneDrive/Documents/VS%20Codes/Projects/Mapbox%20stable/RIDE_CYCLE_DEBUG_CHECKLIST.md) for complete end-to-end testing of single and multi-passenger ride lifecycles, dynamic 60 FPS line erasing behind the vehicle, bidirectional cancellation, and rating modal flows.
+
