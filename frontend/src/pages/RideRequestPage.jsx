@@ -499,7 +499,16 @@ const RideRequestPage = () => {
       </div>
 
       {/* Map Layer */}
-      <div className={step === 'confirm' && isCollapsing ? "absolute inset-0 z-0" : "flex-1 relative z-0"}>
+      <div 
+        className={step === 'confirm' && isCollapsing ? "absolute inset-0 z-0" : "flex-1 relative z-0"}
+        style={{
+          transform: 'translate3d(0,0,0)',
+          WebkitTransform: 'translate3d(0,0,0)',
+          willChange: 'transform',
+          backfaceVisibility: 'hidden',
+          WebkitBackfaceVisibility: 'hidden'
+        }}
+      >
         <PlatformMap 
           center={mapCenter}
           selectionLocation={selectionTarget}
@@ -511,7 +520,7 @@ const RideRequestPage = () => {
             CAMERA_MODES.OVERVIEW
           }
           onCenterChanged={(c) => {
-             if (step !== 'confirm') setMapCenter(c);
+             if (step !== 'confirm' && !isDragging) setMapCenter(c);
           }}
           onDragStart={() => {
             setIsDragging(true);
@@ -579,7 +588,7 @@ const RideRequestPage = () => {
         </div>
 
         <motion.div 
-          className="px-5 pb-5 flex flex-col gap-4"
+          className="px-5 pb-5 flex flex-col gap-3 min-h-[220px] justify-between"
           animate={{ opacity: isCollapsing ? 0 : 1 }}
           transition={{ duration: 0.5 }}
         >
@@ -587,8 +596,8 @@ const RideRequestPage = () => {
             <>
               <h2 className="text-xl font-bold font-heading">Pickup Location</h2>
               
-              {/* 🔒 FIXED HEIGHT CONTENT SLOT (Exact height for Pickup & Dropoff - Prevents Canvas Resize) */}
-              <div className="w-full h-[100px] flex items-start justify-between">
+              {/* 🔒 FIXED HEIGHT CONTENT SLOT (Exact height for all steps - Prevents Canvas Resize) */}
+              <div className="w-full h-[105px] flex items-start justify-between">
                 {/* Left: Connected Stepper Track + Text */}
                 <div className="flex items-start gap-3 flex-1 min-w-0 pr-3">
                   {/* Left Column: Seamlessly Connected Nodes & Line */}
@@ -626,11 +635,11 @@ const RideRequestPage = () => {
                   </div>
                 </div>
 
-                {/* Right: GPS Navigation Button (Aligned to Row 1 Top) */}
+                {/* Right: GPS Navigation Button (Aligned flush with Row 1 Top) */}
                 <button
                   onClick={() => refreshLocation()}
                   disabled={geoLoading}
-                  className="w-11 h-11 flex-shrink-0 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl flex items-center justify-center active:scale-95 transition-transform shadow-sm mt-0.5"
+                  className="w-11 h-11 flex-shrink-0 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl flex items-center justify-center active:scale-95 transition-transform shadow-sm -mt-1 self-start"
                   title="Center to my location"
                 >
                   <Navigation className={`w-5 h-5 text-black dark:text-white ${geoLoading ? 'animate-pulse' : ''}`} />
@@ -638,7 +647,7 @@ const RideRequestPage = () => {
               </div>
 
               <button 
-                className="w-full py-4 bg-black text-white rounded-xl font-bold text-lg active:scale-95 transition-transform disabled:opacity-50"
+                className="w-full py-3.5 bg-black text-white rounded-xl font-bold text-base active:scale-95 transition-transform disabled:opacity-50"
                 onClick={handleConfirmLocation}
                 disabled={isGeocoding || !currentAddress || currentAddress === 'Unable to fetch address'}
               >
@@ -652,7 +661,7 @@ const RideRequestPage = () => {
               <h2 className="text-xl font-bold font-heading">Set Destination</h2>
               
               {/* 🔒 FIXED HEIGHT CONTENT SLOT (100% Identical height to Pickup) */}
-              <div className="w-full h-[100px] flex items-start justify-between">
+              <div className="w-full h-[105px] flex items-start justify-between">
                 {/* Left: Connected Stepper Track + Text */}
                 <div className="flex items-start gap-3 flex-1 min-w-0 pr-3">
                   {/* Left Column: Seamlessly Connected Nodes & Green Line */}
@@ -691,11 +700,11 @@ const RideRequestPage = () => {
                 </div>
 
                 {/* Right: Invisible Spacer matching GPS button width */}
-                <div className="w-11 h-11 flex-shrink-0 opacity-0 pointer-events-none mt-0.5" />
+                <div className="w-11 h-11 flex-shrink-0 opacity-0 pointer-events-none -mt-1 self-start" />
               </div>
 
               <button 
-                className="w-full py-4 bg-black text-white rounded-xl font-bold text-lg active:scale-95 transition-transform disabled:opacity-50"
+                className="w-full py-3.5 bg-black text-white rounded-xl font-bold text-base active:scale-95 transition-transform disabled:opacity-50"
                 onClick={handleConfirmLocation}
                 disabled={isGeocoding || !currentAddress || currentAddress === 'Unable to fetch address'}
               >
@@ -723,16 +732,16 @@ const RideRequestPage = () => {
                      </div>
                      
                      {/* Locations summary */}
-                     <div className="bg-zinc-100 dark:bg-zinc-900 p-3 rounded-2xl flex flex-col gap-2 border border-zinc-200 dark:border-zinc-800">
+                     <div className="bg-zinc-100 dark:bg-zinc-900 p-2.5 rounded-2xl flex flex-col gap-1.5 border border-zinc-200 dark:border-zinc-800">
                         <div className="flex items-center gap-3">
-                           <div className="w-5 h-5 rounded-full bg-black flex items-center justify-center shrink-0">
+                           <div className="w-4 h-4 rounded-full bg-black flex items-center justify-center shrink-0">
                              <div className="w-1.5 h-1.5 rounded-full bg-white" />
                            </div>
                            <p className="font-medium text-xs truncate flex-1"><span className="text-muted-foreground font-normal">Pickup: </span>{pickup?.address}</p>
                         </div>
                         
                         <div className="flex items-center gap-3">
-                           <div className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center shrink-0">
+                           <div className="w-4 h-4 rounded-full bg-red-600 flex items-center justify-center shrink-0">
                              <div className="w-1.5 h-1.5 rounded-full bg-white" />
                            </div>
                            <p className="font-medium text-xs truncate flex-1"><span className="text-muted-foreground font-normal">Dropoff: </span>{dropoff?.address}</p>
@@ -745,7 +754,7 @@ const RideRequestPage = () => {
                          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                        </div>
                      ) : fareEstimate ? (
-                       <div className="flex items-stretch gap-3 min-h-[105px]">
+                       <div className="flex items-stretch gap-3 min-h-[100px]">
                           {/* Animated Swipeable & Tap-Toggleable Stationary Ride Mode Selector Card */}
                           <div 
                             onTouchStart={handleTouchStart}
@@ -756,7 +765,7 @@ const RideRequestPage = () => {
                               haptics.swipeSnap();
                             }}
                             style={{ touchAction: 'none' }}
-                            className={`flex-1 p-3.5 rounded-2xl cursor-pointer select-none transition-colors duration-300 relative overflow-hidden flex flex-col justify-between border-2 touch-none ${
+                            className={`flex-1 p-3 rounded-2xl cursor-pointer select-none transition-colors duration-300 relative overflow-hidden flex flex-col justify-between border-2 touch-none ${
                               rideMode === 'shared' 
                                 ? 'bg-card text-card-foreground border-blue-500 shadow-md' 
                                 : 'bg-card text-card-foreground border-border shadow-md'
@@ -764,7 +773,7 @@ const RideRequestPage = () => {
                           >
                             {/* Original embedded Save Badge flush on top-right corner */}
                             {rideMode === 'shared' && fareEstimate.shared_fare < fareEstimate.private_fare && (
-                              <div className="absolute top-0 right-0 bg-blue-500 text-white text-[9px] font-extrabold px-2.5 py-1 rounded-bl-xl shadow z-10">
+                              <div className="absolute top-0 right-0 bg-blue-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-bl-xl shadow z-10">
                                 Save {savePercent}%
                               </div>
                             )}
@@ -778,7 +787,7 @@ const RideRequestPage = () => {
                                 transition={{ duration: 0.2, ease: "easeInOut" }}
                                 className="w-full flex flex-col justify-between h-full"
                               >
-                                <div className="flex items-start justify-between gap-2 mb-1">
+                                <div className="flex items-start justify-between gap-2 mb-0.5">
                                   <div>
                                     <span className={`text-[10px] font-extrabold uppercase tracking-wider ${rideMode === 'shared' ? 'text-blue-500 dark:text-blue-400' : 'text-muted-foreground'}`}>
                                       {rideMode} FARE
@@ -788,7 +797,7 @@ const RideRequestPage = () => {
                                     </div>
                                   </div>
                                   {/* Shifted ETA & Distance comfortably below Save badge */}
-                                  <div className={`flex flex-col items-end shrink-0 ${rideMode === 'shared' ? 'pt-3.5' : 'pt-0.5'}`}>
+                                  <div className={`flex flex-col items-end shrink-0 ${rideMode === 'shared' ? 'pt-3' : 'pt-0.5'}`}>
                                     <p className="text-xs text-foreground font-semibold">
                                       {Math.ceil(fareEstimate.duration_min ?? fareEstimate.duration ?? fareEstimate.verified_duration ?? 1)} min
                                     </p>
@@ -798,7 +807,7 @@ const RideRequestPage = () => {
                                   </div>
                                 </div>
 
-                                <p className="text-[10px] text-muted-foreground leading-tight mt-1">
+                                <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
                                   {rideMode === 'shared'
                                     ? 'Lower fare. Ride may include other passengers.'
                                     : 'Entire vehicle reserved. No additional platform passengers.'}
@@ -811,7 +820,7 @@ const RideRequestPage = () => {
                           <button
                             onClick={handleRequestRide}
                             disabled={requesting}
-                            className="w-32 py-3.5 px-3 bg-black dark:bg-white text-white dark:text-black font-bold text-sm rounded-2xl active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center shrink-0 shadow-lg text-center leading-tight self-end mb-0.5 min-h-[55px]"
+                            className="w-32 py-3 px-3 bg-black dark:bg-white text-white dark:text-black font-bold text-sm rounded-2xl active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center shrink-0 shadow-lg text-center leading-tight self-end mb-0.5 min-h-[50px]"
                           >
                             {requesting ? (
                               <>
