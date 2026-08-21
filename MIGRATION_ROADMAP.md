@@ -3,6 +3,7 @@
 > **Branch Target**: Strictly `Mapbox-stable` (`origin/Mapbox-stable`)  
 > **Workspace**: Strictly `C:\Users\Reaga\OneDrive\Documents\VS Codes\Projects\Mapbox stable`  
 > **Baseline Commit**: `885a0b1` (*"perf(map): set camera flyTo speed 2x slower to smooth 4.8s glide"*)  
+> **Current Head**: Commit `144ec87` (*"feat(bundle-3-safe): implement Lecturer role, Year of Study (1-5), AdminLecturersPage, and targeted push notifications"*)  
 > **Verification Status**: ✅ **100% Audit Passed (44 of 44 Total Commits Accounted For)**
 
 ---
@@ -13,8 +14,8 @@
 graph TD
     subgraph SAFE_NON_RIDE_BUNDLES["🛡️ PART 1: SAFE NON-RIDE BUNDLES (ZERO Ride Cycle/State Touch)"]
         B1["✅ Bundle 1: Campus POIs & Proximity Geocoding (5 Commits - a9d5168)"]
-        B2["✅ Bundle 2: Notification Pipeline & Android Assets (4 Commits - f969c9a - CURRENT HEAD)"]
-        B3["🔜 Bundle 3 (Safe): Lecturer Role & Academic Profiles (2 Commits)"]
+        B2["✅ Bundle 2: Notification Pipeline & Android Assets (4 Commits - f969c9a)"]
+        B3["✅ Bundle 3 (Safe): Lecturer Role & Academic Profiles (2 Commits - 144ec87 - CURRENT HEAD)"]
         B4["🔜 Bundle 4 (Safe): Admin Dashboard Overhaul & KYC Lightbox (7 Commits)"]
     end
 
@@ -41,7 +42,7 @@ graph TD
 
 ---
 
-### 🟢 1. Already Completed Safe Bundles (9 Commits)
+### 🟢 1. Completed Safe Bundles (11 Commits on `Mapbox-stable`)
 
 #### ✅ Bundle 1: Campus POIs, Hostels & Proximity Geocoding (5 Commits)
 * **Status**: `COMPLETED` *(Merged as commit `a9d5168`)*
@@ -54,7 +55,7 @@ graph TD
   * `4ae566c` – *feat(geocoding): proximity landmark snapping and clean address formatting*
 
 #### ✅ Bundle 2: Notification Pipeline & Android Silhouette Assets (4 Commits)
-* **Status**: `COMPLETED (CURRENT HEAD: f969c9a)`
+* **Status**: `COMPLETED` *(Merged as commit `f969c9a`)*
 * **Scope**: Full VAPID web-push pipeline with auto-purging dead tokens, native FCM Android channels, hardware vibration signatures, and transparent white silhouette notification icons across all screen densities.
 * **Commits**:
   * `7b61be1` – *docs: generate comprehensive notifications.md catalog covering push, system alerts, briefings, and toasts*
@@ -62,19 +63,19 @@ graph TD
   * `f5c34f6` – *fix(notifications): auto-purge 401/403 stale VAPID subscriptions*
   * `1721d05` – *fix(android): generate transparent silhouette notification icon (ic_stat_notification) and configure brand accent color*
 
----
-
-### 🔜 2. Remaining Safe Feature Bundles (9 Commits - Next to Implement)
-
-#### 📦 Bundle 3 (Safe): Lecturer Role & Academic Profiles (2 Commits)
-* **Status**: `REMAINING (NEXT TO IMPLEMENT)`
-* **Scope**: Passenger Role selection (Student vs. Lecturer) in auth/profile, Year of Study 1–5 pills, `AdminLecturersPage.jsx`, and targeted lecturer push notifications in admin broadcast. **Zero touch with booking pages or ride state machines.**
+#### ✅ Bundle 3 (Safe): Lecturer Role & Academic Profiles (2 Commits)
+* **Status**: `COMPLETED (CURRENT HEAD: 144ec87)`
+* **Scope**: Passenger Role selection (Student vs. Lecturer), Year of Study 1–5 tactile pills, dedicated `AdminLecturersPage.jsx`, targeted lecturer push notifications in admin broadcast, and driver ride card role badges. **Zero touch with booking pages or ride state machines.**
 * **Commits**:
   * `ea6a899` – *fix(ui): native tactile pill selectors for year/program, solid theme colors without glow, and fix button press color shift*
   * `ebbb722` – *feat(roles): add Lecturer role, Year of Study (1-5), retention archiving, and targeted push notifications*
 
+---
+
+### 🔜 2. Remaining Safe Feature Bundles (7 Commits - Next to Implement)
+
 #### 📦 Bundle 4 (Safe): Admin Dashboard Overhaul & KYC Document Lightbox (7 Commits)
-* **Status**: `REMAINING`
+* **Status**: `REMAINING (NEXT TO IMPLEMENT)`
 * **Scope**: Admin analytics dashboard, driver stats, user/driver edit modal, popular places hotspots card, full-screen KYC document inspection lightbox, and `/api/admin/*` backend route isolation. **Zero touch with passenger or active driver ride flows.**
 * **Commits**:
   * `6c24e54` – *feat(admin): complete overhaul of Admin Dashboard, Users, Drivers & Rides with instant caching, date filters, role switcher & new Mapbox live map*
@@ -155,4 +156,4 @@ graph TD
 ---
 
 ## 🏁 PART 3: FINAL RIDE CYCLE TESTING & STABILIZATION
-Once Safe Bundles 3 & 4 are implemented, full verification transfers to [`RIDE_CYCLE_DEBUG_CHECKLIST.md`](file:///C:/Users/Reaga/OneDrive/Documents/VS%20Codes/Projects/Mapbox%20stable/RIDE_CYCLE_DEBUG_CHECKLIST.md) for complete end-to-end testing of single and multi-passenger ride lifecycles, dynamic 60 FPS line erasing behind the vehicle, bidirectional cancellation, and rating modal flows.
+Once Bundle 4 (Safe) is implemented, full verification transfers to [`RIDE_CYCLE_DEBUG_CHECKLIST.md`](file:///C:/Users/Reaga/OneDrive/Documents/VS%20Codes/Projects/Mapbox%20stable/RIDE_CYCLE_DEBUG_CHECKLIST.md) for complete end-to-end testing of single and multi-passenger ride lifecycles, dynamic 60 FPS line erasing behind the vehicle, bidirectional cancellation, and rating modal flows.
