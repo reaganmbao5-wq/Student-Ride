@@ -18,12 +18,12 @@ def haversine(lat1, lon1, lat2, lon2):
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return R * c
 
-def interpolate_points(start_lat, start_lng, end_lat, end_lng, step_meters=150):
+def interpolate_points(start_lat, start_lng, end_lat, end_lng, step_meters=15):
     total_dist = haversine(start_lat, start_lng, end_lat, end_lng)
     if total_dist <= step_meters:
         return [[end_lng, end_lat]]
     
-    num_steps = int(total_dist // step_meters)
+    num_steps = max(1, int(total_dist // step_meters))
     points = []
     for i in range(1, num_steps + 1):
         fraction = i / num_steps
@@ -58,16 +58,16 @@ async def get_route(client, start_coords, end_coords):
     if not raw_coords:
         raw_coords = [[start_lng, start_lat], [end_lng, end_lat]]
         
-    # Smooth out route_coords by interpolating between each OSRM point
+    # Smooth out route_coords by interpolating between each OSRM point with 15m steps
     smooth_coords = [[start_lng, start_lat]]
     for i in range(len(raw_coords) - 1):
         p1_lng, p1_lat = raw_coords[i]
         p2_lng, p2_lat = raw_coords[i+1]
-        smooth_coords.extend(interpolate_points(p1_lat, p1_lng, p2_lat, p2_lng, step_meters=150))
+        smooth_coords.extend(interpolate_points(p1_lat, p1_lng, p2_lat, p2_lng, step_meters=15))
         
     return smooth_coords
 
-async def inject_location(client, backend_url, driver_user_id, lat, lng, heading):
+async def inject_location(client, db, backend_url, driver_id, driver_user_id, lat, lng, heading):
     payload = {
         driver_user_id: {
             "lat": lat,
@@ -75,8 +75,22 @@ async def inject_location(client, backend_url, driver_user_id, lat, lng, heading
             "heading": heading
         }
     }
+    # 1. Update MongoDB directly so database queries reflect real position
     try:
-        await client.post(f"{backend_url}/api/test/inject_drivers", json={"drivers": payload}, timeout=10.0)
+        await db.drivers.update_one(
+            {"id": driver_id},
+            {"$set": {
+                "current_location": {"lat": lat, "lng": lng},
+                "heading": heading,
+                "last_active": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+    except Exception:
+        pass
+        
+    # 2. Inject via live server WebSocket manager endpoint
+    try:
+        await client.post(f"{backend_url}/api/test/inject_drivers", json={"drivers": payload}, timeout=5.0)
     except Exception as ex:
         print(f"[SIMULATION] Inject location network retry: {ex}")
 
@@ -156,7 +170,7 @@ async def dynamic_driver_loop(db, client, backend_url, driver_id, driver_user_id
             curr_lng, curr_lat = route_coords[i]
             heading = calculate_bearing(current_loc["lat"], current_loc["lng"], curr_lat, curr_lng)
             
-            await inject_location(client, backend_url, driver_user_id, curr_lat, curr_lng, heading)
+            await inject_location(client, db, backend_url, driver_id, driver_user_id, curr_lat, curr_lng, heading)
             current_loc = {"lat": curr_lat, "lng": curr_lng}
             
             # Print status
@@ -176,9 +190,9 @@ async def dynamic_driver_loop(db, client, backend_url, driver_id, driver_user_id
                 for _ in range(5):
                     curr_lat += 0.0005
                     curr_lng -= 0.0002
-                    await inject_location(client, backend_url, driver_user_id, curr_lat, curr_lng, heading)
+                    await inject_location(client, db, backend_url, driver_id, driver_user_id, curr_lat, curr_lng, heading)
                     print(f"Off-route... {curr_lat:.5f}, {curr_lng:.5f}")
-                    await asyncio.sleep(0.1)
+                    await asyncio.sleep(0.35)
                 print("[SIMULATION] Returning to route recalculation...")
                 break # Break out to recalculate route from new diverged location
                 
@@ -189,7 +203,7 @@ async def dynamic_driver_loop(db, client, backend_url, driver_id, driver_user_id
                 print("\n[SIMULATION] Queue changed mid-route! (Cancellation or Shared Ride detected). Recalculating...")
                 break # Break to re-evaluate the new queue
                 
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.35)
             
         # If we reached the target, pause and wait for the driver to click the app button
         if reached_target:
@@ -249,9 +263,20 @@ async def main():
         return
         
     driver_id = driver_profile["id"]
-    backend_url = os.environ.get("BACKEND_URL", "https://student-ride-backend-manual.onrender.com")
     
-    print(f"[OK] Loaded Driver: {driver_user['name']}")
+    backend_url = os.environ.get("BACKEND_URL")
+    if not backend_url:
+        try:
+            async with httpx.AsyncClient() as check_client:
+                r = await check_client.get("http://127.0.0.1:8000/docs", timeout=1.0)
+                if r.status_code == 200:
+                    backend_url = "http://127.0.0.1:8000"
+        except Exception:
+            pass
+    if not backend_url:
+        backend_url = "https://student-ride-backend-dev.onrender.com"
+    
+    print(f"[OK] Loaded Driver: {driver_user['name']} | Backend Target: {backend_url}")
     
     async with httpx.AsyncClient(timeout=60.0) as client:
         await dynamic_driver_loop(db, client, backend_url, driver_id, driver_user_id, scenario)
