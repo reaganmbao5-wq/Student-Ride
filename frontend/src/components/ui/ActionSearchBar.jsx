@@ -132,6 +132,37 @@ const getCategoryColor = (makiIcon) => {
   }
 };
 
+// ⚡ GLOBAL PRE-INDEXATION ONCE AT MODULE LOAD (0ms runtime overhead)
+const STATIC_INDEXED_PLACES = (() => {
+  const list = [];
+  const seen = new Set();
+  if (finalPlaces?.features) {
+    finalPlaces.features.forEach((feat, idx) => {
+      const coords = feat.geometry?.coordinates || [];
+      const name = feat.properties?.name || '';
+      if (!name || coords.length < 2) return;
+      const normalized = name.toLowerCase().trim();
+      if (seen.has(normalized)) return;
+      seen.add(normalized);
+
+      const category = feat.properties?.category || feat.properties?.category_raw || 'Campus Location';
+      const makiIcon = categoryToMaki(category, name);
+      list.push({
+        id: 'fp_' + idx,
+        name,
+        category,
+        makiIcon,
+        lat: coords[1],
+        lng: coords[0],
+        address: name,
+        isLocal: true,
+        searchKey: normalized + ' ' + category.toLowerCase()
+      });
+    });
+  }
+  return list;
+})();
+
 export const ActionSearchBar = ({
   locations = [],
   onSelectLocation,
@@ -147,63 +178,35 @@ export const ActionSearchBar = ({
   const inputRef = useRef(null);
   const apiTimeoutRef = useRef(null);
 
-  // Pre-indexed database of campus places & hostels (Instant < 1ms response)
+  // Merge static preindexed places with any dynamic passed locations
   const preindexedLocations = useMemo(() => {
-    const list = [];
-    const seen = new Set();
+    if (!locations || locations.length === 0) return STATIC_INDEXED_PLACES;
+    const dynamicList = [];
+    const seen = new Set(STATIC_INDEXED_PLACES.map(p => p.name.toLowerCase()));
 
-    // 1. Add verified finalPlaces
-    if (finalPlaces?.features) {
-      finalPlaces.features.forEach((feat, idx) => {
-        const coords = feat.geometry?.coordinates || [];
-        const name = feat.properties?.name || '';
-        if (!name || coords.length < 2) return;
-        const normalized = name.toLowerCase().trim();
-        if (seen.has(normalized)) return;
-        seen.add(normalized);
+    locations.forEach((loc, idx) => {
+      const name = loc.name || loc.label || loc.title || '';
+      if (!name) return;
+      const normalized = name.toLowerCase().trim();
+      if (seen.has(normalized)) return;
+      seen.add(normalized);
 
-        const category = feat.properties?.category || feat.properties?.category_raw || 'Campus Location';
-        const makiIcon = categoryToMaki(category, name);
-        list.push({
-          id: `fp_${idx}`,
-          name,
-          category,
-          makiIcon,
-          lat: coords[1],
-          lng: coords[0],
-          address: name,
-          isLocal: true,
-          searchKey: `${normalized} ${category.toLowerCase()}`
-        });
+      const category = loc.category || loc.description || 'Location';
+      const makiIcon = categoryToMaki(category, name);
+      dynamicList.push({
+        id: loc.id || ('loc_' + idx),
+        name,
+        category,
+        makiIcon,
+        lat: loc.lat || loc.latitude,
+        lng: loc.lng || loc.longitude,
+        address: loc.address || name,
+        isLocal: true,
+        searchKey: normalized + ' ' + category.toLowerCase()
       });
-    }
+    });
 
-    // 2. Add dynamic locations
-    if (locations && locations.length > 0) {
-      locations.forEach((loc, idx) => {
-        const name = loc.name || loc.label || loc.title || '';
-        if (!name) return;
-        const normalized = name.toLowerCase().trim();
-        if (seen.has(normalized)) return;
-        seen.add(normalized);
-
-        const category = loc.category || loc.description || 'Location';
-        const makiIcon = categoryToMaki(category, name);
-        list.push({
-          id: loc.id || `loc_${idx}`,
-          name,
-          category,
-          makiIcon,
-          lat: loc.lat || loc.latitude,
-          lng: loc.lng || loc.longitude,
-          address: loc.address || name,
-          isLocal: true,
-          searchKey: `${normalized} ${category.toLowerCase()}`
-        });
-      });
-    }
-
-    return list;
+    return [...STATIC_INDEXED_PLACES, ...dynamicList];
   }, [locations]);
 
   // Two-Layer Search Engine: Instant Local Index -> Online MongoDB Cache -> API
@@ -257,7 +260,7 @@ export const ActionSearchBar = ({
       setLoadingApi(true);
       apiTimeoutRef.current = setTimeout(async () => {
         try {
-          const res = await fetch(`${BACKEND_URL}/api/places/search?q=${encodeURIComponent(q)}`);
+          const res = await fetch(BACKEND_URL + '/api/places/search?q=' + encodeURIComponent(q));
           if (res.ok) {
             const apiData = await res.json();
             if (Array.isArray(apiData)) {
@@ -266,7 +269,7 @@ export const ActionSearchBar = ({
                 const category = item.category || 'Location';
                 const makiIcon = categoryToMaki(category, primaryName);
                 return {
-                  id: `srv_${item.id || idx}`,
+                  id: 'srv_' + (item.id || idx),
                   name: primaryName,
                   category: category,
                   makiIcon: makiIcon,
@@ -305,7 +308,7 @@ export const ActionSearchBar = ({
   // Focus input on expand
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 100);
+      setTimeout(() => inputRef.current?.focus(), 50);
     } else {
       setQuery("");
       setResults([]);
@@ -338,9 +341,9 @@ export const ActionSearchBar = ({
   };
 
   const handleSelect = (item) => {
-    // Fire-and-forget: Record place visit to boost frequently visited places and cache online
+    // Fire-and-forget: Record place visit
     try {
-      fetch(`${BACKEND_URL}/api/places/record-visit`, {
+      fetch(BACKEND_URL + '/api/places/record-visit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -366,12 +369,12 @@ export const ActionSearchBar = ({
   };
 
   return (
-    <div ref={containerRef} className={`relative z-30 ${className}`}>
+    <div ref={containerRef} className={'relative z-30 ' + className}>
       
-      {/* Search Trigger Circle (Always visible on left, expands to full pill on right) */}
+      {/* Search Trigger Circle (High Performance Solid Dark Surface - 0 GPU Blur Passes) */}
       <div className="relative h-11 flex items-center">
         
-        {/* Left Circle Toggle Button (Search -> X) - Dark Gray Frosted Glass */}
+        {/* Left Circle Toggle Button (Search -> X) */}
         <button
           type="button"
           aria-label={isOpen ? "Close search" : "Open search"}
@@ -382,7 +385,7 @@ export const ActionSearchBar = ({
               setIsOpen(true);
             }
           }}
-          className="w-11 h-11 z-20 rounded-full border border-white/15 shadow-2xl grid place-items-center transition-transform active:scale-95 cursor-pointer bg-[#181D27]/90 backdrop-blur-2xl text-white hover:bg-zinc-800/90"
+          className="w-11 h-11 z-20 rounded-full border border-white/20 shadow-2xl grid place-items-center transition-transform active:scale-95 cursor-pointer bg-[#181D27] text-white hover:bg-zinc-800"
         >
           {isOpen ? (
             <X className="w-5 h-5 text-zinc-300" />
@@ -391,20 +394,20 @@ export const ActionSearchBar = ({
           )}
         </button>
 
-        {/* Animated Expanding Input Pill - Dark Gray Frosted Glass */}
+        {/* Animated Expanding Input Pill - Solid GPU-Accelerated Container */}
         <AnimatePresence>
           {isOpen && (
             <motion.div
               key="search-pill"
-              initial={{ width: 44, opacity: 0.92 }}
+              initial={{ width: 44, opacity: 0.95 }}
               animate={{ width: 280, opacity: 1 }}
               exit={{
                 width: 44,
                 opacity: 0,
-                transition: { type: "spring", stiffness: 280, damping: 26 }
+                transition: { duration: 0.18, ease: "easeOut" }
               }}
-              transition={{ type: "spring", stiffness: 280, damping: 26 }}
-              className="absolute top-0 left-0 h-11 rounded-full border border-white/15 shadow-2xl overflow-hidden flex items-center z-10 bg-[#181D27]/90 backdrop-blur-2xl text-white"
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="absolute top-0 left-0 h-11 rounded-full border border-white/20 shadow-2xl overflow-hidden flex items-center z-10 bg-[#181D27] text-white"
             >
               {/* Left spacer matching the circle button */}
               <div className="w-11 h-11 shrink-0" />
@@ -435,46 +438,31 @@ export const ActionSearchBar = ({
         </AnimatePresence>
       </div>
 
-      {/* Results Dropdown (Dark Gray Frosted Glass with Crisp White Text & Slim Internal Scrollbar) */}
+      {/* Results Dropdown (Solid High Performance Surface) */}
       <AnimatePresence>
         {isOpen && results.length > 0 && (
           <motion.div
-            initial={{ opacity: 0, y: 8, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -6, scale: 0.98 }}
-            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute left-0 top-14 w-[300px] sm:w-[340px] max-h-64 overflow-y-auto rounded-2xl border border-white/15 p-2 z-40 bg-[#181D27]/95 backdrop-blur-2xl text-white shadow-[0_20px_50px_rgba(0,0,0,0.6)] [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.25)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent pr-1"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="absolute left-0 top-14 w-[300px] sm:w-[340px] max-h-64 overflow-y-auto rounded-2xl border border-white/20 p-2 z-40 bg-[#181D27] text-white shadow-[0_20px_50px_rgba(0,0,0,0.7)]"
           >
-            <motion.ul
-              initial="hidden"
-              animate="show"
-              variants={{
-                hidden: { opacity: 0 },
-                show: {
-                  opacity: 1,
-                  transition: { staggerChildren: 0.03 }
-                }
-              }}
-              className="space-y-1"
-            >
+            <ul className="space-y-1">
               {results.map((item, idx) => {
                 const colorToken = getCategoryColor(item.makiIcon);
                 return (
-                  <motion.li
+                  <li
                     key={item.id || idx}
-                    variants={{
-                      hidden: { opacity: 0, y: 6 },
-                      show: { opacity: 1, y: 0 }
-                    }}
                     onClick={() => handleSelect(item)}
                     className="flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-colors hover:bg-white/10 active:bg-white/15 text-white"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       
                       {/* Category Maki Icon Badge */}
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${colorToken.bg} ${colorToken.border}`}>
+                      <div className={'w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ' + colorToken.bg + ' ' + colorToken.border}>
                         <img
-                          src={`/icons/${item.makiIcon}.svg`}
+                          src={'/icons/' + item.makiIcon + '.svg'}
                           alt={item.category}
                           className="w-4 h-4 object-contain filter drop-shadow-sm brightness-125"
                           onError={(e) => {
@@ -492,15 +480,15 @@ export const ActionSearchBar = ({
                         <p className="text-sm font-bold truncate leading-tight text-white">
                           {item.name}
                         </p>
-                        <p className={`text-xs capitalize truncate mt-0.5 ${colorToken.text}`}>
+                        <p className={'text-xs capitalize truncate mt-0.5 ' + colorToken.text}>
                           {item.category}
                         </p>
                       </div>
                     </div>
-                  </motion.li>
+                  </li>
                 );
               })}
-            </motion.ul>
+            </ul>
           </motion.div>
         )}
       </AnimatePresence>

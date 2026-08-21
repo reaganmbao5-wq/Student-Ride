@@ -420,22 +420,6 @@ const RideRequestPage = () => {
 
 
   const sheetRef = useRef(null);
-  const [sheetHeight, setSheetHeight] = useState(320);
-
-  // Measure live bottom sheet rendered height for dynamic visible safe region camera framing
-  useEffect(() => {
-    if (!sheetRef.current) return;
-    const updateHeight = () => {
-      if (sheetRef.current) {
-        const h = sheetRef.current.offsetHeight;
-        if (h > 0) setSheetHeight(h);
-      }
-    };
-    updateHeight();
-    const observer = new ResizeObserver(() => updateHeight());
-    observer.observe(sheetRef.current);
-    return () => observer.disconnect();
-  }, [step]);
   const [isSheetExpanded, setIsSheetExpanded] = useState(false);
 
   // Lock viewport height to physical screen height so keyboard never shrinks container or pushes bottom sheet
@@ -481,7 +465,7 @@ const RideRequestPage = () => {
       <div className="absolute top-10 md:top-6 left-4 z-30 flex flex-col items-start gap-3 pointer-events-none">
         <button
           onClick={handleBack}
-          className="w-11 h-11 bg-[#181D27]/90 backdrop-blur-2xl border border-white/15 text-white rounded-full flex items-center justify-center shadow-2xl pointer-events-auto active:scale-95 transition-transform"
+          className="w-11 h-11 bg-[#181D27] border border-white/20 text-white rounded-full flex items-center justify-center shadow-2xl pointer-events-auto active:scale-95 transition-transform"
         >
           <ArrowLeft className="w-5 h-5 text-white" />
         </button>
@@ -499,21 +483,12 @@ const RideRequestPage = () => {
       </div>
 
       {/* Map Layer */}
-      <div 
-        className={step === 'confirm' && isCollapsing ? "absolute inset-0 z-0" : "flex-1 relative z-0"}
-        style={{
-          transform: 'translate3d(0,0,0)',
-          WebkitTransform: 'translate3d(0,0,0)',
-          willChange: 'transform',
-          backfaceVisibility: 'hidden',
-          WebkitBackfaceVisibility: 'hidden'
-        }}
-      >
+      <div className={step === 'confirm' && isCollapsing ? "absolute inset-0 z-0" : "flex-1 relative z-0"}>
         <PlatformMap 
           center={mapCenter}
           selectionLocation={selectionTarget}
           bounds={bounds}
-          bottomPadding={step === 'confirm' ? (sheetHeight || 320) : 0}
+          bottomPadding={step === 'confirm' ? 260 : 0}
           cameraMode={
             step === 'pickup' ? CAMERA_MODES.PICKUP_SELECTION :
             step === 'dropoff' ? CAMERA_MODES.DESTINATION_SELECTION :
@@ -574,7 +549,7 @@ const RideRequestPage = () => {
       <motion.div 
         ref={sheetRef}
         layoutId="student-bottom-sheet"
-        className={`${step === 'confirm' && isCollapsing ? 'absolute bottom-0 left-0 right-0' : 'relative'} z-20 bg-white dark:bg-zinc-950 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden`}
+        className={`${step === 'confirm' && isCollapsing ? 'absolute bottom-0 left-0 right-0' : 'relative'} z-20 bg-white dark:bg-zinc-950 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col h-[260px] max-h-[260px] min-h-[260px] overflow-hidden`}
         initial={{ y: "100%" }}
         animate={{ y: isCollapsing ? "calc(100% - 115px)" : 0 }}
         transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
@@ -588,7 +563,7 @@ const RideRequestPage = () => {
         </div>
 
         <motion.div 
-          className="px-5 pb-5 flex flex-col gap-3 min-h-[220px] justify-between"
+          className="px-5 pb-5 flex flex-col justify-between h-[235px] max-h-[235px]"
           animate={{ opacity: isCollapsing ? 0 : 1 }}
           transition={{ duration: 0.5 }}
         >
