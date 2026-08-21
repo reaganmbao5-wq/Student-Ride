@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, Navigation, TrendingUp, Search, MapPin, Flag, Zap } from 'lucide-react';
+import { ArrowLeft, Loader2, Navigation, TrendingUp, Search, MapPin, Flag, Zap, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useGeolocation } from '../map/hooks/useGeolocation';
@@ -11,8 +11,20 @@ import { CAMERA_MODES } from '../map/camera/CameraConfig';
 import { useDriverDiscovery } from '../map/discovery/DriverDiscoveryEngine';
 import { routeCache } from '../map/route/RouteCache';
 import { AddressSearch } from '../components/common/AddressSearch';
+import ActionSearchBar from '../components/ui/ActionSearchBar';
+import finalPlaces from '../data/final_places.json';
 import { TilePreloader } from '../map/services/TilePreloader';
 import { haptics } from '../utils/haptics';
+import {
+  Stepper,
+  StepperItem,
+  StepperTrigger,
+  StepperIndicator,
+  StepperSeparator,
+  StepperTitle,
+  StepperDescription,
+  StepperNav,
+} from '../components/ui/stepper';
 import {
   Select,
   SelectContent,
@@ -110,6 +122,55 @@ const RideRequestPage = () => {
     } catch (error) {
       console.error('Error fetching destinations:', error);
     }
+  };
+
+  const searchableLocations = useMemo(() => {
+    const list = [];
+    if (finalPlaces?.features) {
+      finalPlaces.features.forEach((feat, idx) => {
+        const coords = feat.geometry?.coordinates;
+        if (coords && coords.length >= 2) {
+          list.push({
+            id: `fp_${idx}`,
+            name: feat.properties?.name || 'Unnamed Place',
+            description: feat.properties?.category || feat.properties?.category_raw || '',
+            category: feat.properties?.category || '',
+            lat: coords[1],
+            lng: coords[0],
+            address: feat.properties?.name || 'Campus Location'
+          });
+        }
+      });
+    }
+    if (destinations && destinations.length > 0) {
+      destinations.forEach((d) => {
+        if (!list.some(l => l.name?.toLowerCase() === d.name?.toLowerCase())) {
+          list.push({
+            id: `dest_${d.id}`,
+            name: d.name,
+            description: d.description || 'Popular Destination',
+            category: d.category || 'destination',
+            lat: d.latitude,
+            lng: d.longitude,
+            address: d.name
+          });
+        }
+      });
+    }
+    return list;
+  }, [destinations]);
+
+  const handleActionSearchSelect = (loc) => {
+    suppressConfirmUntilRef.current = Date.now() + 600;
+    isExplicitSelectionRef.current = true;
+    explicitSelectedLocationRef.current = { lat: loc.lat, lng: loc.lng, address: loc.address || loc.name };
+    setSelectionTarget({ lat: loc.lat, lng: loc.lng, ts: Date.now() });
+    setMapCenter({ lat: loc.lat, lng: loc.lng });
+    setCurrentAddress(loc.address || loc.name);
+    if (step === 'dropoff') {
+      setDropoff({ lat: loc.lat, lng: loc.lng, address: loc.address || loc.name });
+    }
+    setSelectedDestination(null);
   };
 
   // Ref to track if user explicitly picked a place from search (prevents reverseGeocode from overwriting chosen landmark address)
@@ -377,17 +438,64 @@ const RideRequestPage = () => {
   }, [step]);
   const [isSheetExpanded, setIsSheetExpanded] = useState(false);
 
+  // Lock viewport height to physical screen height so keyboard never shrinks container or pushes bottom sheet
+  const [viewportHeight, setViewportHeight] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerHeight;
+    }
+    return 800;
+  });
+
+  useEffect(() => {
+    let lastWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
+    const handleResize = () => {
+      // Only recalculate on actual device orientation change (width change), ignoring keyboard resize
+      if (typeof window !== 'undefined' && window.innerWidth !== lastWidth) {
+        lastWidth = window.innerWidth;
+        setViewportHeight(window.innerHeight);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    const handleOrientation = () => {
+      setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          setViewportHeight(window.innerHeight);
+        }
+      }, 200);
+    };
+    window.addEventListener('orientationchange', handleOrientation);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleOrientation);
+    };
+  }, []);
+
   return (
-    <div className="fixed inset-0 bg-background overflow-hidden flex flex-col" data-testid="ride-request-page">
+    <div 
+      className="fixed inset-x-0 top-0 bg-background overflow-hidden flex flex-col" 
+      style={{ height: `${viewportHeight}px`, maxHeight: `${viewportHeight}px` }}
+      data-testid="ride-request-page"
+    >
       
-      {/* Top Header overlay */}
-      <div className="absolute top-10 md:top-6 left-0 right-0 z-10 p-4 flex items-center justify-between pointer-events-none">
+      {/* Top Header Overlay & Expandable Search Bar */}
+      <div className="absolute top-10 md:top-6 left-4 z-30 flex flex-col items-start gap-3 pointer-events-none">
         <button
           onClick={handleBack}
-          className="w-12 h-12 bg-white dark:bg-zinc-900 rounded-full flex items-center justify-center shadow-lg pointer-events-auto active:scale-95 transition-transform"
+          className="w-11 h-11 bg-[#181D27]/90 backdrop-blur-2xl border border-white/15 text-white rounded-full flex items-center justify-center shadow-2xl pointer-events-auto active:scale-95 transition-transform"
         >
-          <ArrowLeft className="w-6 h-6 text-foreground" />
+          <ArrowLeft className="w-5 h-5 text-white" />
         </button>
+
+        {/* ActionSearchBar with Animated Dropdown */}
+        {step !== 'confirm' && (
+          <div className="pointer-events-auto">
+            <ActionSearchBar
+              locations={searchableLocations}
+              onSelectLocation={handleActionSearchSelect}
+              placeholder={step === 'pickup' ? "Search campus places, hostels..." : "Search destination..."}
+            />
+          </div>
+        )}
       </div>
 
       {/* Map Layer */}
@@ -479,34 +587,51 @@ const RideRequestPage = () => {
             <>
               <h2 className="text-xl font-bold font-heading">Pickup Location</h2>
               
-              <div className="flex items-center gap-3 bg-zinc-100 dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800">
-                <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center shrink-0">
-                  <MapPin className="w-4 h-4 text-white" />
+              {/* 🔒 FIXED HEIGHT CONTENT SLOT (Exact height for Pickup & Dropoff - Prevents Canvas Resize) */}
+              <div className="w-full h-[100px] flex items-start justify-between">
+                {/* Left: Connected Stepper Track + Text */}
+                <div className="flex items-start gap-3 flex-1 min-w-0 pr-3">
+                  {/* Left Column: Seamlessly Connected Nodes & Line */}
+                  <div className="flex flex-col items-center shrink-0">
+                    <div className="w-6 h-6 rounded-full bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold text-xs shadow-sm">
+                      1
+                    </div>
+                    <div className="w-0.5 h-7 my-1 bg-zinc-300 dark:bg-zinc-800" />
+                    <div className="w-6 h-6 rounded-full bg-zinc-100 dark:bg-zinc-900 text-zinc-400 dark:text-zinc-600 border border-zinc-300 dark:border-zinc-800 flex items-center justify-center font-semibold text-xs">
+                      2
+                    </div>
+                  </div>
+
+                  {/* Middle Column: Text Lines for Row 1 and Row 2 */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-between h-[84px] text-left">
+                    {/* Row 1 Text */}
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white leading-none">
+                        Current Address
+                      </p>
+                      <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300 truncate mt-1">
+                        {currentAddress || (isGeocoding ? 'Fetching address...' : 'Mulungushi University')}
+                      </p>
+                    </div>
+
+                    {/* Row 2 Text */}
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-600 leading-none">
+                        Destination
+                      </p>
+                      <p className="text-sm font-medium text-zinc-400 dark:text-zinc-600 truncate mt-1">
+                        Destination...
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                   <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Current Address</p>
-                   <p className="text-sm font-medium truncate">{currentAddress || 'Fetching address...'}</p>
-                </div>
-              </div>
-              
-              <div className="w-full flex items-center gap-2">
-                <div className="flex-1">
-                  <AddressSearch
-                    placeholder="Search for a pickup..."
-                    onLocationSelect={(loc) => {
-                      suppressConfirmUntilRef.current = Date.now() + 600;
-                      isExplicitSelectionRef.current = true;
-                      setSelectionTarget({ lat: loc.lat, lng: loc.lng, ts: Date.now() });
-                      setMapCenter({ lat: loc.lat, lng: loc.lng });
-                      setCurrentAddress(loc.address);
-                      setSelectedDestination(null);
-                    }}
-                  />
-                </div>
+
+                {/* Right: GPS Navigation Button (Aligned to Row 1 Top) */}
                 <button
                   onClick={() => refreshLocation()}
                   disabled={geoLoading}
-                  className="w-12 h-12 flex-shrink-0 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl flex items-center justify-center active:scale-95 transition-transform"
+                  className="w-11 h-11 flex-shrink-0 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl flex items-center justify-center active:scale-95 transition-transform shadow-sm mt-0.5"
+                  title="Center to my location"
                 >
                   <Navigation className={`w-5 h-5 text-black dark:text-white ${geoLoading ? 'animate-pulse' : ''}`} />
                 </button>
@@ -526,30 +651,47 @@ const RideRequestPage = () => {
             <>
               <h2 className="text-xl font-bold font-heading">Set Destination</h2>
               
-              <div className="flex items-center gap-3 bg-zinc-100 dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800">
-                <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center shrink-0">
-                  <Flag className="w-4 h-4 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                   <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Dropoff Address</p>
-                   <p className="text-sm font-medium truncate">{currentAddress || 'Fetching address...'}</p>
-                </div>
-              </div>
+              {/* 🔒 FIXED HEIGHT CONTENT SLOT (100% Identical height to Pickup) */}
+              <div className="w-full h-[100px] flex items-start justify-between">
+                {/* Left: Connected Stepper Track + Text */}
+                <div className="flex items-start gap-3 flex-1 min-w-0 pr-3">
+                  {/* Left Column: Seamlessly Connected Nodes & Green Line */}
+                  <div className="flex flex-col items-center shrink-0">
+                    <div className="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+                      <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
+                    </div>
+                    <div className="w-0.5 h-7 my-1 bg-green-500" />
+                    <div className="w-6 h-6 rounded-full bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold text-xs shadow-sm">
+                      2
+                    </div>
+                  </div>
 
-              <div className="w-full">
-                <AddressSearch
-                  placeholder="Search for a destination..."
-                  onLocationSelect={(loc) => {
-                    suppressConfirmUntilRef.current = Date.now() + 600;
-                    isExplicitSelectionRef.current = true;
-                    explicitSelectedLocationRef.current = { lat: loc.lat, lng: loc.lng, address: loc.address };
-                    setSelectionTarget({ lat: loc.lat, lng: loc.lng, ts: Date.now() });
-                    setMapCenter({ lat: loc.lat, lng: loc.lng });
-                    setCurrentAddress(loc.address);
-                    setDropoff({ lat: loc.lat, lng: loc.lng, address: loc.address });
-                    setSelectedDestination(null);
-                  }}
-                />
+                  {/* Middle Column: Text Lines for Row 1 and Row 2 */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-between h-[84px] text-left">
+                    {/* Row 1 Text */}
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white leading-none">
+                        Pickup
+                      </p>
+                      <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300 truncate mt-1">
+                        {pickup?.address || 'Pickup Point'}
+                      </p>
+                    </div>
+
+                    {/* Row 2 Text */}
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white leading-none">
+                        Destination
+                      </p>
+                      <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300 truncate mt-1">
+                        {currentAddress || (isGeocoding ? 'Fetching address...' : 'Select destination')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: Invisible Spacer matching GPS button width */}
+                <div className="w-11 h-11 flex-shrink-0 opacity-0 pointer-events-none mt-0.5" />
               </div>
 
               <button 
