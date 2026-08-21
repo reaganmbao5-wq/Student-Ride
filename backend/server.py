@@ -523,23 +523,23 @@ class RideResponse(BaseModel):
     student: Optional[UserResponse] = None
     driver_id: Optional[str] = None
     driver: Optional[DriverResponse] = None
-    pickup_location: Dict[str, Any]
-    dropoff_location: Dict[str, Any]
-    status: RideStatus
-    ride_mode: RideMode = RideMode.PRIVATE
-    passenger_count: int = 1
-    fare: float
-    commission: float
-    driver_earning: float
-    distance: float
-    duration: float
+    pickup_location: Optional[Dict[str, Any]] = None
+    dropoff_location: Optional[Dict[str, Any]] = None
+    status: Any = "requested"
+    ride_mode: Optional[RideMode] = RideMode.PRIVATE
+    passenger_count: Optional[int] = 1
+    fare: Optional[float] = 0.0
+    commission: Optional[float] = 0.0
+    driver_earning: Optional[float] = 0.0
+    distance: Optional[float] = 0.0
+    duration: Optional[float] = 0.0
     verified_distance: Optional[float] = None
     verified_duration: Optional[float] = None
     verified_geometry: Optional[List[List[float]]] = None
     route_source: Optional[str] = None
     rating: Optional[int] = None
     review: Optional[str] = None
-    created_at: str
+    created_at: Optional[str] = None
     accepted_at: Optional[str] = None
     completed_at: Optional[str] = None
     eta_seconds: Optional[int] = None
@@ -4084,37 +4084,50 @@ async def delete_user(user_id: str, admin: dict = Depends(require_admin)):
     
     return {"status": "deleted"}
 
-@api_router.get("/admin/rides", response_model=List[RideResponse])
+@api_router.get("/admin/rides")
 async def get_all_rides(
     status: Optional[str] = None,
     limit: int = Query(50, ge=1, le=500),
     user: dict = Depends(require_admin)
 ):
     query = {}
-    if status:
+    if status and status != "all":
         query["status"] = status
     
     rides = await db.rides.find(query, {"_id": 0}).sort("created_at", -1).to_list(limit)
     
     result = []
     for ride in rides:
-        student = await db.users.find_one({"id": ride.get("student_id")}, {"_id": 0, "password": 0})
-        if student:
-            ride["student"] = UserResponse(**student)
-        
-        if ride.get("driver_id"):
-            driver = await db.drivers.find_one({"id": ride["driver_id"]}, {"_id": 0})
-            if driver:
-                driver_user = await db.users.find_one({"id": driver.get("user_id")}, {"_id": 0, "password": 0})
-                if driver_user:
-                    driver["user"] = UserResponse(**driver_user)
-                ride["driver"] = DriverResponse(**driver)
-        
-        result.append(RideResponse(**ride))
+        try:
+            student = await db.users.find_one({"id": ride.get("student_id")}, {"_id": 0, "password": 0})
+            if student:
+                try:
+                    ride["student"] = UserResponse(**student)
+                except Exception:
+                    ride["student"] = student
+            
+            if ride.get("driver_id"):
+                driver = await db.drivers.find_one({"id": ride["driver_id"]}, {"_id": 0})
+                if driver:
+                    driver_user = await db.users.find_one({"id": driver.get("user_id")}, {"_id": 0, "password": 0})
+                    if driver_user:
+                        try:
+                            driver["user"] = UserResponse(**driver_user)
+                        except Exception:
+                            driver["user"] = driver_user
+                    try:
+                        ride["driver"] = DriverResponse(**driver)
+                    except Exception:
+                        ride["driver"] = driver
+            
+            result.append(RideResponse(**ride).model_dump() if hasattr(RideResponse(**ride), 'model_dump') else RideResponse(**ride).dict())
+        except Exception as e:
+            logger.warning(f"Formatting fallback for ride {ride.get('id')}: {e}")
+            result.append(ride)
     
     return result
 
-@api_router.get("/admin/active-rides", response_model=List[RideResponse])
+@api_router.get("/admin/active-rides")
 async def get_admin_active_rides(user: dict = Depends(require_admin)):
     active_statuses = [
         RideStatus.REQUESTED.value,
@@ -4133,19 +4146,32 @@ async def get_admin_active_rides(user: dict = Depends(require_admin)):
     
     result = []
     for ride in rides:
-        student = await db.users.find_one({"id": ride.get("student_id")}, {"_id": 0, "password": 0})
-        if student:
-            ride["student"] = UserResponse(**student)
-        
-        if ride.get("driver_id"):
-            driver = await db.drivers.find_one({"id": ride["driver_id"]}, {"_id": 0})
-            if driver:
-                driver_user = await db.users.find_one({"id": driver.get("user_id")}, {"_id": 0, "password": 0})
-                if driver_user:
-                    driver["user"] = UserResponse(**driver_user)
-                ride["driver"] = DriverResponse(**driver)
-        
-        result.append(RideResponse(**ride))
+        try:
+            student = await db.users.find_one({"id": ride.get("student_id")}, {"_id": 0, "password": 0})
+            if student:
+                try:
+                    ride["student"] = UserResponse(**student)
+                except Exception:
+                    ride["student"] = student
+            
+            if ride.get("driver_id"):
+                driver = await db.drivers.find_one({"id": ride["driver_id"]}, {"_id": 0})
+                if driver:
+                    driver_user = await db.users.find_one({"id": driver.get("user_id")}, {"_id": 0, "password": 0})
+                    if driver_user:
+                        try:
+                            driver["user"] = UserResponse(**driver_user)
+                        except Exception:
+                            driver["user"] = driver_user
+                    try:
+                        ride["driver"] = DriverResponse(**driver)
+                    except Exception:
+                        ride["driver"] = driver
+            
+            result.append(RideResponse(**ride).model_dump() if hasattr(RideResponse(**ride), 'model_dump') else RideResponse(**ride).dict())
+        except Exception as e:
+            logger.warning(f"Formatting active ride fallback {ride.get('id')}: {e}")
+            result.append(ride)
     
     return result
 

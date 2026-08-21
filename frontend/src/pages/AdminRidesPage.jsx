@@ -45,8 +45,9 @@ const AdminRidesPage = () => {
     try {
       if (!isBackground && rides.length === 0) setLoading(true);
       const response = await api.get('/admin/rides?limit=250');
-      setRides(response.data);
-      AppCache.set('admin_rides', response.data);
+      const data = Array.isArray(response.data) ? response.data : [];
+      setRides(data);
+      AppCache.set('admin_rides', data);
     } catch (error) {
       console.error('Error fetching rides:', error);
       toast.error('Failed to load rides');
