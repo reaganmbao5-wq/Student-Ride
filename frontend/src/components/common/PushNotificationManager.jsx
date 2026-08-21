@@ -19,8 +19,136 @@ const urlBase64ToUint8Array = (base64String) => {
 };
 
 const PushNotificationManager = () => {
-    const { isAuthenticated, token } = useAuth();
+    const { isAuthenticated, token, user } = useAuth();
     const [showPrompt, setShowPrompt] = useState(false);
+
+    const subscribeUser = async (isExplicit = true) => {
+        try {
+            const currentToken = token || localStorage.getItem('token');
+            const headers = currentToken ? { Authorization: `Bearer ${currentToken}` } : {};
+            const backendUrl = getBackendUrl();
+
+            if (Capacitor.isNativePlatform()) {
+                const hasPermission = await PermissionsService.requestPushPermission();
+                if (!hasPermission) {
+                    console.log('Push permission denied natively.');
+                    if (isExplicit) {
+                        localStorage.setItem('j_ride_push_asked', 'true');
+                        setShowPrompt(false);
+                    }
+                    return;
+                }
+
+                // If we already have a cached native FCM token, immediately sync it with the current user ID
+                const cachedFcm = localStorage.getItem('j_ride_fcm_token');
+                if (cachedFcm && currentToken) {
+                    try {
+                        await fetch(`${backendUrl}/api/notifications/subscribe`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                ...headers,
+                            },
+                            body: JSON.stringify({
+                                endpoint: `FCM_TOKEN:${cachedFcm}`,
+                                keys: { p256dh: "native", auth: "native" }
+                            }),
+                        });
+                        console.log('Synced cached FCM token to current user account');
+                    } catch (e) {
+                        console.warn('Failed to sync cached FCM token:', e);
+                    }
+                }
+
+                // Set up listener before calling register
+                await PushNotifications.removeAllListeners();
+
+                PushNotifications.addListener('registration', async (fcmToken) => {
+                    console.log('FCM Token generated:', fcmToken.value);
+                    localStorage.setItem('j_ride_fcm_token', fcmToken.value);
+                    const activeToken = localStorage.getItem('token') || currentToken;
+                    const activeHeaders = activeToken ? { Authorization: `Bearer ${activeToken}` } : {};
+                    try {
+                        await fetch(`${backendUrl}/api/notifications/subscribe`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                ...activeHeaders,
+                            },
+                            body: JSON.stringify({
+                                endpoint: `FCM_TOKEN:${fcmToken.value}`,
+                                keys: { p256dh: "native", auth: "native" }
+                            }),
+                        });
+                        console.log('Native push subscription registered with backend');
+                    } catch (err) {
+                        console.error('Failed to register native token to backend:', err);
+                    }
+                });
+
+                PushNotifications.addListener('registrationError', (error) => {
+                    console.error('Push registration error:', JSON.stringify(error));
+                });
+
+                PushNotifications.addListener('pushNotificationReceived', async (notification) => {
+                    console.log('Push received in foreground:', notification);
+                });
+
+                // Trigger registration
+                await PushNotifications.register();
+
+                if (isExplicit) {
+                    localStorage.setItem('j_ride_push_asked', 'true');
+                    setShowPrompt(false);
+                }
+
+            } else {
+                // WEB VAPID PUSH REGISTRATION
+                if (isExplicit) {
+                    const permission = await Notification.requestPermission();
+                    if (permission !== 'granted') {
+                        console.log('Push permission denied.');
+                        localStorage.setItem('j_ride_push_asked', 'true');
+                        setShowPrompt(false);
+                        return;
+                    }
+                }
+
+                if ('serviceWorker' in navigator) {
+                    const registration = await navigator.serviceWorker.ready;
+                    const keyResponse = await fetch(`${backendUrl}/api/notifications/vapid-public-key`, { headers });
+                    const data = await keyResponse.json();
+                    const publicKey = data.public_key || data.publicKey;
+                    
+                    if (publicKey) {
+                        const convertedVapidKey = urlBase64ToUint8Array(publicKey);
+                        const subscription = await registration.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: convertedVapidKey,
+                        });
+
+                        await fetch(`${backendUrl}/api/notifications/subscribe`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', ...headers },
+                            body: JSON.stringify(subscription),
+                        });
+
+                        console.log('Web Push subscription registered successfully');
+                    }
+                }
+
+                if (isExplicit) {
+                    localStorage.setItem('j_ride_push_asked', 'true');
+                    setShowPrompt(false);
+                }
+            }
+        } catch (error) {
+            console.error('Error during push registration:', error);
+            if (isExplicit) {
+                setShowPrompt(false);
+            }
+        }
+    };
 
     useEffect(() => {
         const checkPermissionAndRefresh = async () => {
@@ -75,8 +203,7 @@ const PushNotificationManager = () => {
                 if (status.receive !== 'granted') {
                     const asked = localStorage.getItem('j_ride_push_asked');
                     if (!asked) setShowPrompt(true);
-                } else if (isAuthenticated) {
-                    // Auto-refresh token on app mount (Section 3.4)
+                } else if (isAuthenticated && token) {
                     subscribeUser(false);
                 }
             } else {
@@ -84,118 +211,15 @@ const PushNotificationManager = () => {
                     if (Notification.permission === 'default') {
                         const asked = localStorage.getItem('j_ride_push_asked');
                         if (!asked) setShowPrompt(true);
-                    } else if (Notification.permission === 'granted' && isAuthenticated) {
-                        // Auto-refresh web subscription
+                    } else if (Notification.permission === 'granted' && isAuthenticated && token) {
                         subscribeUser(false);
                     }
                 }
             }
         };
 
-        const timer = setTimeout(() => {
-            checkPermissionAndRefresh();
-        }, 2000);
-
-        return () => clearTimeout(timer);
-    }, [isAuthenticated]);
-
-    const subscribeUser = async (isExplicit = true) => {
-        try {
-            const headers = token ? { Authorization: `Bearer ${token}` } : {};
-            const backendUrl = getBackendUrl();
-
-            if (Capacitor.isNativePlatform()) {
-                const hasPermission = await PermissionsService.requestPushPermission();
-                if (!hasPermission) {
-                    console.log('Push permission denied natively.');
-                    if (isExplicit) {
-                        localStorage.setItem('j_ride_push_asked', 'true');
-                        setShowPrompt(false);
-                    }
-                    return;
-                }
-
-                // Register with native FCM
-                await PushNotifications.register();
-
-                PushNotifications.addListener('registration', async (fcmToken) => {
-                    console.log('FCM Token generated:', fcmToken.value);
-                    try {
-                        await fetch(`${backendUrl}/api/notifications/subscribe`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                ...headers,
-                            },
-                            body: JSON.stringify({
-                                endpoint: `FCM_TOKEN:${fcmToken.value}`,
-                                keys: { p256dh: "native", auth: "native" }
-                            }),
-                        });
-                        console.log('Native push subscription registered with backend');
-                    } catch (err) {
-                        console.error('Failed to register native token to backend:', err);
-                    }
-                });
-
-                PushNotifications.addListener('registrationError', (error) => {
-                    console.error('Push registration error:', JSON.stringify(error));
-                });
-
-                PushNotifications.addListener('pushNotificationReceived', async (notification) => {
-                    console.log('Push received in foreground:', notification);
-                });
-
-                if (isExplicit) {
-                    localStorage.setItem('j_ride_push_asked', 'true');
-                    setShowPrompt(false);
-                }
-
-            } else {
-                // WEB VAPID PUSH REGISTRATION
-                if (isExplicit) {
-                    const permission = await Notification.requestPermission();
-                    if (permission !== 'granted') {
-                        console.log('Push permission denied.');
-                        localStorage.setItem('j_ride_push_asked', 'true');
-                        setShowPrompt(false);
-                        return;
-                    }
-                }
-
-                if ('serviceWorker' in navigator) {
-                    const registration = await navigator.serviceWorker.ready;
-                    const keyResponse = await fetch(`${backendUrl}/api/notifications/vapid-public-key`, { headers });
-                    const data = await keyResponse.json();
-                    const publicKey = data.public_key || data.publicKey;
-                    
-                    if (publicKey) {
-                        const convertedVapidKey = urlBase64ToUint8Array(publicKey);
-                        const subscription = await registration.pushManager.subscribe({
-                            userVisibleOnly: true,
-                            applicationServerKey: convertedVapidKey,
-                        });
-
-                        await fetch(`${backendUrl}/api/notifications/subscribe`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', ...headers },
-                            body: JSON.stringify(subscription),
-                        });
-
-                        console.log('Web Push subscription registered successfully');
-                    }
-                }
-
-                if (isExplicit) {
-                    localStorage.setItem('j_ride_push_asked', 'true');
-                    setShowPrompt(false);
-                }
-            }
-        } catch (error) {
-            console.error('Failed to subscribe user:', error);
-            if (isExplicit) setShowPrompt(false);
-        }
-    };
+        checkPermissionAndRefresh();
+    }, [isAuthenticated, token, user?.id]);
 
     const handleDismiss = () => {
         localStorage.setItem('j_ride_push_asked', 'true');

@@ -1,10 +1,17 @@
 import asyncio
 import os
+import sys
 import math
 import argparse
 import httpx
+from datetime import datetime, timezone
 from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
+
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+except Exception:
+    pass
 
 def haversine(lat1, lon1, lat2, lon2):
     R = 6371000
@@ -18,12 +25,12 @@ def haversine(lat1, lon1, lat2, lon2):
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return R * c
 
-def interpolate_points(start_lat, start_lng, end_lat, end_lng, step_meters=150):
+def interpolate_points(start_lat, start_lng, end_lat, end_lng, step_meters=15):
     total_dist = haversine(start_lat, start_lng, end_lat, end_lng)
     if total_dist <= step_meters:
         return [[end_lng, end_lat]]
     
-    num_steps = int(total_dist // step_meters)
+    num_steps = max(1, int(total_dist // step_meters))
     points = []
     for i in range(1, num_steps + 1):
         fraction = i / num_steps
@@ -40,34 +47,57 @@ def calculate_bearing(lat1, lon1, lat2, lon2):
     bearing = math.atan2(y, x)
     return (math.degrees(bearing) + 360) % 360
 
+MAPBOX_ACCESS_TOKEN = os.environ.get(
+    "MAPBOX_ACCESS_TOKEN",
+    "pk.eyJ1IjoiamFleSIsImEiOiJjbXNocmV5ZXAwM3JlMnhzZ29raTB3eGc5In0.riXZQNEurCaETWjZt02R6A"
+)
+
 async def get_route(client, start_coords, end_coords):
     start_lat, start_lng = start_coords["lat"], start_coords["lng"]
     end_lat, end_lng = end_coords["lat"], end_coords["lng"]
     
-    osrm_url = f"http://router.project-osrm.org/route/v1/driving/{start_lng},{start_lat};{end_lng},{end_lat}?overview=full&geometries=geojson"
     raw_coords = None
+    # 1. Primary Engine: Mapbox Directions API v5
     try:
-        route_resp = await client.get(osrm_url, timeout=5.0)
+        mapbox_url = f"https://api.mapbox.com/directions/v5/mapbox/driving/{start_lng},{start_lat};{end_lng},{end_lat}"
+        params = {
+            "overview": "full",
+            "geometries": "geojson",
+            "access_token": MAPBOX_ACCESS_TOKEN
+        }
+        route_resp = await client.get(mapbox_url, params=params, timeout=10.0)
         if route_resp.status_code == 200:
             data = route_resp.json()
-            if data.get("routes"):
+            if data.get("routes") and len(data["routes"]) > 0:
                 raw_coords = data["routes"][0]["geometry"]["coordinates"]
     except Exception as e:
-        print(f"[SIMULATION] OSRM query network exception ({e}). Utilizing fallback points.")
+        print(f"[SIMULATION] Mapbox Directions API exception ({e}). Falling back to secondary.")
+        
+    # 2. Secondary Engine Fallback: OSRM
+    if not raw_coords:
+        try:
+            osrm_url = f"http://router.project-osrm.org/route/v1/driving/{start_lng},{start_lat};{end_lng},{end_lat}?overview=full&geometries=geojson"
+            route_resp = await client.get(osrm_url, timeout=6.0)
+            if route_resp.status_code == 200:
+                data = route_resp.json()
+                if data.get("routes"):
+                    raw_coords = data["routes"][0]["geometry"]["coordinates"]
+        except Exception as e:
+            print(f"[SIMULATION] OSRM query network exception ({e}).")
         
     if not raw_coords:
         raw_coords = [[start_lng, start_lat], [end_lng, end_lat]]
         
-    # Smooth out route_coords by interpolating between each OSRM point
+    # Smooth out route_coords with dense 15m steps along road curves
     smooth_coords = [[start_lng, start_lat]]
     for i in range(len(raw_coords) - 1):
         p1_lng, p1_lat = raw_coords[i]
         p2_lng, p2_lat = raw_coords[i+1]
-        smooth_coords.extend(interpolate_points(p1_lat, p1_lng, p2_lat, p2_lng, step_meters=150))
+        smooth_coords.extend(interpolate_points(p1_lat, p1_lng, p2_lat, p2_lng, step_meters=15))
         
     return smooth_coords
 
-async def inject_location(client, backend_url, driver_user_id, lat, lng, heading):
+async def inject_location(client, db, backend_url, driver_id, driver_user_id, lat, lng, heading):
     payload = {
         driver_user_id: {
             "lat": lat,
@@ -75,8 +105,22 @@ async def inject_location(client, backend_url, driver_user_id, lat, lng, heading
             "heading": heading
         }
     }
+    # 1. Update MongoDB directly so database queries reflect real position
     try:
-        await client.post(f"{backend_url}/api/test/inject_drivers", json={"drivers": payload}, timeout=10.0)
+        await db.drivers.update_one(
+            {"id": driver_id},
+            {"$set": {
+                "current_location": {"lat": lat, "lng": lng},
+                "heading": heading,
+                "last_active": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+    except Exception:
+        pass
+        
+    # 2. Inject via WebSocket manager endpoint
+    try:
+        await client.post(f"{backend_url}/api/test/inject_drivers", json={"drivers": payload}, timeout=5.0)
     except Exception as ex:
         print(f"[SIMULATION] Inject location network retry: {ex}")
 
@@ -98,8 +142,15 @@ async def wait_for_driver_action(db, driver_id, current_stop_id, prompt):
 
 async def dynamic_driver_loop(db, client, backend_url, driver_id, driver_user_id, scenario):
     driver_profile = await db.drivers.find_one({"id": driver_id})
-    current_loc = driver_profile.get("current_location", {"lat": -14.3980, "lng": 28.4410})
-    print(f"\n[INFO] Driver simulation started. Initial Location: {current_loc}")
+    loc = driver_profile.get("current_location") if driver_profile else None
+    
+    # Campus boundary sanity check
+    if not loc or not isinstance(loc, dict) or loc.get("lng", 0) > 28.35 or loc.get("lng", 0) < 28.25 or loc.get("lat", 0) < -14.45 or loc.get("lat", 0) > -14.38:
+        current_loc = {"lat": -14.4087, "lng": 28.2849}
+    else:
+        current_loc = {"lat": float(loc["lat"]), "lng": float(loc["lng"])}
+        
+    print(f"\n[INFO] Driver simulation started. Initial Campus Location: {current_loc}", flush=True)
     
     soft_deviations = set()
     hard_deviations = set()
@@ -110,7 +161,7 @@ async def dynamic_driver_loop(db, client, backend_url, driver_id, driver_user_id
         queue = trip.get("route_queue", []) if trip else []
         
         if not queue:
-            print("Queue is empty. Waiting for you to ACCEPT a ride via the Dashboard...")
+            print("Queue is empty. Waiting for you to ACCEPT a ride via the Dashboard...", flush=True)
             await asyncio.sleep(2)
             continue
             
@@ -135,8 +186,6 @@ async def dynamic_driver_loop(db, client, backend_url, driver_id, driver_user_id
                 hard_deviations.add(stop_id)
             
         elif scenario == "2" and stop_id not in soft_deviations: # Soft Deviation
-            # Instead of changing the final target, we'll just apply an offset to the start location
-            # to make the driver appear parallel to the route, triggering a soft recalculation.
             current_loc["lat"] += 0.0008
             current_loc["lng"] += 0.0008
             print("\n[SIMULATION] SOFT DEVIATION: Starting from an offset position to trigger polyline shift!")
@@ -156,16 +205,16 @@ async def dynamic_driver_loop(db, client, backend_url, driver_id, driver_user_id
             curr_lng, curr_lat = route_coords[i]
             heading = calculate_bearing(current_loc["lat"], current_loc["lng"], curr_lat, curr_lng)
             
-            await inject_location(client, backend_url, driver_user_id, curr_lat, curr_lng, heading)
+            await inject_location(client, db, backend_url, driver_id, driver_user_id, curr_lat, curr_lng, heading)
             current_loc = {"lat": curr_lat, "lng": curr_lng}
             
             # Print status
             stop_label = next_stop["stop_type"].upper()
-            print(f"Driving to {stop_label}... {curr_lat:.5f}, {curr_lng:.5f} (Queue Length: {len(queue)})")
+            print(f"🚗 Driving to {stop_label}... {curr_lat:.5f}, {curr_lng:.5f} (Heading: {heading:.1f}°) [Queue: {len(queue)}]", flush=True)
             
             # Check distance to target
             dist = haversine(curr_lat, curr_lng, target_lat, target_lng)
-            if dist < 30: # Arrived within 30 meters
+            if dist < 25: # Arrived within 25 meters
                 reached_target = True
                 break
                 
@@ -176,9 +225,9 @@ async def dynamic_driver_loop(db, client, backend_url, driver_id, driver_user_id
                 for _ in range(5):
                     curr_lat += 0.0005
                     curr_lng -= 0.0002
-                    await inject_location(client, backend_url, driver_user_id, curr_lat, curr_lng, heading)
+                    await inject_location(client, db, backend_url, driver_id, driver_user_id, curr_lat, curr_lng, heading)
                     print(f"Off-route... {curr_lat:.5f}, {curr_lng:.5f}")
-                    await asyncio.sleep(0.1)
+                    await asyncio.sleep(0.3)
                 print("[SIMULATION] Returning to route recalculation...")
                 break # Break out to recalculate route from new diverged location
                 
@@ -187,13 +236,12 @@ async def dynamic_driver_loop(db, client, backend_url, driver_id, driver_user_id
             new_queue = trip_check.get("route_queue", []) if trip_check else []
             if not new_queue or new_queue[0]["stop_id"] != next_stop["stop_id"]:
                 print("\n[SIMULATION] Queue changed mid-route! (Cancellation or Shared Ride detected). Recalculating...")
-                break # Break to re-evaluate the new queue
+                break
                 
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.35)
             
         # If we reached the target, pause and wait for the driver to click the app button
         if reached_target:
-            # Re-fetch queue to ensure we prompt for the correct stop (Hard deviations might reorder the queue!)
             trip_check = await db.driver_trips.find_one({"driver_id": driver_id})
             latest_queue = trip_check.get("route_queue", []) if trip_check else []
             
@@ -211,29 +259,39 @@ async def dynamic_driver_loop(db, client, backend_url, driver_id, driver_user_id
             await wait_for_driver_action(db, driver_id, actual_next_stop["stop_id"], prompt)
 
 async def main():
-    print("=================================")
-    print("      MASTER ROUTE TESTER")
-    print("=================================")
-    print("1. Normal Route")
-    print("2. Soft Deviation")
-    print("3. Hard Deviation")
-    print("4. Wrong Turn")
-    print("5. Shared Ride / Multiple / Cancellation Testing")
-    print("9. Custom Simulation")
-    print("10. Exit")
-    print("=================================")
-    
-    scenario = input("Select a scenario to test (1-10): ")
-    if scenario == "10":
-        return
-        
-    email = input("Enter driver's email (e.g., driver@test.com): ")
+    parser = argparse.ArgumentParser(description="Master Route Tester & Smooth Driver GPS Simulator")
+    parser.add_argument("--scenario", default=None, help="Scenario to test (1-10)")
+    parser.add_argument("--email", default=None, help="Driver email address")
+    parser.add_argument("--backend-url", default=None, help="Backend API URL")
+    args = parser.parse_args()
 
-    load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
-    load_dotenv(os.path.join(os.path.dirname(__file__), '..', 'backend', '.env'))
+    scenario = args.scenario
+    email = args.email
+
+    if not scenario:
+        print("=================================")
+        print("      MASTER ROUTE TESTER")
+        print("=================================")
+        print("1. Normal Route (Smooth Driving)")
+        print("2. Soft Deviation")
+        print("3. Hard Deviation")
+        print("4. Wrong Turn")
+        print("5. Shared Ride / Multiple / Cancellation Testing")
+        print("9. Custom Simulation")
+        print("10. Exit")
+        print("=================================")
+        scenario = input("Select a scenario to test (1-10): ")
+        if scenario == "10":
+            return
+
+    if not email:
+        email = input("Enter driver's email (e.g., driver@test.com): ")
+
     load_dotenv('backend/.env')
     load_dotenv('.env')
-    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+    load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+    load_dotenv(os.path.join(os.path.dirname(__file__), '..', 'backend', '.env'))
+    mongo_url = os.environ.get('MONGO_URL', 'mongodb+srv://admin:reaganmbao31?@cluster0.mucpxu8.mongodb.net/?appName=Cluster0')
     db_client = AsyncIOMotorClient(mongo_url)
     db = db_client[os.environ.get('DB_NAME', 'mulungushi_rides')]
 
@@ -249,9 +307,21 @@ async def main():
         return
         
     driver_id = driver_profile["id"]
-    backend_url = os.environ.get("BACKEND_URL", "https://student-ride-backend-manual.onrender.com")
     
-    print(f"[OK] Loaded Driver: {driver_user['name']}")
+    backend_url = args.backend_url or os.environ.get("BACKEND_URL")
+    if not backend_url:
+        try:
+            async with httpx.AsyncClient() as check_client:
+                r = await check_client.get("http://127.0.0.1:8000/docs", timeout=1.5)
+                if r.status_code == 200:
+                    backend_url = "http://127.0.0.1:8000"
+        except Exception:
+            backend_url = "https://student-ride-backend-dev.onrender.com"
+            
+    if not backend_url:
+        backend_url = "https://student-ride-backend-dev.onrender.com"
+    
+    print(f"[OK] Loaded Driver: {driver_user['name']} | Backend: {backend_url}", flush=True)
     
     async with httpx.AsyncClient(timeout=60.0) as client:
         await dynamic_driver_loop(db, client, backend_url, driver_id, driver_user_id, scenario)

@@ -1264,29 +1264,12 @@ async def login(credentials: UserLogin):
     
     return TokenResponse(
         access_token=token,
-        user=UserResponse(
-            id=user["id"],
-            email=user["email"],
-            name=user["name"],
-            phone=user["phone"],
-            role=UserRole(user["role"]),
-            created_at=user["created_at"],
-            is_active=user.get("is_active", True)
-        )
+        user=UserResponse(**{k: v for k, v in user.items() if k != "password"})
     )
 
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(user: dict = Depends(get_current_user)):
-    return UserResponse(
-        id=user["id"],
-        email=user["email"],
-        name=user["name"],
-        phone=user["phone"],
-        avatar_url=user.get("avatar_url"),
-        role=UserRole(user["role"]),
-        created_at=user["created_at"],
-        is_active=user.get("is_active", True)
-    )
+    return UserResponse(**{k: v for k, v in user.items() if k != "password"})
 
 @api_router.get("/auth/password-reset/redirect")
 async def password_reset_redirect(token: str):
@@ -1319,17 +1302,18 @@ async def request_password_reset(request: PasswordResetRequest, background_tasks
     
     await db.users.update_one(
         {"id": user["id"]},
-        {"$set": {"reset_token": hashed_token, "reset_token_expires": expires_at.isoformat()}}
+        {"$set": {
+            "reset_password_token": hashed_token,
+            "reset_password_expires": expires_at.isoformat()
+        }}
     )
     
     try:
+        frontend_url = os.environ.get("REACT_APP_FRONTEND_URL", "https://mulungushistudentride.site")
         backend_url = os.environ.get('BACKEND_URL', 'https://student-ride-backend-dev.onrender.com').rstrip('/')
         reset_link = f"{backend_url}/api/auth/password-reset/redirect?token={reset_token}"
         
         from_email = os.environ.get("RESEND_FROM_EMAIL", "noreply@mulungushistudentride.site")
-        
-        # If we are using the test address, we cannot use a display name wrapper (e.g. Jaey Ride <...>)
-        # Resend strictly validates this.
         sender = from_email if "onboarding@resend.dev" in from_email else f"Jaey Ride <{from_email}>"
         
         email_params = {
@@ -1353,7 +1337,6 @@ async def request_password_reset(request: PasswordResetRequest, background_tasks
         logger.info(f"Queued password reset email task for {user['email']}")
     except Exception as e:
         logger.error(f"Failed to queue password reset email: {e}")
-        # We don't fail the request so we don't leak user existence
     
     return {"status": "success", "message": "If an account with that email exists, a password reset link has been sent."}
 
@@ -1365,32 +1348,28 @@ async def confirm_password_reset(request: PasswordResetConfirm):
         if "." not in request.token:
             raise ValueError()
         b64_uid, _ = request.token.split(".", 1)
-        # Add padding back if necessary
         padding = "=" * (4 - (len(b64_uid) % 4))
         user_id = base64.urlsafe_b64decode(b64_uid + padding).decode()
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid token format")
         
     user = await db.users.find_one({"id": user_id})
-    if not user or not user.get("reset_token") or not user.get("reset_token_expires"):
+    if not user or not user.get("reset_password_token") or not user.get("reset_password_expires"):
         raise HTTPException(status_code=400, detail="Invalid or expired reset token")
         
-    # Check expiry
-    expires_at = datetime.fromisoformat(user["reset_token_expires"])
+    expires_at = datetime.fromisoformat(user["reset_password_expires"])
     if datetime.now(timezone.utc) > expires_at:
         raise HTTPException(status_code=400, detail="Reset token has expired")
         
-    # Verify hash
-    if not verify_password(request.token, user["reset_token"]):
+    if not verify_password(request.token, user["reset_password_token"]):
         raise HTTPException(status_code=400, detail="Invalid reset token")
         
-    # Update password
     hashed_password = hash_password(request.new_password)
     await db.users.update_one(
         {"id": user_id},
         {
             "$set": {"password": hashed_password},
-            "$unset": {"reset_token": "", "reset_token_expires": ""}
+            "$unset": {"reset_password_token": "", "reset_password_expires": ""}
         }
     )
     
@@ -1401,7 +1380,6 @@ async def google_login(request: GoogleLoginRequest):
     email = None
     name = None
 
-    # 1. Verify via ID Token if provided
     if request.id_token:
         try:
             idinfo = id_token.verify_oauth2_token(
@@ -1412,7 +1390,6 @@ async def google_login(request: GoogleLoginRequest):
         except Exception as e:
             logger.warning(f"Google ID token verification failed: {e}")
 
-    # 2. Verify via Access Token with Google UserInfo endpoint if provided
     if not email and request.access_token:
         try:
             async with httpx.AsyncClient() as client:
@@ -1428,7 +1405,6 @@ async def google_login(request: GoogleLoginRequest):
         except Exception as e:
             logger.warning(f"Google access token verification failed: {e}")
 
-    # 3. Direct email fallback if provided
     if not email and request.email:
         email = request.email
         name = request.name or "User"
@@ -1437,20 +1413,18 @@ async def google_login(request: GoogleLoginRequest):
         raise HTTPException(status_code=401, detail="Invalid Google token or unable to retrieve email")
 
     try:
-        # Check if user exists
         user = await db.users.find_one({"email": email.lower()}, {"_id": 0})
         is_new_user = False
         
         if not user:
             is_new_user = True
-            # Create a new user account automatically
             user_id = str(uuid.uuid4())
             user = {
                 "id": user_id,
                 "email": email.lower(),
                 "name": name or "User",
-                "phone": "",  # Google doesn't provide phone number by default
-                "password": hash_password(secrets.token_urlsafe(32)), # Random unusable password
+                "phone": "",
+                "password": hash_password(secrets.token_urlsafe(32)),
                 "role": UserRole.STUDENT.value,
                 "is_active": True,
                 "created_at": datetime.now(timezone.utc).isoformat()
@@ -1460,29 +1434,19 @@ async def google_login(request: GoogleLoginRequest):
         if not user.get("is_active", True):
             raise HTTPException(status_code=403, detail="Account suspended")
 
-        # Check if driver profile is complete
         driver_profile_complete = False
         if user.get("role") == UserRole.DRIVER.value:
             profile = await db.drivers.find_one({"user_id": user["id"]})
             if profile:
                 driver_profile_complete = True
 
-        # Generate JWT token
         token = create_token(user["id"], user["role"])
         
         return {
             "access_token": token,
             "is_new_user": is_new_user,
             "driver_profile_complete": driver_profile_complete,
-            "user": {
-                "id": user["id"],
-                "email": user["email"],
-                "name": user["name"],
-                "phone": user["phone"],
-                "role": user["role"],
-                "created_at": user["created_at"],
-                "is_active": user.get("is_active", True)
-            }
+            "user": UserResponse(**{k: v for k, v in user.items() if k != "password"}).model_dump()
         }
 
     except Exception as ex:
@@ -4756,7 +4720,16 @@ async def broadcast_notification(
         unique_user_ids = []
 
         if target in ["specific_user", "user"] and request.target_user_id:
-            unique_user_ids = [request.target_user_id]
+            target_user = await db.users.find_one({
+                "$or": [
+                    {"id": request.target_user_id},
+                    {"email": request.target_user_id.lower()}
+                ]
+            })
+            if target_user:
+                unique_user_ids = [target_user["id"]]
+            else:
+                unique_user_ids = [request.target_user_id]
         elif target in ["year_of_study", "year"] and request.year_of_study is not None:
             user_docs = await db.users.find({
                 "role": UserRole.STUDENT.value,
@@ -4789,7 +4762,7 @@ async def broadcast_notification(
             unique_user_ids = [u["id"] for u in user_docs if u.get("id")]
 
         if not unique_user_ids:
-            return {"status": "success", "sent": 0, "failed": 0, "message": "No matching active accounts found for target criteria"}
+            return {"status": "success", "sent": 0, "failed": 0, "target_count": 0, "message": "No matching active accounts found for target criteria"}
 
         payload = {
             "title": request.title,
@@ -4828,12 +4801,17 @@ async def broadcast_notification(
         }
         await db.notification_logs.insert_one(log_entry)
         
+        if total_sent == 0 and len(unique_user_ids) > 0:
+            msg = f"Broadcast targeted {len(unique_user_ids)} account(s), but none have active push device subscriptions yet."
+        else:
+            msg = f"Broadcast delivered to {total_sent} active device(s) ({len(unique_user_ids)} target account(s))."
+        
         return {
             "status": "success",
             "sent": total_sent,
             "failed": total_failed,
             "target_count": len(unique_user_ids),
-            "message": f"Broadcast sent to {total_sent} users ({total_failed} failed)"
+            "message": msg
         }
     except Exception as e:
         logger.error(f"Error executing admin broadcast: {e}")
