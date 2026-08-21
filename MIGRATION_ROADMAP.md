@@ -3,8 +3,8 @@
 > **Branch Target**: Strictly `Mapbox-stable` (`origin/Mapbox-stable`)  
 > **Workspace**: Strictly `C:\Users\Reaga\OneDrive\Documents\VS Codes\Projects\Mapbox stable`  
 > **Baseline Commit**: `885a0b1` (*"perf(map): set camera flyTo speed 2x slower to smooth 4.8s glide"*)  
-> **Current Head**: Commit `144ec87` (*"feat(bundle-3-safe): implement Lecturer role, Year of Study (1-5), AdminLecturersPage, and targeted push notifications"*)  
-> **Verification Status**: ✅ **100% Audit Passed (44 of 44 Total Commits Accounted For)**
+> **Current Head**: Commit `ef31d46` (*"perf(admin-rides): replace sequential N+1 queries with bulk Mongo batching and ensure resilient loading state in UI"*)  
+> **Verification Status**: ✅ **Part 1 (Safe Non-Ride Bundles 1-4) 100% Complete & Stable**
 
 ---
 
@@ -12,14 +12,14 @@
 
 ```mermaid
 graph TD
-    subgraph SAFE_NON_RIDE_BUNDLES["🛡️ PART 1: SAFE NON-RIDE BUNDLES (ZERO Ride Cycle/State Touch)"]
+    subgraph SAFE_NON_RIDE_BUNDLES["🛡️ PART 1: SAFE NON-RIDE BUNDLES (18 Commits - 100% COMPLETED & STABLE)"]
         B1["✅ Bundle 1: Campus POIs & Proximity Geocoding (5 Commits - a9d5168)"]
         B2["✅ Bundle 2: Notification Pipeline & Android Assets (4 Commits - f969c9a)"]
-        B3["✅ Bundle 3 (Safe): Lecturer Role & Academic Profiles (2 Commits - 144ec87 - CURRENT HEAD)"]
-        B4["🔜 Bundle 4 (Safe): Admin Dashboard Overhaul & KYC Lightbox (7 Commits)"]
+        B3["✅ Bundle 3 (Safe): Lecturer Role & Academic Profiles (2 Commits - 144ec87)"]
+        B4["✅ Bundle 4 (Safe): Admin Dashboard Overhaul & KYC Lightbox (7 Commits - ef31d46 - CURRENT HEAD)"]
     end
 
-    subgraph ISOLATED_RIDE_BUNDLES["🚫 PART 2: ISOLATED & QUARANTINED RIDE / BOOKING BUNDLES"]
+    subgraph ISOLATED_RIDE_BUNDLES["🚫 PART 2: ISOLATED & QUARANTINED RIDE / BOOKING BUNDLES (26 Commits)"]
         IA["📦 Isolated Bundle A: Destination Search & ActionSearchBar (6 Commits)"]
         IB["📦 Isolated Bundle B: Transit Stepper UI & Bottom Sheet (10 Commits)"]
         IC["📦 Isolated Bundle C: Driver Setup Wizard & Role Activation (2 Commits)"]
