@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { 
   House, MapPin, Clock, User, Gear, Car, CurrencyCircleDollar, 
   UsersThree, ChartBar, Shield, SignOut, BugBeetle, SteeringWheel,
-  Sun, Moon
+  Sun, Moon, GraduationCap
 } from '@phosphor-icons/react';
 import { useTheme } from '../../context/ThemeContext';
 import { cn } from '../../lib/utils';
@@ -41,6 +41,7 @@ export const Layout = ({ children }) => {
   const adminNavItems = [
     { to: '/admin', icon: (props) => <ChartBar weight="duotone" {...props} />, label: 'Overview' },
     { to: '/admin/users', icon: (props) => <UsersThree weight="duotone" {...props} />, label: 'Users' },
+    { to: '/admin/lecturers', icon: (props) => <GraduationCap weight="duotone" {...props} />, label: 'Lecturers' },
     { to: '/admin/drivers', icon: (props) => <Car weight="duotone" {...props} />, label: 'Drivers' },
     { to: '/admin/rides', icon: (props) => <MapPin weight="duotone" {...props} />, label: 'Rides' },
     { to: '/admin/destinations', icon: (props) => <MapPin weight="duotone" {...props} />, label: 'Destinations' },

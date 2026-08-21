@@ -26,6 +26,7 @@ import DriverRegisterPage from "./pages/DriverRegisterPage";
 import DriverEarningsPage from "./pages/DriverEarningsPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsersPage from "./pages/AdminUsersPage";
+import AdminLecturersPage from "./pages/AdminLecturersPage";
 import AdminDriversPage from "./pages/AdminDriversPage";
 import AdminRidesPage from "./pages/AdminRidesPage";
 import AdminSettingsPage from "./pages/AdminSettingsPage";
@@ -129,7 +130,7 @@ const AppRoutes = () => {
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute allowedRoles={['student', 'lecturer']}>
               <StudentDashboard />
             </ProtectedRoute>
           }
@@ -137,7 +138,7 @@ const AppRoutes = () => {
         <Route
           path="/ride"
           element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute allowedRoles={['student', 'lecturer']}>
               <RideRequestPage />
             </ProtectedRoute>
           }
@@ -145,7 +146,7 @@ const AppRoutes = () => {
         <Route
           path="/history"
           element={
-            <ProtectedRoute allowedRoles={['student', 'driver']}>
+            <ProtectedRoute allowedRoles={['student', 'lecturer', 'driver']}>
               <RideHistoryPage />
             </ProtectedRoute>
           }
@@ -153,7 +154,7 @@ const AppRoutes = () => {
         <Route
           path="/ride/chat/:rideId"
           element={
-            <ProtectedRoute allowedRoles={['student', 'driver']}>
+            <ProtectedRoute allowedRoles={['student', 'lecturer', 'driver']}>
               <ChatPage />
             </ProtectedRoute>
           }
@@ -171,7 +172,7 @@ const AppRoutes = () => {
         <Route
           path="/driver/register"
           element={
-            <ProtectedRoute allowedRoles={['student', 'driver']}>
+            <ProtectedRoute allowedRoles={['student', 'lecturer', 'driver']}>
               <DriverRegisterPage />
             </ProtectedRoute>
           }
@@ -207,6 +208,14 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
               <AdminUsersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/lecturers"
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+              <AdminLecturersPage />
             </ProtectedRoute>
           }
         />

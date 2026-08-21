@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, ArrowLeft, Mail, Phone, User as UserIcon, Lock, UploadCloud, FileText, CheckCircle2, Camera as CameraIcon } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, Mail, Phone, User as UserIcon, Lock, UploadCloud, FileText, CheckCircle2, Camera as CameraIcon, GraduationCap } from 'lucide-react';
 import { Car } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -24,14 +24,14 @@ const GlassInput = React.forwardRef(({ className, ...props }, ref) => (
 ));
 GlassInput.displayName = 'GlassInput';
 
-const GoldButton = ({ children, className, loading, ...props }) => (
+const GoldButton = ({ children, className, loading, disabled, ...props }) => (
   <button
-    disabled={loading}
-    className={`w-full bg-gold hover:bg-gold/90 text-zinc-950 font-semibold py-3.5 px-6 rounded-xl transition-all shadow-gold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${className}`}
+    disabled={loading || disabled}
+    className={`w-full bg-gold hover:brightness-105 active:scale-[0.98] text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-none disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer ${className}`}
     {...props}
   >
     {loading ? (
-      <div className="w-5 h-5 border-2 border-zinc-950 border-t-transparent rounded-full animate-spin" />
+      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
     ) : children}
   </button>
 );
@@ -76,6 +76,9 @@ const AuthPage = () => {
   const [mode, setMode] = useState(isRegisterParam ? 'register' : 'login');
   const [direction, setDirection] = useState(isRegisterParam ? 1 : -1);
   const [isDriver, setIsDriver] = useState(searchParams.get('mode') === 'driver');
+  const [passengerRole, setPassengerRole] = useState('student');
+  const [yearOfStudy, setYearOfStudy] = useState('1');
+  const [programType, setProgramType] = useState('standard');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -232,7 +235,9 @@ const AuthPage = () => {
             formData.email,
             formData.phone,
             formData.password,
-            'student'
+            passengerRole,
+            passengerRole === 'student' ? yearOfStudy : null,
+            passengerRole === 'student' ? programType : null
           );
           toast.success('Account created successfully!');
           navigate('/dashboard');
@@ -446,7 +451,7 @@ const AuthPage = () => {
             {mode === 'login' && (
               <motion.div
                 layoutId="activeAuthTabPill"
-                className="absolute inset-0 bg-gold rounded-lg shadow-md shadow-gold/20 -z-10"
+                className="absolute inset-0 bg-gold rounded-lg shadow-sm -z-10"
                 transition={{ type: "spring", stiffness: 100, damping: 22, mass: 1 }}
               />
             )}
@@ -461,7 +466,7 @@ const AuthPage = () => {
             {mode === 'register' && (
               <motion.div
                 layoutId="activeAuthTabPill"
-                className="absolute inset-0 bg-gold rounded-lg shadow-md shadow-gold/20 -z-10"
+                className="absolute inset-0 bg-gold rounded-lg shadow-sm -z-10"
                 transition={{ type: "spring", stiffness: 100, damping: 22, mass: 1 }}
               />
             )}
@@ -586,6 +591,95 @@ const AuthPage = () => {
               </div>
             )}
 
+            {mode === 'register' && !isDriver && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-3 pt-1">
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">Passenger Role</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPassengerRole('student')}
+                      className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                        passengerRole === 'student'
+                          ? 'bg-gold/15 border-gold text-gold shadow-none'
+                          : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                      }`}
+                    >
+                      <UserIcon className="w-3.5 h-3.5" />
+                      <span>Student</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPassengerRole('lecturer')}
+                      className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                        passengerRole === 'lecturer'
+                          ? 'bg-gold/15 border-gold text-gold shadow-none'
+                          : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                      }`}
+                    >
+                      <GraduationCap className="w-3.5 h-3.5" />
+                      <span>Lecturer</span>
+                    </button>
+                  </div>
+                </div>
+
+                {passengerRole === 'student' && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-3 pt-2">
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Year of Study</label>
+                      <div className="grid grid-cols-5 gap-1.5">
+                        {['1', '2', '3', '4', '5'].map((yr) => (
+                          <button
+                            key={yr}
+                            type="button"
+                            onClick={() => setYearOfStudy(yr)}
+                            className={`py-2 rounded-xl text-xs font-extrabold border transition-all flex flex-col items-center justify-center cursor-pointer ${
+                              String(yearOfStudy) === yr
+                                ? 'bg-gold border-gold text-zinc-950 shadow-none scale-[1.02]'
+                                : 'bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-white'
+                            }`}
+                          >
+                            <span>{yr === '1' ? '1st' : yr === '2' ? '2nd' : yr === '3' ? '3rd' : `${yr}th`}</span>
+                            <span className="text-[9px] font-semibold opacity-75">Year</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Academic Program</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setProgramType('standard')}
+                          className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all flex flex-col items-center justify-center cursor-pointer ${
+                            programType === 'standard'
+                              ? 'bg-gold/15 border-gold text-gold shadow-none'
+                              : 'bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                          }`}
+                        >
+                          <span>Standard</span>
+                          <span className="text-[10px] font-medium opacity-80">(4-Year Degree)</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setProgramType('engineering')}
+                          className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all flex flex-col items-center justify-center cursor-pointer ${
+                            programType === 'engineering'
+                              ? 'bg-gold/15 border-gold text-gold shadow-none'
+                              : 'bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                          }`}
+                        >
+                          <span>Engineering</span>
+                          <span className="text-[10px] font-medium opacity-80">(5-Year Degree)</span>
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </motion.div>
+            )}
+
             {mode === 'register' && isDriver && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="space-y-4 pt-4">
                 {/* Mandatory Driver Profile Photo Upload */}
@@ -601,7 +695,7 @@ const AuthPage = () => {
                       className="hidden"
                     />
                     <label htmlFor="auth_profile_photo_upload" className="block relative cursor-pointer">
-                      <div className={`w-24 h-24 rounded-full border-2 overflow-hidden flex items-center justify-center transition-all ${profilePhotoPreview ? 'border-gold shadow-lg shadow-gold/20' : 'border-dashed border-zinc-700 bg-zinc-900 hover:border-gold'}`}>
+                      <div className={`w-24 h-24 rounded-full border-2 overflow-hidden flex items-center justify-center transition-all ${profilePhotoPreview ? 'border-gold shadow-none' : 'border-dashed border-zinc-700 bg-zinc-900 hover:border-gold'}`}>
                         {profilePhotoPreview ? (
                           <img src={profilePhotoPreview} alt="Driver Preview" className="w-full h-full object-cover" />
                         ) : (

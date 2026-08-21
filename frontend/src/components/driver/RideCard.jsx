@@ -87,9 +87,16 @@ export const RideCard = ({
             {/* LEFT: Information */}
             <div className="flex flex-col justify-between flex-1 overflow-hidden pr-2">
               <div>
-                <p className="text-xl font-heading font-extrabold text-foreground line-clamp-1 drop-shadow-sm mb-3">
-                  {studentName}
-                </p>
+                <div className="flex items-center gap-2 mb-3">
+                  <p className="text-xl font-heading font-extrabold text-foreground line-clamp-1 drop-shadow-sm">
+                    {studentName}
+                  </p>
+                  {(request.student?.role === 'lecturer' || request.passenger_role === 'lecturer' || request.role === 'lecturer') && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-amber-500/20 text-amber-500 border border-amber-500/30">
+                      Lecturer
+                    </span>
+                  )}
+                </div>
                 <div className="space-y-3">
                   <div>
                     <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Pickup:</p>
@@ -135,7 +142,14 @@ export const RideCard = ({
         <div className="flex flex-col">
           <div className="flex justify-between items-start mb-2.5">
             <div className="flex-1 overflow-hidden pr-2">
-              <p className="text-lg font-heading font-extrabold text-foreground line-clamp-1 drop-shadow-sm">{studentName}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-lg font-heading font-extrabold text-foreground line-clamp-1 drop-shadow-sm">{studentName}</p>
+                {(request.student?.role === 'lecturer' || request.passenger_role === 'lecturer' || request.role === 'lecturer') && (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-amber-500/20 text-amber-500 border border-amber-500/30 shrink-0">
+                    Lecturer
+                  </span>
+                )}
+              </div>
               <p className="text-[15px] text-foreground font-extrabold tracking-tight mt-0.5 mb-2">K{price}</p>
               
               <div className="flex flex-col gap-1.5">

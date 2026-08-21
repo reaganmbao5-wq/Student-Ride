@@ -266,6 +266,7 @@ async def find_driver_ride(ride_id: str, driver_id: str):
 # ==================== ENUMS ====================
 class UserRole(str, Enum):
     STUDENT = "student"
+    LECTURER = "lecturer"
     DRIVER = "driver"
     ADMIN = "admin"
     SUPER_ADMIN = "super_admin"
@@ -365,6 +366,10 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
     role: UserRole = UserRole.STUDENT
+    year_of_study: Optional[int] = None
+    program_type: Optional[str] = None
+    department: Optional[str] = None
+    staff_id: Optional[str] = None
 
 # PHASE 3.2.6.X.1 MODELS (Driver Trip Manager)
 class StopCoordinates(BaseModel):
@@ -436,8 +441,14 @@ class UserResponse(BaseModel):
     phone: Optional[str] = None
     avatar_url: Optional[str] = None
     role: Optional[UserRole] = None
+    year_of_study: Optional[int] = None
+    program_type: Optional[str] = None
+    department: Optional[str] = None
+    staff_id: Optional[str] = None
     created_at: Optional[str] = None
     is_active: bool = True
+    is_archived: Optional[bool] = False
+    archived_at: Optional[str] = None
 
 class DriverProfile(BaseModel):
     vehicle_type: VehicleType
@@ -617,7 +628,9 @@ class AdminBroadcastRequest(BaseModel):
     title: str
     message: str
     url: Optional[str] = None
-    target_role: str # "all", "student", "driver"
+    target_role: Optional[str] = "all"
+    target_user_id: Optional[str] = None
+    year_of_study: Optional[int] = None
 
 class PlatformSettings(BaseModel):
     commission_rate: float
@@ -733,10 +746,14 @@ class UpdateProfileRequest(BaseModel):
     name: Optional[str] = None
     avatar_url: Optional[str] = None
     role: Optional[str] = None
+    year_of_study: Optional[int] = None
+    program_type: Optional[str] = None
+    department: Optional[str] = None
+    staff_id: Optional[str] = None
 
 @api_router.patch("/users/me")
 async def update_my_profile(updates: UpdateProfileRequest, user: dict = Depends(get_current_user)):
-    """Let a user update their own phone number, name, profile picture, and optionally role."""
+    """Let a user update their own phone number, name, profile picture, and academic/role details."""
     update_fields = {}
     if updates.phone is not None:
         update_fields["phone"] = updates.phone.strip()
@@ -744,24 +761,23 @@ async def update_my_profile(updates: UpdateProfileRequest, user: dict = Depends(
         update_fields["name"] = updates.name.strip()
     if updates.avatar_url is not None:
         update_fields["avatar_url"] = updates.avatar_url.strip()
-    if updates.role in [UserRole.STUDENT.value, UserRole.DRIVER.value]:
+    if updates.year_of_study is not None:
+        update_fields["year_of_study"] = updates.year_of_study
+    if updates.program_type is not None:
+        update_fields["program_type"] = updates.program_type.strip()
+    if updates.department is not None:
+        update_fields["department"] = updates.department.strip()
+    if updates.staff_id is not None:
+        update_fields["staff_id"] = updates.staff_id.strip()
+    if updates.role in [UserRole.STUDENT.value, UserRole.LECTURER.value, UserRole.DRIVER.value]:
         update_fields["role"] = updates.role
     if not update_fields:
         raise HTTPException(status_code=400, detail="No valid fields to update")
     await db.users.update_one({"id": user["id"]}, {"$set": update_fields})
     if "avatar_url" in update_fields:
         await db.drivers.update_one({"user_id": user["id"]}, {"$set": {"avatar_url": update_fields["avatar_url"]}})
-    updated = await db.users.find_one({"id": user["id"]}, {"_id": 0})
-    return UserResponse(
-        id=updated["id"],
-        email=updated["email"],
-        name=updated["name"],
-        phone=updated.get("phone", ""),
-        avatar_url=updated.get("avatar_url"),
-        role=UserRole(updated["role"]),
-        created_at=updated["created_at"],
-        is_active=updated.get("is_active", True)
-    )
+    updated = await db.users.find_one({"id": user["id"]}, {"_id": 0, "password": 0})
+    return UserResponse(**updated)
 
 
 async def require_super_admin(user: dict = Depends(get_current_user)) -> dict:
@@ -1217,7 +1233,12 @@ async def register(user_data: UserCreate):
         "phone": user_data.phone,
         "password": hash_password(user_data.password),
         "role": role.value,
+        "year_of_study": user_data.year_of_study,
+        "program_type": user_data.program_type,
+        "department": user_data.department,
+        "staff_id": user_data.staff_id,
         "is_active": True,
+        "is_archived": False,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.users.insert_one(user)
@@ -1227,15 +1248,7 @@ async def register(user_data: UserCreate):
     
     return TokenResponse(
         access_token=token,
-        user=UserResponse(
-            id=user_id,
-            email=user["email"],
-            name=user["name"],
-            phone=user["phone"],
-            role=role,
-            created_at=user["created_at"],
-            is_active=True
-        )
+        user=UserResponse(**{k: v for k, v in user.items() if k != "password"})
     )
 
 @api_router.post("/auth/login", response_model=TokenResponse)
@@ -3535,8 +3548,23 @@ async def get_admin_stats(user: dict = Depends(require_admin)):
     }
 
 @api_router.get("/admin/users", response_model=List[UserResponse])
-async def get_all_users(user: dict = Depends(require_admin)):
-    users = await db.users.find({}, {"_id": 0, "password": 0}).to_list(1000)
+async def get_all_users(
+    role: Optional[str] = Query(None),
+    year_of_study: Optional[int] = Query(None),
+    archived: Optional[str] = Query("all"),
+    user: dict = Depends(require_admin)
+):
+    query = {}
+    if role:
+        query["role"] = role
+    if year_of_study is not None:
+        query["year_of_study"] = year_of_study
+    if archived == "active":
+        query["is_archived"] = {"$ne": True}
+    elif archived == "archived":
+        query["is_archived"] = True
+
+    users = await db.users.find(query, {"_id": 0, "password": 0}).sort("created_at", -1).to_list(3000)
     valid_users = []
     for u in users:
         try:
@@ -3545,6 +3573,161 @@ async def get_all_users(user: dict = Depends(require_admin)):
             logger.error(f"Skipping invalid user {u.get('id')}: {e}")
             continue
     return valid_users
+
+@api_router.get("/admin/users/search")
+async def search_users_for_admin(
+    q: str = Query(..., min_length=1),
+    admin: dict = Depends(require_admin)
+):
+    query_str = q.strip()
+    regex = {"$regex": query_str, "$options": "i"}
+    users = await db.users.find({
+        "$or": [
+            {"name": regex},
+            {"email": regex},
+            {"phone": regex}
+        ]
+    }, {"_id": 0, "password": 0}).limit(20).to_list(20)
+    return users
+
+@api_router.get("/admin/lecturers")
+async def get_admin_lecturers(
+    q: Optional[str] = Query(None),
+    department: Optional[str] = Query(None),
+    admin: dict = Depends(require_admin)
+):
+    query = {"role": UserRole.LECTURER.value}
+    if department and department != "all":
+        query["department"] = department
+    if q and q.strip():
+        regex = {"$regex": q.strip(), "$options": "i"}
+        query["$or"] = [
+            {"name": regex},
+            {"email": regex},
+            {"phone": regex},
+            {"staff_id": regex}
+        ]
+    lecturers = await db.users.find(query, {"_id": 0, "password": 0}).sort("created_at", -1).to_list(1000)
+    return lecturers
+
+@api_router.post("/admin/students/archive-graduated")
+async def archive_graduated_students(admin: dict = Depends(require_admin)):
+    """Finds all student accounts where year_of_study exceeds program maximum (5 for engineering, 4 for standard) and marks them archived."""
+    now_iso = datetime.now(timezone.utc).isoformat()
+    query = {
+        "role": UserRole.STUDENT.value,
+        "is_archived": {"$ne": True},
+        "$or": [
+            {"program_type": "engineering", "year_of_study": {"$gt": 5}},
+            {"program_type": {"$ne": "engineering"}, "year_of_study": {"$gt": 4}}
+        ]
+    }
+    students = await db.users.find(query, {"_id": 0, "password": 0}).to_list(5000)
+    if not students:
+        return {
+            "status": "success",
+            "archived_count": 0,
+            "message": "No students currently meet the graduation threshold for archiving."
+        }
+    
+    ids_to_archive = [s["id"] for s in students]
+    await db.users.update_many(
+        {"id": {"$in": ids_to_archive}},
+        {"$set": {"is_archived": True, "archived_at": now_iso}}
+    )
+    
+    await log_admin_action(
+        admin["id"], 
+        admin["name"], 
+        "archive_graduated_students", 
+        "batch", 
+        f"Archived {len(ids_to_archive)} graduated students"
+    )
+    
+    return {
+        "status": "success",
+        "archived_count": len(ids_to_archive),
+        "students": students,
+        "message": f"Successfully archived {len(ids_to_archive)} graduated students."
+    }
+
+@api_router.post("/admin/students/purge-archived-retention")
+async def purge_archived_retention(admin: dict = Depends(require_admin)):
+    """Hard-deletes student accounts and associated records that have been archived for more than 2 years per data retention policy."""
+    cutoff_date = (datetime.now(timezone.utc) - timedelta(days=730)).isoformat()
+    query = {
+        "is_archived": True,
+        "archived_at": {"$lte": cutoff_date}
+    }
+    users_to_purge = await db.users.find(query, {"id": 1}).to_list(5000)
+    if not users_to_purge:
+        return {
+            "status": "success",
+            "purged_count": 0,
+            "message": "No accounts past the 2-year retention window."
+        }
+        
+    ids = [u["id"] for u in users_to_purge]
+    await db.users.delete_many({"id": {"$in": ids}})
+    await db.rides.delete_many({"student_id": {"$in": ids}})
+    await db.push_subscriptions.delete_many({"user_id": {"$in": ids}})
+    
+    await log_admin_action(
+        admin["id"], 
+        admin["name"], 
+        "purge_archived_retention", 
+        "batch", 
+        f"Purged {len(ids)} accounts past 2-year retention window"
+    )
+    
+    return {
+        "status": "success",
+        "purged_count": len(ids),
+        "message": f"Successfully deleted {len(ids)} accounts past 2-year retention window."
+    }
+
+class SwitchRoleRequest(BaseModel):
+    role: str
+
+@api_router.patch("/admin/users/{user_id}/role", response_model=UserResponse)
+async def switch_user_role(user_id: str, request: SwitchRoleRequest, admin: dict = Depends(require_admin)):
+    if request.role not in [UserRole.STUDENT.value, UserRole.LECTURER.value, UserRole.DRIVER.value]:
+        raise HTTPException(status_code=400, detail="Role can only be switched between 'student', 'lecturer', and 'driver'")
+        
+    target_user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    new_role = request.role
+    await db.users.update_one({"id": user_id}, {"$set": {"role": new_role}})
+    
+    if new_role == UserRole.DRIVER.value:
+        existing_driver = await db.drivers.find_one({"user_id": user_id})
+        if not existing_driver:
+            driver_doc = {
+                "id": str(uuid.uuid4()),
+                "user_id": user_id,
+                "vehicle_type": "car",
+                "plate_number": "PENDING",
+                "vehicle_model": "Pending Model",
+                "vehicle_color": "Pending Color",
+                "rating": 5.0,
+                "total_rides": 0,
+                "total_earnings": 0.0,
+                "is_online": False,
+                "is_approved": True,
+                "wallet_balance": 0.0,
+                "wallet_status": "active",
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.drivers.insert_one(driver_doc)
+        else:
+            await db.drivers.update_one({"user_id": user_id}, {"$set": {"is_approved": True}})
+    elif new_role in [UserRole.STUDENT.value, UserRole.LECTURER.value]:
+        await db.drivers.update_one({"user_id": user_id}, {"$set": {"is_online": False}})
+        
+    updated = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    return UserResponse(**updated)
 
 @api_router.get("/admin/drivers", response_model=List[DriverResponse])
 async def get_all_drivers(user: dict = Depends(require_admin)):
@@ -4569,15 +4752,44 @@ async def broadcast_notification(
     admin: dict = Depends(require_admin)
 ):
     try:
-        query = {}
-        if request.target_role != "all":
-            query["role"] = request.target_role
-            
-        cursor = db.push_subscriptions.find(query)
-        subscriptions = await cursor.to_list(length=10000)
-        
-        if not subscriptions:
-            return {"status": "success", "sent": 0, "failed": 0, "message": "No active subscriptions found for target role"}
+        target = (request.target_role or "all").lower()
+        unique_user_ids = []
+
+        if target in ["specific_user", "user"] and request.target_user_id:
+            unique_user_ids = [request.target_user_id]
+        elif target in ["year_of_study", "year"] and request.year_of_study is not None:
+            user_docs = await db.users.find({
+                "role": UserRole.STUDENT.value,
+                "year_of_study": int(request.year_of_study),
+                "is_archived": {"$ne": True}
+            }, {"id": 1}).to_list(10000)
+            unique_user_ids = [u["id"] for u in user_docs if u.get("id")]
+        elif target in ["lecturers", "lecturer"]:
+            user_docs = await db.users.find({
+                "role": UserRole.LECTURER.value,
+                "is_archived": {"$ne": True}
+            }, {"id": 1}).to_list(10000)
+            unique_user_ids = [u["id"] for u in user_docs if u.get("id")]
+        elif target in ["students", "student"]:
+            user_docs = await db.users.find({
+                "role": UserRole.STUDENT.value,
+                "is_archived": {"$ne": True}
+            }, {"id": 1}).to_list(10000)
+            unique_user_ids = [u["id"] for u in user_docs if u.get("id")]
+        elif target in ["drivers", "driver"]:
+            user_docs = await db.users.find({
+                "role": UserRole.DRIVER.value,
+                "is_archived": {"$ne": True}
+            }, {"id": 1}).to_list(10000)
+            unique_user_ids = [u["id"] for u in user_docs if u.get("id")]
+        else: # "all"
+            user_docs = await db.users.find({
+                "is_archived": {"$ne": True}
+            }, {"id": 1}).to_list(10000)
+            unique_user_ids = [u["id"] for u in user_docs if u.get("id")]
+
+        if not unique_user_ids:
+            return {"status": "success", "sent": 0, "failed": 0, "message": "No matching active accounts found for target criteria"}
 
         payload = {
             "title": request.title,
@@ -4587,23 +4799,20 @@ async def broadcast_notification(
             "badge": "/favicon-32x32.png"
         }
         
-        users_sent = set()
-        total_sent = 0
-        total_failed = 0
-        
-        for sub in subscriptions:
-            user_id = sub["user_id"]
-            if user_id not in users_sent:
-                success = await notification_service.send(
-                    user_id=user_id,
+        async def send_single(uid):
+            try:
+                return await notification_service.send(
+                    user_id=uid,
                     type="broadcast",
                     payload=payload
                 )
-                if success:
-                    total_sent += 1
-                else:
-                    total_failed += 1
-                users_sent.add(user_id)
+            except Exception as e:
+                logger.error(f"Error sending broadcast to user {uid}: {e}")
+                return False
+
+        results = await asyncio.gather(*[send_single(uid) for uid in unique_user_ids])
+        total_sent = sum(1 for r in results if r)
+        total_failed = sum(1 for r in results if not r)
                 
         # Log broadcast
         log_entry = {
@@ -4611,6 +4820,7 @@ async def broadcast_notification(
             "title": request.title,
             "message": request.message,
             "target_role": request.target_role,
+            "year_of_study": request.year_of_study,
             "total_sent": total_sent,
             "total_failed": total_failed,
             "created_by": admin["id"],
@@ -4619,10 +4829,11 @@ async def broadcast_notification(
         await db.notification_logs.insert_one(log_entry)
         
         return {
-            "status": "success", 
-            "sent": total_sent, 
+            "status": "success",
+            "sent": total_sent,
             "failed": total_failed,
-            "message": f"Broadcast sent successfully: {total_sent} delivered, {total_failed} failed."
+            "target_count": len(unique_user_ids),
+            "message": f"Broadcast sent to {total_sent} users ({total_failed} failed)"
         }
     except Exception as e:
         logger.error(f"Error executing admin broadcast: {e}")
