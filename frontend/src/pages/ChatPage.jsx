@@ -39,7 +39,7 @@ const ChatPage = () => {
   const fetchMessages = async () => {
     try {
       const response = await api.get(`/chat/${rideId}`);
-      setMessages(response.data);
+      setMessages(response.data || []);
     } catch (error) {
       console.error('Error fetching messages:', error);
     } finally {
@@ -49,12 +49,21 @@ const ChatPage = () => {
 
   const fetchRide = async () => {
     try {
-      const response = await api.get('/rides/active');
-      if (response.data && response.data.id === rideId) {
+      const response = await api.get(`/rides/${rideId}`);
+      if (response.data) {
         setRide(response.data);
+        return;
       }
     } catch (error) {
-      console.error('Error fetching ride:', error);
+      // Fallback
+      try {
+        const activeRes = await api.get('/rides/active');
+        if (activeRes.data && activeRes.data.id === rideId) {
+          setRide(activeRes.data);
+        }
+      } catch (e) {
+        console.error('Error fetching active ride fallback:', e);
+      }
     }
   };
 
@@ -64,19 +73,23 @@ const ChatPage = () => {
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!newMessageText.trim() || sending) return;
+    const text = newMessageText.trim();
+    if (!text || sending) return;
 
     setSending(true);
     try {
       const response = await api.post('/chat/send', {
         ride_id: rideId,
-        content: newMessageText.trim()
+        content: text
       });
       
-      setMessages(prev => [...prev, response.data]);
+      setMessages(prev => {
+        if (prev.some(m => m.id === response.data.id)) return prev;
+        return [...prev, response.data];
+      });
       setNewMessageText('');
     } catch (error) {
-      toast.error('Failed to send message');
+      toast.error(error.response?.data?.detail || 'Failed to send message');
     } finally {
       setSending(false);
     }
@@ -87,7 +100,7 @@ const ChatPage = () => {
     if (user?.role === 'driver') {
       return ride.student;
     } else {
-      return ride.driver?.user;
+      return ride.driver?.user || { name: 'Driver', phone: '' };
     }
   };
 

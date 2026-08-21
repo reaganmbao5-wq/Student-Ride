@@ -7,10 +7,12 @@ import { compressImage } from '../utils/imageCompressor';
 import { resolveMediaUrl } from '../utils/urlHelpers';
 import { toast } from 'sonner';
 import { showFriendlyError } from '../utils/errorHandler';
+import { useTheme } from '../context/ThemeContext';
 
 const DriverRegisterPage = () => {
   const navigate = useNavigate();
   const { user, driverProfile, registerDriver, api, fetchUser } = useAuth();
+  const { theme } = useTheme();
   const [loading, setLoading] = useState(false);
   
   const [docs, setDocs] = useState({
@@ -156,7 +158,11 @@ const DriverRegisterPage = () => {
       <div className="relative z-10 w-full max-w-md mx-auto my-auto">
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-6">
-          <img src="/assets/images/jride_text_white.png" alt="JRide" className="h-10 w-auto object-contain" />
+          <img 
+            src={theme === 'light' ? '/assets/images/jride_text_black.png' : '/assets/images/jride_text_white.png'} 
+            alt="JRide" 
+            className="h-10 w-auto object-contain" 
+          />
         </div>
 
         <GlassCard className="p-8" data-testid="driver-register-card">

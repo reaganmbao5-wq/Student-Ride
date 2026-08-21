@@ -6,6 +6,7 @@ import { Car } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { getOnlineWebUrl, openExternalUrl, getBackendUrl } from '../utils/urlHelpers';
 import { showFriendlyError } from '../utils/errorHandler';
+import { useTheme } from '../context/ThemeContext';
 
 const BACKEND_URL = getBackendUrl();
 
@@ -43,6 +44,7 @@ export default function CompleteProfilePage() {
     const navigate = useNavigate();
     const location = useLocation();
     const state = location.state || {};
+    const { theme } = useTheme();
 
     const [name] = useState(state.name || '');
     const [email] = useState(state.email || '');
@@ -128,7 +130,11 @@ export default function CompleteProfilePage() {
             <div className="relative z-10 w-full max-w-md mx-auto my-auto">
                 {/* Logo */}
                 <div className="flex flex-col items-center gap-3 mb-6">
-                    <img src="/assets/images/jride_text_white.png" alt="JRide" className="h-10 w-auto object-contain mb-1" />
+                    <img 
+                        src={theme === 'light' ? '/assets/images/jride_text_black.png' : '/assets/images/jride_text_white.png'} 
+                        alt="JRide" 
+                        className="h-10 w-auto object-contain mb-1" 
+                    />
                     <div className="text-center">
                         <h1 className="font-heading text-2xl font-bold text-foreground">Almost there!</h1>
                         <p className="text-muted-foreground text-sm mt-1">Just a few more details to get you riding</p>

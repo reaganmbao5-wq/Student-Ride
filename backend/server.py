@@ -582,8 +582,9 @@ class FixedRouteBase(BaseModel):
     pickup_coordinates: Dict[str, Any] # GeoJSON Point
     dropoff_coordinates: Dict[str, Any] # GeoJSON Point
     tolerance_radius_meters: float = Field(..., ge=50, le=2000)
-    fixed_price: float = Field(..., gt=0)
-    flat_commission: Optional[float] = Field(5.0, ge=0.0)
+    fixed_price: float = Field(..., gt=0) # Shared / Per-Seat Driver Base Fare
+    flat_commission: Optional[float] = Field(5.0, ge=0.0) # Flat Commission for Shared Ride
+    private_fixed_price: Optional[float] = Field(None, gt=0) # Optional Custom Driver Base Fare for Private Ride
     is_active: bool = True
 
 class FixedRouteResponse(FixedRouteBase):
@@ -858,25 +859,40 @@ async def calculate_ride_fare(pickup_loc: Dict[str, Any], dropoff_loc: Dict[str,
         tolerance_km = route["tolerance_radius_meters"] / 1000.0
         
         if p_dist <= tolerance_km and d_dist <= tolerance_km:
-            fixed_driver_base = route["fixed_price"]
-            fixed_commission = route.get("flat_commission", round(fixed_driver_base * commission_rate, 2))
-            if fixed_commission is None:
-                fixed_commission = round(fixed_driver_base * commission_rate, 2)
-            total_student_fare = round(fixed_driver_base + fixed_commission, 2)
+            shared_fixed_driver = float(route["fixed_price"])
+            shared_commission = float(route.get("flat_commission") if route.get("flat_commission") is not None else round(shared_fixed_driver * commission_rate, 2))
             
-            logger.info(f"Fixed Route Match: {route['pickup_name']} -> {route['dropoff_name']} | Driver Base: {fixed_driver_base}, Comm: {fixed_commission}, Student Total: {total_student_fare}")
+            is_private = (ride_mode == RideMode.PRIVATE or str(ride_mode).lower() == "private")
+            
+            if is_private:
+                # Private Ride ("In Taka" Whole Car)
+                # If custom private fixed price exists, use it; otherwise, multiply shared price * private_multiplier (3.5x)
+                if route.get("private_fixed_price") is not None and float(route["private_fixed_price"]) > 0:
+                    driver_earning = float(route["private_fixed_price"])
+                else:
+                    driver_earning = round(shared_fixed_driver * private_mult, 2)
+                    
+                commission = round(driver_earning * commission_rate, 2)
+                total_student_fare = round(driver_earning + commission, 2)
+            else:
+                # Shared Ride (Per Seat)
+                driver_earning = shared_fixed_driver
+                commission = shared_commission
+                total_student_fare = round(driver_earning + commission, 2)
+            
+            logger.info(f"Fixed Route Match: {route['pickup_name']} -> {route['dropoff_name']} | Mode: {ride_mode} | Driver: {driver_earning}, Comm: {commission}, Student Total: {total_student_fare}")
             return {
                 "fare": total_student_fare,
-                "driver_earning": fixed_driver_base,
-                "commission": fixed_commission,
+                "driver_earning": driver_earning,
+                "commission": commission,
                 "is_fixed": True,
                 "route_name": f"{route['pickup_name']} to {route['dropoff_name']}",
                 "breakdown": {
-                    "base": fixed_driver_base,
+                    "base": driver_earning,
                     "distance": 0,
                     "time": 0,
                     "surge": 0,
-                    "commission": fixed_commission,
+                    "commission": commission,
                     "student_fare": total_student_fare
                 }
             }
@@ -4762,40 +4778,90 @@ async def estimate_fare(data: dict, user: dict = Depends(get_current_user)):
 
 # ==================== CHAT ROUTES ====================
 @api_router.post("/chat/send", response_model=MessageResponse)
-async def send_message(message: MessageCreate, user: dict = Depends(get_current_user)):
+async def send_message(message: MessageCreate, background_tasks: BackgroundTasks, user: dict = Depends(get_current_user)):
     # Verify user is part of the ride
     ride = await db.rides.find_one({"id": message.ride_id}, {"_id": 0})
     if not ride:
         raise HTTPException(status_code=404, detail="Ride not found")
     
-    # Check if user is student or driver for this ride (or admin)
-    is_student = ride["student_id"] == user["id"]
-    is_driver = ride.get("driver_id") and ride["driver_id"] == (await db.drivers.find_one({"user_id": user["id"]}))["id"]
+    # Check if user is passenger (student/lecturer), driver, or admin
+    is_student = ride.get("student_id") == user["id"]
+    is_driver = False
+    driver_user_id = None
+    if ride.get("driver_id"):
+        driver_doc = await db.drivers.find_one({"id": ride["driver_id"]})
+        if driver_doc:
+            driver_user_id = driver_doc.get("user_id")
+            if driver_user_id == user["id"]:
+                is_driver = True
     
-    if not (is_student or is_driver):
+    is_admin = user.get("role") in [UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value]
+    
+    if not (is_student or is_driver or is_admin):
         raise HTTPException(status_code=403, detail="Not authorized for this chat")
     
     msg_id = str(uuid.uuid4())
-    new_message = {
+    msg = {
         "id": msg_id,
         "ride_id": message.ride_id,
         "sender_id": user["id"],
-        "sender_name": user["name"],
-        "content": message.content,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "expires_at": datetime.now(timezone.utc)
+        "sender_name": user.get("name", "User"),
+        "content": message.content.strip(),
+        "created_at": datetime.now(timezone.utc).isoformat()
     }
+    await db.messages.insert_one(msg)
     
-    await db.messages.insert_one(new_message)
+    # Determine recipient user ID
+    recipient_id = None
+    if is_student:
+        recipient_id = driver_user_id
+    elif is_driver:
+        recipient_id = ride.get("student_id")
     
-    # Broadcast via WebSocket
-    await manager.broadcast_to_ride({
-        "type": "new_message",
-        "message": new_message,
-        "ride_id": message.ride_id
-    }, message.ride_id)
+    # Broadcast to Ride Room via WebSocket
+    background_tasks.add_task(
+        manager.broadcast_to_ride,
+        {
+            "type": "new_message",
+            "message": msg,
+            "ride_id": message.ride_id
+        },
+        message.ride_id
+    )
     
-    return MessageResponse(**new_message)
+    # Send Direct Personal Message via WebSocket to recipient if present
+    if recipient_id:
+        background_tasks.add_task(
+            manager.send_personal_message,
+            {
+                "type": "new_message",
+                "message": msg,
+                "ride_id": message.ride_id
+            },
+            recipient_id
+        )
+        
+        # Send Push Notification to Recipient
+        async def send_chat_push(target_user_id, sender_name, content, r_id):
+            try:
+                await notification_service.send(
+                    user_id=target_user_id,
+                    type="chat_message",
+                    payload={
+                        "title": f"💬 Message from {sender_name}",
+                        "body": content[:120],
+                        "url": f"/ride/chat/{r_id}",
+                        "icon": "/logo192.png",
+                        "badge": "/favicon-32x32.png",
+                        "tag": f"chat-{r_id}"
+                    }
+                )
+            except Exception as e:
+                logger.error(f"Failed to send chat push notification: {e}")
+                
+        background_tasks.add_task(send_chat_push, recipient_id, user.get("name", "User"), message.content.strip(), message.ride_id)
+    
+    return MessageResponse(**msg)
 
 @api_router.get("/chat/{ride_id}", response_model=List[MessageResponse])
 async def get_chat_history(ride_id: str, user: dict = Depends(get_current_user)):
@@ -4803,16 +4869,14 @@ async def get_chat_history(ride_id: str, user: dict = Depends(get_current_user))
     if not ride:
         raise HTTPException(status_code=404, detail="Ride not found")
     
-    # Check authorization
-    is_student = ride["student_id"] == user["id"]
+    is_student = ride.get("student_id") == user["id"]
     is_driver_user = False
-    
     if ride.get("driver_id"):
         driver = await db.drivers.find_one({"id": ride["driver_id"]})
-        if driver and driver["user_id"] == user["id"]:
+        if driver and driver.get("user_id") == user["id"]:
             is_driver_user = True
             
-    is_admin = user["role"] in [UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value]
+    is_admin = user.get("role") in [UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value]
     
     if not (is_student or is_driver_user or is_admin):
          raise HTTPException(status_code=403, detail="Not authorized")
