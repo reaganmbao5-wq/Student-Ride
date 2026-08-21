@@ -74,8 +74,8 @@ graph TD
 
 ### 🔜 2. Remaining Safe Feature Bundles (7 Commits - Next to Implement)
 
-#### 📦 Bundle 4 (Safe): Admin Dashboard Overhaul & KYC Document Lightbox (7 Commits)
-* **Status**: `REMAINING (NEXT TO IMPLEMENT)`
+#### ✅ Bundle 4 (Safe): Admin Dashboard Overhaul & KYC Document Lightbox (7 Commits)
+* **Status**: `COMPLETED`
 * **Scope**: Admin analytics dashboard, driver stats, user/driver edit modal, popular places hotspots card, full-screen KYC document inspection lightbox, and `/api/admin/*` backend route isolation. **Zero touch with passenger or active driver ride flows.**
 * **Commits**:
   * `6c24e54` – *feat(admin): complete overhaul of Admin Dashboard, Users, Drivers & Rides with instant caching, date filters, role switcher & new Mapbox live map*

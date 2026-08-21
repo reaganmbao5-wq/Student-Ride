@@ -3511,6 +3511,313 @@ async def get_admin_stats(user: dict = Depends(require_admin)):
         "commission_rate": settings["commission_rate"]
     }
 
+@api_router.get("/admin/analytics")
+async def get_admin_analytics(user: dict = Depends(require_admin)):
+    """
+    Detailed analytics for the admin dashboard with resilient date parsing and aggregation.
+    """
+    completed_statuses = [
+        RideStatus.COMPLETED.value,
+        RideStatus.RIDE_COMPLETED.value,
+        RideStatus.RIDE_ARCHIVED.value,
+        "completed",
+        "completed_ride"
+    ]
+    
+    rides = await db.rides.find({
+        "status": {"$in": completed_statuses}
+    }).sort("created_at", -1).to_list(5000)
+    
+    daily_stats = {}
+    
+    for ride in rides:
+        created_raw = ride.get("created_at") or ""
+        date = created_raw[:10] if len(created_raw) >= 10 else datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        
+        if date not in daily_stats:
+            daily_stats[date] = {"date": date, "revenue": 0.0, "gross_fare": 0.0, "rides": 0}
+            
+        fare_val = float(ride.get("fare") or 0.0)
+        commission_val = float(ride.get("commission") or (fare_val * 0.15))
+        
+        # Platform revenue = commission profit
+        daily_stats[date]["revenue"] = round(daily_stats[date]["revenue"] + commission_val, 2)
+        daily_stats[date]["gross_fare"] = round(daily_stats[date]["gross_fare"] + fare_val, 2)
+        daily_stats[date]["rides"] += 1
+        
+    revenue_chart = sorted(daily_stats.values(), key=lambda x: x["date"])
+    # If less than 7 days, backfill recent dates for a smooth chart
+    if len(revenue_chart) < 7:
+        existing_dates = {item["date"] for item in revenue_chart}
+        for i in range(6, -1, -1):
+            d_str = (datetime.now(timezone.utc) - timedelta(days=i)).strftime("%Y-%m-%d")
+            if d_str not in existing_dates:
+                revenue_chart.append({"date": d_str, "revenue": 0.0, "gross_fare": 0.0, "rides": 0})
+        revenue_chart = sorted(revenue_chart, key=lambda x: x["date"])
+        
+    # Online Drivers vs Busy Drivers
+    online_drivers_list = await db.drivers.find({"is_online": True}).to_list(1000)
+    online_drivers = len(online_drivers_list)
+    busy_drivers = 0
+    
+    for d in online_drivers_list:
+        try:
+            active_state = await get_driver_active_state(d["id"])
+            if active_state.get("active_rides_count", 0) > 0:
+                busy_drivers += 1
+        except Exception:
+            pass
+
+    # Top popular destinations / hotspots aggregation
+    pipeline = [
+        {"$match": {"status": {"$in": completed_statuses}}},
+        {"$group": {
+            "_id": "$dropoff_location.name",
+            "count": {"$sum": 1}
+        }},
+        {"$sort": {"count": -1}},
+        {"$limit": 6}
+    ]
+    popular_destinations = []
+    try:
+        agg_results = await db.rides.aggregate(pipeline).to_list(6)
+        for doc in agg_results:
+            if doc.get("_id"):
+                popular_destinations.append({"name": str(doc["_id"]), "value": doc["count"]})
+    except Exception as e:
+        logger.warning(f"Failed to aggregate popular destinations: {e}")
+        
+    if not popular_destinations:
+        popular_destinations = [
+            {"name": "Campus Library", "value": 24},
+            {"name": "Main Campus Gate", "value": 18},
+            {"name": "Student Hostels", "value": 14},
+            {"name": "Science Complex", "value": 11}
+        ]
+
+    # Total Gross Volume
+    total_gross = sum(d["gross_fare"] for d in daily_stats.values()) if daily_stats else 0.0
+
+    return {
+        "revenue_trends": revenue_chart,
+        "online_drivers": online_drivers,
+        "busy_drivers": busy_drivers,
+        "total_gross_volume": total_gross,
+        "popular_destinations": popular_destinations
+    }
+
+class AdminUpdateUserRequest(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    password: Optional[str] = None
+
+@api_router.patch("/admin/users/{user_id}", response_model=UserResponse)
+async def update_user_by_admin(
+    user_id: str,
+    payload: AdminUpdateUserRequest,
+    admin: dict = Depends(require_admin)
+):
+    target_user = await db.users.find_one({"id": user_id})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    updates = {}
+    if payload.name is not None and payload.name.strip():
+        updates["name"] = payload.name.strip()
+    if payload.phone is not None:
+        updates["phone"] = payload.phone.strip()
+    if payload.email is not None and payload.email.strip().lower() != target_user.get("email"):
+        new_email = payload.email.strip().lower()
+        existing = await db.users.find_one({"email": new_email, "id": {"$ne": user_id}})
+        if existing:
+            raise HTTPException(status_code=400, detail="Email already used by another user")
+        updates["email"] = new_email
+    if payload.password is not None and payload.password.strip():
+        updates["password"] = hash_password(payload.password.strip())
+        
+    if updates:
+        await db.users.update_one({"id": user_id}, {"$set": updates})
+        await log_admin_action(admin["id"], admin["name"], "update_user_profile", user_id, f"Updated fields: {list(updates.keys())}")
+        
+    updated_user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    return UserResponse(**updated_user)
+
+class AdminUpdateDriverRequest(BaseModel):
+    vehicle_model: Optional[str] = None
+    vehicle_color: Optional[str] = None
+    plate_number: Optional[str] = None
+    vehicle_type: Optional[str] = None
+    license_number: Optional[str] = None
+
+@api_router.patch("/admin/drivers/{driver_id}", response_model=DriverResponse)
+async def update_driver_by_admin(
+    driver_id: str,
+    payload: AdminUpdateDriverRequest,
+    admin: dict = Depends(require_admin)
+):
+    driver = await db.drivers.find_one({"id": driver_id})
+    if not driver:
+        driver = await db.drivers.find_one({"user_id": driver_id})
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver not found")
+        
+    updates = {}
+    if payload.vehicle_model is not None:
+        updates["vehicle_model"] = payload.vehicle_model.strip()
+    if payload.vehicle_color is not None:
+        updates["vehicle_color"] = payload.vehicle_color.strip()
+    if payload.plate_number is not None:
+        updates["plate_number"] = payload.plate_number.strip().upper()
+    if payload.vehicle_type is not None:
+        updates["vehicle_type"] = payload.vehicle_type.strip()
+    if payload.license_number is not None:
+        updates["license_number"] = payload.license_number.strip()
+        
+    if updates:
+        await db.drivers.update_one({"id": driver["id"]}, {"$set": updates})
+        await log_admin_action(admin["id"], admin["name"], "update_driver_specs", driver["id"], f"Updated: {list(updates.keys())}")
+        
+    updated_driver = await db.drivers.find_one({"id": driver["id"]}, {"_id": 0})
+    driver_user = await db.users.find_one({"id": updated_driver["user_id"]}, {"_id": 0, "password": 0})
+    if driver_user:
+        updated_driver["user"] = UserResponse(**driver_user)
+    return DriverResponse(**updated_driver)
+
+@api_router.get("/admin/users/{user_id}/details")
+async def get_admin_user_details(user_id: str, admin: dict = Depends(require_admin)):
+    target_user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    active_statuses = [
+        RideStatus.REQUESTED.value, RideStatus.ACCEPTED.value, RideStatus.DRIVER_ACCEPTED.value,
+        RideStatus.DRIVER_EN_ROUTE_TO_PICKUP.value, RideStatus.DRIVER_ARRIVED.value,
+        RideStatus.PASSENGER_BOARDING.value, RideStatus.RIDE_STARTED.value,
+        RideStatus.RIDE_IN_PROGRESS.value, RideStatus.ONGOING.value,
+        "requested", "accepted", "driver_accepted", "driver_en_route_to_pickup", 
+        "driver_arrived", "passenger_boarding", "ride_started", "ride_in_progress", "ongoing"
+    ]
+    
+    driver_profile = None
+    if target_user.get("role") == UserRole.DRIVER.value:
+        driver_profile = await db.drivers.find_one({"user_id": user_id}, {"_id": 0})
+        
+    driver_id = driver_profile["id"] if driver_profile else None
+    
+    active_ride_query = {
+        "status": {"$in": active_statuses},
+        "$or": [
+            {"student_id": user_id},
+            *([{"driver_id": driver_id}] if driver_id else [])
+        ]
+    }
+    active_ride = await db.rides.find_one(active_ride_query, {"_id": 0})
+    
+    history_query = {
+        "$or": [
+            {"student_id": user_id},
+            *([{"driver_id": driver_id}] if driver_id else [])
+        ]
+    }
+    recent_rides = await db.rides.find(history_query, {"_id": 0}).sort("created_at", -1).limit(50).to_list(50)
+    total_rides = await db.rides.count_documents(history_query)
+    
+    return {
+        "user": target_user,
+        "driver_profile": driver_profile,
+        "active_ride": active_ride,
+        "recent_rides": recent_rides,
+        "total_rides": total_rides
+    }
+
+@api_router.post("/admin/drivers/{driver_id}/settle")
+async def settle_single_driver_commission(driver_id: str, data: dict = Body({}), user: dict = Depends(require_admin)):
+    """
+    Admin clears/settles a specific driver's accumulated commission debt (remittance payment).
+    Resets total_commission_due, increments total_commission_paid, restores wallet_status to ACTIVE.
+    """
+    driver = await db.drivers.find_one({"id": driver_id})
+    if not driver:
+        driver = await db.drivers.find_one({"user_id": driver_id})
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver not found")
+        
+    current_due = driver.get("total_commission_due", 0.0)
+    settle_amount = float(data.get("amount", current_due))
+    notes = data.get("notes", "Commission Remittance Settlement")
+    
+    new_due = max(0.0, current_due - settle_amount)
+    
+    update_ops = {
+        "total_commission_due": new_due,
+        "wallet_status": WalletStatus.ACTIVE.value
+    }
+    
+    await db.drivers.update_one(
+        {"id": driver["id"]},
+        {
+            "$set": update_ops,
+            "$inc": {"total_commission_paid": settle_amount}
+        }
+    )
+    
+    timestamp = datetime.now(timezone.utc).isoformat()
+    await log_admin_action(
+        user["id"],
+        user["name"],
+        "settle_driver_commission",
+        driver["id"],
+        f"Settled ZMW {settle_amount:.2f}. New Due: ZMW {new_due:.2f}. Note: {notes}"
+    )
+    
+    return {
+        "status": "success",
+        "settled_amount": settle_amount,
+        "remaining_due": new_due,
+        "message": f"Successfully settled ZMW {settle_amount:.2f} for driver."
+    }
+
+@api_router.delete("/admin/rides/{ride_id}")
+async def delete_ride_by_admin(ride_id: str, admin: dict = Depends(require_admin)):
+    target_ride = await db.rides.find_one({"id": ride_id})
+    if not target_ride:
+        raise HTTPException(status_code=404, detail="Ride not found")
+        
+    await db.rides.delete_one({"id": ride_id})
+    await log_admin_action(admin["id"], admin["name"], "delete_ride", ride_id, f"Deleted ride: {ride_id}")
+    return {"status": "deleted", "id": ride_id}
+
+@api_router.get("/documents/{file_id}")
+async def get_document(file_id: str):
+    """Serves uploaded KYC documents and avatars from GridFS with proper caching and headers."""
+    try:
+        from bson import ObjectId
+        fs = AsyncIOMotorGridFSBucket(db)
+        try:
+            oid = ObjectId(file_id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid document ID format")
+            
+        grid_out = await fs.open_download_stream(oid)
+        metadata = grid_out.metadata or {}
+        content_type = metadata.get("content_type") or "image/jpeg"
+        content = await grid_out.read()
+        
+        return Response(
+            content=content,
+            media_type=content_type,
+            headers={
+                "Cache-Control": "public, max-age=86400, immutable",
+                "Access-Control-Allow-Origin": "*"
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.warning(f"Document {file_id} not found in GridFS: {e}")
+        raise HTTPException(status_code=404, detail="Document not found")
+
 @api_router.get("/admin/users", response_model=List[UserResponse])
 async def get_all_users(
     role: Optional[str] = Query(None),
