@@ -4095,36 +4095,57 @@ async def get_all_rides(
         query["status"] = status
     
     rides = await db.rides.find(query, {"_id": 0}).sort("created_at", -1).to_list(limit)
+    if not rides:
+        return []
+
+    # 1. Collect all student_ids and driver_ids in bulk
+    student_ids = {r["student_id"] for r in rides if r.get("student_id")}
+    driver_ids = {r["driver_id"] for r in rides if r.get("driver_id")}
     
+    # 2. Batch fetch drivers
+    drivers_list = await db.drivers.find({"id": {"$in": list(driver_ids)}}, {"_id": 0}).to_list(len(driver_ids) + 10) if driver_ids else []
+    drivers_map = {d["id"]: d for d in drivers_list}
+    
+    # 3. Collect driver user_ids for bulk user fetch
+    driver_user_ids = {d["user_id"] for d in drivers_list if d.get("user_id")}
+    all_user_ids = list(student_ids | driver_user_ids)
+    
+    # 4. Batch fetch all users
+    users_list = await db.users.find({"id": {"$in": all_user_ids}}, {"_id": 0, "password": 0}).to_list(len(all_user_ids) + 10) if all_user_ids else []
+    users_map = {u["id"]: u for u in users_list}
+    
+    # 5. Hydrate rides in memory instantly
     result = []
     for ride in rides:
         try:
-            student = await db.users.find_one({"id": ride.get("student_id")}, {"_id": 0, "password": 0})
-            if student:
+            # Attach student
+            student_doc = users_map.get(ride.get("student_id"))
+            if student_doc:
                 try:
-                    ride["student"] = UserResponse(**student)
+                    ride["student"] = UserResponse(**student_doc)
                 except Exception:
-                    ride["student"] = student
+                    ride["student"] = student_doc
             
-            if ride.get("driver_id"):
-                driver = await db.drivers.find_one({"id": ride["driver_id"]}, {"_id": 0})
-                if driver:
-                    driver_user = await db.users.find_one({"id": driver.get("user_id")}, {"_id": 0, "password": 0})
-                    if driver_user:
-                        try:
-                            driver["user"] = UserResponse(**driver_user)
-                        except Exception:
-                            driver["user"] = driver_user
+            # Attach driver
+            driver_doc = drivers_map.get(ride.get("driver_id"))
+            if driver_doc:
+                driver_copy = dict(driver_doc)
+                driver_user_doc = users_map.get(driver_copy.get("user_id"))
+                if driver_user_doc:
                     try:
-                        ride["driver"] = DriverResponse(**driver)
+                        driver_copy["user"] = UserResponse(**driver_user_doc)
                     except Exception:
-                        ride["driver"] = driver
-            
+                        driver_copy["user"] = driver_user_doc
+                try:
+                    ride["driver"] = DriverResponse(**driver_copy)
+                except Exception:
+                    ride["driver"] = driver_copy
+                    
             result.append(RideResponse(**ride).model_dump() if hasattr(RideResponse(**ride), 'model_dump') else RideResponse(**ride).dict())
         except Exception as e:
             logger.warning(f"Formatting fallback for ride {ride.get('id')}: {e}")
             result.append(ride)
-    
+            
     return result
 
 @api_router.get("/admin/active-rides")
@@ -4143,31 +4164,46 @@ async def get_admin_active_rides(user: dict = Depends(require_admin)):
         "driver_arrived", "passenger_boarding", "ride_started", "ride_in_progress", "ongoing"
     ]
     rides = await db.rides.find({"status": {"$in": active_statuses}}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    if not rides:
+        return []
+
+    # Batch fetch in bulk
+    student_ids = {r["student_id"] for r in rides if r.get("student_id")}
+    driver_ids = {r["driver_id"] for r in rides if r.get("driver_id")}
+    
+    drivers_list = await db.drivers.find({"id": {"$in": list(driver_ids)}}, {"_id": 0}).to_list(len(driver_ids) + 10) if driver_ids else []
+    drivers_map = {d["id"]: d for d in drivers_list}
+    
+    driver_user_ids = {d["user_id"] for d in drivers_list if d.get("user_id")}
+    all_user_ids = list(student_ids | driver_user_ids)
+    
+    users_list = await db.users.find({"id": {"$in": all_user_ids}}, {"_id": 0, "password": 0}).to_list(len(all_user_ids) + 10) if all_user_ids else []
+    users_map = {u["id"]: u for u in users_list}
     
     result = []
     for ride in rides:
         try:
-            student = await db.users.find_one({"id": ride.get("student_id")}, {"_id": 0, "password": 0})
-            if student:
+            student_doc = users_map.get(ride.get("student_id"))
+            if student_doc:
                 try:
-                    ride["student"] = UserResponse(**student)
+                    ride["student"] = UserResponse(**student_doc)
                 except Exception:
-                    ride["student"] = student
+                    ride["student"] = student_doc
             
-            if ride.get("driver_id"):
-                driver = await db.drivers.find_one({"id": ride["driver_id"]}, {"_id": 0})
-                if driver:
-                    driver_user = await db.users.find_one({"id": driver.get("user_id")}, {"_id": 0, "password": 0})
-                    if driver_user:
-                        try:
-                            driver["user"] = UserResponse(**driver_user)
-                        except Exception:
-                            driver["user"] = driver_user
+            driver_doc = drivers_map.get(ride.get("driver_id"))
+            if driver_doc:
+                driver_copy = dict(driver_doc)
+                driver_user_doc = users_map.get(driver_copy.get("user_id"))
+                if driver_user_doc:
                     try:
-                        ride["driver"] = DriverResponse(**driver)
+                        driver_copy["user"] = UserResponse(**driver_user_doc)
                     except Exception:
-                        ride["driver"] = driver
-            
+                        driver_copy["user"] = driver_user_doc
+                try:
+                    ride["driver"] = DriverResponse(**driver_copy)
+                except Exception:
+                    ride["driver"] = driver_copy
+                    
             result.append(RideResponse(**ride).model_dump() if hasattr(RideResponse(**ride), 'model_dump') else RideResponse(**ride).dict())
         except Exception as e:
             logger.warning(f"Formatting active ride fallback {ride.get('id')}: {e}")

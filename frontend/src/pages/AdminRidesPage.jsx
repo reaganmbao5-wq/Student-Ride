@@ -52,7 +52,7 @@ const AdminRidesPage = () => {
       console.error('Error fetching rides:', error);
       toast.error('Failed to load rides');
     } finally {
-      if (!isBackground) setLoading(false);
+      setLoading(false);
     }
   };
 
@@ -104,6 +104,7 @@ const AdminRidesPage = () => {
       return true;
     });
 
+    // Sorting
     result.sort((a, b) => {
       if (sortOrder === 'newest') return new Date(b.created_at || 0) - new Date(a.created_at || 0);
       if (sortOrder === 'oldest') return new Date(a.created_at || 0) - new Date(b.created_at || 0);
@@ -116,7 +117,11 @@ const AdminRidesPage = () => {
   }, [rides, searchQuery, statusFilter, selectedMonth, selectedYear, sortOrder]);
 
   if (loading && rides.length === 0) {
-    return <AdminRidesSkeleton />;
+    return (
+      <Layout>
+        <AdminRidesSkeleton />
+      </Layout>
+    );
   }
 
   return (
