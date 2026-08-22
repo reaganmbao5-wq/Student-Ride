@@ -509,12 +509,11 @@ const StudentDashboard = () => {
     // 1. Determine which drivers to show
     // If we have an active ride with an actual driver assigned, ONLY show that assigned driver.
     // Otherwise, show all roaming nearby drivers.
-    const effectiveDriverLoc = driverPos || activeRide?.driver?.current_location || null;
-    const assignedDriverMarker = (effectiveDriverLoc && activeRide?.driver) ? { 
+    const assignedDriverMarker = (driverPos && activeRide?.driver) ? { 
       id: activeRide.driver.user_id || 'driver-1', 
-      latitude: effectiveDriverLoc.lat, 
-      longitude: effectiveDriverLoc.lng, 
-      heading: effectiveDriverLoc.heading || 0 
+      latitude: driverPos.lat, 
+      longitude: driverPos.lng, 
+      heading: driverPos.heading || 0 
     } : null;
 
     const driversArray = assignedDriverMarker ? [assignedDriverMarker] : nearbyDrivers;
@@ -563,9 +562,8 @@ const StudentDashboard = () => {
     }
 
     const isSharedRide = activeRide.ride_mode === 'shared' || activeRide.ride_type === 'shared' || Boolean(passengerBriefing?.is_shared);
-    const briefingMentionsAnother = Boolean(passengerBriefing?.current_phase && passengerBriefing.current_phase !== 'heading_to_my_pickup' && passengerBriefing.current_phase !== 'heading_to_my_dropoff');
     const stopsRemaining = (isBriefingForThisRide && passengerBriefing?.stops_remaining !== undefined) ? passengerBriefing.stops_remaining : 0;
-    const isPriorStopsActive = (isSharedRide || briefingMentionsAnother) && (stopsRemaining > 0 || briefingMentionsAnother) && ['accepted', 'driver_accepted', 'driver_en_route_to_pickup', 'ongoing', 'ride_started'].includes(currentStatus);
+    const isPriorStopsActive = isSharedRide && stopsRemaining > 0 && ['accepted', 'driver_accepted', 'driver_en_route_to_pickup', 'ongoing', 'ride_started'].includes(currentStatus);
 
     let bounds = [];
     if (driverPos) bounds.push([driverPos.lat, driverPos.lng]);
@@ -580,9 +578,6 @@ const StudentDashboard = () => {
           if (st.lat && st.lng && !st.is_my_stop) bounds.push([st.lat, st.lng]);
         });
       }
-    } else if (['accepted', 'driver_accepted', 'driver_en_route_to_pickup'].includes(currentStatus)) {
-      // Driver is heading to this student's pickup: Frame Driver + Pickup ALWAYS
-      if (activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
     } else if (currentStatus === 'requested') {
       // Searching for driver: frame Pickup + Destination stably
       if (activeRide.pickup_location) bounds.push([activeRide.pickup_location.lat, activeRide.pickup_location.lng]);
@@ -605,11 +600,10 @@ const StudentDashboard = () => {
       }
     }
 
-    // Final Bounds Assignment:
-    // For en-route states (driver accepted / en_route), bound driver + pickup in 2D overview.
-    // For arrived/started/ongoing states, set bounds to null so FOLLOW_DRIVER mode
-    // locks directly onto the driver in 45 degree 3D follow mode without zooming out.
-    if (['accepted', 'driver_accepted', 'driver_en_route_to_pickup'].includes(currentStatus) || isPriorStopsActive || currentStatus === 'requested') {
+    // Bounds Assignment:
+    // If prior stops are active OR requested state: provide bounds for 2D Overview framing.
+    // When it's this student's turn or in private rides: bounds is null so FOLLOW_DRIVER drives 45° 3D camera.
+    if (isPriorStopsActive || currentStatus === 'requested') {
       bounds = bounds.length > 1 ? bounds : null;
     } else {
       bounds = null;
@@ -641,9 +635,9 @@ const StudentDashboard = () => {
     };
 
     let cameraMode = CAMERA_MODES.FREE;
-    if (activeRide.status === 'requested' || isPriorStopsActive || ['accepted', 'driver_accepted', 'driver_en_route_to_pickup'].includes(currentStatus)) {
+    if (activeRide.status === 'requested' || isPriorStopsActive) {
       cameraMode = CAMERA_MODES.OVERVIEW;
-    } else if (['driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination', 'ongoing'].includes(activeRide.status)) {
+    } else if (['driver_accepted', 'driver_en_route_to_pickup', 'driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination'].includes(activeRide.status)) {
       cameraMode = CAMERA_MODES.FOLLOW_DRIVER;
     }
 
@@ -696,11 +690,11 @@ const StudentDashboard = () => {
             center={
               (activeRide && activeRide.status === 'requested' && activeRide.pickup_location)
                 ? activeRide.pickup_location
-                : (effectiveDriverLoc || userLocation || activeRide.pickup_location || { lat: -14.4087, lng: 28.2849 })
+                : (driverPos || userLocation || { lat: -14.4087, lng: 28.2849 })
             }
             bounds={bounds}
             cameraMode={cameraMode}
-            driverLocation={effectiveDriverLoc}
+            driverLocation={driverPos}
             zoom={15}
             markers={mapMarkers}
             drivers={driversArray}
