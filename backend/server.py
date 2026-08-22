@@ -3096,6 +3096,11 @@ async def cancel_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
             await manager.broadcast_to_ride(cancel_msg, ride_id)
         except Exception as e:
             logger.error(f"Failed direct broadcast_to_ride cancel: {e}")
+
+        try:
+            await manager.send_personal_message(cancel_msg, ride["student_id"])
+        except Exception as e:
+            logger.error(f"Failed direct send cancel to student: {e}")
         
         if ride.get("driver_id"):
             driver_doc = await db.drivers.find_one({"id": ride["driver_id"]})
@@ -3493,7 +3498,8 @@ async def get_admin_stats(user: dict = Depends(require_admin)):
         "total_rides": total_rides,
         "completed_rides": completed_rides,
         "active_rides": active_rides,
-        "total_revenue": round(total_revenue, 2),
+        "total_revenue": round(total_commission, 2),
+        "total_gross_volume": round(total_revenue, 2),
         "total_commission": round(total_commission, 2),
         "commission_rate": settings.get("commission_rate", 10.0)
     }
@@ -4436,12 +4442,20 @@ async def toggle_fixed_route(route_id: str, user: dict = Depends(require_admin))
     )
     return {"status": "updated", "is_active": new_status}
 
+class AdminCreateStaffRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(..., min_length=6)
+    name: str = Field(..., min_length=2)
+    phone: Optional[str] = None
+    role: Optional[str] = "admin"
+
 @api_router.post("/admin/create-admin")
-async def create_admin(admin_data: UserCreate, user: dict = Depends(require_super_admin)):
+async def create_admin(admin_data: AdminCreateStaffRequest, user: dict = Depends(require_super_admin)):
     existing = await db.users.find_one({"email": admin_data.email.lower()})
     if existing:
         raise HTTPException(status_code=400, detail="Email already exists")
     
+    assigned_role = UserRole.ACCOUNTANT.value if admin_data.role == UserRole.ACCOUNTANT.value else UserRole.ADMIN.value
     user_id = str(uuid.uuid4())
     new_admin = {
         "id": user_id,
@@ -4449,15 +4463,15 @@ async def create_admin(admin_data: UserCreate, user: dict = Depends(require_supe
         "name": admin_data.name,
         "phone": admin_data.phone,
         "password": hash_password(admin_data.password),
-        "role": UserRole.ADMIN.value,
+        "role": assigned_role,
         "is_active": True,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.users.insert_one(new_admin)
     
-    await log_admin_action(user["id"], user["name"], "create_admin", user_id, f"Created admin: {admin_data.email}")
+    await log_admin_action(user["id"], user["name"], "create_staff", user_id, f"Created {assigned_role}: {admin_data.email}")
     
-    return {"status": "created", "user_id": user_id}
+    return {"status": "created", "user_id": user_id, "role": assigned_role}
 
 @api_router.delete("/admin/delete-admin/{admin_id}")
 async def delete_admin(admin_id: str, user: dict = Depends(require_super_admin)):

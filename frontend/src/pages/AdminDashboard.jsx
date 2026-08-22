@@ -199,7 +199,7 @@ const AdminDashboard = () => {
                   <TrendingUp className="w-5 h-5 text-gold" />
                   Platform Revenue Trends (Profit Commission)
                 </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Calculated from 15% platform earnings</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Calculated from 10% platform commission</p>
               </div>
               <div className="text-right">
                 <span className="text-xs font-extrabold text-gold px-2.5 py-1 bg-gold/10 rounded-lg border border-gold/20 block">

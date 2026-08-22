@@ -47,7 +47,8 @@ const AdminUsersPage = () => {
     name: '',
     email: '',
     phone: '',
-    password: ''
+    password: '',
+    role: 'admin'
   });
   
   // User Inspection & Management Drawer State
@@ -311,12 +312,12 @@ const AdminUsersPage = () => {
     setAddingAdmin(true);
     try {
       await api.post('/admin/create-admin', adminForm);
-      toast.success('Admin created successfully');
+      toast.success(adminForm.role === 'accountant' ? 'Accountant created successfully' : 'Admin created successfully');
       setShowAddAdmin(false);
-      setAdminForm({ name: '', email: '', phone: '', password: '' });
+      setAdminForm({ name: '', email: '', phone: '', password: '', role: 'admin' });
       fetchUsers(false);
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to create admin');
+      toast.error(error.response?.data?.detail || 'Failed to create staff account');
     } finally {
       setAddingAdmin(false);
     }
@@ -348,6 +349,8 @@ const AdminUsersPage = () => {
       if (roleFilter !== 'all') {
         if (roleFilter === 'admin') {
           if (user.role !== 'admin' && user.role !== 'super_admin') return false;
+        } else if (roleFilter === 'accountant') {
+          if (user.role !== 'accountant') return false;
         } else if (user.role !== roleFilter) {
           return false;
         }
@@ -439,14 +442,25 @@ const AdminUsersPage = () => {
                 <DialogTrigger asChild>
                   <GoldButton data-testid="add-admin-btn">
                     <UserPlus className="w-4 h-4 mr-2" />
-                    Add Admin
+                    Add Staff
                   </GoldButton>
                 </DialogTrigger>
                 <DialogContent className="bg-card border-border sm:max-w-md">
                   <DialogHeader>
-                    <DialogTitle className="text-foreground font-heading">Create New Admin</DialogTitle>
+                    <DialogTitle className="text-foreground font-heading">Create Staff Account</DialogTitle>
                   </DialogHeader>
                   <form onSubmit={handleAddAdmin} className="space-y-4 mt-4">
+                    <div>
+                      <label className="block text-xs text-muted-foreground mb-1.5 font-medium">Staff Role</label>
+                      <select
+                        value={adminForm.role}
+                        onChange={(e) => setAdminForm({ ...adminForm, role: e.target.value })}
+                        className="w-full bg-muted/60 text-foreground text-sm rounded-2xl px-3 py-2.5 border border-border focus:outline-none focus:border-gold cursor-pointer"
+                      >
+                        <option value="admin">Administrator</option>
+                        <option value="accountant">Accountant (Financial Suite)</option>
+                      </select>
+                    </div>
                     <GlassInput
                       type="text"
                       placeholder="Full Name"
@@ -476,7 +490,7 @@ const AdminUsersPage = () => {
                       required
                     />
                     <GoldButton type="submit" className="w-full" disabled={addingAdmin}>
-                      {addingAdmin ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create Admin'}
+                      {addingAdmin ? <Loader2 className="w-4 h-4 animate-spin" /> : (adminForm.role === 'accountant' ? 'Create Accountant' : 'Create Admin')}
                     </GoldButton>
                   </form>
                 </DialogContent>
@@ -510,6 +524,7 @@ const AdminUsersPage = () => {
               <option value="student">Students</option>
               <option value="lecturer">Lecturers</option>
               <option value="driver">Drivers</option>
+              <option value="accountant">Accountants</option>
               <option value="admin">Admins</option>
             </select>
           </div>

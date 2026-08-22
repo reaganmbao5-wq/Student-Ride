@@ -334,6 +334,7 @@ const StudentDashboard = () => {
         setPassengerBriefing(null);
         setDriverPos(null);
         AppCache.remove('active_ride');
+        fetchData();
       } else if (rideUpdate.type === 'reassigning') {
         systemNotification.notifyRideCancelled('Driver cancelled. Finding a new driver...');
         setActiveRide(prev => prev ? { ...prev, status: 'requested', driver_id: null, driver: null } : null);
