@@ -475,7 +475,7 @@ class DriverResponse(BaseModel):
     is_approved: bool = False
     accepts_shared_rides: bool = True
     vehicle_capacity: int = 4
-    current_location: Optional[Dict[str, float]] = None
+    current_location: Optional[Dict[str, Any]] = None
     wallet_balance: float = 0.0
     wallet_status: WalletStatus = WalletStatus.ACTIVE
     minimum_required_balance: float = 50.0
@@ -2036,7 +2036,7 @@ class UpdateTripStatusReq(BaseModel):
     status: str
 
 @api_router.post("/test/update_trip_status")
-async def update_trip_status(req: UpdateTripStatusReq):
+async def update_trip_status(req: UpdateTripStatusReq, background_tasks: BackgroundTasks):
     ride = await db.rides.find_one({"id": req.ride_id})
     if not ride: return {"status": "not found"}
     
@@ -2511,10 +2511,24 @@ def is_driver_eligible(driver: dict, active_state: dict, requested_mode: str = N
             result["reason"] = "vehicle_full"
             return result
             
-        result["eligible"] = True
-        result["reason"] = "eligible"
-        return result
-
+async def broadcast_route_queue(driver_id: str):
+    try:
+        driver = await db.drivers.find_one({"id": driver_id})
+        if not driver:
+            driver = await db.drivers.find_one({"user_id": driver_id})
+        if not driver:
+            return
+        trip = await db.driver_trips.find_one({"driver_id": driver["id"]})
+        if not trip:
+            trip = await DriverTripRebuilder.rebuild(driver["id"], db)
+        if trip:
+            driver_user_id = driver.get("user_id") or driver["id"]
+            await manager.send_personal_message({
+                "type": "routeQueueUpdate",
+                "route_queue": trip.get("route_queue", [])
+            }, driver_user_id)
+    except Exception as e:
+        logger.error(f"Error broadcasting route queue to driver {driver_id}: {e}")
 
 @api_router.post("/rides/{ride_id}/accept", response_model=RideResponse)
 async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dict = Depends(require_driver)):
