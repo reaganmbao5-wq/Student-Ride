@@ -253,8 +253,12 @@ async def calculate_eta(pickup_lat: float, pickup_lng: float, drop_lat: float, d
             if data.get("routes") and len(data["routes"]) > 0:
                 raw_duration_sec = data["routes"][0]["duration"]
                 dist_km = data["routes"][0]["distance"] / 1000.0
-                # Realistic local transit ETA: minimum 2 mins, ~25-35 km/h local driving speed
-                realistic_eta_sec = int(max(120, raw_duration_sec, (dist_km * 2.2 + 1.0) * 60))
+                # Realistic dynamic ETA calculation (speeds ~25-35 km/h) allowing continuous countdown down to arrival (<1 min)
+                if dist_km <= 0.05:
+                    realistic_eta_sec = 15
+                else:
+                    duration_from_speed = (dist_km / 25.0) * 3600
+                    realistic_eta_sec = int(max(15, raw_duration_sec if raw_duration_sec > 0 else duration_from_speed))
                 _eta_cache[cache_key] = {
                     "pickup_lat": pickup_lat, 
                     "pickup_lng": pickup_lng, 

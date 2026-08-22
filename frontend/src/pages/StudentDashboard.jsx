@@ -298,6 +298,26 @@ const StudentDashboard = () => {
         };
         setActiveRide(prev => ({ ...(prev || {}), ...updatedRide }));
         AppCache.set('active_ride', updatedRide);
+
+        // Instantly populate driver position for immediate 3D follow camera lock
+        const dLoc = fullDriver?.current_location || fullDriver?.location;
+        if (dLoc) {
+          const lat = dLoc.lat ?? dLoc.latitude ?? (Array.isArray(dLoc.coordinates) ? dLoc.coordinates[1] : null);
+          const lng = dLoc.lng ?? dLoc.longitude ?? (Array.isArray(dLoc.coordinates) ? dLoc.coordinates[0] : null);
+          if (lat !== null && lng !== null && !isNaN(Number(lat)) && !isNaN(Number(lng))) {
+            setDriverPos({
+              lat: Number(lat),
+              lng: Number(lng),
+              heading: Number(dLoc.heading || 0)
+            });
+          }
+        }
+
+        // Instantly populate passenger briefing & route geometry if provided
+        if (updatedRide.passenger_briefing) {
+          setPassengerBriefing(updatedRide.passenger_briefing);
+        }
+
         systemNotification.notifyDriverAccepted(
           fullDriver?.user?.name,
           `${fullDriver?.vehicle_color || ''} ${fullDriver?.vehicle_model || ''}`

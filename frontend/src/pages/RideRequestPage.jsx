@@ -36,8 +36,9 @@ import {
 const RideRequestPage = () => {
   const navigate = useNavigate();
   const { api } = useAuth();
+  const [rideMode, setRideMode] = useState('shared');
   const { location: userLocation, loading: geoLoading, error: geoError, refresh: refreshLocation } = useGeolocation();
-  const { drivers: nearbyDrivers } = useDriverDiscovery(api, userLocation);
+  const { drivers: nearbyDrivers } = useDriverDiscovery(api, userLocation, rideMode);
 
   const [step, setStep] = useState('pickup'); // pickup, dropoff, confirm
   
@@ -59,7 +60,6 @@ const RideRequestPage = () => {
   
   const [loading, setLoading] = useState(false);
   const [requesting, setRequesting] = useState(false);
-  const [rideMode, setRideMode] = useState('shared');
   const [isEstimatingFare, setIsEstimatingFare] = useState(false);
 
   // Debounce ref for reverse geocoding & card touch gestures

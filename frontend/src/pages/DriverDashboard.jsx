@@ -546,9 +546,11 @@ const DriverDashboard = () => {
 
     setActiveRide(prev => prev || targetRide);
     setActiveRides(prev => {
-      if (prev.some(r => getRideId(r) === rideId)) return prev;
-      return [...prev, targetRide];
+      const updated = prev.some(r => getRideId(r) === rideId) ? prev : [...prev, targetRide];
+      localStorage.setItem('driver_active_rides', JSON.stringify(updated));
+      return updated;
     });
+    localStorage.setItem('driver_active_ride', JSON.stringify(targetRide));
     setPendingRides(prev => prev.filter(r => getRideId(r) !== rideId));
     clearRideRequest();
     toast.success('Ride accepted!');
@@ -583,9 +585,11 @@ const DriverDashboard = () => {
 
     setActiveRide(prev => prev || targetRide);
     setActiveRides(prev => {
-      if (prev.some(r => getRideId(r) === rideId)) return prev;
-      return [...prev, targetRide];
+      const updated = prev.some(r => getRideId(r) === rideId) ? prev : [...prev, targetRide];
+      localStorage.setItem('driver_active_rides', JSON.stringify(updated));
+      return updated;
     });
+    localStorage.setItem('driver_active_ride', JSON.stringify(targetRide));
     setMasterSharedRidePool(prev => prev.filter(r => getRideId(r) !== rideId));
     setPendingRides(prev => prev.filter(r => getRideId(r) !== rideId));
     toast.success('Shared ride accepted!');

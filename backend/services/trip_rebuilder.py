@@ -16,21 +16,29 @@ logger = logging.getLogger(__name__)
 
 class DriverTripRebuilder:
     @staticmethod
-    async def rebuild(driver_id: str, db) -> Dict[str, Any]:
+    async def rebuild(driver_id: str, db, driver_loc: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Reconstructs the driver's active trip session cache from the rides collection.
         This ensures driver_trips is purely a projection, not the source of truth.
         """
         try:
-            # 1. Get Driver Info
-            driver_doc = await db.drivers.find_one({"id": driver_id})
+            # 1. Get Driver Info (support both id and user_id)
+            driver_doc = await db.drivers.find_one({"$or": [{"id": driver_id}, {"user_id": driver_id}]})
             if not driver_doc:
                 raise Exception("Driver not found")
             
+            real_driver_id = driver_doc.get("id", driver_id)
             capacity = driver_doc.get("vehicle_capacity", 4)
             
             # Extract driver location for optimization
-            driver_loc = driver_doc.get("current_location", {})
+            if not driver_loc:
+                driver_loc = driver_doc.get("current_location") or {}
+                if not driver_loc and driver_doc.get("location") and "coordinates" in driver_doc["location"]:
+                    driver_loc = {
+                        "lat": driver_doc["location"]["coordinates"][1],
+                        "lng": driver_doc["location"]["coordinates"][0]
+                    }
+                    
             driver_lat = driver_loc.get("lat", 0.0)
             driver_lng = driver_loc.get("lng", 0.0)
             
@@ -41,7 +49,7 @@ class DriverTripRebuilder:
                 "passenger_boarding", "ride_started", "ongoing", "ride_in_progress"
             ]
             
-            cursor = db.rides.find({"driver_id": driver_id, "status": {"$in": active_ride_states}})
+            cursor = db.rides.find({"$or": [{"driver_id": real_driver_id}, {"driver_id": driver_id}], "status": {"$in": active_ride_states}})
             active_rides = await cursor.to_list(length=None)
             
             # 3. Calculate state and capacity
@@ -196,7 +204,7 @@ class DriverTripRebuilder:
                             a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
                             dist_km = 6371.0 * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
-                        is_arrived = (r_status == "driver_arrived") or (is_next_stop and dist_km <= 0.05)
+                        is_arrived = (r_status == "driver_arrived") or (is_next_stop and dist_km <= 0.08)
 
                         # ==================================================
                         # PHASE X.3: STOP SYNCHRONIZATION ENGINE
@@ -214,7 +222,7 @@ class DriverTripRebuilder:
                             a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
                             dist_stop0_km = 6371.0 * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
-                        is_stop0_arrived = (r_status == "driver_arrived") or (dist_stop0_km <= 0.05)
+                        is_stop0_arrived = (r_status == "driver_arrived") or (dist_stop0_km <= 0.08)
 
                         if is_arrived:
                             x3_state = "DRIVER_ARRIVED_MY_DROPOFF" if is_onboard else "DRIVER_ARRIVED_MY_PICKUP"
@@ -325,7 +333,7 @@ class DriverTripRebuilder:
                 logger.error(f"Error constructing passenger briefings in trip_rebuilder: {pb_err}")
 
             trip_doc = {
-                "driver_id": driver_id,
+                "driver_id": real_driver_id,
                 "trip_version": 1, # Reset version on rebuild
                 "state": state,
                 "active_ride_ids": active_ride_ids,
@@ -341,9 +349,9 @@ class DriverTripRebuilder:
                 "last_updated": datetime.now(timezone.utc).isoformat()
             }
             
-            # Update cache in DB
+            # Update cache in DB for both real_driver_id and incoming driver_id
             await db.driver_trips.update_one(
-                {"driver_id": driver_id},
+                {"$or": [{"driver_id": real_driver_id}, {"driver_id": driver_id}]},
                 {"$set": trip_doc},
                 upsert=True
             )

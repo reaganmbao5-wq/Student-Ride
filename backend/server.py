@@ -1076,19 +1076,23 @@ class ConnectionManager:
             upsert=True
         )
         
-        # Also update drivers collection
+        # Also update drivers collection (lookup by user_id or id)
         driver = await db.drivers.find_one_and_update(
-            {"user_id": driver_id},
+            {"$or": [{"user_id": driver_id}, {"id": driver_id}]},
             {"$set": {
                 "current_location": location,
                 "location": geo_location
-            }}
+            }},
+            return_document=True
         )
         
         # Broadcast to student if driver is in an active ride
         if driver:
+            self.driver_locations[driver.get("user_id", driver_id)] = location
+            self.driver_locations[driver.get("id", driver_id)] = location
+
             active_rides = await db.rides.find({
-                "driver_id": driver["id"],
+                "$or": [{"driver_id": driver["id"]}, {"driver_id": driver.get("user_id", "")}],
                 "status": {"$in": [
                     RideStatus.DRIVER_ACCEPTED.value,
                     RideStatus.DRIVER_EN_ROUTE_TO_PICKUP.value,
@@ -1121,11 +1125,11 @@ class ConnectionManager:
                     "lng": location["lng"],
                     "heading": location.get("heading", 0),
                     "ride_id": active_rides[0]["id"]
-                }, driver["user_id"])
+                }, driver.get("user_id", driver_id))
 
-                # Phase X: Re-calculate passenger briefing and clipped geometry on location updates
+                # Phase X: Re-calculate passenger briefing and clipped geometry on location updates with live GPS
                 try:
-                    trip = await DriverTripRebuilder.rebuild(driver["id"], db)
+                    trip = await DriverTripRebuilder.rebuild(driver["id"], db, driver_loc=location)
                     trip = await inject_etas_into_trip(trip, location)
                     if trip and "passenger_briefings" in trip:
                         for s_id, briefing in trip["passenger_briefings"].items():
@@ -1540,86 +1544,62 @@ async def broadcast_route_queue(driver_id: str):
 async def get_nearby_drivers(
     latitude: float = Query(..., ge=-90, le=90),
     longitude: float = Query(..., ge=-180, le=180),
-    radius_km: float = Query(3.0, ge=0.5, le=20.0),
+    radius_km: float = Query(5.0, ge=0.5, le=25.0),
     user: dict = Depends(get_current_user)
 ):
     """
     Fetch nearby AVAILABLE drivers for the pickup map.
-    Filters: Online, Approved, Active Wallet, Not in Ride.
-    Limit: 20 drivers.
+    Filters: Online, Approved, Active Wallet, Not in Conflicting Ride.
     """
-    nearby_driver_ids = []
-    
-    # TRICK 1 - CACHE: Check memory cache first
-    now = time.time()
-    for driver_id, loc in list(manager.driver_locations.items()):
-        # TRICK 4: Driver Activity Check
-        last_active = manager.driver_last_active.get(driver_id, 0)
-        if now - last_active > 600:
-            manager.driver_locations.pop(driver_id, None)
-            async def set_offline(uid):
-                await db.drivers.update_one({"user_id": uid}, {"$set": {"is_online": False}})
-            asyncio.create_task(set_offline(driver_id))
-            continue
-            
-        if loc and "lat" in loc and "lng" in loc:
-            dist = calculate_haversine_distance(latitude, longitude, loc["lat"], loc["lng"])
-            if dist <= radius_km:
-                nearby_driver_ids.append(driver_id)
-                
     results = []
+    seen_ids = set()
     
-    # If cache is populated, fetch their statuses from main DB directly
-    if nearby_driver_ids:
-        online_drivers = await db.drivers.find({
-            "user_id": {"$in": nearby_driver_ids},
-            "is_online": True,
-            "is_approved": True,
-            "wallet_status": {"$ne": WalletStatus.RESTRICTED.value}
-        }).to_list(100)
-    else:
-        # Fallback to DB geospatial query if cache empty
-        max_distance_meters = radius_km * 1000
-        online_drivers = await db.drivers.find({
-            "is_online": True,
-            "is_approved": True,
-            "wallet_status": {"$ne": WalletStatus.RESTRICTED.value},
-            "location": {
-                "$near": {
-                    "$geometry": {
-                        "type": "Point",
-                        "coordinates": [longitude, latitude]
-                    },
-                    "$maxDistance": max_distance_meters
-                }
-            }
-        }).to_list(20)
-        
+    # 1. Fetch all online & approved drivers with active wallets
+    online_drivers = await db.drivers.find({
+        "is_online": True,
+        "is_approved": True,
+        "wallet_status": {"$ne": WalletStatus.RESTRICTED.value}
+    }).to_list(200)
+
     for d in online_drivers:
-        driver_id = d["user_id"]
-        
-        # DISPATCH MATCHING RULES via centralized source of truth
-        active_state = await get_driver_active_state(d["id"])
-        eligibility = is_driver_eligible(d, active_state)
-        
-        if not eligibility["visibility"]:
+        d_id = d.get("id")
+        d_uid = d.get("user_id")
+        primary_id = d_uid or d_id
+        if not primary_id or primary_id in seen_ids:
             continue
-            
-        # Prefer cache location as it's more realtime
-        loc = manager.driver_locations.get(driver_id) or d.get("current_location", {})
+
+        # Extract real-time or cached coordinates
+        loc = manager.driver_locations.get(d_uid) or manager.driver_locations.get(d_id) or d.get("current_location") or {}
         lat = loc.get("lat")
         lng = loc.get("lng")
         heading = loc.get("heading", 0.0)
-        
-        if lat is not None and lng is not None:
+
+        # Fallback to GeoJSON coordinates [lng, lat]
+        if (lat is None or lng is None) and d.get("location") and "coordinates" in d["location"]:
+            coords = d["location"]["coordinates"]
+            if len(coords) >= 2:
+                lng = coords[0]
+                lat = coords[1]
+
+        if lat is None or lng is None:
+            continue
+
+        dist = calculate_haversine_distance(latitude, longitude, lat, lng)
+        if dist <= radius_km:
+            active_state = await get_driver_active_state(d["id"])
+            eligibility = is_driver_eligible(d, active_state)
+            if not eligibility["visibility"]:
+                continue
+
+            seen_ids.add(primary_id)
             results.append(NearbyDriverResponse(
-                id=driver_id,
-                latitude=lat,
-                longitude=lng,
-                heading=heading,
+                id=primary_id,
+                latitude=float(lat),
+                longitude=float(lng),
+                heading=float(heading or 0.0),
                 vehicle_type=d.get("vehicle_type", VehicleType.CAR)
             ))
-            
+
     return results
 
 @api_router.post("/drivers/register", response_model=DriverResponse)
@@ -2510,6 +2490,9 @@ def is_driver_eligible(driver: dict, active_state: dict, requested_mode: str = N
         if remaining_seats <= 0:
             result["reason"] = "vehicle_full"
             return result
+        result["eligible"] = True
+        result["reason"] = "eligible"
+        return result
             
 async def broadcast_route_queue(driver_id: str):
     try:
@@ -2622,7 +2605,7 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
     background_tasks.add_task(DriverTripManager.handle_ride_accepted, driver["id"], ride_id, db)
     background_tasks.add_task(internal_bus.publish, "ride_accepted", {"driver_id": driver["id"], "ride_id": ride_id})
     
-    # Populate driver info with user details for instant frontend rendering
+    # Populate driver info with user details and real-time location for instant frontend rendering
     driver_user = await db.users.find_one({"id": driver.get("user_id")}, {"_id": 0, "password": 0})
     driver_payload = dict(driver)
     if driver_user:
@@ -2635,7 +2618,31 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
             "role": driver_user.get("role", "driver")
         }
 
-    # Notify student immediately via WebSocket with updated driver_accepted status (<10ms in-memory dispatch)
+    driver_loc = manager.driver_locations.get(driver.get("user_id")) or manager.driver_locations.get(driver["id"]) or driver.get("current_location", {})
+    if driver_loc and ("lat" in driver_loc or "latitude" in driver_loc):
+        driver_payload["current_location"] = {
+            "lat": driver_loc.get("lat") or driver_loc.get("latitude"),
+            "lng": driver_loc.get("lng") or driver_loc.get("longitude"),
+            "heading": driver_loc.get("heading", 0.0),
+            "status": "online"
+        }
+
+    # Synchronously rebuild trip and compute student route geometry + briefing + ETA right now
+    trip = None
+    try:
+        trip = await DriverTripRebuilder.rebuild(driver["id"], db, driver_loc=driver_payload.get("current_location"))
+        if trip:
+            trip = await inject_etas_into_trip(trip, driver_payload.get("current_location", {}))
+    except Exception as e:
+        logger.error(f"Synchronous DriverTripRebuilder in accept_ride failed: {e}")
+
+    student_briefing = trip.get("passenger_briefings", {}).get(ride["student_id"]) if trip else None
+    if student_briefing:
+        ride["passenger_briefing"] = student_briefing
+        if student_briefing.get("route_geometry"):
+            ride["verified_geometry"] = student_briefing["route_geometry"]
+
+    # Notify student immediately via WebSocket with complete state (status, driver position, route geometry, briefing)
     try:
         await manager.send_personal_message(
             {
@@ -2648,6 +2655,26 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
         )
     except Exception as e:
         logger.error(f"Failed direct websocket send to student: {e}")
+
+    if student_briefing:
+        try:
+            await manager.send_personal_message({
+                "type": "passenger_briefing_update",
+                "ride_id": student_briefing["ride_id"],
+                "briefing_text": student_briefing["briefing_text"],
+                "x3_state": student_briefing.get("x3_state"),
+                "is_pinned": student_briefing.get("is_pinned", False),
+                "carousel_messages": student_briefing.get("carousel_messages", []),
+                "stops_remaining": student_briefing["stops_remaining"],
+                "is_next_stop": student_briefing["is_next_stop"],
+                "intermediate_stops": student_briefing.get("intermediate_stops", []),
+                "route_segments": student_briefing.get("route_segments", []),
+                "route_geometry": student_briefing["route_geometry"],
+                "eta_seconds": student_briefing.get("eta_seconds"),
+                "eta_text": student_briefing.get("eta_text")
+            }, ride["student_id"])
+        except Exception as e:
+            logger.error(f"Failed direct briefing update websocket send: {e}")
 
     try:
         await manager.broadcast_to_all_active_connections({
@@ -2663,14 +2690,7 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
         except Exception as e:
             logger.error(f"Background task broadcast_route_queue failed: {e}")
 
-    async def safe_rebuild(d_id, database):
-        try:
-            await DriverTripRebuilder.rebuild(d_id, database)
-        except Exception as e:
-            logger.error(f"Background task DriverTripRebuilder failed: {e}")
-
     background_tasks.add_task(safe_broadcast_route, driver["id"])
-    background_tasks.add_task(safe_rebuild, driver["id"], db)
     
     # Push notification
     async def send_accept_push(student_id, r_id, user_name):
