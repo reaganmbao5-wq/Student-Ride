@@ -295,7 +295,6 @@ const AuthPage = () => {
         const role = data.user.role;
         window.location.href = role === 'admin' || role === 'super_admin' ? '/admin'
           : role === 'accountant' ? '/accountant'
-          : role === 'driver' && !data.driver_profile_complete ? '/driver/register'
           : role === 'driver' ? '/driver' : '/dashboard';
       }
 
@@ -351,7 +350,6 @@ const AuthPage = () => {
             const role = data.user.role;
             window.location.href = role === 'admin' || role === 'super_admin' ? '/admin'
               : role === 'accountant' ? '/accountant'
-              : role === 'driver' && !data.driver_profile_complete ? '/driver/register'
               : role === 'driver' ? '/driver' : '/dashboard';
           }
         }

@@ -14,9 +14,13 @@ export const RideCard = ({
   driverLocation = null
 }) => {
   const { api } = useAuth();
-  const [routeGeometry, setRouteGeometry] = useState(null);
+  const [routeGeometry, setRouteGeometry] = useState(request?.verified_geometry || null);
 
   useEffect(() => {
+    if (request?.verified_geometry && Array.isArray(request.verified_geometry) && request.verified_geometry.length > 2) {
+      setRouteGeometry(request.verified_geometry);
+      return;
+    }
     if (request?.pickup_location && request?.dropoff_location) {
       const cachedGeometry = routeCache.getRoute(request.pickup_location, request.dropoff_location);
       if (cachedGeometry) {
@@ -34,7 +38,7 @@ export const RideCard = ({
         }
       }).catch(err => console.error("Error fetching route for mini map:", err));
     }
-  }, [request?.pickup_location, request?.dropoff_location, api]);
+  }, [request?.pickup_location, request?.dropoff_location, request?.verified_geometry, api]);
 
   if (!request) return null;
 
@@ -66,16 +70,7 @@ export const RideCard = ({
     mapBounds.push([request.dropoff_location.lat, request.dropoff_location.lng]);
   }
   
-  const mapDrivers = driverLocation ? [{
-    id: 'driver-self',
-    latitude: driverLocation.lat,
-    longitude: driverLocation.lng,
-    heading: driverLocation.heading || 0
-  }] : [];
-  
-  if (driverLocation) {
-    mapBounds.push([driverLocation.lat, driverLocation.lng]);
-  }
+  const mapCenter = request.pickup_location || request.dropoff_location || { lat: -14.2976, lng: 28.5564 };
 
   return (
     <GlassCard className={`shadow-2xl border border-border bg-card/95 backdrop-blur-2xl relative overflow-hidden ${mode === 'FULL' ? 'w-full mb-3 p-4' : 'p-3.5'}`}>
@@ -123,8 +118,9 @@ export const RideCard = ({
                 <PlatformMap 
                   className="w-full h-full"
                   interactive={false}
+                  center={mapCenter}
                   markers={mapMarkers}
-                  drivers={mapDrivers}
+                  drivers={[]}
                   bounds={mapBounds.length > 1 ? mapBounds : null}
                   cameraMode={CAMERA_MODES.OVERVIEW}
                   routeGeometry={routeGeometry}
@@ -172,8 +168,9 @@ export const RideCard = ({
                 <PlatformMap 
                   className="w-full h-full"
                   interactive={false}
+                  center={mapCenter}
                   markers={mapMarkers}
-                  drivers={mapDrivers}
+                  drivers={[]}
                   bounds={mapBounds.length > 1 ? mapBounds : null}
                   cameraMode={CAMERA_MODES.OVERVIEW}
                   routeGeometry={routeGeometry}

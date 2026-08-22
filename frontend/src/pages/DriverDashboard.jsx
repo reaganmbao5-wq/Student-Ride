@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Power, MapPin, Clock, DollarSign, Star, Navigation, AlertCircle, Bell, Check, X, Upload, FileText, MessageCircle, PhoneCall, Loader2, Users } from 'lucide-react';
+import { Power, MapPin, Clock, DollarSign, Star, Navigation, AlertCircle, Bell, Check, X, Upload, FileText, MessageCircle, PhoneCall, Loader2, Users, ChevronRight } from 'lucide-react';
 import { CurrencyCircleDollar, Wallet, Car, Star as PhosphorStar } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard, GoldButton, StatusBadge, LoadingSpinner, EmptyState } from '../components/common/GlassComponents';
@@ -527,8 +527,14 @@ const DriverDashboard = () => {
   }, [routeQueue, api, recalcTrigger]);
 
   const handleToggleOnline = async () => {
+    if (!driverProfile || driverProfile.needs_setup || !driverProfile.plate_number || !driverProfile.vehicle_model) {
+      toast.error('Please complete your vehicle setup first');
+      navigate('/driver/register');
+      return;
+    }
+
     if (!driverProfile?.is_approved) {
-      toast.error('Your account is pending approval');
+      toast.error('Your driver account is pending admin approval');
       return;
     }
 
@@ -776,34 +782,98 @@ const DriverDashboard = () => {
     return <DriverDashboardSkeleton />;
   }
 
-  // Not approved state
+  // 1. Incomplete Setup State (Needs Vehicle Info & Docs - only for unapproved drivers who lack info)
+  if (driverProfile && !driverProfile.is_approved && (driverProfile.needs_setup || !driverProfile.plate_number || !driverProfile.vehicle_model)) {
+    return (
+      <Layout>
+        <div className="p-4 md:p-8 max-w-lg mx-auto" data-testid="driver-needs-setup">
+          <GlassCard className="p-6 md:p-8 text-center space-y-5 shadow-lg border border-border">
+            <div className="w-16 h-16 rounded-3xl bg-amber-500/10 flex items-center justify-center mx-auto shadow-inner">
+              <Car weight="duotone" className="w-8 h-8 text-amber-500" />
+            </div>
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 px-3 py-1 rounded-full">
+                Action Required
+              </span>
+              <h2 className="font-heading text-2xl font-bold text-foreground mt-3 mb-1">
+                Vehicle Setup Required
+              </h2>
+              <p className="text-muted-foreground text-xs leading-relaxed max-w-xs mx-auto">
+                You have been registered as a driver, but your vehicle credentials and documents have not been submitted yet.
+              </p>
+            </div>
+
+            <div className="p-4 bg-muted/60 rounded-2xl text-left font-body border border-border space-y-2">
+              <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Required Information:</p>
+              <ul className="text-xs text-foreground space-y-1.5 list-disc list-inside">
+                <li>Vehicle type, make, model & color</li>
+                <li>Official vehicle plate number</li>
+                <li>Passenger seating capacity</li>
+                <li>Driver profile photo & license documents</li>
+              </ul>
+            </div>
+
+            <button
+              onClick={() => {
+                haptics.tap();
+                navigate('/driver/register');
+              }}
+              className="w-full py-4 bg-black text-white dark:bg-white dark:text-black rounded-2xl font-bold text-sm flex items-center justify-center gap-2 active:scale-98 transition-transform shadow-md"
+            >
+              Complete Vehicle Setup Now
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </GlassCard>
+        </div>
+      </Layout>
+    );
+  }
+
+  // 2. Pending Approval State (Details submitted, awaiting admin review)
   if (driverProfile && !driverProfile.is_approved) {
     return (
       <Layout>
-        <div className="p-4 md:p-8" data-testid="driver-pending">
-          <GlassCard className="p-8 text-center">
-            <div className="w-16 h-16 rounded-full bg-yellow-500/10 flex items-center justify-center mx-auto mb-4">
-              <AlertCircle className="w-8 h-8 text-yellow-400" />
+        <div className="p-4 md:p-8 max-w-lg mx-auto" data-testid="driver-pending">
+          <GlassCard className="p-6 md:p-8 text-center space-y-5 shadow-lg border border-border">
+            <div className="w-16 h-16 rounded-3xl bg-yellow-500/10 flex items-center justify-center mx-auto shadow-inner">
+              <AlertCircle className="w-8 h-8 text-yellow-500" />
             </div>
-            <h2 className="font-heading text-xl font-semibold text-foreground mb-2">
-              Pending Approval
-            </h2>
-            <p className="text-muted-foreground mb-6">
-              Your driver account is being reviewed. You'll be notified once approved.
-            </p>
-            <div className="p-4 bg-muted rounded-xl text-left mb-6 font-body border border-border">
-              <p className="text-sm text-muted-foreground mb-2">Vehicle Details:</p>
-              <p className="text-foreground">{driverProfile.vehicle_model} • {driverProfile.vehicle_color}</p>
-              <p className="text-muted-foreground">{driverProfile.plate_number}</p>
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 px-3 py-1 rounded-full">
+                Under Review
+              </span>
+              <h2 className="font-heading text-xl font-bold text-foreground mt-3 mb-1">
+                Pending Admin Approval
+              </h2>
+              <p className="text-muted-foreground text-xs leading-relaxed max-w-xs mx-auto">
+                Your vehicle credentials and documents have been submitted and are currently being reviewed by admin.
+              </p>
             </div>
 
-            <div className="space-y-4">
-              <h3 className="text-white font-medium text-sm flex items-center gap-2">
+            <div className="p-4 bg-muted/60 rounded-2xl text-left font-body border border-border space-y-1">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Submitted Vehicle</p>
+                <button 
+                  onClick={() => {
+                    haptics.tap();
+                    navigate('/driver/register');
+                  }}
+                  className="text-xs text-foreground font-bold hover:underline flex items-center gap-0.5"
+                >
+                  Edit <ChevronRight className="w-3 h-3" />
+                </button>
+              </div>
+              <p className="text-sm font-bold text-foreground">{driverProfile.vehicle_color} {driverProfile.vehicle_model} ({driverProfile.vehicle_type})</p>
+              <p className="text-xs text-gold font-mono font-bold">{driverProfile.plate_number}</p>
+            </div>
+
+            <div className="space-y-3 text-left">
+              <h3 className="text-foreground font-semibold text-xs flex items-center gap-2">
                 <FileText className="w-4 h-4 text-gold" />
-                Required Documents
+                Verification Documents
               </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <DocumentUploadCard
                   title="Driver's License"
                   type="license"

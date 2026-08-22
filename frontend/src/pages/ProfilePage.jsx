@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { 
   User as UserIcon, Mail, Phone as PhoneIcon, Shield as ShieldIcon, Car as CarIcon, LogOut, Trash2, Loader2, 
-  Camera, ChevronRight, Check, Edit3, Bell as BellIcon, Vibrate, CheckCircle2, ShieldAlert, X,
+  Camera, ChevronRight, Check, Edit3, Bell as BellIcon, Vibrate, CheckCircle2, AlertCircle, ShieldAlert, X,
   Sun, Paintbrush, MapPin as MapPinIcon, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { 
@@ -984,42 +984,92 @@ const ProfilePage = () => {
         {/* ==================================================== */}
         {/* GROUP 3: VEHICLE DETAILS (For Drivers Only)          */}
         {/* ==================================================== */}
-        {isDriver && driverProfile && (
+        {isDriver && (
           <div className="space-y-2">
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2">Vehicle Details</p>
-            <div className="bg-card border border-border rounded-3xl overflow-hidden divide-y divide-border">
-              <div className="flex items-center justify-between p-4">
-                <div className="flex items-center gap-3.5">
-                  <Car weight="duotone" className="w-5 h-5 text-gold" />
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">Vehicle</p>
-                    <p className="text-xs text-muted-foreground">{driverProfile.vehicle_color} {driverProfile.vehicle_model} ({driverProfile.vehicle_type})</p>
-                  </div>
-                </div>
-              </div>
+            <div className="flex items-center justify-between px-2">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Vehicle Details</p>
+              {(!driverProfile?.needs_setup && driverProfile?.plate_number) && (
+                <button
+                  onClick={() => {
+                    haptics.tap();
+                    navigate('/driver/register');
+                  }}
+                  className="text-xs font-bold text-foreground hover:underline flex items-center gap-1"
+                >
+                  Edit Vehicle <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
 
-              <div className="flex items-center justify-between p-4">
-                <div className="flex items-center gap-3.5">
-                  <Shield weight="duotone" className="w-5 h-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">Plate Number</p>
-                    <p className="text-xs text-gold font-mono font-bold">{driverProfile.plate_number}</p>
+            {(!driverProfile || driverProfile.needs_setup || !driverProfile.plate_number || !driverProfile.vehicle_model) ? (
+              <div className="bg-card border-2 border-dashed border-amber-500/40 dark:border-amber-500/30 rounded-3xl p-5 space-y-4 shadow-sm">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-500/10 flex items-center justify-center shrink-0">
+                    <Car weight="duotone" className="w-5 h-5 text-amber-500" />
                   </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-4">
-                <div className="flex items-center gap-3.5">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                   <div>
-                    <p className="text-sm font-semibold text-foreground">Approval Status</p>
-                    <p className="text-xs text-emerald-500 font-medium">
-                      {driverProfile.is_approved ? 'Approved Active Driver' : 'Pending Review'}
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-bold text-foreground">Action Required</p>
+                      <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full">
+                        Incomplete Setup
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                      Your driver vehicle details and credentials have not been submitted yet. Complete setup to submit your documents and start driving.
                     </p>
                   </div>
                 </div>
+
+                <button
+                  onClick={() => {
+                    haptics.tap();
+                    navigate('/driver/register');
+                  }}
+                  className="w-full py-3.5 px-4 bg-black text-white dark:bg-white dark:text-black rounded-2xl font-bold text-sm flex items-center justify-center gap-2 active:scale-98 transition-transform shadow-sm"
+                >
+                  Complete Vehicle Setup
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
-            </div>
+            ) : (
+              <div className="bg-card border border-border rounded-3xl overflow-hidden divide-y divide-border shadow-sm">
+                <div className="flex items-center justify-between p-4">
+                  <div className="flex items-center gap-3.5">
+                    <Car weight="duotone" className="w-5 h-5 text-gold" />
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Vehicle</p>
+                      <p className="text-xs text-muted-foreground">{driverProfile.vehicle_color} {driverProfile.vehicle_model} ({driverProfile.vehicle_type})</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-4">
+                  <div className="flex items-center gap-3.5">
+                    <Shield weight="duotone" className="w-5 h-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Plate Number</p>
+                      <p className="text-xs text-gold font-mono font-bold">{driverProfile.plate_number}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-4">
+                  <div className="flex items-center gap-3.5">
+                    {driverProfile.is_approved ? (
+                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                    ) : (
+                      <AlertCircle className="w-5 h-5 text-amber-500" />
+                    )}
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Approval Status</p>
+                      <p className={`text-xs font-medium ${driverProfile.is_approved ? 'text-emerald-500' : 'text-amber-500'}`}>
+                        {driverProfile.is_approved ? 'Approved Active Driver' : 'Pending Admin Review'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

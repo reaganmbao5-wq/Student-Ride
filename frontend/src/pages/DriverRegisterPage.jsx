@@ -34,6 +34,10 @@ const DriverRegisterPage = () => {
   });
 
   useEffect(() => {
+    if (driverProfile?.is_approved) {
+      navigate('/driver', { replace: true });
+      return;
+    }
     if (driverProfile) {
       setFormData({
         vehicle_type: driverProfile.vehicle_type || 'car',
@@ -46,7 +50,7 @@ const DriverRegisterPage = () => {
         setProfilePhotoPreview(driverProfile.avatar_url || user?.avatar_url);
       }
     }
-  }, [driverProfile, user]);
+  }, [driverProfile, user, navigate]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
