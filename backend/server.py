@@ -270,6 +270,7 @@ class UserRole(str, Enum):
     DRIVER = "driver"
     ADMIN = "admin"
     SUPER_ADMIN = "super_admin"
+    ACCOUNTANT = "accountant"
 
 class RideStatus(str, Enum):
     # LEGACY STATES (Preserved for safe migration/compatibility)
@@ -736,6 +737,12 @@ async def require_admin(user: dict = Depends(get_current_user)) -> dict:
     role = user.get("role", UserRole.STUDENT.value)
     if role not in [UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value]:
         raise HTTPException(status_code=403, detail="Admin access required")
+    return user
+
+async def require_accountant(user: dict = Depends(get_current_user)) -> dict:
+    role = user.get("role", UserRole.STUDENT.value)
+    if role not in [UserRole.ACCOUNTANT.value, UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value]:
+        raise HTTPException(status_code=403, detail="Accountant or Admin access required")
     return user
 
 @api_router.get("/users/me", response_model=UserResponse)
@@ -3446,22 +3453,38 @@ async def get_pending_rides(user: dict = Depends(require_driver)):
     
     return result
 
-# ==================== ADMIN ROUTES ====================
+# ==================== ADMIN & ACCOUNTANT ROUTES ====================
+COMPLETED_RIDE_STATUSES = [
+    RideStatus.COMPLETED.value,
+    RideStatus.RIDE_COMPLETED.value,
+    RideStatus.RIDE_ARCHIVED.value,
+    "completed",
+    "completed_ride",
+    "ride_completed",
+    "settlement",
+    "ride_archived"
+]
+
 @api_router.get("/admin/stats")
 async def get_admin_stats(user: dict = Depends(require_admin)):
     total_users = await db.users.count_documents({})
     total_drivers = await db.drivers.count_documents({})
     pending_drivers = await db.drivers.count_documents({"is_approved": False})
     total_rides = await db.rides.count_documents({})
-    completed_rides = await db.rides.count_documents({"status": RideStatus.COMPLETED.value})
+    completed_rides = await db.rides.count_documents({"status": {"$in": COMPLETED_RIDE_STATUSES}})
     active_rides = await db.rides.count_documents({"status": {"$in": get_active_ride_states()}})
     
-    # Calculate earnings
-    rides = await db.rides.find({"status": RideStatus.COMPLETED.value}, {"_id": 0}).to_list(10000)
-    total_revenue = sum(r["fare"] for r in rides)
-    total_commission = sum(r["commission"] for r in rides)
+    # Calculate earnings across all completed & archived rides
+    rides = await db.rides.find({"status": {"$in": COMPLETED_RIDE_STATUSES}}, {"_id": 0}).to_list(10000)
+    total_revenue = sum(float(r.get("fare", 0.0)) for r in rides)
     
     settings = await get_platform_settings()
+    comm_rate = float(settings.get("commission_rate", DEFAULT_COMMISSION_RATE * 100)) / 100.0
+    
+    total_commission = sum(
+        float(r.get("commission")) if r.get("commission") is not None else (float(r.get("fare", 0.0)) * comm_rate)
+        for r in rides
+    )
     
     return {
         "total_users": total_users,
@@ -3470,9 +3493,9 @@ async def get_admin_stats(user: dict = Depends(require_admin)):
         "total_rides": total_rides,
         "completed_rides": completed_rides,
         "active_rides": active_rides,
-        "total_revenue": total_revenue,
-        "total_commission": total_commission,
-        "commission_rate": settings["commission_rate"]
+        "total_revenue": round(total_revenue, 2),
+        "total_commission": round(total_commission, 2),
+        "commission_rate": settings.get("commission_rate", 10.0)
     }
 
 @api_router.get("/admin/analytics")
@@ -3480,18 +3503,12 @@ async def get_admin_analytics(user: dict = Depends(require_admin)):
     """
     Detailed analytics for the admin dashboard with resilient date parsing and aggregation.
     """
-    completed_statuses = [
-        RideStatus.COMPLETED.value,
-        RideStatus.RIDE_COMPLETED.value,
-        RideStatus.RIDE_ARCHIVED.value,
-        "completed",
-        "completed_ride"
-    ]
-    
     rides = await db.rides.find({
-        "status": {"$in": completed_statuses}
+        "status": {"$in": COMPLETED_RIDE_STATUSES}
     }).sort("created_at", -1).to_list(5000)
     
+    settings = await get_platform_settings()
+    comm_rate = float(settings.get("commission_rate", DEFAULT_COMMISSION_RATE * 100)) / 100.0
     daily_stats = {}
     
     for ride in rides:
@@ -3502,7 +3519,7 @@ async def get_admin_analytics(user: dict = Depends(require_admin)):
             daily_stats[date] = {"date": date, "revenue": 0.0, "gross_fare": 0.0, "rides": 0}
             
         fare_val = float(ride.get("fare") or 0.0)
-        commission_val = float(ride.get("commission") or (fare_val * 0.15))
+        commission_val = float(ride.get("commission")) if ride.get("commission") is not None else (fare_val * comm_rate)
         
         # Platform revenue = commission profit
         daily_stats[date]["revenue"] = round(daily_stats[date]["revenue"] + commission_val, 2)
@@ -4100,11 +4117,16 @@ async def delete_user(user_id: str, admin: dict = Depends(require_admin)):
 async def get_all_rides(
     status: Optional[str] = None,
     limit: int = Query(50, ge=1, le=500),
-    user: dict = Depends(require_admin)
+    user: dict = Depends(require_accountant)
 ):
     query = {}
     if status and status != "all":
-        query["status"] = status
+        if status in ["completed", "ride_completed", "ride_archived", "settlement"]:
+            query["status"] = {"$in": COMPLETED_RIDE_STATUSES}
+        elif status in ["ongoing", "ride_started", "ride_in_progress"]:
+            query["status"] = {"$in": ["ongoing", "ride_started", "ride_in_progress", "passenger_boarding", "driver_arrived", "driver_en_route_to_pickup", "driver_accepted", "accepted"]}
+        else:
+            query["status"] = status
     
     rides = await db.rides.find(query, {"_id": 0}).sort("created_at", -1).to_list(limit)
     if not rides:
@@ -4158,6 +4180,66 @@ async def get_all_rides(
             logger.warning(f"Formatting fallback for ride {ride.get('id')}: {e}")
             result.append(ride)
             
+    return result
+
+# ==================== ACCOUNTANT ROUTES ====================
+@api_router.get("/accountant/summary")
+async def get_accountant_summary(user: dict = Depends(require_accountant)):
+    completed_rides = await db.rides.find({"status": {"$in": COMPLETED_RIDE_STATUSES}}, {"_id": 0}).to_list(10000)
+    total_volume = sum(float(r.get("fare", 0.0)) for r in completed_rides)
+    
+    settings = await get_platform_settings()
+    comm_rate = float(settings.get("commission_rate", DEFAULT_COMMISSION_RATE * 100)) / 100.0
+    
+    total_commission = sum(
+        float(r.get("commission")) if r.get("commission") is not None else (float(r.get("fare", 0.0)) * comm_rate)
+        for r in completed_rides
+    )
+    total_driver_earnings = total_volume - total_commission
+    
+    # Active driver debt
+    drivers = await db.drivers.find({}, {"_id": 0}).to_list(1000)
+    total_debt_accumulated = sum(float(d.get("total_commission_due", 0.0)) for d in drivers)
+    total_commission_paid = sum(float(d.get("total_commission_paid", 0.0)) for d in drivers)
+    
+    return {
+        "total_completed_rides": len(completed_rides),
+        "gross_volume": round(total_volume, 2),
+        "total_commission_earned": round(total_commission, 2),
+        "total_driver_earnings": round(total_driver_earnings, 2),
+        "total_debt_outstanding": round(total_debt_accumulated, 2),
+        "total_commission_paid": round(total_commission_paid, 2),
+        "active_drivers_count": len(drivers),
+        "commission_rate_percent": settings.get("commission_rate", 10.0)
+    }
+
+@api_router.get("/accountant/transactions")
+async def get_accountant_transactions(
+    limit: int = Query(100, ge=1, le=500),
+    user: dict = Depends(require_accountant)
+):
+    transactions = await db.driver_wallet_transactions.find({}, {"_id": 0}).sort("timestamp", -1).to_list(limit)
+    return transactions
+
+@api_router.get("/accountant/driver-balances")
+async def get_accountant_driver_balances(user: dict = Depends(require_accountant)):
+    drivers = await db.drivers.find({}, {"_id": 0}).to_list(1000)
+    result = []
+    for d in drivers:
+        user_doc = await db.users.find_one({"id": d.get("user_id")}, {"_id": 0, "password": 0})
+        result.append({
+            "driver_id": d.get("id"),
+            "driver_name": user_doc.get("name") if user_doc else "Unknown Driver",
+            "driver_phone": user_doc.get("phone") if user_doc else "",
+            "vehicle_type": d.get("vehicle_type", "car"),
+            "vehicle_capacity": d.get("vehicle_capacity", 4),
+            "total_commission_due": round(float(d.get("total_commission_due", 0.0)), 2),
+            "total_commission_paid": round(float(d.get("total_commission_paid", 0.0)), 2),
+            "wallet_balance": round(float(d.get("wallet_balance", 0.0)), 2),
+            "wallet_status": d.get("wallet_status", "active"),
+            "is_approved": d.get("is_approved", False),
+            "is_online": d.get("is_online", False)
+        })
     return result
 
 @api_router.get("/admin/active-rides")

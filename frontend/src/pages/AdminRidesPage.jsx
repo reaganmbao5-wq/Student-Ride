@@ -86,8 +86,18 @@ const AdminRidesPage = () => {
       if (!matchesSearch) return false;
 
       // Status filter
-      if (statusFilter !== 'all' && ride.status !== statusFilter) {
-        return false;
+      if (statusFilter !== 'all') {
+        if (statusFilter === 'completed' || statusFilter === 'ride_completed') {
+          if (!['completed', 'ride_completed', 'settlement', 'ride_archived', 'completed_ride'].includes(ride.status)) {
+            return false;
+          }
+        } else if (statusFilter === 'in_progress' || statusFilter === 'ongoing') {
+          if (!['ongoing', 'ride_started', 'ride_in_progress', 'passenger_boarding', 'driver_arrived', 'driver_en_route_to_pickup', 'driver_accepted', 'accepted'].includes(ride.status)) {
+            return false;
+          }
+        } else if (ride.status !== statusFilter) {
+          return false;
+        }
       }
 
       // Date Filters
@@ -148,17 +158,25 @@ const AdminRidesPage = () => {
         </div>
 
         {/* Filters and Search Bar */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 bg-card/60 p-4 rounded-3xl border border-border">
-          {/* Search Box */}
-          <div className="md:col-span-4 relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-3 bg-card/60 p-4 rounded-3xl border border-border">
+          {/* Search Input */}
+          <div className="sm:col-span-2 md:col-span-4 relative">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search rider, driver, pickup, or destination..."
+              placeholder="Search rider, driver, pickup, or ride ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-muted/60 text-foreground text-sm rounded-2xl pl-10 pr-4 py-2.5 border border-border focus:outline-none focus:border-gold"
+              className="w-full bg-muted/60 text-foreground text-sm rounded-2xl pl-10 pr-4 py-2.5 border border-border focus:outline-none focus:border-gold placeholder:text-muted-foreground"
             />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
 
           {/* Status Filter */}
@@ -170,9 +188,7 @@ const AdminRidesPage = () => {
             >
               <option value="all">All Statuses</option>
               <option value="completed">Completed</option>
-              <option value="ride_completed">Ride Completed</option>
               <option value="in_progress">In Progress</option>
-              <option value="accepted">Accepted</option>
               <option value="requested">Requested</option>
               <option value="cancelled">Cancelled</option>
             </select>
