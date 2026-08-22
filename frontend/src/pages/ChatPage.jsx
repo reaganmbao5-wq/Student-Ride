@@ -123,9 +123,18 @@ const ChatPage = () => {
   const getOtherParty = () => {
     if (!ride) return null;
     if (user?.role === 'driver') {
-      return ride.student;
+      return ride.student || { 
+        name: ride.student_name || 'Passenger', 
+        phone: '', 
+        avatar_url: ride.student?.avatar_url 
+      };
     } else {
-      return ride.driver?.user || { name: 'Driver', phone: '' };
+      const driverUser = ride.driver?.user || {};
+      return {
+        name: driverUser.name || ride.driver?.name || 'Driver',
+        phone: driverUser.phone || ride.driver?.phone || '',
+        avatar_url: driverUser.avatar_url || ride.driver?.avatar_url || ride.driver?.avatar || ''
+      };
     }
   };
 
@@ -149,8 +158,24 @@ const ChatPage = () => {
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gold/20 flex items-center justify-center">
-                <span className="text-gold font-heading font-bold">
+              <div className="w-10 h-10 rounded-full overflow-hidden bg-gold/20 flex items-center justify-center border border-border shrink-0">
+                {otherParty?.avatar_url ? (
+                  <img
+                    src={otherParty.avatar_url}
+                    alt={otherParty?.name || 'User'}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      if (e.currentTarget.nextSibling) {
+                        e.currentTarget.nextSibling.style.display = 'flex';
+                      }
+                    }}
+                  />
+                ) : null}
+                <span 
+                  className="text-gold font-heading font-bold"
+                  style={{ display: otherParty?.avatar_url ? 'none' : 'flex' }}
+                >
                   {otherParty?.name?.charAt(0) || '?'}
                 </span>
               </div>
@@ -189,10 +214,33 @@ const ChatPage = () => {
               return (
                 <div
                   key={message.id || index}
-                  className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                  className={`flex items-end gap-2 ${isOwn ? 'justify-end' : 'justify-start'}`}
                 >
+                  {!isOwn && (
+                    <div className="w-7 h-7 rounded-full overflow-hidden bg-gold/20 flex items-center justify-center shrink-0 border border-border mb-1">
+                      {otherParty?.avatar_url ? (
+                        <img
+                          src={otherParty.avatar_url}
+                          alt={message.sender_name || 'User'}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            if (e.currentTarget.nextSibling) {
+                              e.currentTarget.nextSibling.style.display = 'flex';
+                            }
+                          }}
+                        />
+                      ) : null}
+                      <span
+                        className="text-gold text-[10px] font-bold"
+                        style={{ display: otherParty?.avatar_url ? 'none' : 'flex' }}
+                      >
+                        {message.sender_name?.charAt(0) || otherParty?.name?.charAt(0) || '?'}
+                      </span>
+                    </div>
+                  )}
                   <div
-                    className={`max-w-[80%] px-4 py-3 rounded-2xl ${
+                    className={`max-w-[78%] px-4 py-3 rounded-2xl ${
                       isOwn
                         ? 'bg-amber-400 text-black font-medium rounded-br-sm shadow-md'
                         : 'bg-muted text-foreground border border-border rounded-bl-sm shadow-sm'

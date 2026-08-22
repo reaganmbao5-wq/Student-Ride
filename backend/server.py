@@ -2212,6 +2212,7 @@ async def populate_ride_student(ride: dict) -> dict:
                 "email": student_user["email"],
                 "name": student_user["name"],
                 "phone": student_user.get("phone", ""),
+                "avatar_url": student_user.get("avatar_url"),
                 "role": str(student_user.get("role", "student")),
                 "created_at": student_user.get("created_at", ""),
                 "is_active": student_user.get("is_active", True)
@@ -2221,6 +2222,10 @@ async def populate_ride_student(ride: dict) -> dict:
     elif ride.get("student") and isinstance(ride["student"], dict):
         if not ride.get("student_name"):
             ride["student_name"] = ride["student"].get("name")
+        if not ride["student"].get("avatar_url"):
+            student_user = await db.users.find_one({"id": ride.get("student_id")}, {"_id": 0})
+            if student_user and student_user.get("avatar_url"):
+                ride["student"]["avatar_url"] = student_user.get("avatar_url")
     return ride
 
 # ==================== RIDE ROUTES ====================
@@ -3223,6 +3228,50 @@ async def rate_ride(ride_id: str, rating_data: RatingCreate, background_tasks: B
     
     return {"status": "rated"}
 
+@api_router.get("/rides/{ride_id}", response_model=RideResponse)
+async def get_ride_by_id(ride_id: str, user: dict = Depends(get_current_user)):
+    ride = await find_ride_by_id(ride_id)
+    if not ride:
+        raise HTTPException(status_code=404, detail="Ride not found")
+    
+    ride.pop("_id", None)
+    
+    # Populate student info with avatar
+    if ride.get("student_id"):
+        student = await db.users.find_one({"id": ride["student_id"]}, {"_id": 0})
+        if student:
+            ride["student"] = UserResponse(
+                id=student["id"],
+                email=student.get("email"),
+                name=student.get("name", "Student"),
+                phone=student.get("phone", ""),
+                avatar_url=student.get("avatar_url"),
+                role=UserRole(student.get("role", "student")),
+                created_at=student.get("created_at", ""),
+                is_active=student.get("is_active", True)
+            )
+            ride["student_name"] = student.get("name")
+            
+    # Populate driver info with avatar
+    if ride.get("driver_id"):
+        driver = await db.drivers.find_one({"id": ride["driver_id"]}, {"_id": 0})
+        if driver:
+            driver_user = await db.users.find_one({"id": driver.get("user_id")}, {"_id": 0})
+            if driver_user:
+                driver["user"] = UserResponse(
+                    id=driver_user["id"],
+                    email=driver_user.get("email"),
+                    name=driver_user.get("name", "Driver"),
+                    phone=driver_user.get("phone", ""),
+                    avatar_url=driver_user.get("avatar_url"),
+                    role=UserRole(driver_user.get("role", "driver")),
+                    created_at=driver_user.get("created_at", ""),
+                    is_active=driver_user.get("is_active", True)
+                )
+            ride["driver"] = DriverResponse(**driver)
+            
+    return RideResponse(**ride)
+
 @api_router.get("/rides/active", response_model=Optional[RideResponse])
 async def get_active_ride(user: dict = Depends(get_current_user)):
     query = {"status": {"$in": get_active_ride_states()}}
@@ -3396,59 +3445,6 @@ async def get_pending_rides(user: dict = Depends(require_driver)):
         result.append(RideResponse(**ride))
     
     return result
-
-# ==================== CHAT ROUTES ====================
-@api_router.post("/chat/send", response_model=MessageResponse)
-async def send_message(message: MessageCreate, user: dict = Depends(get_current_user)):
-    ride = await db.rides.find_one({"id": message.ride_id}, {"_id": 0})
-    if not ride:
-        raise HTTPException(status_code=404, detail="Ride not found")
-    
-    # Check if user is part of ride
-    is_student = ride["student_id"] == user["id"]
-    is_driver = False
-    if ride["driver_id"]:
-        driver = await db.drivers.find_one({"id": ride["driver_id"]}, {"_id": 0})
-        is_driver = driver and driver["user_id"] == user["id"]
-    
-    if not is_student and not is_driver:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    
-    msg_id = str(uuid.uuid4())
-    msg = {
-        "id": msg_id,
-        "ride_id": message.ride_id,
-        "sender_id": user["id"],
-        "sender_name": user["name"],
-        "content": message.content,
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
-    await db.messages.insert_one(msg)
-    
-    # Send to other party
-    recipient_id = ride["student_id"] if is_driver else None
-    if not is_driver and ride["driver_id"]:
-        driver = await db.drivers.find_one({"id": ride["driver_id"]}, {"_id": 0})
-        if driver:
-            recipient_id = driver["user_id"]
-    
-    if recipient_id:
-        background_tasks.add_task(manager.send_personal_message, {
-        "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
-            "type": "new_message",
-            "message": msg
-        }, recipient_id)
-    
-    return MessageResponse(**msg)
-
-@api_router.get("/chat/{ride_id}", response_model=List[MessageResponse])
-async def get_chat_messages(ride_id: str, user: dict = Depends(get_current_user)):
-    ride = await db.rides.find_one({"id": ride_id}, {"_id": 0})
-    if not ride:
-        raise HTTPException(status_code=404, detail="Ride not found")
-    
-    messages = await db.messages.find({"ride_id": ride_id}, {"_id": 0}).sort("created_at", 1).to_list(100)
-    return [MessageResponse(**m) for m in messages]
 
 # ==================== ADMIN ROUTES ====================
 @api_router.get("/admin/stats")
