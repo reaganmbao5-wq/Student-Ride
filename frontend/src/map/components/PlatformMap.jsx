@@ -490,7 +490,7 @@ export const PlatformMap = ({
         const containerRect = mapContainerRef.current?.getBoundingClientRect();
         const containerHeight = containerRect?.height || (typeof window !== 'undefined' ? window.innerHeight : 600);
         const containerWidth = containerRect?.width || (typeof window !== 'undefined' ? window.innerWidth : 400);
-        const isMiniMap = !interactive || containerHeight < 250;
+        const isMiniMap = containerHeight < 250;
 
         if (isMiniMap) {
           try {
