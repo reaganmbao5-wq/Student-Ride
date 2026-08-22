@@ -354,16 +354,20 @@ const DriverDashboard = () => {
     }
   }, [isSimulating, driverLocation]);
 
+  const [isTogglingOnline, setIsTogglingOnline] = useState(false);
+
   useEffect(() => {
     if (driverProfile) {
-      setIsOnline(driverProfile.is_online);
+      if (typeof driverProfile.is_online === 'boolean') {
+        setIsOnline(driverProfile.is_online);
+      }
       if (driverProfile.current_location && driverProfile.current_location.lat) {
         setCurrentLocation(driverProfile.current_location);
       } else {
         setCurrentLocation(prev => prev || { lat: -14.294532832852411, lng: 28.54970049702143, heading: 0 });
       }
     }
-  }, [driverProfile]);
+  }, [driverProfile?.is_online, driverProfile?.id]);
 
   useEffect(() => {
     if (isOnline && !isWatching && !isSimulating) {
@@ -402,6 +406,24 @@ const DriverDashboard = () => {
       clearRideRequest();
     }
   }, [newRideRequest, clearRideRequest]);
+
+  // Periodic background refresh for pending rides while online
+  useEffect(() => {
+    if (!isOnline) return;
+    const interval = setInterval(async () => {
+      try {
+        const pendingRes = await api.get('/rides/pending');
+        if (pendingRes.data) {
+          const allPending = pendingRes.data || [];
+          setPendingRides(allPending);
+          setMasterSharedRidePool(allPending.filter(r => r.ride_mode === 'shared'));
+        }
+      } catch (err) {
+        // silent fail on background interval
+      }
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [isOnline, api]);
 
   const driverLocRef = useRef(null);
   useEffect(() => {
@@ -520,6 +542,7 @@ const DriverDashboard = () => {
   }, [routeQueue, api, recalcTrigger]);
 
   const handleToggleOnline = async () => {
+    if (isTogglingOnline) return;
     if (!driverProfile || driverProfile.needs_setup || !driverProfile.plate_number || !driverProfile.vehicle_model) {
       toast.error('Please complete your vehicle setup first');
       navigate('/driver/register');
@@ -531,12 +554,45 @@ const DriverDashboard = () => {
       return;
     }
 
+    if (driverProfile?.wallet_status === 'restricted' || (driverProfile?.total_commission_due || 0) >= (driverProfile?.max_commission_owed_limit || 500)) {
+      toast.error('Wallet restricted. Please remit commission to Admin to go online.');
+      return;
+    }
+
+    setIsTogglingOnline(true);
+    const targetState = !isOnline;
+    setIsOnline(targetState); // Optimistic UI update
+
     try {
       const response = await api.post('/drivers/toggle-online');
-      setIsOnline(response.data.is_online);
-      toast.success(response.data.is_online ? 'You are now online' : 'You are now offline');
+      const actualState = Boolean(response.data.is_online);
+      setIsOnline(actualState);
+      
+      // Update local cache so background refreshes never flip the switch back
+      if (driverProfile) {
+        driverProfile.is_online = actualState;
+        try {
+          const cached = JSON.parse(localStorage.getItem('mulu_driver_cache') || '{}');
+          cached.is_online = actualState;
+          localStorage.setItem('mulu_driver_cache', JSON.stringify(cached));
+        } catch (e) {}
+      }
+
+      if (actualState) {
+        // Driver came online: immediately fetch pending rides so pool populates instantly!
+        fetchData();
+      } else {
+        // Driver went offline: clear pending pool
+        setPendingRides([]);
+        setMasterSharedRidePool([]);
+      }
+
+      toast.success(actualState ? 'You are now online' : 'You are now offline');
     } catch (error) {
+      setIsOnline(!targetState); // Revert on failure
       toast.error(error.response?.data?.detail || 'Failed to toggle status');
+    } finally {
+      setIsTogglingOnline(false);
     }
   };
 
@@ -1218,14 +1274,15 @@ const DriverDashboard = () => {
           <div className="flex flex-col items-end gap-2">
             <button
               onClick={handleToggleOnline}
-              className={`relative w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${isOnline
+              disabled={isTogglingOnline}
+              className={`relative w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${isTogglingOnline ? 'opacity-70 pointer-events-none' : ''} ${isOnline
                 ? 'bg-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.4)]'
                 : 'bg-muted hover:bg-muted/80 border border-border'
                 }`}
               data-testid="online-toggle"
             >
-              <Power className={`w-8 h-8 ${isOnline ? 'text-white' : 'text-muted-foreground'}`} />
-              {isOnline && (
+              <Power className={`w-8 h-8 ${isOnline ? 'text-white' : 'text-muted-foreground'} ${isTogglingOnline ? 'animate-spin' : ''}`} />
+              {isOnline && !isTogglingOnline && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-400 rounded-full animate-ping" />
               )}
             </button>

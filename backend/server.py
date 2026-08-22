@@ -1151,13 +1151,13 @@ class ConnectionManager:
                 except Exception as ex:
                     logger.error(f"Failed to update passenger briefings on driver location update: {ex}")
 
-    async def broadcast_to_nearby_drivers(self, message: dict, location: dict, radius_km: float = 5.0):
+    async def broadcast_to_nearby_drivers(self, message: dict, location: dict, radius_km: float = 15.0):
         """
-        Targeted dispatch of new ride requests per Section 6.
+        Targeted dispatch of new ride requests.
         Only targets drivers who are:
         1. Marked is_online == True and is_approved == True and wallet not restricted
         2. Not on a conflicting active trip (is_driver_eligible == True)
-        3. Within radius_km (default 5.0 km) of the pickup location
+        3. Within radius_km (default 15.0 km for campus and surrounding areas)
         """
         try:
             ride = message.get("ride", {})
@@ -1176,28 +1176,27 @@ class ConnectionManager:
 
             eligible_drivers = []
             for driver in online_drivers:
-                d_id = driver.get("user_id") or driver.get("id")
+                real_driver_id = driver.get("id")
+                real_user_id = driver.get("user_id")
                 
                 # Check eligibility (capacity, not on conflicting private ride)
-                active_state = await get_driver_active_state(d_id)
+                active_state = await get_driver_active_state(real_driver_id)
                 eligibility = is_driver_eligible(driver, active_state, ride_mode, passenger_count)
                 if not eligibility.get("eligible"):
                     continue
 
                 # Check proximity if driver coordinates are available
-                d_loc = driver.get("location") or driver.get("current_location") or {}
-                d_lat = 0
-                d_lng = 0
-                if isinstance(d_loc, dict):
-                    if "coordinates" in d_loc and isinstance(d_loc["coordinates"], list) and len(d_loc["coordinates"]) >= 2:
-                        d_lng = float(d_loc["coordinates"][0])
-                        d_lat = float(d_loc["coordinates"][1])
-                    else:
-                        d_lat = float(d_loc.get("lat", d_loc.get("latitude", 0)))
-                        d_lng = float(d_loc.get("lng", d_loc.get("longitude", 0)))
+                loc = manager.driver_locations.get(real_user_id) or manager.driver_locations.get(real_driver_id) or driver.get("current_location") or {}
+                d_lat = loc.get("lat")
+                d_lng = loc.get("lng")
+                if (d_lat is None or d_lng is None) and driver.get("location") and "coordinates" in driver["location"]:
+                    coords = driver["location"]["coordinates"]
+                    if len(coords) >= 2:
+                        d_lng = float(coords[0])
+                        d_lat = float(coords[1])
 
-                if loc_lat != 0 and loc_lng != 0 and d_lat != 0 and d_lng != 0:
-                    dist_km = calculate_haversine_distance(loc_lat, loc_lng, d_lat, d_lng)
+                if loc_lat != 0 and loc_lng != 0 and d_lat is not None and d_lng is not None:
+                    dist_km = calculate_haversine_distance(loc_lat, loc_lng, float(d_lat), float(d_lng))
                     if dist_km > radius_km:
                         continue # Skip driver beyond radius
 
@@ -1210,32 +1209,42 @@ class ConnectionManager:
                 pickup_name = pickup_name[:30] + "..."
 
             for driver in eligible_drivers:
-                d_user_id = driver.get("user_id") or driver.get("id")
-                if not d_user_id:
-                    continue
-
+                u_id = driver.get("user_id")
+                d_id = driver.get("id")
+                
                 # 1. Real-time WebSocket event
-                if d_user_id in self.active_connections:
+                sent = False
+                if u_id and u_id in self.active_connections:
                     try:
-                        await self.send_personal_message(message, d_user_id)
-                        logger.info(f"WebSocket new_ride_request delivered to driver {d_user_id}")
+                        await self.send_personal_message(message, u_id)
+                        sent = True
+                        logger.info(f"WebSocket new_ride_request delivered to driver user_id {u_id}")
                     except Exception as ws_err:
-                        logger.error(f"WebSocket send failed for driver {d_user_id}: {ws_err}")
+                        logger.error(f"WebSocket send failed for driver user_id {u_id}: {ws_err}")
+                if d_id and d_id in self.active_connections and d_id != u_id:
+                    try:
+                        await self.send_personal_message(message, d_id)
+                        sent = True
+                        logger.info(f"WebSocket new_ride_request delivered to driver id {d_id}")
+                    except Exception as ws_err:
+                        logger.error(f"WebSocket send failed for driver id {d_id}: {ws_err}")
 
                 # 2. Targeted Push Notification (FCM / WebPush)
-                try:
-                    await notification_service.send(
-                        user_id=d_user_id,
-                        type="new_ride_request",
-                        payload={
-                            "title": "New ride request",
-                            "body": f"Pickup near {pickup_name}. Tap to view.",
-                            "url": "/driver",
-                            "channelId": "ride_updates"
-                        }
-                    )
-                except Exception as push_err:
-                    logger.error(f"Push send failed for driver {d_user_id}: {push_err}")
+                push_target = u_id or d_id
+                if push_target:
+                    try:
+                        await notification_service.send(
+                            user_id=push_target,
+                            type="new_ride_request",
+                            payload={
+                                "title": "New ride request",
+                                "body": f"Pickup near {pickup_name}. Tap to view.",
+                                "url": "/driver",
+                                "channelId": "ride_updates"
+                            }
+                        )
+                    except Exception as push_err:
+                        logger.error(f"Push send failed for driver {push_target}: {push_err}")
 
         except Exception as top_err:
             logger.error(f"broadcast_to_nearby_drivers error: {top_err}", exc_info=True)
@@ -1794,6 +1803,12 @@ async def toggle_online_status(user: dict = Depends(require_driver)):
         {"user_id": user["id"]},
         {"$set": {"is_online": new_status}}
     )
+    
+    if new_status:
+        now = time.time()
+        manager.driver_last_active[user["id"]] = now
+        if driver.get("id"):
+            manager.driver_last_active[driver["id"]] = now
     
     return {"is_online": new_status}
 
@@ -2418,8 +2433,14 @@ async def request_ride(ride_data: RideRequest, user: dict = Depends(get_current_
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
 async def get_driver_active_state(driver_id: str):
+    driver = await db.drivers.find_one({"$or": [{"id": driver_id}, {"user_id": driver_id}]})
+    ids_to_check = [driver_id]
+    if driver:
+        if driver.get("id"): ids_to_check.append(driver["id"])
+        if driver.get("user_id"): ids_to_check.append(driver["user_id"])
+    
     active_rides = await db.rides.find({
-        "driver_id": driver_id,
+        "driver_id": {"$in": ids_to_check},
         "status": {"$in": get_active_ride_states()}
     }).to_list(100)
     
@@ -3361,50 +3382,6 @@ async def rate_ride(ride_id: str, rating_data: RatingCreate, background_tasks: B
     
     return {"status": "rated"}
 
-@api_router.get("/rides/{ride_id}", response_model=RideResponse)
-async def get_ride_by_id(ride_id: str, user: dict = Depends(get_current_user)):
-    ride = await find_ride_by_id(ride_id)
-    if not ride:
-        raise HTTPException(status_code=404, detail="Ride not found")
-    
-    ride.pop("_id", None)
-    
-    # Populate student info with avatar
-    if ride.get("student_id"):
-        student = await db.users.find_one({"id": ride["student_id"]}, {"_id": 0})
-        if student:
-            ride["student"] = UserResponse(
-                id=student["id"],
-                email=student.get("email"),
-                name=student.get("name", "Student"),
-                phone=student.get("phone", ""),
-                avatar_url=student.get("avatar_url"),
-                role=UserRole(student.get("role", "student")),
-                created_at=student.get("created_at", ""),
-                is_active=student.get("is_active", True)
-            )
-            ride["student_name"] = student.get("name")
-            
-    # Populate driver info with avatar
-    if ride.get("driver_id"):
-        driver = await db.drivers.find_one({"id": ride["driver_id"]}, {"_id": 0})
-        if driver:
-            driver_user = await db.users.find_one({"id": driver.get("user_id")}, {"_id": 0})
-            if driver_user:
-                driver["user"] = UserResponse(
-                    id=driver_user["id"],
-                    email=driver_user.get("email"),
-                    name=driver_user.get("name", "Driver"),
-                    phone=driver_user.get("phone", ""),
-                    avatar_url=driver_user.get("avatar_url"),
-                    role=UserRole(driver_user.get("role", "driver")),
-                    created_at=driver_user.get("created_at", ""),
-                    is_active=driver_user.get("is_active", True)
-                )
-            ride["driver"] = DriverResponse(**driver)
-            
-    return RideResponse(**ride)
-
 @api_router.get("/rides/active", response_model=Optional[RideResponse])
 async def get_active_ride(user: dict = Depends(get_current_user)):
     query = {"status": {"$in": get_active_ride_states()}}
@@ -3419,8 +3396,6 @@ async def get_active_ride(user: dict = Depends(get_current_user)):
         query["student_id"] = user["id"]
     
     ride = await db.rides.find_one(query, {"_id": 0}, sort=[("created_at", -1)])
-    
-    print(f"ACTIVE RIDE QUERY FOR {user['id']}: found {ride['id'] if ride else 'None'}")
     
     if ride:
         # Populate student
@@ -3477,6 +3452,51 @@ async def get_active_ride(user: dict = Depends(get_current_user)):
     
     return None
 
+@api_router.get("/rides/pending", response_model=List[RideResponse])
+async def get_pending_rides(user: dict = Depends(require_driver)):
+    driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
+    if not driver:
+        return []
+        
+    active_state = await get_driver_active_state(driver["id"])
+    
+    # If carrying a private ride, cannot see any new rides
+    if active_state["has_private"]:
+        return []
+        
+    # Build query based on driver capability
+    query = {"status": RideStatus.REQUESTED.value}
+    
+    if active_state["active_passengers"] > 0:
+        # Carrying shared passengers: can only see shared rides
+        query["ride_mode"] = RideMode.SHARED.value
+    elif not driver.get("accepts_shared_rides", True):
+        # Empty but not accepting shared: can only see private rides
+        query["ride_mode"] = RideMode.PRIVATE.value
+    
+    rides = await db.rides.find(query, {"_id": 0}).sort("created_at", -1).to_list(50)
+    
+    result = []
+    for ride in rides:
+        if ride.get("ride_mode") == RideMode.SHARED.value:
+            if not driver.get("accepts_shared_rides", True):
+                continue
+                
+        student = await db.users.find_one({"id": ride["student_id"]}, {"_id": 0})
+        if student:
+            ride["student"] = UserResponse(
+                id=student["id"],
+                email=student["email"],
+                name=student["name"],
+                phone=student["phone"],
+                role=UserRole(student["role"]),
+                created_at=student["created_at"],
+                is_active=student.get("is_active", True)
+            )
+        result.append(RideResponse(**ride))
+    
+    return result
+
 @api_router.get("/rides/history", response_model=List[RideResponse])
 async def get_ride_history(
     limit: int = Query(20, ge=1, le=100),
@@ -3531,53 +3551,49 @@ async def get_ride_history(
     
     return result
 
-@api_router.get("/rides/pending", response_model=List[RideResponse])
-async def get_pending_rides(user: dict = Depends(require_driver)):
-    driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
-    if not driver:
-        return []
-        
-    active_state = await get_driver_active_state(driver["id"])
+@api_router.get("/rides/{ride_id}", response_model=RideResponse)
+async def get_ride_by_id(ride_id: str, user: dict = Depends(get_current_user)):
+    ride = await find_ride_by_id(ride_id)
+    if not ride:
+        raise HTTPException(status_code=404, detail="Ride not found")
     
-    # If carrying a private ride, cannot see any new rides
-    if active_state["has_private"]:
-        return []
-        
-    # Build query based on driver capability
-    query = {"status": RideStatus.REQUESTED.value}
+    ride.pop("_id", None)
     
-    if active_state["active_passengers"] > 0:
-        # Carrying shared passengers: can only see shared rides
-        query["ride_mode"] = RideMode.SHARED.value
-    elif not driver.get("accepts_shared_rides", True):
-        # Empty but not accepting shared: can only see private rides
-        query["ride_mode"] = RideMode.PRIVATE.value
-    
-    rides = await db.rides.find(query, {"_id": 0}).sort("created_at", -1).to_list(50)
-    
-    result = []
-    for ride in rides:
-        # We no longer strictly filter shared rides by capacity here so the frontend can populate 
-        # the masterSharedRidePool. The frontend will dynamically filter based on real-time capacity.
-        if ride.get("ride_mode") == RideMode.SHARED.value:
-            if not driver.get("accepts_shared_rides", True):
-                continue
-                continue
-                
+    # Populate student info with avatar
+    if ride.get("student_id"):
         student = await db.users.find_one({"id": ride["student_id"]}, {"_id": 0})
         if student:
             ride["student"] = UserResponse(
                 id=student["id"],
-                email=student["email"],
-                name=student["name"],
-                phone=student["phone"],
-                role=UserRole(student["role"]),
-                created_at=student["created_at"],
+                email=student.get("email"),
+                name=student.get("name", "Student"),
+                phone=student.get("phone", ""),
+                avatar_url=student.get("avatar_url"),
+                role=UserRole(student.get("role", "student")),
+                created_at=student.get("created_at", ""),
                 is_active=student.get("is_active", True)
             )
-        result.append(RideResponse(**ride))
-    
-    return result
+            ride["student_name"] = student.get("name")
+            
+    # Populate driver info with avatar
+    if ride.get("driver_id"):
+        driver = await db.drivers.find_one({"id": ride["driver_id"]}, {"_id": 0})
+        if driver:
+            driver_user = await db.users.find_one({"id": driver.get("user_id")}, {"_id": 0})
+            if driver_user:
+                driver["user"] = UserResponse(
+                    id=driver_user["id"],
+                    email=driver_user.get("email"),
+                    name=driver_user.get("name", "Driver"),
+                    phone=driver_user.get("phone", ""),
+                    avatar_url=driver_user.get("avatar_url"),
+                    role=UserRole(driver_user.get("role", "driver")),
+                    created_at=driver_user.get("created_at", ""),
+                    is_active=driver_user.get("is_active", True)
+                )
+            ride["driver"] = DriverResponse(**driver)
+            
+    return RideResponse(**ride)
 
 # ==================== ADMIN & ACCOUNTANT ROUTES ====================
 COMPLETED_RIDE_STATUSES = [
