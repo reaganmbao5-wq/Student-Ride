@@ -202,16 +202,9 @@ const DriverDashboard = () => {
         setMasterSharedRidePool(allPending.filter(r => r.ride_mode === 'shared'));
       }
       
-      const profile = await refreshDriverProfile();
-      if (!profile && !driverProfile) {
-        navigate('/driver/register');
-        return;
-      }
+      await refreshDriverProfile();
     } catch (error) {
       console.error('Error fetching data:', error);
-      if (error.response?.status === 404) {
-        navigate('/driver/register');
-      }
     } finally {
       setLoading(false);
     }

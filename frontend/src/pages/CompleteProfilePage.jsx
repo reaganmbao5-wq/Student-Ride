@@ -112,7 +112,7 @@ export default function CompleteProfilePage() {
             toast.success('Welcome to J Ride! 🎉');
 
             // Reload into the dashboard so AuthContext picks up the stored token
-            window.location.href = isDriver ? '/driver/register' : '/dashboard';
+            window.location.href = isDriver ? '/driver' : '/dashboard';
         } catch (err) {
             showFriendlyError(err, 'Failed to update profile. Please try again.');
         } finally {
