@@ -334,6 +334,14 @@ const StudentDashboard = () => {
         setPassengerBriefing(null);
         setDriverPos(null);
         AppCache.remove('active_ride');
+        if (cancelledId) {
+          setRecentRides(prev => {
+            const updated = prev.map(r => r.id === cancelledId ? { ...r, status: 'cancelled' } : r);
+            AppCache.set('recent_rides', updated);
+            AppCache.set('history', updated);
+            return updated;
+          });
+        }
         fetchData();
       } else if (rideUpdate.type === 'reassigning') {
         systemNotification.notifyRideCancelled('Driver cancelled. Finding a new driver...');
@@ -419,10 +427,7 @@ const StudentDashboard = () => {
       setRecentRides(ridesList);
       AppCache.set('recent_rides', ridesList);
       AppCache.set('active_ride', activeRes.data);
-      const existingHistory = AppCache.get('history');
-      if (!existingHistory || existingHistory.length < ridesList.length) {
-        AppCache.set('history', ridesList);
-      }
+      AppCache.set('history', ridesList);
       console.log('DASHBOARD_RENDER_COMPLETE (Student)');
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -434,13 +439,22 @@ const StudentDashboard = () => {
   const handleCancelRide = async () => {
     if (!activeRide) return;
 
+    const rideIdToCancel = activeRide.id;
     try {
-      const rideIdToCancel = activeRide.id;
       cancelledRideIdsRef.current.add(rideIdToCancel);
       setActiveRide(null);
       setDriverPos(null);
       setPassengerBriefing(null);
       AppCache.remove('active_ride');
+
+      // Optimistically update recentRides and history cache immediately
+      setRecentRides(prev => {
+        const updated = prev.map(r => r.id === rideIdToCancel ? { ...r, status: 'cancelled' } : r);
+        AppCache.set('recent_rides', updated);
+        AppCache.set('history', updated);
+        return updated;
+      });
+
       await api.post(`/rides/${rideIdToCancel}/cancel`);
       toast.success('Ride cancelled');
       fetchData();

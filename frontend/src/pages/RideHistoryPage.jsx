@@ -97,7 +97,7 @@ const RideHistoryPage = () => {
   const filteredRides = useMemo(() => {
     return rides.filter((ride) => {
       // Filter tab check
-      if (filterStatus === 'completed' && ride.status !== 'completed') return false;
+      if (filterStatus === 'completed' && !['completed', 'ride_completed', 'settlement', 'ride_archived', 'completed_ride'].includes(ride.status)) return false;
       if (filterStatus === 'cancelled' && ride.status !== 'cancelled') return false;
 
       // Search query check
@@ -116,7 +116,7 @@ const RideHistoryPage = () => {
   // Statistics Summary
   const stats = useMemo(() => {
     const totalCount = rides.length;
-    const completedRides = rides.filter((r) => r.status === 'completed');
+    const completedRides = rides.filter((r) => ['completed', 'ride_completed', 'settlement', 'ride_archived', 'completed_ride'].includes(r.status));
     const totalSpent = completedRides.reduce((acc, r) => acc + (isDriver ? (r.driver_earning || 0) : (r.fare || 0)), 0);
     return { totalCount, completedCount: completedRides.length, totalSpent };
   }, [rides, isDriver]);

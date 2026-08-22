@@ -18,6 +18,7 @@ import { RouteProgress } from '../map/route/RouteProgress';
 import { toast } from 'sonner';
 import { App } from '@capacitor/app';
 import { useRef } from 'react';
+import { AppCache } from '../utils/AppCache';
 
 import { ActiveTripQueue } from '../components/driver/ActiveTripQueue';
 import { SharedRideRequestPanel } from '../components/driver/SharedRideRequestPanel';
@@ -688,6 +689,8 @@ const DriverDashboard = () => {
       return remaining;
     });
     setRouteQueue(prev => prev.filter(stop => stop.ride_id !== targetId));
+    AppCache.remove('history');
+    AppCache.remove('recent_rides');
     toast.success('Ride completed!');
 
     try {
@@ -724,6 +727,8 @@ const DriverDashboard = () => {
     });
     setRouteQueue(prev => prev.filter(stop => stop.ride_id !== targetId && getRideId(stop) !== targetId));
     setRoutesData(prev => prev.filter(segment => segment.ride_id !== targetId));
+    AppCache.remove('history');
+    AppCache.remove('recent_rides');
     toast.info('Ride cancelled');
 
     try {

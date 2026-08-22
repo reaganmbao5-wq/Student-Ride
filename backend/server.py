@@ -3958,7 +3958,7 @@ async def switch_user_role(user_id: str, request: SwitchRoleRequest, admin: dict
     return UserResponse(**updated)
 
 @api_router.get("/admin/drivers", response_model=List[DriverResponse])
-async def get_all_drivers(user: dict = Depends(require_admin)):
+async def get_all_drivers(user: dict = Depends(require_accountant)):
     drivers = await db.drivers.find({}, {"_id": 0}).to_list(1000)
     result = []
     for driver in drivers:
