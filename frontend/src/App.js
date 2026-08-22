@@ -34,6 +34,9 @@ import AdminDestinationsPage from "./pages/AdminDestinationsPage";
 import AdminPricingPage from "./pages/AdminPricingPage";
 import AdminBugReportsPage from "./pages/AdminBugReportsPage";
 import AccountantDashboard from "./pages/AccountantDashboard";
+import AccountantLedgerPage from "./pages/AccountantLedgerPage";
+import AccountantSettlementsPage from "./pages/AccountantSettlementsPage";
+import AccountantPricingPage from "./pages/AccountantPricingPage";
 import ChatPage from "./pages/ChatPage";
 import ProfilePage from "./pages/ProfilePage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
@@ -277,6 +280,30 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute allowedRoles={['accountant', 'admin', 'super_admin']}>
               <AccountantDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/accountant/ledger"
+          element={
+            <ProtectedRoute allowedRoles={['accountant', 'admin', 'super_admin']}>
+              <AccountantLedgerPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/accountant/settlements"
+          element={
+            <ProtectedRoute allowedRoles={['accountant', 'admin', 'super_admin']}>
+              <AccountantSettlementsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/accountant/pricing"
+          element={
+            <ProtectedRoute allowedRoles={['accountant', 'admin', 'super_admin']}>
+              <AccountantPricingPage />
             </ProtectedRoute>
           }
         />

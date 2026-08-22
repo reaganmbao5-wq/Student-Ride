@@ -2105,7 +2105,7 @@ async def topup_driver_wallet(driver_id: str, topup: WalletTopUp, user: dict = D
 
 
 @api_router.post("/admin/settlement/daily")
-async def run_daily_settlement(user: dict = Depends(require_admin)):
+async def run_daily_settlement(user: dict = Depends(require_accountant)):
     """
     Cron-like endpoint to settle accumulated commissions for all drivers.
     Idempotent: Resets 'total_commission_due' to 0 and adds to 'total_commission_paid'.
@@ -2155,7 +2155,7 @@ async def run_daily_settlement(user: dict = Depends(require_admin)):
     }
 
 @api_router.post("/admin/drivers/{driver_id}/settle-commission")
-async def settle_single_driver_commission(driver_id: str, data: dict = Body({}), user: dict = Depends(require_admin)):
+async def settle_single_driver_commission(driver_id: str, data: dict = Body({}), user: dict = Depends(require_accountant)):
     """
     Admin clears/settles a specific driver's accumulated commission debt (remittance payment).
     Resets total_commission_due, increments total_commission_paid, restores wallet_status to ACTIVE.
@@ -3471,7 +3471,7 @@ COMPLETED_RIDE_STATUSES = [
 ]
 
 @api_router.get("/admin/stats")
-async def get_admin_stats(user: dict = Depends(require_admin)):
+async def get_admin_stats(user: dict = Depends(require_accountant)):
     total_users = await db.users.count_documents({})
     total_drivers = await db.drivers.count_documents({})
     pending_drivers = await db.drivers.count_documents({"is_approved": False})
@@ -3505,7 +3505,7 @@ async def get_admin_stats(user: dict = Depends(require_admin)):
     }
 
 @api_router.get("/admin/analytics")
-async def get_admin_analytics(user: dict = Depends(require_admin)):
+async def get_admin_analytics(user: dict = Depends(require_accountant)):
     """
     Detailed analytics for the admin dashboard with resilient date parsing and aggregation.
     """
@@ -3719,7 +3719,7 @@ async def get_admin_user_details(user_id: str, admin: dict = Depends(require_adm
     }
 
 @api_router.post("/admin/drivers/{driver_id}/settle")
-async def settle_single_driver_commission(driver_id: str, data: dict = Body({}), user: dict = Depends(require_admin)):
+async def settle_single_driver_commission(driver_id: str, data: dict = Body({}), user: dict = Depends(require_accountant)):
     """
     Admin clears/settles a specific driver's accumulated commission debt (remittance payment).
     Resets total_commission_due, increments total_commission_paid, restores wallet_status to ACTIVE.
@@ -4346,7 +4346,7 @@ async def update_settings(settings: PlatformSettings, user: dict = Depends(requi
 # ==================== PRICING & FIXED ROUTE MANAGEMENT ====================
 
 @api_router.get("/admin/pricing-settings", response_model=PricingSettings)
-async def get_pricing_settings(user: dict = Depends(require_admin)):
+async def get_pricing_settings(user: dict = Depends(require_accountant)):
     settings = await db.pricing_settings.find_one({})
     if not settings:
         # Should be initialized on startup, but fail-safe

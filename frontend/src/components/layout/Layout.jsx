@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { 
   House, MapPin, Clock, User, Gear, Car, CurrencyCircleDollar, 
   UsersThree, ChartBar, Shield, SignOut, BugBeetle, SteeringWheel,
-  Sun, Moon, GraduationCap
+  Sun, Moon, GraduationCap, Receipt, Wallet
 } from '@phosphor-icons/react';
 import { useTheme } from '../../context/ThemeContext';
 import { cn } from '../../lib/utils';
@@ -13,7 +13,7 @@ import { Dock, DockIcon, DockItem, DockLabel } from '../ui/dock';
 import { LimelightNav } from '../ui/limelight-nav';
 
 export const Layout = ({ children }) => {
-  const { user, isDriver, isAdmin, logout } = useAuth();
+  const { user, isDriver, isAdmin, isAccountant, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -49,7 +49,15 @@ export const Layout = ({ children }) => {
     { to: '/admin/settings', icon: (props) => <Gear weight="duotone" {...props} />, label: 'Settings' }
   ];
 
-  const navItems = isAdmin ? adminNavItems : isDriver ? driverNavItems : studentNavItems;
+  const accountantNavItems = [
+    { to: '/accountant', icon: (props) => <ChartBar weight="duotone" {...props} />, label: 'Overview' },
+    { to: '/accountant/ledger', icon: (props) => <Receipt weight="duotone" {...props} />, label: 'Rides Ledger' },
+    { to: '/accountant/settlements', icon: (props) => <Wallet weight="duotone" {...props} />, label: 'Driver Wallets' },
+    { to: '/accountant/pricing', icon: (props) => <CurrencyCircleDollar weight="duotone" {...props} />, label: 'Pricing Matrix' }
+  ];
+
+  const isAccountantUser = isAccountant || user?.role === 'accountant';
+  const navItems = isAccountantUser ? accountantNavItems : isAdmin ? adminNavItems : isDriver ? driverNavItems : studentNavItems;
 
   const limelightNavItems = navItems.map((item) => ({
     id: item.to,
@@ -59,7 +67,7 @@ export const Layout = ({ children }) => {
   }));
 
   const activeLimelightIndex = limelightNavItems.findIndex((item) => {
-    if (item.to === '/dashboard' || item.to === '/driver' || item.to === '/admin') {
+    if (item.to === '/dashboard' || item.to === '/driver' || item.to === '/admin' || item.to === '/accountant') {
       return location.pathname === item.to;
     }
     return location.pathname.startsWith(item.to);
@@ -86,7 +94,7 @@ export const Layout = ({ children }) => {
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.to === '/dashboard' || item.to === '/driver' || item.to === '/admin'}
+              end={item.to === '/dashboard' || item.to === '/driver' || item.to === '/admin' || item.to === '/accountant'}
               className={({ isActive }) => cn(
                 "flex items-center gap-3 p-3 rounded-xl transition-all",
                 isActive
