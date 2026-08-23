@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+import { App } from '@capacitor/app';
 import { useAuth } from './AuthContext';
 import { getBackendUrl } from '../utils/urlHelpers';
 
@@ -191,7 +192,8 @@ export const WebSocketProvider = ({ children }) => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-          console.log('App became visible, forcing WebSocket reconnect...');
+          console.log('App became visible, forcing instant WebSocket reconnect...');
+          reconnectAttemptRef.current = 0;
           connect();
         }
       }
@@ -199,7 +201,8 @@ export const WebSocketProvider = ({ children }) => {
 
     const handleOnline = () => {
       if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-        console.log('Network became online, forcing WebSocket reconnect...');
+        console.log('Network became online, forcing instant WebSocket reconnect...');
+        reconnectAttemptRef.current = 0;
         connect();
       }
     };
@@ -207,9 +210,28 @@ export const WebSocketProvider = ({ children }) => {
     window.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('online', handleOnline);
 
+    let appStateListener = null;
+    const setupAppStateListener = async () => {
+      try {
+        appStateListener = await App.addListener('appStateChange', ({ isActive }) => {
+          if (isActive) {
+            console.log('Capacitor App active, forcing instant WebSocket reconnect...');
+            reconnectAttemptRef.current = 0;
+            connect();
+          }
+        });
+      } catch (e) {
+        // App listener unavailable on pure web browser
+      }
+    };
+    setupAppStateListener();
+
     return () => {
       window.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('online', handleOnline);
+      if (appStateListener && typeof appStateListener.remove === 'function') {
+        appStateListener.remove();
+      }
       if (wsRef.current) {
         wsRef.current.close();
       }

@@ -79,6 +79,12 @@ const DriverDashboard = () => {
 
   const getRideId = (r) => r?.id || r?._id || (typeof r === 'string' ? r : null);
 
+  // Monotonic lifecycle guards:
+  // terminalRideIdsRef tracks completed/cancelled rides so stale GET requests never restore them.
+  const terminalRideIdsRef = useRef(new Set());
+  // inFlightAcceptIdsRef tracks rides being accepted optimistically so background fetchData does not wipe them out.
+  const inFlightAcceptIdsRef = useRef(new Set());
+
   // Calculate dynamically based on Passenger States
   const occupiedPassengers = useMemo(() => {
     return activeRides.reduce((sum, ride) => {
@@ -144,24 +150,40 @@ const DriverDashboard = () => {
         api.get('/rides/driver/active'),
         api.get('/rides/driver/trip').catch(() => ({ data: { route_queue: [] } }))
       ]);
-      const ridesArray = (activeRes.data || []).filter(r => r.status !== 'cancelled' && r.status !== 'completed');
-      setActiveRides(ridesArray);
-      setActiveRide(ridesArray.length > 0 ? ridesArray[0] : null);
-      if (ridesArray.length === 0) {
-        setRouteQueue([]);
-        setRoutesData([]);
-        localStorage.removeItem('driver_active_rides');
-        localStorage.removeItem('driver_active_ride');
-      } else {
-        localStorage.setItem('driver_active_rides', JSON.stringify(ridesArray));
-        localStorage.setItem('driver_active_ride', JSON.stringify(ridesArray[0]));
-        if (tripRes?.data?.route_queue) {
-          setRouteQueue(tripRes.data.route_queue);
-          if (Array.isArray(tripRes.data.full_driver_segments)) {
-            setRoutesData(tripRes.data.full_driver_segments);
+      const serverRides = (activeRes.data || []).filter(r => 
+        r.status !== 'cancelled' && 
+        r.status !== 'completed' && 
+        r.status !== 'ride_completed' && 
+        r.status !== 'ride_archived' && 
+        !terminalRideIdsRef.current.has(getRideId(r))
+      );
+
+      setActiveRides(prev => {
+        const inFlightRides = prev.filter(r => inFlightAcceptIdsRef.current.has(getRideId(r)) && !serverRides.some(sr => getRideId(sr) === getRideId(r)));
+        const merged = [...serverRides, ...inFlightRides];
+        if (merged.length === 0) {
+          setRouteQueue([]);
+          setRoutesData([]);
+          localStorage.removeItem('driver_active_rides');
+          localStorage.removeItem('driver_active_ride');
+          setActiveRide(null);
+        } else {
+          localStorage.setItem('driver_active_rides', JSON.stringify(merged));
+          localStorage.setItem('driver_active_ride', JSON.stringify(merged[0]));
+          setActiveRide(prevActive => {
+            if (!prevActive) return merged[0];
+            const matching = merged.find(r => getRideId(r) === getRideId(prevActive));
+            return matching || merged[0];
+          });
+          if (tripRes?.data?.route_queue) {
+            setRouteQueue(tripRes.data.route_queue);
+            if (Array.isArray(tripRes.data.full_driver_segments)) {
+              setRoutesData(tripRes.data.full_driver_segments);
+            }
           }
         }
-      }
+        return merged;
+      });
     } catch (err) {
       console.error("Error refreshing active ride:", err);
     }
@@ -175,18 +197,35 @@ const DriverDashboard = () => {
         api.get('/rides/driver/trip').catch(() => ({ data: { route_queue: [] } }))
       ]);
 
-      const ridesArray = (activeRes.data || []).filter(r => r.status !== 'cancelled' && r.status !== 'completed');
-      setActiveRides(ridesArray);
-      setActiveRide(ridesArray.length > 0 ? ridesArray[0] : null);
-      if (ridesArray.length === 0) {
-        setRouteQueue([]);
-        setRoutesData([]);
-        localStorage.removeItem('driver_active_rides');
-        localStorage.removeItem('driver_active_ride');
-      } else {
-        localStorage.setItem('driver_active_rides', JSON.stringify(ridesArray));
-        localStorage.setItem('driver_active_ride', JSON.stringify(ridesArray[0]));
-      }
+      const serverRides = (activeRes.data || []).filter(r => 
+        r.status !== 'cancelled' && 
+        r.status !== 'completed' && 
+        r.status !== 'ride_completed' && 
+        r.status !== 'ride_archived' && 
+        !terminalRideIdsRef.current.has(getRideId(r))
+      );
+
+      setActiveRides(prev => {
+        const inFlightRides = prev.filter(r => inFlightAcceptIdsRef.current.has(getRideId(r)) && !serverRides.some(sr => getRideId(sr) === getRideId(r)));
+        const merged = [...serverRides, ...inFlightRides];
+        if (merged.length === 0) {
+          setRouteQueue([]);
+          setRoutesData([]);
+          localStorage.removeItem('driver_active_rides');
+          localStorage.removeItem('driver_active_ride');
+          setActiveRide(null);
+        } else {
+          localStorage.setItem('driver_active_rides', JSON.stringify(merged));
+          localStorage.setItem('driver_active_ride', JSON.stringify(merged[0]));
+          setActiveRide(prevActive => {
+            if (!prevActive) return merged[0];
+            const matching = merged.find(r => getRideId(r) === getRideId(prevActive));
+            return matching || merged[0];
+          });
+        }
+        return merged;
+      });
+
       setEarnings(earningsRes.data);
       if (tripRes?.data) {
         if (tripRes.data.route_queue) setRouteQueue(tripRes.data.route_queue);
@@ -603,6 +642,9 @@ const DriverDashboard = () => {
   };
 
   const handleAcceptRide = async (rideId) => {
+    inFlightAcceptIdsRef.current.add(rideId);
+    terminalRideIdsRef.current.delete(rideId);
+
     const fakeAcceptedRide = pendingRides.find(r => getRideId(r) === rideId) || { id: rideId, status: 'accepted' };
     const targetRide = { ...fakeAcceptedRide, status: 'accepted' };
 
@@ -638,10 +680,15 @@ const DriverDashboard = () => {
       console.error('Error accepting ride:', error);
       toast.error(error.response?.data?.detail || 'Failed to accept ride');
       fetchData(); // Rollback on error
+    } finally {
+      inFlightAcceptIdsRef.current.delete(rideId);
     }
   };
 
   const handleAcceptSharedRide = async (rideId) => {
+    inFlightAcceptIdsRef.current.add(rideId);
+    terminalRideIdsRef.current.delete(rideId);
+
     const fakeAcceptedRide = masterSharedRidePool.find(r => getRideId(r) === rideId) || pendingRides.find(r => getRideId(r) === rideId) || { id: rideId, status: 'accepted' };
     const targetRide = { ...fakeAcceptedRide, status: 'accepted' };
 
@@ -677,6 +724,8 @@ const DriverDashboard = () => {
       console.error('Error accepting shared ride:', error);
       toast.error(error.response?.data?.detail || 'Failed to accept ride');
       fetchData(); // Revert on error
+    } finally {
+      inFlightAcceptIdsRef.current.delete(rideId);
     }
   };
 
@@ -735,6 +784,9 @@ const DriverDashboard = () => {
     const targetId = getRideId(targetRide);
     if (!targetId) return;
 
+    terminalRideIdsRef.current.add(targetId);
+    inFlightAcceptIdsRef.current.delete(targetId);
+
     // Optimistic UI update: instantly transition to remaining student ride if any
     setActiveRides(prev => {
       const remaining = prev.filter(r => getRideId(r) !== targetId);
@@ -773,6 +825,9 @@ const DriverDashboard = () => {
     if (!targetRide) return;
     const targetId = getRideId(targetRide);
     if (!targetId) return;
+
+    terminalRideIdsRef.current.add(targetId);
+    inFlightAcceptIdsRef.current.delete(targetId);
 
     // Optimistic UI update: filter out cancelled ride immediately without dumping driver to home page
     setActiveRides(prev => {

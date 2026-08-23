@@ -82,8 +82,13 @@ export const AppCache = {
         AppCache.set('history', historyData);
         AppCache.set('recent_rides', historyData.slice(0, 5));
       }
-      if (activeRes.status === 'fulfilled' && activeRes.value?.data) {
-        AppCache.set('active_ride', activeRes.value.data);
+      if (activeRes.status === 'fulfilled') {
+        const activeData = activeRes.value?.data;
+        if (activeData && !['cancelled', 'completed', 'ride_completed', 'ride_archived'].includes(activeData.status)) {
+          AppCache.set('active_ride', activeData);
+        } else {
+          AppCache.remove('active_ride');
+        }
       }
       if (destRes.status === 'fulfilled' && destRes.value?.data) {
         AppCache.set('destinations', destRes.value.data);

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { App } from '@capacitor/app';
 import { MapPin, Clock, Star, ChevronRight, Navigation, AlertCircle, MessageCircle, Phone, PhoneCall, Loader2, Trash2, User as UserIcon, Bug } from 'lucide-react';
 import { Car, Star as PhosphorStar } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -23,6 +24,23 @@ import { AppCache } from '../utils/AppCache';
 import { StudentDashboardSkeleton } from '../components/common/PageSkeletons';
 import { systemNotification } from '../services/SystemNotificationService';
 import { DriverPhotoModal } from '../components/common/DriverPhotoModal';
+
+const STATUS_RANK = {
+  'requested': 1,
+  'driver_accepted': 2,
+  'accepted': 2,
+  'driver_en_route_to_pickup': 2,
+  'driver_arrived': 3,
+  'passenger_boarding': 3,
+  'ongoing': 4,
+  'ride_started': 4,
+  'ride_in_progress': 4,
+  'arriving_destination': 4,
+  'completed': 5,
+  'ride_completed': 5,
+  'ride_archived': 5,
+  'cancelled': 5
+};
 
 const getNameGradient = (accent) => {
   switch (accent) {
@@ -162,6 +180,30 @@ const StudentDashboard = () => {
     if (window.history.state && window.history.state.usr?.initialRide) {
       window.history.replaceState({}, document.title);
     }
+  }, []);
+
+  // Handle Capacitor App State (Background -> Foreground) for instant zero-delay sync
+  useEffect(() => {
+    let listener = null;
+    const setupListener = async () => {
+      try {
+        listener = await App.addListener('appStateChange', ({ isActive }) => {
+          if (isActive) {
+            console.log('Student App resumed, refreshing student dashboard data immediately...');
+            fetchData();
+          }
+        });
+      } catch (e) {
+        // App listener unavailable on browser
+      }
+    };
+    setupListener();
+
+    return () => {
+      if (listener && typeof listener.remove === 'function') {
+        listener.remove();
+      }
+    };
   }, []);
 
   // Pre-load map tiles in 3km radius around user location in background for zero-delay instant map rendering
@@ -405,18 +447,33 @@ const StudentDashboard = () => {
 
       setActiveRide(prev => {
         if (!activeRes.data) return null;
-        if (activeRes.data.status === 'cancelled' || 
-            activeRes.data.status === 'completed' || 
-            activeRes.data.status === 'ride_completed' || 
-            activeRes.data.status === 'ride_archived' ||
-            cancelledRideIdsRef.current.has(activeRes.data.id)) {
+        const serverData = activeRes.data;
+        if (serverData.status === 'cancelled' || 
+            serverData.status === 'completed' || 
+            serverData.status === 'ride_completed' || 
+            serverData.status === 'ride_archived' ||
+            cancelledRideIdsRef.current.has(serverData.id)) {
           AppCache.remove('active_ride');
           return null;
         }
-        // Server status is authoritative — allow transition from requested -> accepted/arrived/ongoing
+
+        // Monotonic Status Lock: If current client state is already at a higher rank for the same ride, NEVER downgrade!
+        if (prev && prev.id === serverData.id) {
+          const prevRank = STATUS_RANK[prev.status] || 0;
+          const serverRank = STATUS_RANK[serverData.status] || 0;
+          if (prevRank > serverRank) {
+            console.log(`[StudentDashboard] Preventing status downgrade from ${prev.status} (${prevRank}) to ${serverData.status} (${serverRank})`);
+            return {
+              ...serverData,
+              ...prev,
+              passenger_briefing: prev.passenger_briefing || serverData.passenger_briefing
+            };
+          }
+        }
+
         return {
-          ...activeRes.data,
-          passenger_briefing: activeRes.data.passenger_briefing || prev?.passenger_briefing
+          ...serverData,
+          passenger_briefing: serverData.passenger_briefing || prev?.passenger_briefing
         };
       });
       

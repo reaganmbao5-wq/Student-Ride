@@ -65,3 +65,33 @@ if (activeRide.status === 'requested' || isPriorStopsActive) {
   - When the driver accepts a new passenger while already on an active trip, recompute the full route queue and dispatch `trip_updated` / `ride_updated` broadcasts to all active passengers simultaneously.
 * **Zero Delay State Hydration**:
   - Immediately reflect stop position updates (`is_next_stop`, `stops_remaining`, dynamic 3D zoom adjustment) across all connected student sessions without requiring manual page refresh or route reloading delays.
+
+---
+
+## 4. 🔄 Ride Lifecycle State Stability & Stale Cache / Race Condition Elimination
+
+### **Root Cause Diagnosis**
+1. **Driver Accept / Complete / Cancel Page Bounces**:
+   - In `DriverDashboard.jsx`, whenever an action (Accept, Complete, Cancel) was executed, `fetchData()` or background polling was in-flight.
+   - An in-flight `GET /rides/driver/active` that started *before* the backend committed the database change returned stale data (e.g. empty array or old active ride).
+   - When that in-flight response resolved, it clobbered optimistic UI state, snapping the driver to the home screen (on accept) or back into a completed ride (on complete).
+2. **Student Dashboard Accept Flash Back to "Finding Driver"**:
+   - When WebSocket delivered `ride_accepted`, `StudentDashboard` updated state to `driver_accepted`.
+   - An in-flight `fetchData()` from the 4-second polling timer that had sent `GET /rides/active` before acceptance resolved seconds later with `status: requested`.
+   - `fetchData()` replaced the state, downgrading the ride from `driver_accepted` back to `requested` and wiping driver details for 4–20 seconds.
+3. **Student Native Mobile Background Sync Latency (~20s)**:
+   - On native Android, when the app was in the background, WebSocket closed.
+   - Upon resuming the app (e.g. tapping the push notification), there was no native `App.addListener('appStateChange')` to force immediate reconnection, waiting up to 20–30s on exponential backoff timers.
+
+### **Implemented Fixes**
+* **Monotonic Status Rank Guard (`STATUS_RANK`)**:
+  - A strict status hierarchy is enforced: `requested (1) -> driver_accepted (2) -> driver_arrived (3) -> ongoing (4) -> completed / cancelled (5)`.
+  - In `StudentDashboard.jsx` and `DriverDashboard.jsx`, incoming GET responses are forbidden from downgrading an existing higher client status rank for the same ride.
+* **In-Flight & Terminal Ride Tracking (`inFlightAcceptIdsRef` & `terminalRideIdsRef`)**:
+  - Driver dashboard tracks mutating ride IDs in dedicated refs.
+  - When completing or cancelling, the ride ID is added to `terminalRideIdsRef` and filtered out from any incoming stale GET response.
+  - When accepting, `inFlightAcceptIdsRef` keeps the optimistic ride in `activeRides` so background queries cannot wipe it out before the POST finishes.
+* **Capacitor Mobile Foreground Instant Resume (`appStateChange`)**:
+  - Added `@capacitor/app` `appStateChange` listeners to both `WebSocketContext.js` and `StudentDashboard.jsx`.
+  - When the app returns to the foreground, it resets exponential backoff timers (`reconnectAttemptRef.current = 0`) and triggers instant WebSocket connection + fresh REST data fetch in 0ms.
+
