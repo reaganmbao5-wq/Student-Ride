@@ -27,7 +27,7 @@ import { RideCard } from '../components/driver/RideCard';
 const DriverDashboard = () => {
   const navigate = useNavigate();
   const { user, api, driverProfile, refreshDriverProfile, logout } = useAuth();
-  const { newRideRequest, removedSharedRideId, clearRideRequest, clearRemovedSharedRideId, sendLocationUpdate, requestHardRecalculation, rideUpdate, clearRideUpdate, routeQueueUpdate, clearRouteQueueUpdate, driverLocation, isConnected } = useWebSocket();
+  const { newRideRequest, removedSharedRideId, clearRideRequest, clearRemovedSharedRideId, sendLocationUpdate, requestHardRecalculation, rideUpdate, clearRideUpdate, routeQueueUpdate, clearRouteQueueUpdate, driverTripSegments, driverLocation, isConnected } = useWebSocket();
 
   const [routeQueue, setRouteQueue] = useState([]);
   const [isRecalculating, setIsRecalculating] = useState(false);
@@ -326,6 +326,12 @@ const DriverDashboard = () => {
       clearRouteQueueUpdate();
     }
   }, [routeQueueUpdate, clearRouteQueueUpdate]);
+
+  useEffect(() => {
+    if (driverTripSegments && Array.isArray(driverTripSegments) && driverTripSegments.length > 0) {
+      setRoutesData(driverTripSegments);
+    }
+  }, [driverTripSegments]);
 
   // Handle real-time synchronization for shared pool
   useEffect(() => {

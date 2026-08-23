@@ -8,9 +8,9 @@ try:
 except ImportError:
     from services.route_optimizer import RouteOptimizer
 try:
-    from backend.services.osrm_service import get_multi_waypoint_route
+    from backend.services.osrm_service import get_multi_waypoint_route, get_multi_waypoint_route_with_legs
 except ImportError:
-    from services.osrm_service import get_multi_waypoint_route
+    from services.osrm_service import get_multi_waypoint_route, get_multi_waypoint_route_with_legs
 
 logger = logging.getLogger(__name__)
 
@@ -71,10 +71,6 @@ class DriverTripRebuilder:
                 else:
                     reserved += passengers
                     
-                # We need to rebuild the Stops.
-                # In reality, this requires re-calling RouteOptimizer if we don't have it saved,
-                # but for rebuilding, we'll append remaining stops based on ride status.
-                
                 # If not picked up, they need a pickup stop.
                 if ride["status"] not in ["ride_started", "ongoing", "ride_in_progress"]:
                     route_queue.append({
@@ -127,7 +123,7 @@ class DriverTripRebuilder:
                 except ValueError:
                     return '#3b82f6'
 
-            # Build full Driver Route Segments first (Driver is single source of truth)
+            # Build full Driver Route Segments first (Single multi-waypoint Mapbox Directions query)
             driver_waypoints = []
             if driver_lat and driver_lng:
                 driver_waypoints.append({"lat": driver_lat, "lng": driver_lng, "ride_id": "driver"})
@@ -138,34 +134,60 @@ class DriverTripRebuilder:
 
             full_driver_segments = []
             if len(driver_waypoints) >= 2:
-                leg_tasks = []
-                for i in range(len(driver_waypoints) - 1):
-                    orig = driver_waypoints[i]
-                    dest = driver_waypoints[i+1]
-                    leg_tasks.append(get_multi_waypoint_route([orig, dest]))
+                multi_route = await get_multi_waypoint_route_with_legs(driver_waypoints)
+                legs_list = multi_route.get("legs", [])
                 
-                leg_results = await asyncio.gather(*leg_tasks, return_exceptions=True)
-                
-                for i, leg_geo in enumerate(leg_results):
-                    orig = driver_waypoints[i]
-                    dest = driver_waypoints[i+1]
-                    leg_color = get_color_for_ride(dest.get("ride_id"))
+                if legs_list and len(legs_list) == len(driver_waypoints) - 1:
+                    for i, leg_data in enumerate(legs_list):
+                        dest = driver_waypoints[i+1]
+                        leg_geo = leg_data.get("geometry", [])
+                        leg_color = get_color_for_ride(dest.get("ride_id"))
+                        
+                        if isinstance(leg_geo, Exception) or not leg_geo or len(leg_geo) <= 2:
+                            if i < len(prev_driver_segments) and prev_driver_segments[i].get("geometry") and len(prev_driver_segments[i]["geometry"]) > 2:
+                                leg_geo = prev_driver_segments[i]["geometry"]
+                            else:
+                                leg_geo = []
+                                
+                        if leg_geo and len(leg_geo) > 2:
+                            full_driver_segments.append({
+                                "rideId": dest.get("stop_id") or f"seg-{i}",
+                                "stopId": dest.get("stop_id"),
+                                "geometry": leg_geo,
+                                "color": leg_color,
+                                "status": "active",
+                                "isActiveLeg": (i == 0),
+                                "isNextLeg": (i == 0)
+                            })
+                else:
+                    leg_tasks = []
+                    for i in range(len(driver_waypoints) - 1):
+                        orig = driver_waypoints[i]
+                        dest = driver_waypoints[i+1]
+                        leg_tasks.append(get_multi_waypoint_route([orig, dest]))
                     
-                    # HARDENING RULE: Only accept detailed road geometries (len > 2).
-                    # NEVER produce 2-point straight lines. If unavailable, use cached or empty.
-                    if isinstance(leg_geo, Exception) or not leg_geo or len(leg_geo) <= 2:
-                        if i < len(prev_driver_segments) and prev_driver_segments[i].get("geometry") and len(prev_driver_segments[i]["geometry"]) > 2:
-                            leg_geo = prev_driver_segments[i]["geometry"]
-                        else:
-                            leg_geo = []
+                    leg_results = await asyncio.gather(*leg_tasks, return_exceptions=True)
                     
-                    if leg_geo and len(leg_geo) > 2:
-                        full_driver_segments.append({
-                            "rideId": f"seg-{i}",
-                            "geometry": leg_geo,
-                            "color": leg_color,
-                            "status": "active"
-                        })
+                    for i, leg_geo in enumerate(leg_results):
+                        dest = driver_waypoints[i+1]
+                        leg_color = get_color_for_ride(dest.get("ride_id"))
+                        
+                        if isinstance(leg_geo, Exception) or not leg_geo or len(leg_geo) <= 2:
+                            if i < len(prev_driver_segments) and prev_driver_segments[i].get("geometry") and len(prev_driver_segments[i]["geometry"]) > 2:
+                                leg_geo = prev_driver_segments[i]["geometry"]
+                            else:
+                                leg_geo = []
+                        
+                        if leg_geo and len(leg_geo) > 2:
+                            full_driver_segments.append({
+                                "rideId": dest.get("stop_id") or f"seg-{i}",
+                                "stopId": dest.get("stop_id"),
+                                "geometry": leg_geo,
+                                "color": leg_color,
+                                "status": "active",
+                                "isActiveLeg": (i == 0),
+                                "isNextLeg": (i == 0)
+                            })
 
             # 5. Build Passenger-Specific Briefings and Route Projections (Phase X.1 Passive Consumer Architecture)
             passenger_briefings = {}
@@ -270,7 +292,7 @@ class DriverTripRebuilder:
 
                         # Extract intermediate stops prior to and including student's target stop
                         intermediate_stops = []
-                        clip_stop_idx = dropoff_idx if is_onboard else target_idx
+                        clip_stop_idx = dropoff_idx if dropoff_idx != -1 else target_idx
                         if clip_stop_idx != -1:
                             for i in range(clip_stop_idx + 1):
                                 st = route_queue[i]

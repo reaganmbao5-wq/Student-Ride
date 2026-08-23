@@ -1131,23 +1131,31 @@ class ConnectionManager:
                 try:
                     trip = await DriverTripRebuilder.rebuild(driver["id"], db, driver_loc=location)
                     trip = await inject_etas_into_trip(trip, location)
-                    if trip and "passenger_briefings" in trip:
-                        for s_id, briefing in trip["passenger_briefings"].items():
-                            await self.send_personal_message({
-                                "type": "passenger_briefing_update",
-                                "ride_id": briefing["ride_id"],
-                                "briefing_text": briefing["briefing_text"],
-                                "x3_state": briefing.get("x3_state"),
-                                "is_pinned": briefing.get("is_pinned", False),
-                                "carousel_messages": briefing.get("carousel_messages", []),
-                                "stops_remaining": briefing["stops_remaining"],
-                                "is_next_stop": briefing["is_next_stop"],
-                                "intermediate_stops": briefing.get("intermediate_stops", []),
-                                "route_segments": briefing.get("route_segments", []),
-                                "route_geometry": briefing["route_geometry"],
-                                "eta_seconds": briefing.get("eta_seconds"),
-                                "eta_text": briefing.get("eta_text")
-                            }, s_id)
+                    if trip:
+                        driver_uid = driver.get("user_id", driver_id)
+                        await self.send_personal_message({
+                            "type": "trip_updated",
+                            "route_queue": trip.get("route_queue", []),
+                            "full_driver_segments": trip.get("full_driver_segments", [])
+                        }, driver_uid)
+                        
+                        if "passenger_briefings" in trip:
+                            for s_id, briefing in trip["passenger_briefings"].items():
+                                await self.send_personal_message({
+                                    "type": "passenger_briefing_update",
+                                    "ride_id": briefing["ride_id"],
+                                    "briefing_text": briefing["briefing_text"],
+                                    "x3_state": briefing.get("x3_state"),
+                                    "is_pinned": briefing.get("is_pinned", False),
+                                    "carousel_messages": briefing.get("carousel_messages", []),
+                                    "stops_remaining": briefing["stops_remaining"],
+                                    "is_next_stop": briefing["is_next_stop"],
+                                    "intermediate_stops": briefing.get("intermediate_stops", []),
+                                    "route_segments": briefing.get("route_segments", []),
+                                    "route_geometry": briefing["route_geometry"],
+                                    "eta_seconds": briefing.get("eta_seconds"),
+                                    "eta_text": briefing.get("eta_text")
+                                }, s_id)
                 except Exception as ex:
                     logger.error(f"Failed to update passenger briefings on driver location update: {ex}")
 

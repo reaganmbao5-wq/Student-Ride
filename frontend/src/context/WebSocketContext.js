@@ -12,6 +12,7 @@ export const WebSocketProvider = ({ children }) => {
   const [removedSharedRideId, setRemovedSharedRideId] = useState(null);
   const [rideUpdate, setRideUpdate] = useState(null);
   const [routeQueueUpdate, setRouteQueueUpdate] = useState(null);
+  const [driverTripSegments, setDriverTripSegments] = useState(null);
   const [passengerBriefing, setPassengerBriefing] = useState(null);
   const [newMessage, setNewMessage] = useState(null);
   const wsRef = useRef(null);
@@ -126,6 +127,14 @@ export const WebSocketProvider = ({ children }) => {
             break;
           case 'routeQueueUpdate':
             setRouteQueueUpdate(data.route_queue);
+            break;
+          case 'trip_updated':
+            if (data.route_queue) {
+              setRouteQueueUpdate(data.route_queue);
+            }
+            if (data.full_driver_segments) {
+              setDriverTripSegments(data.full_driver_segments);
+            }
             break;
           case 'passenger_briefing_update':
             setPassengerBriefing(prev => {
@@ -264,6 +273,7 @@ export const WebSocketProvider = ({ children }) => {
     removedSharedRideId,
     rideUpdate,
     routeQueueUpdate,
+    driverTripSegments,
     driverLocation,
     passengerBriefing,
     newMessage,

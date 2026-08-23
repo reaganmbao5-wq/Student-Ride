@@ -143,6 +143,123 @@ async def get_route(pickup_lat: float, pickup_lng: float, drop_lat: float, drop_
         "source": "haversine_fallback"
     }
 
+async def get_multi_waypoint_route_with_legs(waypoints: list) -> dict:
+    """
+    Calculates a single continuous multi-stop route with leg-level breakdowns
+    using Mapbox Directions API (with OSRM fallback).
+    
+    Returns:
+        dict: {
+            "full_geometry": list[list[float]],  # [[lat, lng], ...]
+            "legs": list[dict]  # [{"geometry": [[lat, lng], ...], "distance_km": float, "duration_seconds": float}, ...]
+        }
+    """
+    if not waypoints or len(waypoints) < 2:
+        return {"full_geometry": [], "legs": []}
+    
+    formatted_coords = []
+    for wp in waypoints:
+        if isinstance(wp, dict):
+            lat, lng = wp.get("lat"), wp.get("lng")
+        elif isinstance(wp, (list, tuple)):
+            lat, lng = wp[0], wp[1]
+        else:
+            continue
+            
+        if lat is not None and lng is not None:
+            formatted_coords.append(f"{lng},{lat}")
+            
+    if len(formatted_coords) < 2:
+        return {"full_geometry": [], "legs": []}
+
+    coord_str = ";".join(formatted_coords)
+    client = get_http_client()
+
+    # 1. Primary Engine: Mapbox Directions API v5 with steps=true
+    try:
+        url = f"{MAPBOX_DIRECTIONS_BASE_URL}/{coord_str}"
+        params = {
+            "overview": "full",
+            "geometries": "geojson",
+            "steps": "true",
+            "access_token": MAPBOX_ACCESS_TOKEN
+        }
+        response = await client.get(url, params=params)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("routes") and len(data["routes"]) > 0:
+                route = data["routes"][0]
+                raw_geometry = route["geometry"]["coordinates"]
+                full_geo = [[coord[1], coord[0]] for coord in raw_geometry]
+                
+                legs_data = []
+                raw_legs = route.get("legs", [])
+                for leg in raw_legs:
+                    leg_coords = []
+                    steps = leg.get("steps", [])
+                    for step in steps:
+                        step_geo = step.get("geometry", {}).get("coordinates", [])
+                        for pt in step_geo:
+                            lat_lng = [pt[1], pt[0]]
+                            if not leg_coords or leg_coords[-1] != lat_lng:
+                                leg_coords.append(lat_lng)
+                    
+                    if not leg_coords and steps:
+                        # Fallback if step geometry was empty
+                        leg_coords = full_geo
+                        
+                    legs_data.append({
+                        "geometry": leg_coords,
+                        "distance_km": leg.get("distance", 0.0) / 1000.0,
+                        "duration_seconds": leg.get("duration", 0.0)
+                    })
+                
+                # If legs were returned successfully, return unified structure
+                if legs_data:
+                    return {
+                        "full_geometry": full_geo,
+                        "legs": legs_data
+                    }
+    except Exception as e:
+        logger.warning(f"Mapbox Multi-Waypoint with Legs Error: {e}, falling back to single route or OSRM")
+
+    # 2. Secondary Engine Fallback: OSRM
+    try:
+        url = f"{OSRM_BASE_URL}/{coord_str}"
+        params = {"overview": "full", "geometries": "geojson", "steps": "true"}
+        response = await client.get(url, params=params)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("code") == "Ok" and data.get("routes"):
+                route = data["routes"][0]
+                raw_geometry = route["geometry"]["coordinates"]
+                full_geo = [[coord[1], coord[0]] for coord in raw_geometry]
+                legs_data = []
+                for leg in route.get("legs", []):
+                    leg_coords = []
+                    for step in leg.get("steps", []):
+                        step_geo = step.get("geometry", {}).get("coordinates", [])
+                        for pt in step_geo:
+                            lat_lng = [pt[1], pt[0]]
+                            if not leg_coords or leg_coords[-1] != lat_lng:
+                                leg_coords.append(lat_lng)
+                    legs_data.append({
+                        "geometry": leg_coords,
+                        "distance_km": leg.get("distance", 0.0) / 1000.0,
+                        "duration_seconds": leg.get("duration", 0.0)
+                    })
+                if legs_data:
+                    return {"full_geometry": full_geo, "legs": legs_data}
+    except Exception as e:
+        logger.error(f"OSRM Multi-Waypoint Legs Fallback Error: {e}")
+
+    # Fallback to single multi-waypoint call
+    simple_geo = await get_multi_waypoint_route(waypoints)
+    return {
+        "full_geometry": simple_geo,
+        "legs": [{"geometry": simple_geo, "distance_km": 0.0, "duration_seconds": 0.0}] if simple_geo else []
+    }
+
 async def get_multi_waypoint_route(waypoints: list):
     """
     Calculates multi-stop road route using Mapbox Directions API (with OSRM fallback).

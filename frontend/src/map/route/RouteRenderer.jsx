@@ -24,7 +24,15 @@ const normalizePointToLngLat = (pt) => {
   return null;
 };
 
-export const RouteRenderer = ({ id = 'default', map, remainingPath = [], status, color, onAnimationChange }) => {
+export const RouteRenderer = ({ 
+  id = 'default', 
+  map, 
+  segments = [], 
+  remainingPath = [], 
+  status, 
+  color, 
+  onAnimationChange 
+}) => {
   const normalizedStatus = status ? String(status).toLowerCase() : '';
   const isHeadingToPickup = ['accepted', 'driver_accepted', 'driver_en_route_to_pickup', 'driver_arrived'].includes(normalizedStatus);
   const strokeColor = color || (isHeadingToPickup ? '#10B981' : '#3B82F6');
@@ -41,13 +49,7 @@ export const RouteRenderer = ({ id = 'default', map, remainingPath = [], status,
   // Keep stroke color ref in sync
   useEffect(() => {
     strokeColorRef.current = strokeColor;
-    if (!map || !map.style) return;
-    try {
-      if (map.getLayer(layerId)) {
-        map.setPaintProperty(layerId, 'line-color', strokeColor);
-      }
-    } catch (err) {}
-  }, [map, strokeColor, layerId]);
+  }, [strokeColor]);
 
   // 1. Source and layer lifecycle: Add ONCE when map is ready, remove ONLY on component unmount
   useEffect(() => {
@@ -60,9 +62,8 @@ export const RouteRenderer = ({ id = 'default', map, remainingPath = [], status,
           map.addSource(sourceId, {
             type: 'geojson',
             data: {
-              type: 'Feature',
-              properties: {},
-              geometry: { type: 'LineString', coordinates: [] }
+              type: 'FeatureCollection',
+              features: []
             }
           });
         }
@@ -76,14 +77,15 @@ export const RouteRenderer = ({ id = 'default', map, remainingPath = [], status,
               'line-cap': 'round'
             },
             paint: {
-              'line-color': strokeColorRef.current || '#3B82F6',
+              // Data-driven line color expression from feature properties
+              'line-color': ['coalesce', ['get', 'color'], strokeColorRef.current || '#3B82F6'],
               'line-width': 6,
               'line-opacity': 0.95
             }
           });
         }
       } catch (err) {
-        console.warn('Error initializing route layer:', err);
+        console.warn('Error initializing unified route layer:', err);
       }
     };
 
@@ -109,19 +111,55 @@ export const RouteRenderer = ({ id = 'default', map, remainingPath = [], status,
     };
   }, [map, sourceId, layerId]);
 
-  // 2. Progressive Animated Drawing & Live Coordinate Updates
+  // 2. Progressive Animated Drawing & Live Coordinate Updates via FeatureCollection
   useEffect(() => {
     if (!map || !map.style) return;
 
-    const formattedCoords = (remainingPath || []).map(normalizePointToLngLat).filter(Boolean);
+    // Convert input data to FeatureCollection
+    let features = [];
+    if (segments && segments.length > 0) {
+      features = segments.map((seg, idx) => {
+        const rawCoords = seg.geometry || [];
+        const formattedCoords = rawCoords.map(normalizePointToLngLat).filter(Boolean);
+        if (formattedCoords.length < 2) return null;
+        return {
+          type: 'Feature',
+          id: seg.rideId || seg.stopId || `seg-${idx}`,
+          properties: {
+            color: seg.color || strokeColorRef.current || '#3B82F6',
+            isNextLeg: seg.isNextLeg || (idx === 0)
+          },
+          geometry: {
+            type: 'LineString',
+            coordinates: formattedCoords
+          }
+        };
+      }).filter(Boolean);
+    } else if (remainingPath && remainingPath.length >= 2) {
+      const formattedCoords = (remainingPath || []).map(normalizePointToLngLat).filter(Boolean);
+      if (formattedCoords.length >= 2) {
+        features = [{
+          type: 'Feature',
+          id: `${cleanId}-main`,
+          properties: {
+            color: strokeColorRef.current || '#3B82F6',
+            isNextLeg: true
+          },
+          geometry: {
+            type: 'LineString',
+            coordinates: formattedCoords
+          }
+        }];
+      }
+    }
+
     const src = map.getSource(sourceId);
 
-    if (formattedCoords.length < 2) {
+    if (features.length === 0) {
       if (src) {
         src.setData({
-          type: 'Feature',
-          properties: {},
-          geometry: { type: 'LineString', coordinates: [] }
+          type: 'FeatureCollection',
+          features: []
         });
       }
       animatedSignatureRef.current = '';
@@ -129,9 +167,11 @@ export const RouteRenderer = ({ id = 'default', map, remainingPath = [], status,
       return;
     }
 
-    const lastPt = formattedCoords[formattedCoords.length - 1];
-    // Destination signature is locked to the final destination point (NOT the moving driver start point)
-    const destinationSignature = `${cleanId}-${lastPt[0].toFixed(4)},${lastPt[1].toFixed(4)}`;
+    // Build signature from the final waypoint coordinate of all features
+    const lastFeature = features[features.length - 1];
+    const lastCoords = lastFeature.geometry.coordinates;
+    const lastPt = lastCoords[lastCoords.length - 1];
+    const destinationSignature = `${features.length}-${cleanId}-${lastPt[0].toFixed(4)},${lastPt[1].toFixed(4)}`;
 
     const isActiveTripState = [
       'accepted', 'driver_accepted', 'driver_en_route_to_pickup', 
@@ -139,32 +179,30 @@ export const RouteRenderer = ({ id = 'default', map, remainingPath = [], status,
       'ongoing', 'ride_in_progress', 'arriving_destination'
     ].includes(normalizedStatus);
 
-    // If this route has already animated its entry, or during active trip GPS progression:
-    // Update coordinates directly (real-time driver progress with zero flicker and zero redraw loops)
+    // If already animated or during active trip GPS progression:
+    // Update coordinates directly into WebGL buffer in <1ms
     if (animatedSignatureRef.current === destinationSignature || (isActiveTripState && animatedSignatureRef.current)) {
       animatedSignatureRef.current = destinationSignature;
       if (src) {
         src.setData({
-          type: 'Feature',
-          properties: {},
-          geometry: { type: 'LineString', coordinates: formattedCoords }
+          type: 'FeatureCollection',
+          features
         });
       }
       return;
     }
 
-    // New destination or route detected!
+    // New destination or route detected
     animatedSignatureRef.current = destinationSignature;
     if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);
 
-    // If active trip is already in progress, render line immediately without replay delay
+    // Active trips render line immediately with zero replay delay
     if (isActiveTripState) {
       if (src) {
         src.setData({
-          type: 'Feature',
-          properties: {},
-          geometry: { type: 'LineString', coordinates: formattedCoords }
+          type: 'FeatureCollection',
+          features
         });
       }
       if (onAnimationChange) onAnimationChange(false);
@@ -172,40 +210,52 @@ export const RouteRenderer = ({ id = 'default', map, remainingPath = [], status,
     }
 
     // Initial empty start for preview animations (Confirm Ride / Finding Driver)
-    if (src) {
+    const firstFeatureCoords = features[0]?.geometry?.coordinates || [];
+    if (src && firstFeatureCoords.length >= 2) {
       src.setData({
-        type: 'Feature',
-        properties: {},
-        geometry: { type: 'LineString', coordinates: [formattedCoords[0], formattedCoords[0]] }
+        type: 'FeatureCollection',
+        features: [{
+          ...features[0],
+          geometry: {
+            type: 'LineString',
+            coordinates: [firstFeatureCoords[0], firstFeatureCoords[0]]
+          }
+        }]
       });
     }
 
     if (onAnimationChange) onAnimationChange(true);
 
-    // Duration: 5.0s for requested (finding driver), 2.2s for confirm ride
     const isRequestedState = normalizedStatus === 'requested';
     const totalDuration = isRequestedState ? 5000 : 2200;
     const startDelay = isRequestedState ? 500 : 350;
 
     animationTimeoutRef.current = setTimeout(() => {
       const startTime = performance.now();
-      const totalPoints = formattedCoords.length;
+      const firstCoords = features[0]?.geometry?.coordinates || [];
+      const totalPoints = firstCoords.length;
 
       const animate = (currentTime) => {
         const elapsed = currentTime - startTime;
         const progress = Math.min(1, elapsed / totalDuration);
-        
-        // Easing: easeOutCubic (1 - Math.pow(1 - progress, 3))
         const easeProgress = 1 - Math.pow(1 - progress, 3);
         const pointCount = Math.max(2, Math.min(totalPoints, Math.ceil(easeProgress * totalPoints)));
-        const currentSlice = formattedCoords.slice(0, pointCount);
+        const currentSlice = firstCoords.slice(0, pointCount);
 
         const activeSrc = map.getSource(sourceId);
         if (activeSrc) {
           activeSrc.setData({
-            type: 'Feature',
-            properties: {},
-            geometry: { type: 'LineString', coordinates: currentSlice }
+            type: 'FeatureCollection',
+            features: [
+              {
+                ...features[0],
+                geometry: {
+                  type: 'LineString',
+                  coordinates: currentSlice
+                }
+              },
+              ...features.slice(1)
+            ]
           });
         }
 
@@ -215,9 +265,8 @@ export const RouteRenderer = ({ id = 'default', map, remainingPath = [], status,
           // Animation complete
           if (activeSrc) {
             activeSrc.setData({
-              type: 'Feature',
-              properties: {},
-              geometry: { type: 'LineString', coordinates: formattedCoords }
+              type: 'FeatureCollection',
+              features
             });
           }
           if (onAnimationChange) onAnimationChange(false);
@@ -231,7 +280,7 @@ export const RouteRenderer = ({ id = 'default', map, remainingPath = [], status,
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
       if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);
     };
-  }, [map, remainingPath, normalizedStatus, sourceId, cleanId, onAnimationChange]);
+  }, [map, segments, remainingPath, normalizedStatus, sourceId, cleanId, onAnimationChange]);
 
   return null;
 };
