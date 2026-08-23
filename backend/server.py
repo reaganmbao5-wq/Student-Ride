@@ -1127,17 +1127,35 @@ class ConnectionManager:
                     "ride_id": active_rides[0]["id"]
                 }, driver.get("user_id", driver_id))
 
-                # Phase X: Re-calculate passenger briefing and clipped geometry on location updates with live GPS
+                # Fast In-Memory Proximity & Dynamic ETA Update (0 Mapbox HTTP overhead)
                 try:
-                    trip = await DriverTripRebuilder.rebuild(driver["id"], db, driver_loc=location)
-                    trip = await inject_etas_into_trip(trip, location)
+                    trip = await db.driver_trips.find_one({"driver_id": driver["id"]})
+                    if not trip:
+                        trip = await DriverTripRebuilder.rebuild(driver["id"], db, driver_loc=location)
+                    
                     if trip:
+                        trip = await inject_etas_into_trip(trip, location)
                         driver_uid = driver.get("user_id", driver_id)
-                        await self.send_personal_message({
-                            "type": "trip_updated",
-                            "route_queue": trip.get("route_queue", []),
-                            "full_driver_segments": trip.get("full_driver_segments", [])
-                        }, driver_uid)
+                        
+                        # Check proximity arrival for active pickup (<50m)
+                        route_queue = trip.get("route_queue", [])
+                        if route_queue and len(route_queue) > 0:
+                            first_stop = route_queue[0]
+                            st_coords = first_stop.get("coordinates", {})
+                            if st_coords.get("lat") and st_coords.get("lng"):
+                                dist_to_stop_km = haversine_distance(location["lat"], location["lng"], st_coords["lat"], st_coords["lng"])
+                                if dist_to_stop_km <= 0.05 and first_stop.get("stop_type") == "pickup":
+                                    # Target student arrival trigger
+                                    target_student_id = first_stop.get("student_id")
+                                    if target_student_id and "passenger_briefings" in trip and target_student_id in trip["passenger_briefings"]:
+                                        tb = trip["passenger_briefings"][target_student_id]
+                                        tb["x3_state"] = "DRIVER_ARRIVED_MY_PICKUP"
+                                        tb["briefing_text"] = "Driver has arrived at your pickup!"
+                                        tb["is_pinned"] = True
+                                        tb["stops_remaining"] = 0
+                                        tb["is_next_stop"] = True
+                                        tb["eta_seconds"] = 15
+                                        tb["eta_text"] = "<1 min"
                         
                         if "passenger_briefings" in trip:
                             for s_id, briefing in trip["passenger_briefings"].items():
@@ -1152,7 +1170,7 @@ class ConnectionManager:
                                     "is_next_stop": briefing["is_next_stop"],
                                     "intermediate_stops": briefing.get("intermediate_stops", []),
                                     "route_segments": briefing.get("route_segments", []),
-                                    "route_geometry": briefing["route_geometry"],
+                                    "route_geometry": briefing.get("route_geometry", []),
                                     "eta_seconds": briefing.get("eta_seconds"),
                                     "eta_text": briefing.get("eta_text")
                                 }, s_id)
@@ -2624,15 +2642,11 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
             {"$set": {"current_ride_id": ride_id}}
         )
         
-    # Phase 3.2.6.X: DTM & Event Bus Wiring
-    # CRITICAL: Broadcast to all active connections MUST be first to prevent UI freezing if other tasks crash
+    # Broadcast to all active drivers to remove accepted ride from their shared pools
     background_tasks.add_task(manager.broadcast_to_all_active_connections, {
         "type": "shared_ride_accepted_by_other",
         "ride_id": ride_id
     })
-    
-    background_tasks.add_task(DriverTripManager.handle_ride_accepted, driver["id"], ride_id, db)
-    background_tasks.add_task(internal_bus.publish, "ride_accepted", {"driver_id": driver["id"], "ride_id": ride_id})
     
     # Populate driver info with user details and real-time location for instant frontend rendering
     driver_user = await db.users.find_one({"id": driver.get("user_id")}, {"_id": 0, "password": 0})
@@ -2656,7 +2670,7 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
             "status": "online"
         }
 
-    # Synchronously rebuild trip and compute student route geometry + briefing + ETA right now
+    # Synchronously rebuild trip and compute student route geometry + briefing + ETA right now (Single execution)
     trip = None
     try:
         trip = await DriverTripRebuilder.rebuild(driver["id"], db, driver_loc=driver_payload.get("current_location"))
@@ -2698,28 +2712,23 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
                 "is_next_stop": student_briefing["is_next_stop"],
                 "intermediate_stops": student_briefing.get("intermediate_stops", []),
                 "route_segments": student_briefing.get("route_segments", []),
-                "route_geometry": student_briefing["route_geometry"],
+                "route_geometry": student_briefing.get("route_geometry", []),
                 "eta_seconds": student_briefing.get("eta_seconds"),
                 "eta_text": student_briefing.get("eta_text")
             }, ride["student_id"])
         except Exception as e:
             logger.error(f"Failed direct briefing update websocket send: {e}")
 
-    try:
-        await manager.broadcast_to_all_active_connections({
-            "type": "shared_ride_accepted_by_other",
-            "ride_id": ride_id
-        })
-    except Exception as e:
-        logger.error(f"Failed direct broadcast to pool: {e}")
-
-    async def safe_broadcast_route(d_id):
+    # Notify driver immediately via WebSocket with updated trip & segments
+    if trip:
         try:
-            await broadcast_route_queue(d_id)
+            await manager.send_personal_message({
+                "type": "trip_updated",
+                "route_queue": trip.get("route_queue", []),
+                "full_driver_segments": trip.get("full_driver_segments", [])
+            }, driver.get("user_id", driver["id"]))
         except Exception as e:
-            logger.error(f"Background task broadcast_route_queue failed: {e}")
-
-    background_tasks.add_task(safe_broadcast_route, driver["id"])
+            logger.error(f"Failed direct trip_updated websocket send to driver: {e}")
     
     # Push notification
     async def send_accept_push(student_id, r_id, user_name):
