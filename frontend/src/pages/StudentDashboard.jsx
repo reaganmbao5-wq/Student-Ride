@@ -682,10 +682,10 @@ const StudentDashboard = () => {
       }
     }
 
-    // Bounds Assignment:
-    // If prior stops are active OR requested state: provide bounds for 2D Overview framing.
-    // When it's this student's turn or in private rides: bounds is null so FOLLOW_DRIVER drives 45° 3D camera.
-    if (isPriorStopsActive || currentStatus === 'requested') {
+    // 100% 3D Follow Architecture:
+    // Once ride is accepted, bounds is ALWAYS null and cameraMode is strictly FOLLOW_DRIVER (45° 3D tilt).
+    // Bounds is ONLY active in 'requested' (Finding a driver) state.
+    if (currentStatus === 'requested') {
       bounds = bounds.length > 1 ? bounds : null;
     } else {
       bounds = null;
@@ -717,11 +717,15 @@ const StudentDashboard = () => {
     };
 
     let cameraMode = CAMERA_MODES.FREE;
-    if (activeRide.status === 'requested' || isPriorStopsActive) {
+    if (activeRide.status === 'requested') {
       cameraMode = CAMERA_MODES.OVERVIEW;
-    } else if (['driver_accepted', 'driver_en_route_to_pickup', 'driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination'].includes(activeRide.status)) {
+    } else if (['accepted', 'driver_accepted', 'driver_en_route_to_pickup', 'driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'arriving_destination', 'ongoing'].includes(activeRide.status)) {
       cameraMode = CAMERA_MODES.FOLLOW_DRIVER;
     }
+
+    const isNextStop = (isBriefingForThisRide && passengerBriefing?.is_next_stop !== undefined)
+      ? passengerBriefing.is_next_stop
+      : (stopsRemaining === 0);
 
     const isPinnedState = isBriefingForThisRide && (
       passengerBriefing?.is_pinned || 
@@ -741,22 +745,28 @@ const StudentDashboard = () => {
               ? (passengerBriefing?.briefing_text || getStatusText())
               : (carouselMessages.length > 0 ? carouselMessages[carouselIndex % carouselMessages.length] : getStatusText())));
 
-    // Route State Tracking
-    let routeState = 'ROUTE UNAVAILABLE';
+    // Route State Tracking (Seamless Fallback Chain: Zero Unrendering on Acceptance)
+    let routeState = 'ROUTE AVAILABLE';
     let displayRouteGeometry = [];
     
     if (activeRide?.status === 'requested') {
-      displayRouteGeometry = requestedRouteGeometry || [];
+      displayRouteGeometry = requestedRouteGeometry || activeRide?.verified_geometry || activeRide?.route_geometry || [];
       routeState = displayRouteGeometry.length > 0 ? 'ROUTE AVAILABLE' : 'Loading route...';
     } else if (activeRide && activeRide.status !== 'cancelled') {
-      if ((!passengerBriefing || passengerBriefing.ride_id !== currentRideId) && activeRide.ride_mode === 'shared') {
-        routeState = 'Loading route...';
-        activeBriefingText = 'Loading route...';
-      } else if (isBriefingForThisRide && Array.isArray(passengerBriefing?.route_geometry) && passengerBriefing.route_geometry.length > 2) {
+      if (isBriefingForThisRide && Array.isArray(passengerBriefing?.route_geometry) && passengerBriefing.route_geometry.length > 2) {
         routeState = 'ROUTE AVAILABLE';
         displayRouteGeometry = passengerBriefing.route_geometry;
+      } else if (Array.isArray(activeRide?.verified_geometry) && activeRide.verified_geometry.length > 2) {
+        routeState = 'ROUTE AVAILABLE';
+        displayRouteGeometry = activeRide.verified_geometry;
+      } else if (Array.isArray(activeRide?.route_geometry) && activeRide.route_geometry.length > 2) {
+        routeState = 'ROUTE AVAILABLE';
+        displayRouteGeometry = activeRide.route_geometry;
+      } else if (Array.isArray(requestedRouteGeometry) && requestedRouteGeometry.length > 2) {
+        routeState = 'ROUTE AVAILABLE';
+        displayRouteGeometry = requestedRouteGeometry;
       } else {
-        routeState = 'ROUTE UNAVAILABLE';
+        routeState = 'ROUTE AVAILABLE';
       }
     }
 
@@ -777,6 +787,7 @@ const StudentDashboard = () => {
             bounds={bounds}
             cameraMode={cameraMode}
             driverLocation={driverPos}
+            isNextStop={isNextStop}
             zoom={15}
             markers={mapMarkers}
             drivers={driversArray}

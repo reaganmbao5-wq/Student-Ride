@@ -104,6 +104,8 @@ export const PlatformMap = ({
 
   isDriverView = false,
 
+  isNextStop = true,
+
 }) => {
 
   const mapContainerRef = useRef(null);
@@ -402,9 +404,12 @@ export const PlatformMap = ({
             }
           }
 
-          // Student Zoom: 18.0 (scaling to 19.5 within 400m)
-          // Driver Zoom: Student Zoom - 2 = 16.0 (scaling to 17.5 within 400m) for balanced Google Maps driving view
-          let dynamicZoom = isDriverView ? 16.0 : 18.0;
+          // Dual 3D Zoom Hierarchy:
+          // - Student is Next Stop: 17.8 (scaling to 19.5 within 400m)
+          // - Student has Prior Stops ahead: 15.5 (scaling to 16.5 within 400m) - keeps 45° 3D perspective with wider context
+          // - Driver View: 16.0 (scaling to 17.5 within 400m)
+          let baseZoom = isDriverView ? 16.0 : (isNextStop ? 17.8 : 15.5);
+          let dynamicZoom = baseZoom;
           if (targetCoord && !isNaN(targetCoord.lat) && !isNaN(targetCoord.lng)) {
             const dLat = (targetCoord.lat - lat) * (Math.PI / 180);
             const dLon = (targetCoord.lng - lng) * (Math.PI / 180);
@@ -416,14 +421,17 @@ export const PlatformMap = ({
 
             if (distMeters < 400) {
               if (isDriverView) {
-                // Driver: Smoothly scale zoom from 16.0 at 400m up to 17.5 at 20m (Google Maps realistic driving view)
+                // Driver: Smoothly scale zoom from 16.0 at 400m up to 17.5 at 20m
                 dynamicZoom = Math.min(17.5, Math.max(16.0, 17.5 - Math.log2(Math.max(distMeters, 20) / 20) * 0.35));
-              } else {
-                // Student: Smoothly scale zoom from 17.8 at 400m up to 19.5 at 20m
+              } else if (isNextStop) {
+                // Student (Next Stop): Smoothly scale zoom from 17.8 at 400m up to 19.5 at 20m
                 dynamicZoom = Math.min(19.5, Math.max(17.8, 19.5 - Math.log2(Math.max(distMeters, 20) / 20) * 0.39));
+              } else {
+                // Student (Other stops ahead): Scale gently from 15.5 up to 16.5 in 3D
+                dynamicZoom = Math.min(16.5, Math.max(15.5, 16.5 - Math.log2(Math.max(distMeters, 20) / 20) * 0.25));
               }
             } else {
-              dynamicZoom = isDriverView ? 16.0 : 18.0;
+              dynamicZoom = baseZoom;
             }
           }
 

@@ -648,6 +648,17 @@ const DriverDashboard = () => {
     const fakeAcceptedRide = pendingRides.find(r => getRideId(r) === rideId) || { id: rideId, status: 'accepted' };
     const targetRide = { ...fakeAcceptedRide, status: 'accepted' };
 
+    const initialGeo = targetRide.verified_geometry || targetRide.route_geometry || [];
+    if (initialGeo.length > 0) {
+      setRoutesData([{
+        rideId: rideId,
+        geometry: initialGeo,
+        color: '#3b82f6',
+        status: 'active',
+        isActiveLeg: true
+      }]);
+    }
+
     setActiveRide(prev => prev || targetRide);
     setActiveRides(prev => {
       const updated = prev.some(r => getRideId(r) === rideId) ? prev : [...prev, targetRide];
@@ -670,12 +681,23 @@ const DriverDashboard = () => {
           return updated;
         });
         localStorage.setItem('driver_active_ride', JSON.stringify(response.data));
+        if (response.data.verified_geometry && Array.isArray(response.data.verified_geometry) && response.data.verified_geometry.length > 0) {
+          setRoutesData(prev => (prev && prev.length > 0 && prev[0].geometry.length > 0) ? prev : [{
+            rideId: rideId,
+            geometry: response.data.verified_geometry,
+            color: '#3b82f6',
+            status: 'active',
+            isActiveLeg: true
+          }]);
+        }
       }
-      const tripRes = await api.get('/rides/driver/trip');
-      if (tripRes.data?.route_queue) setRouteQueue(tripRes.data.route_queue);
-      if (tripRes.data?.full_driver_segments && Array.isArray(tripRes.data.full_driver_segments) && tripRes.data.full_driver_segments.length > 0) {
-        setRoutesData(tripRes.data.full_driver_segments);
-      }
+      // Non-blocking trip sync in background
+      api.get('/rides/driver/trip').then(tripRes => {
+        if (tripRes.data?.route_queue) setRouteQueue(tripRes.data.route_queue);
+        if (tripRes.data?.full_driver_segments && Array.isArray(tripRes.data.full_driver_segments) && tripRes.data.full_driver_segments.length > 0) {
+          setRoutesData(tripRes.data.full_driver_segments);
+        }
+      }).catch(() => {});
     } catch (error) {
       console.error('Error accepting ride:', error);
       toast.error(error.response?.data?.detail || 'Failed to accept ride');
@@ -691,6 +713,17 @@ const DriverDashboard = () => {
 
     const fakeAcceptedRide = masterSharedRidePool.find(r => getRideId(r) === rideId) || pendingRides.find(r => getRideId(r) === rideId) || { id: rideId, status: 'accepted' };
     const targetRide = { ...fakeAcceptedRide, status: 'accepted' };
+
+    const initialGeo = targetRide.verified_geometry || targetRide.route_geometry || [];
+    if (initialGeo.length > 0) {
+      setRoutesData([{
+        rideId: rideId,
+        geometry: initialGeo,
+        color: '#3b82f6',
+        status: 'active',
+        isActiveLeg: true
+      }]);
+    }
 
     setActiveRide(prev => prev || targetRide);
     setActiveRides(prev => {
@@ -714,12 +747,23 @@ const DriverDashboard = () => {
           return updated;
         });
         localStorage.setItem('driver_active_ride', JSON.stringify(response.data));
+        if (response.data.verified_geometry && Array.isArray(response.data.verified_geometry) && response.data.verified_geometry.length > 0) {
+          setRoutesData(prev => (prev && prev.length > 0 && prev[0].geometry.length > 0) ? prev : [{
+            rideId: rideId,
+            geometry: response.data.verified_geometry,
+            color: '#3b82f6',
+            status: 'active',
+            isActiveLeg: true
+          }]);
+        }
       }
-      const tripRes = await api.get('/rides/driver/trip');
-      if (tripRes.data?.route_queue) setRouteQueue(tripRes.data.route_queue);
-      if (tripRes.data?.full_driver_segments && Array.isArray(tripRes.data.full_driver_segments) && tripRes.data.full_driver_segments.length > 0) {
-        setRoutesData(tripRes.data.full_driver_segments);
-      }
+      // Non-blocking trip sync in background
+      api.get('/rides/driver/trip').then(tripRes => {
+        if (tripRes.data?.route_queue) setRouteQueue(tripRes.data.route_queue);
+        if (tripRes.data?.full_driver_segments && Array.isArray(tripRes.data.full_driver_segments) && tripRes.data.full_driver_segments.length > 0) {
+          setRoutesData(tripRes.data.full_driver_segments);
+        }
+      }).catch(() => {});
     } catch (error) {
       console.error('Error accepting shared ride:', error);
       toast.error(error.response?.data?.detail || 'Failed to accept ride');

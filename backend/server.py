@@ -2989,25 +2989,6 @@ async def complete_ride(ride_id: str, background_tasks: BackgroundTasks, user: d
     if remaining_active_rides == 0:
         set_ops["current_ride_id"] = None
 
-    await db.drivers.update_one(
-        {"id": driver["id"]},
-        {
-            "$inc": {
-                "total_rides": 1,
-                "total_earnings": ride.get("driver_earning", 0.0)
-            },
-            "$set": set_ops
-        }
-    )
-    
-    # 3. ARCHIVED STATE
-    # After settlement, the ride is fully complete and archived
-    await db.rides.update_one({"id": ride_id}, {"$set": {"status": RideStatus.RIDE_ARCHIVED.value}})
-    
-    # We no longer send a WebSocket update here because the frontend transitions itself
-    # and the driver is now waiting for their next ride.
-    ride["status"] = RideStatus.RIDE_ARCHIVED.value
-    
     # Log transaction
     transaction = {
         "id": str(uuid.uuid4()),
@@ -3018,7 +2999,24 @@ async def complete_ride(ride_id: str, background_tasks: BackgroundTasks, user: d
         "description": f"Commission for ride {ride_id}",
         "timestamp": now
     }
-    await db.driver_wallet_transactions.insert_one(transaction)
+
+    # Parallelize DB writes over Atlas WAN
+    await asyncio.gather(
+        db.drivers.update_one(
+            {"id": driver["id"]},
+            {
+                "$inc": {
+                    "total_rides": 1,
+                    "total_earnings": ride.get("driver_earning", 0.0)
+                },
+                "$set": set_ops
+            }
+        ),
+        db.rides.update_one({"id": ride_id}, {"$set": {"status": RideStatus.RIDE_ARCHIVED.value}}),
+        db.driver_wallet_transactions.insert_one(transaction)
+    )
+    
+    ride["status"] = RideStatus.RIDE_ARCHIVED.value
     
     # Direct immediate WebSocket dispatch (<10ms)
     try:

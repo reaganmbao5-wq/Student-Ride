@@ -67,7 +67,7 @@ async def get_route(client, start_coords, end_coords):
         
     return smooth_coords
 
-async def inject_location(client, backend_url, driver_user_id, lat, lng, heading):
+async def inject_location(client, db, backend_url, driver_id, driver_user_id, lat, lng, heading):
     payload = {
         driver_user_id: {
             "lat": lat,
@@ -76,9 +76,21 @@ async def inject_location(client, backend_url, driver_user_id, lat, lng, heading
         }
     }
     try:
-        await client.post(f"{backend_url}/api/test/inject_drivers", json={"drivers": payload}, timeout=10.0)
-    except Exception as ex:
-        print(f"[SIMULATION] Inject location network retry: {ex}")
+        await db.drivers.update_one(
+            {"id": driver_id},
+            {"$set": {
+                "current_location": {"lat": lat, "lng": lng},
+                "heading": heading,
+                "last_active": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+    except Exception:
+        pass
+
+    try:
+        await client.post(f"{backend_url}/api/test/inject_drivers", json={"drivers": payload}, timeout=5.0)
+    except Exception:
+        pass
 
 async def wait_for_driver_action(db, driver_id, current_stop_id, prompt):
     print(f"\n=====================================")
@@ -156,7 +168,7 @@ async def dynamic_driver_loop(db, client, backend_url, driver_id, driver_user_id
             curr_lng, curr_lat = route_coords[i]
             heading = calculate_bearing(current_loc["lat"], current_loc["lng"], curr_lat, curr_lng)
             
-            await inject_location(client, backend_url, driver_user_id, curr_lat, curr_lng, heading)
+            await inject_location(client, db, backend_url, driver_id, driver_user_id, curr_lat, curr_lng, heading)
             current_loc = {"lat": curr_lat, "lng": curr_lng}
             
             # Print status
@@ -176,7 +188,7 @@ async def dynamic_driver_loop(db, client, backend_url, driver_id, driver_user_id
                 for _ in range(5):
                     curr_lat += 0.0005
                     curr_lng -= 0.0002
-                    await inject_location(client, backend_url, driver_user_id, curr_lat, curr_lng, heading)
+                    await inject_location(client, db, backend_url, driver_id, driver_user_id, curr_lat, curr_lng, heading)
                     print(f"Off-route... {curr_lat:.5f}, {curr_lng:.5f}")
                     await asyncio.sleep(0.1)
                 print("[SIMULATION] Returning to route recalculation...")
