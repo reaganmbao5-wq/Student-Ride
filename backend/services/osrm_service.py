@@ -22,7 +22,8 @@ _http_client: Optional[httpx.AsyncClient] = None
 def get_http_client() -> httpx.AsyncClient:
     global _http_client
     if _http_client is None or _http_client.is_closed:
-        _http_client = httpx.AsyncClient(timeout=httpx.Timeout(6.0, connect=3.0))
+        # STRICT TIMEOUT: 1.5s connect, 3.0s read, 4.5s total to prevent backend stalls
+        _http_client = httpx.AsyncClient(timeout=httpx.Timeout(4.5, connect=1.5, read=3.0))
     return _http_client
 
 # Performance Metrics Tracker

@@ -381,7 +381,9 @@ export const PlatformMap = ({
     isUserDraggingRef.current = false;
 
     // 1. DRIVER FOLLOW MODE (Active in-progress trip)
-    if (cameraMode === CAMERA_MODES.FOLLOW_DRIVER && driverLocation) {
+    const isActiveRide = ['driver_accepted', 'accepted', 'driver_en_route_to_pickup', 'driver_arrived', 'passenger_boarding', 'ongoing', 'ride_started', 'ride_in_progress', 'arriving_destination'].includes(rideStatus);
+
+    if ((cameraMode === CAMERA_MODES.FOLLOW_DRIVER || isActiveRide) && driverLocation) {
       const lat = Number(driverLocation.lat ?? driverLocation.latitude);
       const lng = Number(driverLocation.lng ?? driverLocation.longitude);
       const heading = Number(driverLocation.heading || 0);
@@ -397,57 +399,21 @@ export const PlatformMap = ({
         }
 
         if (!isPannedAway) {
-          let targetCoord = null;
-          if (Array.isArray(markersRef.current) && markersRef.current.length > 0) {
-            const activeTargetMarker = markersRef.current.find(m => m.iconType === 'dropoff' || m.iconType === 'pickup');
-            if (activeTargetMarker && activeTargetMarker.lat && activeTargetMarker.lng) {
-              targetCoord = {
-                lat: Number(activeTargetMarker.lat),
-                lng: Number(activeTargetMarker.lng)
-              };
-            }
-          }
-
-          // Dual 3D Zoom Hierarchy:
-          // - Student is Next Stop: 17.8 (scaling to 19.5 within 400m)
-          // - Student has Prior Stops ahead: 15.5 (scaling to 16.5 within 400m) - keeps 45° 3D perspective with wider context
-          // - Driver View: 16.0 (scaling to 17.5 within 400m)
-          let baseZoom = isDriverView ? 16.0 : (isNextStop ? 17.8 : 15.5);
-          let dynamicZoom = baseZoom;
-          if (targetCoord && !isNaN(targetCoord.lat) && !isNaN(targetCoord.lng)) {
-            const dLat = (targetCoord.lat - lat) * (Math.PI / 180);
-            const dLon = (targetCoord.lng - lng) * (Math.PI / 180);
-            const a =
-              Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos(lat * (Math.PI / 180)) * Math.cos(targetCoord.lat * (Math.PI / 180)) *
-              Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            const distMeters = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-            if (distMeters < 400) {
-              if (isDriverView) {
-                // Driver: Smoothly scale zoom from 16.0 at 400m up to 17.5 at 20m
-                dynamicZoom = Math.min(17.5, Math.max(16.0, 17.5 - Math.log2(Math.max(distMeters, 20) / 20) * 0.35));
-              } else if (isNextStop) {
-                // Student (Next Stop): Smoothly scale zoom from 17.8 at 400m up to 19.5 at 20m
-                dynamicZoom = Math.min(19.5, Math.max(17.8, 19.5 - Math.log2(Math.max(distMeters, 20) / 20) * 0.39));
-              } else {
-                // Student (Other stops ahead): Scale gently from 15.5 up to 16.5 in 3D
-                dynamicZoom = Math.min(16.5, Math.max(15.5, 16.5 - Math.log2(Math.max(distMeters, 20) / 20) * 0.25));
-              }
-            } else {
-              dynamicZoom = baseZoom;
-            }
-          }
+          // Dynamic Zoom Logic for Shared & Private Rides:
+          // If the student is next in line: zoom in tight (17.5)
+          // If the student is waiting for others: zoom out (15.5) to see wider context, in 3D 45° tilt tracking driver
+          const isNext = isNextStop !== false;
+          const targetZoom = isDriverView ? 16.5 : (isNext ? 17.5 : 15.5);
 
           const effBottom = (typeof bottomPadding === 'number' && bottomPadding > 0) ? Math.max(bottomPadding, 220) : 220;
 
           mapRef.current.easeTo({
-            center: [lng, lat],
+            center: [lng, lat], // STRICTLY track the driver, NEVER the pickup pin
             offset: [0, -Math.round(effBottom * 0.35)], // Places vehicle comfortably in lower-third
             bearing: heading,
-            pitch: 45, // 45 degree navigation perspective
-            zoom: dynamicZoom,
-            duration: 800,
+            pitch: 45, // Instant 3D tilt
+            zoom: targetZoom,
+            duration: 1000,
             essential: true
           });
           return;
@@ -632,7 +598,7 @@ export const PlatformMap = ({
         });
       }
     }
-  }, [center, zoom, bounds, routeBounds, cameraMode, driverLocation, mapLoaded, bottomPadding]);
+  }, [center, zoom, bounds, routeBounds, cameraMode, driverLocation, rideStatus, isNextStop, mapLoaded, bottomPadding]);
 
 
 
