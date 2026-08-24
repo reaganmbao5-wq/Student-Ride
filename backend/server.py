@@ -73,15 +73,28 @@ async def inject_etas_into_trip(trip: dict, driver_location: dict):
     if not curr_lat or not curr_lng:
         return trip
         
+    segments = trip.get("full_driver_segments", [])
+    seg_durations = {seg.get("stopId"): seg.get("duration_seconds") for seg in segments if isinstance(seg, dict) and seg.get("stopId") and seg.get("duration_seconds")}
+
     cumulative_seconds = 0
     eta_dict = {} # Maps ride_id -> seconds
     
     for stop in route_queue:
-        stop_lat = stop["coordinates"].get("lat")
-        stop_lng = stop["coordinates"].get("lng")
+        stop_lat = stop.get("coordinates", {}).get("lat")
+        stop_lng = stop.get("coordinates", {}).get("lng")
+        stop_id = stop.get("stop_id")
         
         if stop_lat and stop_lng:
-            leg_seconds = await calculate_eta(curr_lat, curr_lng, stop_lat, stop_lng)
+            if stop_id in seg_durations and seg_durations[stop_id] > 0:
+                leg_seconds = int(seg_durations[stop_id])
+            else:
+                d_lat = math.radians(stop_lat - curr_lat)
+                d_lon = math.radians(stop_lng - curr_lng)
+                a = math.sin(d_lat / 2) ** 2 + math.cos(math.radians(curr_lat)) * math.cos(math.radians(stop_lat)) * math.sin(d_lon / 2) ** 2
+                c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+                dist_km = 6371 * c
+                leg_seconds = int(max(60, (dist_km / 28.0) * 3600 + 30))
+
             cumulative_seconds += leg_seconds
             curr_lat = stop_lat
             curr_lng = stop_lng
@@ -814,11 +827,19 @@ async def log_admin_action(admin_id: str, admin_name: str, action: str, target_i
     }
     await db.admin_logs.insert_one(log)
 
+_cached_platform_settings = None
+_cached_platform_settings_ts = 0
+
 async def get_platform_settings() -> dict:
+    global _cached_platform_settings, _cached_platform_settings_ts
+    now = time.time()
+    if _cached_platform_settings and (now - _cached_platform_settings_ts) < 30.0:
+        return _cached_platform_settings
+
     settings = await db.pricing_settings.find_one({})
     
     if not settings:
-        return {
+        res = {
             "base_fare": 15.0,
             "per_km_rate": 1.40,
             "per_minute_rate": 0.10,
@@ -829,26 +850,24 @@ async def get_platform_settings() -> dict:
             "max_commission_owed_limit": 500.0,
             "updated_at": datetime.now(timezone.utc)
         }
+        _cached_platform_settings = res
+        _cached_platform_settings_ts = now
+        return res
     
     # Normalize commission_rate if legacy > 1.0
     comm = settings.get("commission_rate", 0.10)
     if comm > 1.0:
         comm = comm / 100.0 if comm <= 100.0 else 0.10
     settings["commission_rate"] = comm
-    
+    _cached_platform_settings = settings
+    _cached_platform_settings_ts = now
     return settings
 
+_cached_fixed_routes = None
+_cached_fixed_routes_ts = 0
+
 async def calculate_ride_fare(pickup_loc: Dict[str, Any], dropoff_loc: Dict[str, Any], distance_km: float, duration_min: float, ride_mode: RideMode = RideMode.PRIVATE) -> Dict[str, Any]:
-    """
-    Centralized Pricing Engine.
-    Hierarchy:
-    1. Fixed Route (if match): Base Driver Fare + Flat Commission Add-On
-    2. Dynamic (Distance + Time) * Surge:
-       - Shared Mode (Per Seat): Base K15 + (1.40/km) + (0.10/min)
-       - Private Mode ("In Taka" Whole Car): Shared Base x 3.5 Multiplier
-       - Platform Commission: 10% Add-On (Student Pays Base + Commission)
-    3. Minimum Fare Floor
-    """
+    global _cached_fixed_routes, _cached_fixed_routes_ts
     settings = await get_platform_settings()
     commission_rate = settings.get("commission_rate", 0.10)
     private_mult = settings.get("private_multiplier", 3.5)
@@ -856,8 +875,14 @@ async def calculate_ride_fare(pickup_loc: Dict[str, Any], dropoff_loc: Dict[str,
     pickup_point = (pickup_loc["lat"], pickup_loc["lng"])
     dropoff_point = (dropoff_loc["lat"], dropoff_loc["lng"])
     
-    # 1. Check Fixed Routes
-    active_routes = await db.fixed_routes.find({"is_active": True}).to_list(100)
+    # 1. Check Fixed Routes (Cached in-memory)
+    now = time.time()
+    if _cached_fixed_routes is not None and (now - _cached_fixed_routes_ts) < 30.0:
+        active_routes = _cached_fixed_routes
+    else:
+        active_routes = await db.fixed_routes.find({"is_active": True}).to_list(100)
+        _cached_fixed_routes = active_routes
+        _cached_fixed_routes_ts = now
     for route in active_routes:
         r_p_lng = route["pickup_coordinates"]["coordinates"][0]
         r_p_lat = route["pickup_coordinates"]["coordinates"][1]
@@ -1206,13 +1231,42 @@ class ConnectionManager:
                 "wallet_status": {"$ne": WalletStatus.RESTRICTED.value}
             }, {"_id": 0}).to_list(100)
 
+            if not online_drivers:
+                return
+
+            # Batch fetch active rides for all online drivers in ONE query
+            all_driver_ids = []
+            for d in online_drivers:
+                if d.get("id"): all_driver_ids.append(d["id"])
+                if d.get("user_id"): all_driver_ids.append(d["user_id"])
+
+            all_active_rides = await db.rides.find({
+                "driver_id": {"$in": all_driver_ids},
+                "status": {"$in": get_active_ride_states()}
+            }, {"_id": 0, "driver_id": 1, "ride_mode": 1, "passenger_count": 1}).to_list(500)
+
+            # Build in-memory active states map instantly
+            active_states_by_id = {}
+            for d in online_drivers:
+                d_id = d.get("id")
+                u_id = d.get("user_id")
+                d_rides = [r for r in all_active_rides if r.get("driver_id") in (d_id, u_id)]
+                active_states_by_id[d_id] = {
+                    "active_passengers": sum(r.get("passenger_count", 1) for r in d_rides),
+                    "has_private": any(r.get("ride_mode") == RideMode.PRIVATE.value for r in d_rides),
+                    "has_shared": any(r.get("ride_mode") == RideMode.SHARED.value for r in d_rides),
+                    "active_rides_count": len(d_rides)
+                }
+
             eligible_drivers = []
             for driver in online_drivers:
                 real_driver_id = driver.get("id")
                 real_user_id = driver.get("user_id")
                 
-                # Check eligibility (capacity, not on conflicting private ride)
-                active_state = await get_driver_active_state(real_driver_id)
+                # Check eligibility from in-memory cache
+                active_state = active_states_by_id.get(real_driver_id) or {
+                    "active_passengers": 0, "has_private": False, "has_shared": False, "active_rides_count": 0
+                }
                 eligibility = is_driver_eligible(driver, active_state, ride_mode, passenger_count)
                 if not eligibility.get("eligible"):
                     continue
@@ -3355,6 +3409,7 @@ async def trigger_sos(request: EmergencyRequest, user: dict = Depends(get_curren
     }
 
 @api_router.post("/rides/{ride_id}/rate")
+@api_router.post("/rides/{ride_id}/rating")
 async def rate_ride(ride_id: str, rating_data: RatingCreate, background_tasks: BackgroundTasks, user: dict = Depends(get_current_user)):
     ride = await db.rides.find_one({"id": ride_id}, {"_id": 0})
     

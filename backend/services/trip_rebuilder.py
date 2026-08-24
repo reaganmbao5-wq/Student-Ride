@@ -154,6 +154,8 @@ class DriverTripRebuilder:
                                 "rideId": dest.get("stop_id") or f"seg-{i}",
                                 "stopId": dest.get("stop_id"),
                                 "geometry": leg_geo,
+                                "distance_km": leg_data.get("distance_km", 0.0),
+                                "duration_seconds": leg_data.get("duration_seconds", 0.0),
                                 "color": leg_color,
                                 "status": "active",
                                 "isActiveLeg": (i == 0),
