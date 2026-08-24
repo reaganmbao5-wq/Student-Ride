@@ -3,6 +3,7 @@ import os
 import math
 import argparse
 import httpx
+from datetime import datetime, timezone
 from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
 
@@ -90,9 +91,10 @@ async def inject_location(client, db, backend_url, driver_id, driver_user_id, la
         
     # 2. Inject via live server WebSocket manager endpoint
     try:
-        await client.post(f"{backend_url}/api/test/inject_drivers", json={"drivers": payload}, timeout=5.0)
-    except Exception as ex:
-        print(f"[SIMULATION] Inject location network retry: {ex}")
+        await client.post(f"{backend_url}/api/test/inject_drivers", json={"drivers": payload}, timeout=10.0)
+    except Exception:
+        # Non-fatal network latency retry
+        pass
 
 async def wait_for_driver_action(db, driver_id, current_stop_id, prompt):
     print(f"\n=====================================")

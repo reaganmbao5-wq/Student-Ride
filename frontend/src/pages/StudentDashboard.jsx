@@ -496,8 +496,13 @@ const StudentDashboard = () => {
       }
       
       if (activeRes.data?.driver?.current_location) {
-        setDriverPos(activeRes.data.driver.current_location);
-      } else {
+        setDriverPos(prev => {
+          if (prev && prev.lat !== undefined && prev.lng !== undefined) {
+            return prev; // Preserve high-frequency real-time WebSocket coordinate
+          }
+          return activeRes.data.driver.current_location;
+        });
+      } else if (!activeRes.data?.driver) {
         setDriverPos(null);
       }
       const ridesList = historyRes.data || [];

@@ -1053,43 +1053,49 @@ class ConnectionManager:
     async def update_driver_location(self, driver_id: str, location: dict):
         self.driver_locations[driver_id] = location
         self.driver_last_active[driver_id] = time.time()
-        logger.info(f"Updating location for driver {driver_id}: {location}")
         
-        # Create GeoJSON point
-        # MongoDB expects [longitude, latitude]
-        geo_location = {
-            "type": "Point",
-            "coordinates": [location["lng"], location["lat"]]
-        }
+        # Async background task for MongoDB persistence (prevents blocking event loop / latency)
+        async def persist_db():
+            try:
+                geo_location = {
+                    "type": "Point",
+                    "coordinates": [location["lng"], location["lat"]]
+                }
+                await db.driver_locations.update_one(
+                    {"driver_id": driver_id},
+                    {"$set": {
+                        "latitude": location["lat"],
+                        "longitude": location["lng"],
+                        "heading": location.get("heading", 0.0),
+                        "speed": location.get("speed", 0.0),
+                        "location": geo_location,
+                        "updated_at": datetime.now(timezone.utc)
+                    }},
+                    upsert=True
+                )
+                await db.drivers.update_one(
+                    {"$or": [{"user_id": driver_id}, {"id": driver_id}]},
+                    {"$set": {
+                        "current_location": location,
+                        "location": geo_location
+                    }}
+                )
+            except Exception as e:
+                logger.error(f"Error persisting driver location to DB: {e}")
+
+        asyncio.create_task(persist_db())
         
-        # Update temporary location table with TTL
-        await db.driver_locations.update_one(
-            {"driver_id": driver_id},
-            {"$set": {
-                "latitude": location["lat"],
-                "longitude": location["lng"],
-                "heading": location.get("heading", 0.0),
-                "speed": location.get("speed", 0.0),
-                "location": geo_location,
-                "updated_at": datetime.now(timezone.utc)
-            }},
-            upsert=True
-        )
-        
-        # Also update drivers collection (lookup by user_id or id)
-        driver = await db.drivers.find_one_and_update(
+        # Fast lookup driver profile from memory or quick query
+        driver = await db.drivers.find_one(
             {"$or": [{"user_id": driver_id}, {"id": driver_id}]},
-            {"$set": {
-                "current_location": location,
-                "location": geo_location
-            }},
-            return_document=True
+            {"_id": 0, "id": 1, "user_id": 1}
         )
         
-        # Broadcast to student if driver is in an active ride
         if driver:
-            self.driver_locations[driver.get("user_id", driver_id)] = location
-            self.driver_locations[driver.get("id", driver_id)] = location
+            real_driver_id = driver.get("id", driver_id)
+            driver_user_id = driver.get("user_id", driver_id)
+            self.driver_locations[driver_user_id] = location
+            self.driver_locations[real_driver_id] = location
 
             active_rides = await db.rides.find({
                 "$or": [{"driver_id": driver["id"]}, {"driver_id": driver.get("user_id", "")}],
