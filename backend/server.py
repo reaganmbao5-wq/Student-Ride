@@ -2568,13 +2568,18 @@ async def broadcast_route_queue(driver_id: str):
 
 @api_router.post("/rides/{ride_id}/accept", response_model=RideResponse)
 async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dict = Depends(require_driver)):
-    driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
+    # 1. Parallelize initial queries (Driver profile, platform settings, target ride)
+    driver, settings, target_ride = await asyncio.gather(
+        db.drivers.find_one({"user_id": user["id"]}, {"_id": 0}),
+        get_platform_settings(),
+        db.rides.find_one({"id": ride_id})
+    )
+
     if not driver:
         raise HTTPException(status_code=404, detail="Driver profile not found")
         
     # Debt Limit Check
-    settings = await get_platform_settings()
-    max_limit = settings.get("max_commission_owed_limit", 500.0)
+    max_limit = settings.get("max_commission_owed_limit", 500.0) if settings else 500.0
     total_due = driver.get("total_commission_due", 0.0)
     if total_due >= max_limit:
         raise HTTPException(
@@ -2582,8 +2587,6 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
             detail=f"Commission debt limit reached (K{total_due:.2f} / K{max_limit:.2f}). Please remit payment to Admin to clear your balance and unlock your account."
         )
     
-    # Check if ride exists and get its mode
-    target_ride = await db.rides.find_one({"id": ride_id})
     if not target_ride:
         raise HTTPException(status_code=404, detail="Ride not found")
         
@@ -2612,7 +2615,7 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
         else:
             raise HTTPException(status_code=400, detail=f"Ineligible: {reason}")
 
-    # TRICK 3: Rate Limit Driver Requests
+    # Rate Limit Driver Requests
     ten_seconds_ago = (datetime.now(timezone.utc) - timedelta(seconds=10)).isoformat()
     recent_accepts = await db.rides.count_documents({
         "driver_id": driver["id"],
@@ -2641,9 +2644,10 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
             raise HTTPException(status_code=404, detail="Ride not found")
         raise HTTPException(status_code=400, detail="Ride already taken or cancelled")
 
-    # Lock driver (ONLY IF PRIVATE, though we can still set it for legacy compatibility)
+    # Lock driver in background if needed
     if ride_mode == RideMode.PRIVATE.value or active_state["active_rides_count"] == 0:
-        await db.drivers.update_one(
+        background_tasks.add_task(
+            db.drivers.update_one,
             {"id": driver["id"]},
             {"$set": {"current_ride_id": ride_id}}
         )
@@ -2654,8 +2658,12 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
         "ride_id": ride_id
     })
     
-    # Populate driver info with user details and real-time location for instant frontend rendering
-    driver_user = await db.users.find_one({"id": driver.get("user_id")}, {"_id": 0, "password": 0})
+    # 2. Parallel user profile lookups for driver and student
+    driver_user, student_user = await asyncio.gather(
+        db.users.find_one({"id": driver.get("user_id")}, {"_id": 0, "password": 0}),
+        db.users.find_one({"id": ride["student_id"]}, {"_id": 0})
+    )
+
     driver_payload = dict(driver)
     if driver_user:
         driver_payload["user"] = {
@@ -2667,6 +2675,19 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
             "role": driver_user.get("role", "driver")
         }
 
+    if student_user:
+        ride["student"] = {
+            "id": student_user["id"],
+            "email": student_user["email"],
+            "name": student_user["name"],
+            "phone": student_user.get("phone", ""),
+            "avatar_url": student_user.get("avatar_url"),
+            "role": str(student_user.get("role", "student")),
+            "created_at": student_user.get("created_at", ""),
+            "is_active": student_user.get("is_active", True)
+        }
+        ride["student_name"] = student_user["name"]
+
     driver_loc = manager.driver_locations.get(driver.get("user_id")) or manager.driver_locations.get(driver["id"]) or driver.get("current_location", {})
     if driver_loc and ("lat" in driver_loc or "latitude" in driver_loc):
         driver_payload["current_location"] = {
@@ -2676,13 +2697,12 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
             "status": "online"
         }
 
-    # Notify student immediately via WebSocket with complete state
     # Register ride in in-memory active rides mapping
     manager.add_active_ride(driver["id"], ride)
     if driver.get("user_id"):
         manager.add_active_ride(driver["user_id"], ride)
 
-    # Notify student immediately via WebSocket with complete state
+    # Direct instant WebSocket dispatch to student (<10ms)
     try:
         await manager.send_personal_message(
             {
@@ -2752,7 +2772,6 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
     manager.add_to_ride(ride_id, ride["student_id"])
     manager.add_to_ride(ride_id, user["id"])
     
-    await populate_ride_student(ride)
     ride["driver"] = driver_payload # Include full driver details in response
     return RideResponse(**ride)
 

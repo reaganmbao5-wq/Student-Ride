@@ -364,7 +364,6 @@ const StudentDashboard = () => {
           fullDriver?.user?.name,
           `${fullDriver?.vehicle_color || ''} ${fullDriver?.vehicle_model || ''}`
         );
-        fetchData();
       } else if (rideUpdate.type === 'driver_arrived') {
         setActiveRide(prev => prev ? { ...prev, status: 'driver_arrived' } : null);
         systemNotification.notifyDriverArrived(activeRide?.driver?.user?.name);
