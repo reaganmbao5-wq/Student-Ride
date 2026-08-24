@@ -2733,22 +2733,7 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
             "status": "online"
         }
 
-    # Synchronously rebuild trip and compute student route geometry + briefing + ETA right now (Single execution)
-    trip = None
-    try:
-        trip = await DriverTripRebuilder.rebuild(driver["id"], db, driver_loc=driver_payload.get("current_location"))
-        if trip:
-            trip = await inject_etas_into_trip(trip, driver_payload.get("current_location", {}))
-    except Exception as e:
-        logger.error(f"Synchronous DriverTripRebuilder in accept_ride failed: {e}")
-
-    student_briefing = trip.get("passenger_briefings", {}).get(ride["student_id"]) if trip else None
-    if student_briefing:
-        ride["passenger_briefing"] = student_briefing
-        if student_briefing.get("route_geometry"):
-            ride["verified_geometry"] = student_briefing["route_geometry"]
-
-    # Notify student immediately via WebSocket with complete state (status, driver position, route geometry, briefing)
+    # Notify student immediately via WebSocket with complete state
     try:
         await manager.send_personal_message(
             {
@@ -2762,36 +2747,39 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
     except Exception as e:
         logger.error(f"Failed direct websocket send to student: {e}")
 
-    if student_briefing:
+    # Rebuild multi-stop trip & calculate ETAs in non-blocking background task
+    async def bg_rebuild_and_notify(d_id, d_user_id, s_id):
         try:
-            await manager.send_personal_message({
-                "type": "passenger_briefing_update",
-                "ride_id": student_briefing["ride_id"],
-                "briefing_text": student_briefing["briefing_text"],
-                "x3_state": student_briefing.get("x3_state"),
-                "is_pinned": student_briefing.get("is_pinned", False),
-                "carousel_messages": student_briefing.get("carousel_messages", []),
-                "stops_remaining": student_briefing["stops_remaining"],
-                "is_next_stop": student_briefing["is_next_stop"],
-                "intermediate_stops": student_briefing.get("intermediate_stops", []),
-                "route_segments": student_briefing.get("route_segments", []),
-                "route_geometry": student_briefing.get("route_geometry", []),
-                "eta_seconds": student_briefing.get("eta_seconds"),
-                "eta_text": student_briefing.get("eta_text")
-            }, ride["student_id"])
-        except Exception as e:
-            logger.error(f"Failed direct briefing update websocket send: {e}")
+            trip = await DriverTripRebuilder.rebuild(d_id, db, driver_loc=driver_payload.get("current_location"))
+            if trip:
+                trip = await inject_etas_into_trip(trip, driver_payload.get("current_location", {}))
+                student_briefing = trip.get("passenger_briefings", {}).get(s_id)
+                if student_briefing:
+                    await manager.send_personal_message({
+                        "type": "passenger_briefing_update",
+                        "ride_id": student_briefing["ride_id"],
+                        "briefing_text": student_briefing["briefing_text"],
+                        "x3_state": student_briefing.get("x3_state"),
+                        "is_pinned": student_briefing.get("is_pinned", False),
+                        "carousel_messages": student_briefing.get("carousel_messages", []),
+                        "stops_remaining": student_briefing["stops_remaining"],
+                        "is_next_stop": student_briefing["is_next_stop"],
+                        "intermediate_stops": student_briefing.get("intermediate_stops", []),
+                        "route_segments": student_briefing.get("route_segments", []),
+                        "route_geometry": student_briefing.get("route_geometry", []),
+                        "eta_seconds": student_briefing.get("eta_seconds"),
+                        "eta_text": student_briefing.get("eta_text")
+                    }, s_id)
 
-    # Notify driver immediately via WebSocket with updated trip & segments
-    if trip:
-        try:
-            await manager.send_personal_message({
-                "type": "trip_updated",
-                "route_queue": trip.get("route_queue", []),
-                "full_driver_segments": trip.get("full_driver_segments", [])
-            }, driver.get("user_id", driver["id"]))
-        except Exception as e:
-            logger.error(f"Failed direct trip_updated websocket send to driver: {e}")
+                await manager.send_personal_message({
+                    "type": "trip_updated",
+                    "route_queue": trip.get("route_queue", []),
+                    "full_driver_segments": trip.get("full_driver_segments", [])
+                }, d_user_id)
+        except Exception as bg_err:
+            logger.error(f"Background DriverTripRebuilder failed: {bg_err}")
+
+    asyncio.create_task(bg_rebuild_and_notify(driver["id"], driver.get("user_id", driver["id"]), ride["student_id"]))
     
     # Push notification
     async def send_accept_push(student_id, r_id, user_name):
