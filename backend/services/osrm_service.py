@@ -54,6 +54,8 @@ def reset_eta_metrics():
         "total_latency_ms": 0.0
     }
 
+_single_route_cache = {}
+
 async def get_route(pickup_lat: float, pickup_lng: float, drop_lat: float, drop_lng: float):
     """
     Calculates route using Mapbox Directions API (with OSRM + Haversine fallback).
@@ -64,6 +66,10 @@ async def get_route(pickup_lat: float, pickup_lng: float, drop_lat: float, drop_
             "geometry": list[list[float]]  # [[lat, lng], ...]
         }
     """
+    cache_key = f"{round(pickup_lat, 4)},{round(pickup_lng, 4)};{round(drop_lat, 4)},{round(drop_lng, 4)}"
+    if cache_key in _single_route_cache:
+        return _single_route_cache[cache_key]
+
     client = get_http_client()
     
     # 1. Primary Engine: Mapbox Directions API v5
@@ -98,12 +104,14 @@ async def get_route(pickup_lat: float, pickup_lng: float, drop_lat: float, drop_
                     (distance_km * 2.2) + 1.0
                 )
                 
-                return {
+                result = {
                     "distance_km": round(distance_km, 2),
                     "duration_minutes": round(realistic_duration_min, 1),
                     "geometry": geometry,
                     "source": "mapbox"
                 }
+                _single_route_cache[cache_key] = result
+                return result
     except Exception as e:
         logger.warning(f"Mapbox Directions API Error: {e}, falling back to OSRM")
 
@@ -122,12 +130,14 @@ async def get_route(pickup_lat: float, pickup_lng: float, drop_lat: float, drop_
                 raw_geometry = route["geometry"]["coordinates"]
                 geometry = [[coord[1], coord[0]] for coord in raw_geometry]
                 
-                return {
+                result = {
                     "distance_km": distance_meters / 1000.0,
                     "duration_minutes": duration_seconds / 60.0,
                     "geometry": geometry,
                     "source": "osrm"
                 }
+                _single_route_cache[cache_key] = result
+                return result
     except Exception as e:
         logger.error(f"OSRM Fallback Error: {e}")
 

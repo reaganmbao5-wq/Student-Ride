@@ -271,17 +271,6 @@ const RideRequestPage = () => {
     }
   }, [pickup, dropoff, api, selectedDestination]);
 
-  // Automatic retry: If route geometry is missing or <= 2 points (straight line), retry every 3s until curve loads
-  useEffect(() => {
-    if (step !== 'confirm' || !pickup || !dropoff) return;
-
-    if (!routeGeometry || routeGeometry.length <= 2) {
-      const interval = setInterval(() => {
-        calculateFare(pickup, dropoff);
-      }, 3000);
-      return () => clearInterval(interval);
-    }
-  }, [step, pickup, dropoff, routeGeometry, calculateFare]);
 
 
   const confirmedLocationsRef = useRef({ pickup: null, dropoff: null });
@@ -358,11 +347,7 @@ const RideRequestPage = () => {
       });
 
       toast.success('Ride requested! Finding a driver...');
-      setIsCollapsing(true);
-
-      setTimeout(() => {
-        navigate('/dashboard', { state: { initialRide: res.data } });
-      }, 1500);
+      navigate('/dashboard', { state: { initialRide: res.data } });
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to request ride');
       setRequesting(false);

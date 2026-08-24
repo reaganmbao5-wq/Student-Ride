@@ -1261,22 +1261,25 @@ class ConnectionManager:
                     except Exception as ws_err:
                         logger.error(f"WebSocket send failed for driver id {d_id}: {ws_err}")
 
-                # 2. Targeted Push Notification (FCM / WebPush)
+                # 2. Targeted Push Notification (FCM / WebPush) - Fire in background non-blocking
                 push_target = u_id or d_id
                 if push_target:
-                    try:
-                        await notification_service.send(
-                            user_id=push_target,
-                            type="new_ride_request",
-                            payload={
-                                "title": "New ride request",
-                                "body": f"Pickup near {pickup_name}. Tap to view.",
-                                "url": "/driver",
-                                "channelId": "ride_updates"
-                            }
-                        )
-                    except Exception as push_err:
-                        logger.error(f"Push send failed for driver {push_target}: {push_err}")
+                    async def send_bg_push(target, p_name):
+                        try:
+                            await notification_service.send(
+                                user_id=target,
+                                type="new_ride_request",
+                                payload={
+                                    "title": "New ride request",
+                                    "body": f"Pickup near {p_name}. Tap to view.",
+                                    "url": "/driver",
+                                    "channelId": "ride_updates"
+                                }
+                            )
+                        except Exception as push_err:
+                            logger.error(f"Push send failed for driver {target}: {push_err}")
+
+                    asyncio.create_task(send_bg_push(push_target, pickup_name))
 
         except Exception as top_err:
             logger.error(f"broadcast_to_nearby_drivers error: {top_err}", exc_info=True)
