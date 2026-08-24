@@ -501,90 +501,30 @@ const DriverDashboard = () => {
   }, [currentLocation, routeQueue, routesData, isRecalculating, requestHardRecalculation]);
 
   useEffect(() => {
-    if (routeQueue.length > 0) {
-      const fetchRoutes = async () => {
-        const waypoints = [];
-        if (driverLocRef.current) {
-          waypoints.push({ ...driverLocRef.current, ride_id: 'driver' });
+    if (driverTripSegments && driverTripSegments.length > 0) {
+      setRoutesData(driverTripSegments);
+    } else if (activeRides && activeRides.length > 0) {
+      const fallbackSegments = activeRides.map((r, i) => {
+        const geo = r.verified_geometry || r.route_geometry || [];
+        if (geo && geo.length > 2) {
+          return {
+            rideId: r.id || `ride-${i}`,
+            geometry: geo,
+            color: getColorForRideId(r.id),
+            status: 'active',
+            isActiveLeg: (i === 0),
+            isNextLeg: (i === 0)
+          };
         }
-        routeQueue.forEach(stop => {
-          if (stop.coordinates) waypoints.push({ ...stop.coordinates, ride_id: stop.ride_id });
-        });
-
-        const fetchPromises = [];
-        const orderedSegments = [];
-
-        for (let i = 0; i < waypoints.length - 1; i++) {
-          const origin = waypoints[i];
-          const dest = waypoints[i+1];
-          if (!origin?.lat || !dest?.lat) continue;
-          
-          const segmentKey = `${origin.ride_id || 'p'+i}-${dest.ride_id || 'p'+(i+1)}`;
-          const color = getColorForRideId(dest.ride_id);
-          
-          let cachedGeometry = routeCache.getRoute(origin, dest);
-          if (!cachedGeometry && origin.ride_id === 'driver') {
-            cachedGeometry = routeCache.getLenientRoute(origin, dest, 0.0002);
-          }
-          
-          if (cachedGeometry) {
-            const segment = { rideId: segmentKey, geometry: cachedGeometry, color, pIndex: '', status: 'active' };
-            orderedSegments.push(segment);
-            
-            // Incrementally show cached segments to prevent empty map flicker
-            setRoutesData(prev => {
-              if (!prev.find(r => r.rideId === segmentKey)) return [...prev, segment];
-              return prev;
-            });
-            continue;
-          }
-          
-          const fetchPromise = api.post('/rides/estimate-fare', {
-            pickup: origin,
-            dropoff: dest
-          }).then(res => {
-            const geo = res.data?.geometry;
-            if (geo && geo.length > 2) {
-              routeCache.setRoute(origin, dest, geo);
-              const newSegment = { rideId: segmentKey, geometry: geo, color, pIndex: '', status: 'active' };
-              setRoutesData(prev => {
-                const existingIndex = prev.findIndex(r => r.rideId === segmentKey);
-                if (existingIndex === -1) return [...prev, newSegment];
-                const updated = [...prev];
-                updated[existingIndex] = newSegment;
-                return updated;
-              });
-              return newSegment;
-            }
-            return null;
-          }).catch(err => {
-            console.error("Could not fetch route geometry for segment", err);
-            return null;
-          });
-          
-          orderedSegments.push(fetchPromise);
-          fetchPromises.push(fetchPromise);
-        }
-        
-        // Wait for all missing segments, then commit clean exact array to remove obsolete segments
-        if (fetchPromises.length > 0) {
-          await Promise.all(fetchPromises);
-        }
-        
-        // Ensure final array matches exact current queue
-        const finalSegments = orderedSegments.map(s => s instanceof Promise ? null : s).filter(Boolean);
-        // Wait for promises to resolve inside orderedSegments! 
-        // Actually, orderedSegments has raw promises, we need to await them
-        const resolvedSegments = await Promise.all(orderedSegments);
-        setRoutesData(resolvedSegments.filter(Boolean));
-      };
-      
-      fetchRoutes();
-    } else {
-      // Don't clear immediately, wait for backend delay to settle, or if truly empty, clear
-      if (activeRides.length === 0) setRoutesData([]);
+        return null;
+      }).filter(Boolean);
+      if (fallbackSegments.length > 0) {
+        setRoutesData(fallbackSegments);
+      }
+    } else if (activeRides.length === 0) {
+      setRoutesData([]);
     }
-  }, [routeQueue, api, recalcTrigger]);
+  }, [driverTripSegments, activeRides]);
 
   const handleToggleOnline = async () => {
     if (isTogglingOnline) return;

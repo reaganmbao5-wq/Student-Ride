@@ -782,7 +782,16 @@ const StudentDashboard = () => {
             center={
               (activeRide && activeRide.status === 'requested' && activeRide.pickup_location)
                 ? activeRide.pickup_location
-                : (driverPos || userLocation || { lat: -14.4087, lng: 28.2849 })
+                : (driverPos || activeRide?.pickup_location || userLocation || (() => {
+                    try {
+                      const cached = localStorage.getItem('mulu_last_location') || localStorage.getItem('last_known_location');
+                      if (cached) {
+                        const parsed = JSON.parse(cached);
+                        if (parsed.lat && parsed.lng) return { lat: parsed.lat, lng: parsed.lng };
+                      }
+                    } catch (e) {}
+                    return null;
+                  })())
             }
             bounds={bounds}
             cameraMode={cameraMode}

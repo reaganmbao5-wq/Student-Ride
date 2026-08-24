@@ -148,41 +148,45 @@ export const PlatformMap = ({
     lastFittedBoundsRef.current = null;
   }, [cameraMode]);
 
-
+  // Camera Guard Reset on Ride Acceptance / State Transition
+  useEffect(() => {
+    if (['driver_accepted', 'accepted', 'driver_en_route_to_pickup', 'driver_arrived', 'passenger_boarding', 'ride_started', 'ongoing', 'ride_in_progress'].includes(rideStatus)) {
+      hasManuallyInteractedRef.current = false;
+      lastFittedBoundsRef.current = null;
+    }
+  }, [rideStatus]);
 
   // Stable Style Calculation
-
   const activeStyle = useMemo(() => {
-
     return getAutoMapStyle(themeMode === 'auto' ? null : themeMode);
-
   }, [themeMode]);
-
-
 
   const isNight = useMemo(() => {
-
     return isNightTheme(themeMode === 'auto' ? null : themeMode);
-
   }, [themeMode]);
 
-
-
   // Initialize Mapbox Map once
-
   useEffect(() => {
-
     if (!mapContainerRef.current) return;
 
-
+    let defaultFallbackLngLat = [28.559798, -14.294896];
+    try {
+      const savedLoc = localStorage.getItem('mulu_last_location') || localStorage.getItem('last_known_location');
+      if (savedLoc) {
+        const parsed = JSON.parse(savedLoc);
+        const lat = parsed.lat ?? parsed.latitude;
+        const lng = parsed.lng ?? parsed.longitude;
+        if (typeof lat === 'number' && typeof lng === 'number') {
+          defaultFallbackLngLat = [lng, lat];
+        }
+      }
+    } catch (e) {}
 
     const initialCenter = (bounds && bounds.length >= 2)
       ? [(bounds[0][1] + bounds[1][1]) / 2, (bounds[0][0] + bounds[1][0]) / 2]
-      : (center ? [center.lng, center.lat] : [28.559798, -14.294896]);
+      : (center && typeof center.lat === 'number' && typeof center.lng === 'number' ? [center.lng, center.lat] : defaultFallbackLngLat);
 
     currentStyleRef.current = activeStyle;
-
-
 
     const map = new mapboxgl.Map({
 
@@ -685,12 +689,11 @@ export const PlatformMap = ({
       {/* UNIFIED ROUTE ENGINE: Single persistent instance for all single and multi-stop trips */}
       {mapLoaded && mapRef.current && (
         <RouteEngine 
-          id="unified-trip-route"
           map={mapRef.current}
           routes={routes}
-          geometry={routeGeometry}
+          routeGeometry={routeGeometry}
           driverLocation={driverLocation}
-          status={rideStatus}
+          rideStatus={rideStatus}
           onAnimationChange={onRouteAnimationChange}
         />
       )}

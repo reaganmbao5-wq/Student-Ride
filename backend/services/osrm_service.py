@@ -153,10 +153,12 @@ async def get_route(pickup_lat: float, pickup_lng: float, drop_lat: float, drop_
         "source": "haversine_fallback"
     }
 
+_multi_route_cache = {}  # key: "lat0,lng0;lat1,lng1...", value: {"data": res, "timestamp": float}
+
 async def get_multi_waypoint_route_with_legs(waypoints: list) -> dict:
     """
     Calculates a single continuous multi-stop route with leg-level breakdowns
-    using Mapbox Directions API (with OSRM fallback).
+    using Mapbox Directions API (with OSRM fallback) and in-memory 15s TTL caching.
     
     Returns:
         dict: {
@@ -168,6 +170,7 @@ async def get_multi_waypoint_route_with_legs(waypoints: list) -> dict:
         return {"full_geometry": [], "legs": []}
     
     formatted_coords = []
+    cache_coords = []
     for wp in waypoints:
         if isinstance(wp, dict):
             lat, lng = wp.get("lat"), wp.get("lng")
@@ -178,14 +181,24 @@ async def get_multi_waypoint_route_with_legs(waypoints: list) -> dict:
             
         if lat is not None and lng is not None:
             formatted_coords.append(f"{lng},{lat}")
+            cache_coords.append(f"{round(lat, 4)},{round(lng, 4)}")
             
     if len(formatted_coords) < 2:
         return {"full_geometry": [], "legs": []}
 
+    cache_key = ";".join(cache_coords)
+    now = time.time()
+
+    # 1. Check TTL Multi-Route Cache (15-second window)
+    if cache_key in _multi_route_cache:
+        cached_entry = _multi_route_cache[cache_key]
+        if now - cached_entry["timestamp"] < 15.0:
+            return cached_entry["data"]
+
     coord_str = ";".join(formatted_coords)
     client = get_http_client()
 
-    # 1. Primary Engine: Mapbox Directions API v5 with steps=true
+    # 2. Primary Engine: Mapbox Directions API v5 with steps=true
     try:
         url = f"{MAPBOX_DIRECTIONS_BASE_URL}/{coord_str}"
         params = {
@@ -224,12 +237,14 @@ async def get_multi_waypoint_route_with_legs(waypoints: list) -> dict:
                         "duration_seconds": leg.get("duration", 0.0)
                     })
                 
-                # If legs were returned successfully, return unified structure
+                # If legs were returned successfully, return unified structure and cache
                 if legs_data:
-                    return {
+                    result = {
                         "full_geometry": full_geo,
                         "legs": legs_data
                     }
+                    _multi_route_cache[cache_key] = {"data": result, "timestamp": now}
+                    return result
     except Exception as e:
         logger.warning(f"Mapbox Multi-Waypoint with Legs Error: {e}, falling back to single route or OSRM")
 

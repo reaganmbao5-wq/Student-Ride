@@ -1012,6 +1012,25 @@ class ConnectionManager:
         self.driver_locations: Dict[str, Dict] = {}
         self.driver_last_active: Dict[str, float] = {}
         self.ride_connections: Dict[str, List[str]] = {}  # ride_id -> [user_ids]
+        self.active_driver_rides: Dict[str, List[dict]] = {} # driver_id -> list of active ride dicts
+
+    def add_active_ride(self, driver_id: str, ride: dict):
+        if not driver_id:
+            return
+        if driver_id not in self.active_driver_rides:
+            self.active_driver_rides[driver_id] = []
+        existing_idx = next((i for i, r in enumerate(self.active_driver_rides[driver_id]) if r.get("id") == ride.get("id")), -1)
+        if existing_idx >= 0:
+            self.active_driver_rides[driver_id][existing_idx] = ride
+        else:
+            self.active_driver_rides[driver_id].append(ride)
+
+    def remove_active_ride(self, driver_id: str, ride_id: str):
+        if not driver_id or driver_id not in self.active_driver_rides:
+            return
+        self.active_driver_rides[driver_id] = [r for r in self.active_driver_rides[driver_id] if r.get("id") != ride_id]
+        if len(self.active_driver_rides[driver_id]) == 0:
+            del self.active_driver_rides[driver_id]
 
     async def connect(self, websocket: WebSocket, user_id: str):
         await websocket.accept()
@@ -1079,7 +1098,7 @@ class ConnectionManager:
         self.driver_locations[driver_id] = location
         self.driver_last_active[driver_id] = time.time()
         
-        # Async background task for MongoDB persistence (prevents blocking event loop / latency)
+        # 1. Non-blocking Async Background Task for MongoDB Persistence
         async def persist_db():
             try:
                 geo_location = {
@@ -1109,104 +1128,28 @@ class ConnectionManager:
                 logger.error(f"Error persisting driver location to DB: {e}")
 
         asyncio.create_task(persist_db())
-        
-        # Fast lookup driver profile from memory or quick query
-        driver = await db.drivers.find_one(
-            {"$or": [{"user_id": driver_id}, {"id": driver_id}]},
-            {"_id": 0, "id": 1, "user_id": 1}
-        )
-        
-        if driver:
-            real_driver_id = driver.get("id", driver_id)
-            driver_user_id = driver.get("user_id", driver_id)
-            self.driver_locations[driver_user_id] = location
-            self.driver_locations[real_driver_id] = location
 
-            active_rides = await db.rides.find({
-                "$or": [{"driver_id": driver["id"]}, {"driver_id": driver.get("user_id", "")}],
-                "status": {"$in": [
-                    RideStatus.DRIVER_ACCEPTED.value,
-                    RideStatus.DRIVER_EN_ROUTE_TO_PICKUP.value,
-                    RideStatus.DRIVER_ARRIVED.value,
-                    RideStatus.PASSENGER_BOARDING.value,
-                    RideStatus.RIDE_STARTED.value,
-                    RideStatus.RIDE_IN_PROGRESS.value,
-                    RideStatus.ARRIVING_DESTINATION.value,
-                    # Legacy fallback
-                    RideStatus.ACCEPTED.value,
-                    RideStatus.ONGOING.value
-                ]}
-            }, {"_id": 0}).to_list(None)
-            
-            if active_rides:
-                # Broadcast location to all students in an active ride with this driver
-                for active_ride in active_rides:
-                    await self.send_personal_message({
-                        "type": "driver_location",
-                        "lat": location["lat"],
-                        "lng": location["lng"],
-                        "heading": location.get("heading", 0),
-                        "ride_id": active_ride["id"]
-                    }, active_ride["student_id"])
-                
-                # Broadcast back to the driver so their own map moves during simulation
-                await self.send_personal_message({
+        # 2. FAST IN-MEMORY BROADCAST (0 WAN Database Calls)
+        cached_rides = self.active_driver_rides.get(driver_id, [])
+        for ride in cached_rides:
+            student_id = ride.get("student_id")
+            if student_id:
+                asyncio.create_task(self.send_personal_message({
                     "type": "driver_location",
                     "lat": location["lat"],
                     "lng": location["lng"],
-                    "heading": location.get("heading", 0),
-                    "ride_id": active_rides[0]["id"]
-                }, driver.get("user_id", driver_id))
+                    "heading": location.get("heading", 0.0),
+                    "ride_id": ride["id"]
+                }, student_id))
 
-                # Fast In-Memory Proximity & Dynamic ETA Update (0 Mapbox HTTP overhead)
-                try:
-                    trip = await db.driver_trips.find_one({"driver_id": driver["id"]})
-                    if not trip:
-                        trip = await DriverTripRebuilder.rebuild(driver["id"], db, driver_loc=location)
-                    
-                    if trip:
-                        trip = await inject_etas_into_trip(trip, location)
-                        driver_uid = driver.get("user_id", driver_id)
-                        
-                        # Check proximity arrival for active pickup (<50m)
-                        route_queue = trip.get("route_queue", [])
-                        if route_queue and len(route_queue) > 0:
-                            first_stop = route_queue[0]
-                            st_coords = first_stop.get("coordinates", {})
-                            if st_coords.get("lat") and st_coords.get("lng"):
-                                dist_to_stop_km = haversine_distance(location["lat"], location["lng"], st_coords["lat"], st_coords["lng"])
-                                if dist_to_stop_km <= 0.05 and first_stop.get("stop_type") == "pickup":
-                                    # Target student arrival trigger
-                                    target_student_id = first_stop.get("student_id")
-                                    if target_student_id and "passenger_briefings" in trip and target_student_id in trip["passenger_briefings"]:
-                                        tb = trip["passenger_briefings"][target_student_id]
-                                        tb["x3_state"] = "DRIVER_ARRIVED_MY_PICKUP"
-                                        tb["briefing_text"] = "Driver has arrived at your pickup!"
-                                        tb["is_pinned"] = True
-                                        tb["stops_remaining"] = 0
-                                        tb["is_next_stop"] = True
-                                        tb["eta_seconds"] = 15
-                                        tb["eta_text"] = "<1 min"
-                        
-                        if "passenger_briefings" in trip:
-                            for s_id, briefing in trip["passenger_briefings"].items():
-                                await self.send_personal_message({
-                                    "type": "passenger_briefing_update",
-                                    "ride_id": briefing["ride_id"],
-                                    "briefing_text": briefing["briefing_text"],
-                                    "x3_state": briefing.get("x3_state"),
-                                    "is_pinned": briefing.get("is_pinned", False),
-                                    "carousel_messages": briefing.get("carousel_messages", []),
-                                    "stops_remaining": briefing["stops_remaining"],
-                                    "is_next_stop": briefing["is_next_stop"],
-                                    "intermediate_stops": briefing.get("intermediate_stops", []),
-                                    "route_segments": briefing.get("route_segments", []),
-                                    "route_geometry": briefing.get("route_geometry", []),
-                                    "eta_seconds": briefing.get("eta_seconds"),
-                                    "eta_text": briefing.get("eta_text")
-                                }, s_id)
-                except Exception as ex:
-                    logger.error(f"Failed to update passenger briefings on driver location update: {ex}")
+        # Broadcast back to the driver so their own map moves during simulation
+        asyncio.create_task(self.send_personal_message({
+            "type": "driver_location",
+            "lat": location["lat"],
+            "lng": location["lng"],
+            "heading": location.get("heading", 0.0),
+            "ride_id": cached_rides[0]["id"] if cached_rides else "driver-loc"
+        }, driver_id))
 
     async def broadcast_to_nearby_drivers(self, message: dict, location: dict, radius_km: float = 15.0):
         """
@@ -2734,6 +2677,12 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
         }
 
     # Notify student immediately via WebSocket with complete state
+    # Register ride in in-memory active rides mapping
+    manager.add_active_ride(driver["id"], ride)
+    if driver.get("user_id"):
+        manager.add_active_ride(driver["user_id"], ride)
+
+    # Notify student immediately via WebSocket with complete state
     try:
         await manager.send_personal_message(
             {
@@ -2753,24 +2702,27 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
             trip = await DriverTripRebuilder.rebuild(d_id, db, driver_loc=driver_payload.get("current_location"))
             if trip:
                 trip = await inject_etas_into_trip(trip, driver_payload.get("current_location", {}))
-                student_briefing = trip.get("passenger_briefings", {}).get(s_id)
-                if student_briefing:
+                
+                # BROADCAST TO ALL PASSENGERS IN THE POOL
+                passenger_briefings = trip.get("passenger_briefings", {})
+                for student_id, briefing in passenger_briefings.items():
                     await manager.send_personal_message({
                         "type": "passenger_briefing_update",
-                        "ride_id": student_briefing["ride_id"],
-                        "briefing_text": student_briefing["briefing_text"],
-                        "x3_state": student_briefing.get("x3_state"),
-                        "is_pinned": student_briefing.get("is_pinned", False),
-                        "carousel_messages": student_briefing.get("carousel_messages", []),
-                        "stops_remaining": student_briefing["stops_remaining"],
-                        "is_next_stop": student_briefing["is_next_stop"],
-                        "intermediate_stops": student_briefing.get("intermediate_stops", []),
-                        "route_segments": student_briefing.get("route_segments", []),
-                        "route_geometry": student_briefing.get("route_geometry", []),
-                        "eta_seconds": student_briefing.get("eta_seconds"),
-                        "eta_text": student_briefing.get("eta_text")
-                    }, s_id)
+                        "ride_id": briefing["ride_id"],
+                        "briefing_text": briefing["briefing_text"],
+                        "x3_state": briefing.get("x3_state"),
+                        "is_pinned": briefing.get("is_pinned", False),
+                        "carousel_messages": briefing.get("carousel_messages", []),
+                        "stops_remaining": briefing["stops_remaining"],
+                        "is_next_stop": briefing["is_next_stop"],
+                        "intermediate_stops": briefing.get("intermediate_stops", []),
+                        "route_segments": briefing.get("route_segments", []),
+                        "route_geometry": briefing.get("route_geometry", []),
+                        "eta_seconds": briefing.get("eta_seconds"),
+                        "eta_text": briefing.get("eta_text")
+                    }, student_id)
 
+                # UPDATE DRIVER DASHBOARD
                 await manager.send_personal_message({
                     "type": "trip_updated",
                     "route_queue": trip.get("route_queue", []),
@@ -3055,6 +3007,11 @@ async def complete_ride(ride_id: str, background_tasks: BackgroundTasks, user: d
         user["id"]
     )
     
+    # Remove from in-memory active rides mapping
+    manager.remove_active_ride(driver["id"], ride_id)
+    if driver.get("user_id"):
+        manager.remove_active_ride(driver["user_id"], ride_id)
+
     background_tasks.add_task(manager.remove_from_ride, ride_id, ride["student_id"])
     background_tasks.add_task(manager.remove_from_ride, ride_id, user["id"])
     background_tasks.add_task(DriverTripRebuilder.rebuild, driver["id"], db)
@@ -3247,6 +3204,11 @@ async def cancel_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
     if is_driver:
         # Driver cancelled: put the ride back in the pool
         driver_id_to_notify = ride.get("driver_id")
+        if driver_id_to_notify:
+            manager.remove_active_ride(driver_id_to_notify, ride_id)
+            if user.get("id"):
+                manager.remove_active_ride(user["id"], ride_id)
+
         await db.rides.update_one(
             {"id": ride_id},
             {"$set": {
@@ -3311,9 +3273,11 @@ async def cancel_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
             logger.error(f"Failed direct send cancel to student: {e}")
         
         if ride.get("driver_id"):
+            manager.remove_active_ride(ride["driver_id"], ride_id)
             driver_doc = await db.drivers.find_one({"id": ride["driver_id"]})
             if driver_doc:
                 if driver_doc.get("user_id"):
+                    manager.remove_active_ride(driver_doc["user_id"], ride_id)
                     try:
                         await manager.send_personal_message(cancel_msg, driver_doc["user_id"])
                     except Exception as e:
