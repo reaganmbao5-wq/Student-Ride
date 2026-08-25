@@ -18,7 +18,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { haptics } from '../utils/haptics';
 import { useTheme } from '../context/ThemeContext';
-import { openExternalUrl } from '../utils/urlHelpers';
+import { openExternalUrl, getBackendUrl } from '../utils/urlHelpers';
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { PermissionsService } from '../services/PermissionsService';
@@ -254,11 +254,20 @@ const ProfilePage = () => {
           let publicKey;
           try {
             const res = await api.get('/notifications/vapid-public-key');
-            publicKey = res.data?.publicKey;
+            publicKey = res.data?.publicKey || res.data?.public_key;
           } catch (e) {
-            const res = await fetch('/api/notifications/vapid-public-key');
-            const data = await res.json();
-            publicKey = data?.publicKey;
+            try {
+              const backendUrl = getBackendUrl ? getBackendUrl() : '';
+              if (backendUrl) {
+                const res = await fetch(`${backendUrl}/api/notifications/vapid-public-key`);
+                if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
+                  const data = await res.json();
+                  publicKey = data?.publicKey || data?.public_key;
+                }
+              }
+            } catch (fetchErr) {
+              console.warn('Could not fetch VAPID key:', fetchErr);
+            }
           }
           if (publicKey) {
             const convertedVapidKey = urlBase64ToUint8Array(publicKey);
@@ -973,9 +982,15 @@ const ProfilePage = () => {
           <div className="p-4 rounded-3xl bg-red-500/10 border border-red-500/30 flex items-start gap-3 text-xs text-red-500">
             <ShieldAlert className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold text-red-500">Notifications are blocked in browser settings</p>
+              <p className="font-bold text-red-500">
+                {Capacitor.isNativePlatform() 
+                  ? 'Notifications are disabled in phone settings' 
+                  : 'Notifications are blocked in browser settings'}
+              </p>
               <p className="text-red-500/80 mt-0.5">
-                Tap the lock icon 🔒 next to the web address at the top of your browser to set Notification permission to "Allow".
+                {Capacitor.isNativePlatform()
+                  ? 'Please enable notifications in your phone Settings > Apps > Jaey Ride > Notifications.'
+                  : 'Tap the lock icon 🔒 next to the web address at the top of your browser to set Notification permission to "Allow".'}
               </p>
             </div>
           </div>
