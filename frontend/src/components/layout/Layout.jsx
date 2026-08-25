@@ -165,8 +165,8 @@ export const Layout = ({ children }) => {
             className="h-8 sm:h-9 w-auto object-contain drop-shadow-sm select-none"
           />
         </div>
-        <div className="flex items-center gap-2">
-          <ThemeToggle className="scale-75 origin-right" />
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
 
           <div className="relative group">
             <button className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground border border-border">

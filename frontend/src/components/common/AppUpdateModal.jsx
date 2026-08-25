@@ -96,9 +96,9 @@ export const AppUpdateModal = () => {
           transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
           className="relative w-full max-w-sm bg-card text-foreground border border-border rounded-3xl p-6 shadow-2xl flex flex-col items-center text-center space-y-4"
         >
-          {/* Green Android Robot Icon */}
-          <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center shadow-inner">
-            <AndroidRobotIcon className="w-12 h-10" />
+          {/* Green Android Robot Icon (Standalone, No Black Box) */}
+          <div className="py-1 flex items-center justify-center">
+            <AndroidRobotIcon className="w-16 h-12 drop-shadow-sm" />
           </div>
 
           {/* Title & Version */}

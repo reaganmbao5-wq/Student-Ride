@@ -500,7 +500,7 @@ const LandingPage = () => {
   };
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-[#0B0B0E] text-white flex flex-col justify-between overflow-hidden select-none font-sans">
+    <div className="fixed inset-0 w-full h-full h-[100dvh] max-h-[100dvh] bg-[#0B0B0E] text-white flex flex-col justify-between overflow-hidden select-none font-sans">
       
       {/* Permanent Background Media (Mounted ONCE, never unmounted across step changes) */}
       <div
@@ -538,7 +538,7 @@ const LandingPage = () => {
       </div>
 
       {/* Permanent Top Navigation Bar (Zero layout shifts, zero height jumps, zero flickering!) */}
-      <div className="relative z-30 w-full flex items-center justify-between px-6 sm:px-12 md:px-16 lg:px-24 pt-6 sm:pt-8 pb-2 min-h-[64px] flex-shrink-0">
+      <div className="relative z-30 w-full flex items-center justify-between px-5 sm:px-12 md:px-16 lg:px-24 pt-4 sm:pt-8 pb-2 min-h-[60px] sm:min-h-[64px] flex-shrink-0">
         {step === 1 ? (
           <div className="flex items-center justify-start">
             <img
@@ -550,10 +550,10 @@ const LandingPage = () => {
         ) : (
           <button
             onClick={handleBack}
-            className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-zinc-900/90 border border-zinc-800 flex items-center justify-center text-zinc-300 hover:text-white active:scale-95 transition-transform cursor-pointer shadow-lg"
+            className="w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-zinc-900/90 border border-zinc-800 flex items-center justify-center text-zinc-300 hover:text-white active:scale-95 transition-transform cursor-pointer shadow-lg"
             aria-label="Back"
           >
-            <ArrowLeft className="w-6 h-6 sm:w-7 sm:h-7" />
+            <ArrowLeft className="w-5 h-5 sm:w-7 sm:h-7" />
           </button>
         )}
 
@@ -572,7 +572,7 @@ const LandingPage = () => {
           </div>
         ) : (
           <div className="flex items-center">
-            <ThemeToggle className="scale-75 origin-right" />
+            <ThemeToggle />
           </div>
         )}
       </div>
@@ -595,24 +595,24 @@ const LandingPage = () => {
               className="absolute inset-0 flex flex-col justify-end w-full h-full z-10 overflow-hidden"
             >
               {/* Bottom Hero Content & Wide Dynamic CTA */}
-              <div className="w-full p-6 sm:p-10 md:p-14 lg:p-20 pb-8 sm:pb-12 flex flex-col items-start gap-6">
-                <div className="space-y-3.5 text-left max-w-4xl">
+              <div className="w-full p-5 xs:p-6 sm:p-10 md:p-14 lg:p-20 pb-8 xs:pb-10 sm:pb-14 flex flex-col items-start gap-4 sm:gap-6 safe-bottom">
+                <div className="space-y-2.5 sm:space-y-3.5 text-left max-w-4xl">
                   {/* Headline in Playfair Display serif font */}
-                  <h1 className="font-serif-hero text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-normal text-white leading-[1.12] tracking-normal drop-shadow-lg">
+                  <h1 className="font-serif-hero text-3xl xs:text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-normal text-white leading-[1.12] tracking-normal drop-shadow-lg">
                     From Campus <br />
                     To Your Door Step
                   </h1>
-                  <p className="font-sans-clean text-sm sm:text-base md:text-lg lg:text-xl text-zinc-300 font-normal leading-relaxed max-w-2xl drop-shadow">
+                  <p className="font-sans-clean text-xs xs:text-sm sm:text-base md:text-lg lg:text-xl text-zinc-300 font-normal leading-relaxed max-w-2xl drop-shadow">
                     The platform that always moves in your hands. Request rides, share seats, and travel comfortably around campus.
                   </p>
                 </div>
 
-                <div className="w-full max-w-xl md:max-w-2xl lg:max-w-4xl space-y-4 pt-2">
+                <div className="w-full max-w-xl md:max-w-2xl lg:max-w-4xl space-y-3 sm:space-y-4 pt-1 sm:pt-2">
                   {isAndroidWeb ? (
-                    <div className="flex items-center gap-3 w-full">
+                    <div className="flex items-center gap-2.5 sm:gap-3 w-full">
                       <button
                         onClick={goToNextStep}
-                        className="flex-1 py-4 sm:py-5 px-6 sm:px-8 rounded-2xl font-bold text-base sm:text-xl text-white shadow-2xl active:scale-[0.98] transition-all flex items-center justify-center cursor-pointer font-sans"
+                        className="flex-1 py-3.5 xs:py-4 sm:py-5 px-4 xs:px-6 sm:px-8 rounded-2xl font-bold text-sm xs:text-base sm:text-xl text-white shadow-2xl active:scale-[0.98] transition-all flex items-center justify-center cursor-pointer font-sans"
                         style={{
                           backgroundColor: activeAccentHex,
                           boxShadow: `0 16px 40px -5px ${activeAccentHex}70`
@@ -622,10 +622,10 @@ const LandingPage = () => {
                       </button>
                       <button
                         onClick={handleDownloadApk}
-                        className="py-4 sm:py-5 px-4 sm:px-6 rounded-2xl font-bold text-sm sm:text-base text-white bg-zinc-900/90 border border-zinc-700/80 hover:bg-zinc-800 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xl shrink-0"
+                        className="py-3.5 xs:py-4 sm:py-5 px-3.5 xs:px-4 sm:px-6 rounded-2xl font-bold text-xs xs:text-sm sm:text-base text-white bg-zinc-900/90 border border-zinc-700/80 hover:bg-zinc-800 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xl shrink-0"
                         title="Download Android APK"
                       >
-                        <AndroidRobotIcon className="w-6 h-5" />
+                        <AndroidRobotIcon className="w-5 h-4 xs:w-6 xs:h-5" />
                         <span className="font-semibold whitespace-nowrap">Download APK</span>
                       </button>
                     </div>
@@ -642,7 +642,7 @@ const LandingPage = () => {
                     </button>
                   )}
 
-                  <p className="font-sans-clean text-left sm:text-center text-xs sm:text-sm text-zinc-400">
+                  <p className="font-sans-clean text-left sm:text-center text-[11px] xs:text-xs sm:text-sm text-zinc-400">
                     By proceeding, you agree to all our{' '}
                     <span onClick={openTerms} className="text-white underline cursor-pointer hover:text-blue-300">terms and conditions</span>
                     {' '}~{' '}
