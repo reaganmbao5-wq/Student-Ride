@@ -8,10 +8,11 @@ import { Capacitor } from '@capacitor/core';
 import { toast } from 'sonner';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { AppCache } from '../utils/AppCache';
 import { ImageGallery } from '../components/common/ImageGallery';
 import { getOnlineWebUrl, openExternalUrl, getBackendUrl } from '../utils/urlHelpers';
 import { showFriendlyError } from '../utils/errorHandler';
+import { ThemeToggle } from '../components/ui/theme-toggle';
+import { AndroidRobotIcon } from '../components/common/AppUpdateModal';
 
 const BACKEND_URL = getBackendUrl();
 
@@ -129,6 +130,23 @@ const LandingPage = () => {
   const [showPhoneInput, setShowPhoneInput] = useState(() => localStorage.getItem('onboarding_show_phone') === 'true');
   const [gender, setGender] = useState(() => localStorage.getItem('onboarding_gender') || 'male'); // 'male' | 'female'
   const [mapStylePreference, setMapStylePreference] = useState(() => localStorage.getItem('map_theme_mode') || 'auto'); // 'day' | 'night' | 'auto'
+  const [isAndroidWeb, setIsAndroidWeb] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const ua = navigator.userAgent.toLowerCase();
+      const isAndroid = /android/i.test(ua);
+      const isNative = Capacitor.isNativePlatform();
+      setIsAndroidWeb(isAndroid && !isNative);
+    }
+  }, []);
+
+  const handleDownloadApk = () => {
+    const backendUrl = getBackendUrl();
+    window.location.href = `${backendUrl}/api/app/download-latest-apk`;
+    localStorage.setItem('has_downloaded_apk', 'true');
+    toast.success('Downloading latest Jaey Ride APK...');
+  };
 
   const [googleLoading, setGoogleLoading] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
@@ -553,7 +571,9 @@ const LandingPage = () => {
             ))}
           </div>
         ) : (
-          <div className="w-12 h-12" />
+          <div className="flex items-center">
+            <ThemeToggle className="scale-75 origin-right" />
+          </div>
         )}
       </div>
 
@@ -588,16 +608,39 @@ const LandingPage = () => {
                 </div>
 
                 <div className="w-full max-w-xl md:max-w-2xl lg:max-w-4xl space-y-4 pt-2">
-                  <button
-                    onClick={goToNextStep}
-                    className="w-full py-4 sm:py-5 md:py-6 px-10 rounded-2xl font-bold text-lg sm:text-xl md:text-2xl text-white shadow-2xl active:scale-[0.98] transition-all flex items-center justify-center cursor-pointer font-sans"
-                    style={{
-                      backgroundColor: activeAccentHex,
-                      boxShadow: `0 16px 40px -5px ${activeAccentHex}70`
-                    }}
-                  >
-                    Get Started
-                  </button>
+                  {isAndroidWeb ? (
+                    <div className="flex items-center gap-3 w-full">
+                      <button
+                        onClick={goToNextStep}
+                        className="flex-1 py-4 sm:py-5 px-6 sm:px-8 rounded-2xl font-bold text-base sm:text-xl text-white shadow-2xl active:scale-[0.98] transition-all flex items-center justify-center cursor-pointer font-sans"
+                        style={{
+                          backgroundColor: activeAccentHex,
+                          boxShadow: `0 16px 40px -5px ${activeAccentHex}70`
+                        }}
+                      >
+                        Get Started
+                      </button>
+                      <button
+                        onClick={handleDownloadApk}
+                        className="py-4 sm:py-5 px-4 sm:px-6 rounded-2xl font-bold text-sm sm:text-base text-white bg-zinc-900/90 border border-zinc-700/80 hover:bg-zinc-800 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xl shrink-0"
+                        title="Download Android APK"
+                      >
+                        <AndroidRobotIcon className="w-6 h-5" />
+                        <span className="font-semibold whitespace-nowrap">Download APK</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={goToNextStep}
+                      className="w-full py-4 sm:py-5 md:py-6 px-10 rounded-2xl font-bold text-lg sm:text-xl md:text-2xl text-white shadow-2xl active:scale-[0.98] transition-all flex items-center justify-center cursor-pointer font-sans"
+                      style={{
+                        backgroundColor: activeAccentHex,
+                        boxShadow: `0 16px 40px -5px ${activeAccentHex}70`
+                      }}
+                    >
+                      Get Started
+                    </button>
+                  )}
 
                   <p className="font-sans-clean text-left sm:text-center text-xs sm:text-sm text-zinc-400">
                     By proceeding, you agree to all our{' '}

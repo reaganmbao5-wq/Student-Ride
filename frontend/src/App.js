@@ -7,7 +7,7 @@ import { WebSocketProvider } from "./context/WebSocketContext";
 import { Toaster } from "./components/ui/sonner";
 import { ThemeProvider } from "./context/ThemeContext";
 import PushNotificationManager from "./components/common/PushNotificationManager";
-import SWUpdateManager from "./components/common/SWUpdateManager";
+import AppUpdateModal from "./components/common/AppUpdateModal";
 import NetworkMonitor from "./components/common/NetworkMonitor";
 import { StudentDashboardSkeleton, DriverDashboardSkeleton, AdminDashboardSkeleton, ProfilePageSkeleton } from "./components/common/PageSkeletons";
 import { ReportBugModal } from "./components/common/ReportBugModal";
@@ -353,7 +353,7 @@ function App() {
             <ReportBugModal />
             <PushNotificationManager />
             <NetworkMonitor />
-            <SWUpdateManager />
+            <AppUpdateModal />
             <KeepAlive />
             <Toaster position="top-center" />
           </AuthProvider>

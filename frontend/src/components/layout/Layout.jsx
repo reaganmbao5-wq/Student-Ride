@@ -11,6 +11,7 @@ import { cn } from '../../lib/utils';
 import { haptics } from '../../utils/haptics';
 import { Dock, DockIcon, DockItem, DockLabel } from '../ui/dock';
 import { LimelightNav } from '../ui/limelight-nav';
+import { ThemeToggle } from '../ui/theme-toggle';
 
 export const Layout = ({ children }) => {
   const { user, isDriver, isAdmin, isAccountant, logout } = useAuth();
@@ -165,12 +166,7 @@ export const Layout = ({ children }) => {
           />
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={toggleTheme}
-            className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-gold transition-colors"
-          >
-            {theme === 'dark' ? <Sun weight="duotone" className="w-4 h-4" /> : <Moon weight="duotone" className="w-4 h-4" />}
-          </button>
+          <ThemeToggle className="scale-75 origin-right" />
 
           <div className="relative group">
             <button className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground border border-border">

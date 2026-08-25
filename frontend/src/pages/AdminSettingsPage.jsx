@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, DollarSign, Percent, Clock, Save, Loader2, AlertCircle } from 'lucide-react';
+import { Settings, DollarSign, Percent, Clock, Save, Loader2, AlertCircle, UploadCloud, Smartphone, CheckCircle2 } from 'lucide-react';
 import { GlassCard, GlassInput, GoldButton, LoadingSpinner } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
 import { AdminSettingsSkeleton } from '../components/common/PageSkeletons';
+import { AndroidRobotIcon } from '../components/common/AppUpdateModal';
+import { getBackendUrl } from '../utils/urlHelpers';
 import { toast } from 'sonner';
 
 const AdminSettingsPage = () => {
@@ -20,9 +22,58 @@ const AdminSettingsPage = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // APK Release Management State
+  const [apkFile, setApkFile] = useState(null);
+  const [apkVersionName, setApkVersionName] = useState('2.1.0');
+  const [apkVersionCode, setApkVersionCode] = useState(11);
+  const [apkMinVersion, setApkMinVersion] = useState('2.0.0');
+  const [apkForceUpdate, setApkForceUpdate] = useState(false);
+  const [apkNotes, setApkNotes] = useState('Enhanced multi-passenger route optimization and real-time live navigation.');
+  const [apkUploading, setApkUploading] = useState(false);
+  const [latestRelease, setLatestRelease] = useState(null);
+
   useEffect(() => {
     fetchSettings();
+    fetchLatestRelease();
   }, []);
+
+  const fetchLatestRelease = async () => {
+    try {
+      const res = await api.get('/app/version-check');
+      setLatestRelease(res.data);
+      if (res.data?.version_code) {
+        setApkVersionCode(res.data.version_code + 1);
+      }
+    } catch (err) {
+      console.warn('Failed to fetch latest release:', err);
+    }
+  };
+
+  const handleUploadApk = async (e) => {
+    if (e) e.preventDefault();
+    if (!apkFile) {
+      toast.error('Please select an .apk file to upload.');
+      return;
+    }
+
+    setApkUploading(true);
+    const formData = new FormData();
+    formData.append('file', apkFile);
+
+    try {
+      const url = `/admin/app-releases/upload?version_name=${encodeURIComponent(apkVersionName)}&version_code=${apkVersionCode}&min_required_version=${encodeURIComponent(apkMinVersion)}&force_update=${apkForceUpdate}&release_notes=${encodeURIComponent(apkNotes)}`;
+      const res = await api.post(url, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      toast.success(res.data?.message || 'New APK build published successfully!');
+      setApkFile(null);
+      fetchLatestRelease();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to upload APK release');
+    } finally {
+      setApkUploading(false);
+    }
+  };
 
   const fetchSettings = async () => {
     try {
@@ -252,6 +303,129 @@ const AdminSettingsPage = () => {
             )}
           </GoldButton>
         )}
+
+        {/* APK Release & Over-The-Air Update Manager */}
+        <GlassCard className="p-6">
+          <div className="flex items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+                <AndroidRobotIcon className="w-8 h-7" />
+              </div>
+              <div>
+                <h2 className="font-heading font-semibold text-foreground text-lg">App Releases & APK Manager</h2>
+                <p className="text-muted-foreground text-sm">Publish new Android APK builds and trigger instant in-app updates</p>
+              </div>
+            </div>
+            {latestRelease && (
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted border border-border text-xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="font-medium text-foreground">Current: v{latestRelease.latest_version} (build {latestRelease.version_code})</span>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm text-muted-foreground mb-2">Version Name (e.g. 2.1.0)</label>
+                <GlassInput
+                  type="text"
+                  value={apkVersionName}
+                  onChange={(e) => setApkVersionName(e.target.value)}
+                  placeholder="2.1.0"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-muted-foreground mb-2">Build Code (Integer)</label>
+                <GlassInput
+                  type="number"
+                  value={apkVersionCode}
+                  onChange={(e) => setApkVersionCode(parseInt(e.target.value) || 0)}
+                  placeholder="11"
+                  min="1"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-muted-foreground mb-2">Min Required Version</label>
+                <GlassInput
+                  type="text"
+                  value={apkMinVersion}
+                  onChange={(e) => setApkMinVersion(e.target.value)}
+                  placeholder="2.0.0"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm text-muted-foreground mb-2">Release Notes / Changelog</label>
+              <textarea
+                value={apkNotes}
+                onChange={(e) => setApkNotes(e.target.value)}
+                rows={3}
+                className="w-full bg-card text-foreground border border-border rounded-xl p-3 text-sm focus:outline-none focus:border-gold transition-colors resize-none"
+                placeholder="Describe what is new in this APK build..."
+              />
+            </div>
+
+            <div className="flex items-center gap-3 p-3 bg-muted/60 rounded-xl border border-border/70">
+              <input
+                type="checkbox"
+                id="force_update_toggle"
+                checked={apkForceUpdate}
+                onChange={(e) => setApkForceUpdate(e.target.checked)}
+                className="w-4 h-4 rounded text-gold focus:ring-gold"
+              />
+              <label htmlFor="force_update_toggle" className="text-sm font-medium text-foreground cursor-pointer">
+                Force Update (Require all users to download before using the app)
+              </label>
+            </div>
+
+            {/* Drag and drop / Select APK file */}
+            <div>
+              <label className="block text-sm text-muted-foreground mb-2">Select .apk File</label>
+              <div className="relative border-2 border-dashed border-border hover:border-gold/50 rounded-2xl p-6 text-center transition-colors bg-muted/30">
+                <input
+                  type="file"
+                  accept=".apk"
+                  onChange={(e) => setApkFile(e.target.files?.[0] || null)}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+                <div className="flex flex-col items-center justify-center gap-2">
+                  <UploadCloud className="w-8 h-8 text-gold" />
+                  {apkFile ? (
+                    <div className="text-sm font-semibold text-foreground">
+                      Selected: <span className="text-gold">{apkFile.name}</span> ({(apkFile.size / (1024 * 1024)).toFixed(2)} MB)
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-foreground">Click or drag & drop new .apk build here</p>
+                      <p className="text-xs text-muted-foreground">Up to 100MB direct upload to database storage</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Upload Button */}
+            <button
+              onClick={handleUploadApk}
+              disabled={apkUploading || !apkFile}
+              className="w-full py-3.5 px-6 rounded-xl font-bold text-sm text-white bg-gold hover:bg-gold/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 shadow-lg"
+            >
+              {apkUploading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Uploading & Publishing Release...</span>
+                </>
+              ) : (
+                <>
+                  <UploadCloud className="w-4 h-4" />
+                  <span>Publish & Release APK (OTA)</span>
+                </>
+              )}
+            </button>
+          </div>
+        </GlassCard>
 
         {/* Admin Logs Info */}
         <GlassCard className="p-4" hover={false}>

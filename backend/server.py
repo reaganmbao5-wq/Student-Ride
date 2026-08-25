@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import JSONResponse, RedirectResponse
+from starlette.responses import JSONResponse, RedirectResponse, StreamingResponse
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
 from bson import ObjectId
 import os
@@ -5689,6 +5689,136 @@ async def update_bug_report_status(
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Bug report not found")
     return {"status": "updated", "id": report_id, "new_status": new_status}
+
+# ============================================================================
+# APP RELEASES & IN-APP UPDATER (OTA) ENDPOINTS
+# ============================================================================
+
+@api_router.get("/app/version-check")
+async def get_app_version_info():
+    """
+    Returns latest published APK release metadata for in-app update checks.
+    """
+    latest_release = await db.app_releases.find_one({}, sort=[("version_code", -1)], projection={"_id": 0})
+    if not latest_release:
+        # Default release metadata
+        return {
+            "latest_version": "2.1.0",
+            "version_code": 1,
+            "min_required_version": "2.0.0",
+            "force_update": False,
+            "download_url": "/api/app/download-latest-apk",
+            "release_notes": "Official Jaey Ride production build with multi-passenger pooling and real-time live navigation.",
+            "file_size_bytes": 0,
+            "published_at": datetime.now(timezone.utc).isoformat()
+        }
+    return latest_release
+
+@api_router.get("/app/download-latest-apk")
+async def download_latest_apk():
+    """
+    Streams the latest uploaded APK binary file from GridFS with proper MIME headers.
+    """
+    latest_release = await db.app_releases.find_one({}, sort=[("version_code", -1)])
+    if not latest_release or "file_id" not in latest_release:
+        # Check local disk fallback if present
+        candidates = [
+            Path("app-debug-885a0b1.apk"),
+            Path(__file__).resolve().parent.parent / "app-debug-885a0b1.apk",
+            Path(__file__).resolve().parent.parent / "mulungushi-rides-ONLINE.apk",
+            Path(__file__).resolve().parent.parent / "frontend" / "android" / "app" / "build" / "outputs" / "apk" / "debug" / "app-debug.apk"
+        ]
+        local_apk = next((p for p in candidates if p.exists()), None)
+        if local_apk:
+            def iterfile():
+                with open(local_apk, mode="rb") as file_like:
+                    while chunk := file_like.read(64 * 1024):
+                        yield chunk
+            return StreamingResponse(
+                iterfile(),
+                media_type="application/vnd.android.package-archive",
+                headers={
+                    "Content-Disposition": 'attachment; filename="jaey-ride-latest.apk"',
+                    "Content-Length": str(local_apk.stat().st_size)
+                }
+            )
+        raise HTTPException(status_code=404, detail="No APK build has been uploaded yet.")
+
+    fs = AsyncIOMotorGridFSBucket(db, bucket_name="app_releases")
+    try:
+        grid_out = await fs.open_download_stream(ObjectId(latest_release["file_id"]))
+    except Exception as e:
+        raise HTTPException(status_code=404, detail="Uploaded APK binary not found in storage.")
+
+    async def stream_gridfs():
+        while True:
+            chunk = await grid_out.readchunk()
+            if not chunk:
+                break
+            yield chunk
+
+    filename = f"jaey-ride-v{latest_release.get('latest_version', 'latest')}.apk"
+    return StreamingResponse(
+        stream_gridfs(),
+        media_type="application/vnd.android.package-archive",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Length": str(latest_release.get("file_size_bytes", grid_out.length))
+        }
+    )
+
+@api_router.post("/admin/app-releases/upload")
+async def upload_new_apk_release(
+    file: UploadFile = File(...),
+    version_name: str = Query(...),
+    version_code: int = Query(...),
+    min_required_version: str = Query("2.0.0"),
+    force_update: bool = Query(False),
+    release_notes: str = Query("Performance enhancements and bug fixes."),
+    admin: dict = Depends(require_admin)
+):
+    """
+    Allows Admins to upload a new APK binary and publish an OTA update release.
+    """
+    if not file.filename.endswith((".apk", ".bin")):
+        raise HTTPException(status_code=400, detail="Only .apk files are supported.")
+
+    fs = AsyncIOMotorGridFSBucket(db, bucket_name="app_releases")
+    content = await file.read()
+    file_size = len(content)
+
+    file_id = await fs.upload_from_stream(
+        file.filename,
+        content,
+        metadata={
+            "version_name": version_name,
+            "version_code": version_code,
+            "uploaded_by": admin["id"],
+            "content_type": "application/vnd.android.package-archive"
+        }
+    )
+
+    release_doc = {
+        "id": str(uuid.uuid4()),
+        "latest_version": version_name,
+        "version_code": version_code,
+        "min_required_version": min_required_version,
+        "force_update": force_update,
+        "release_notes": release_notes,
+        "file_id": str(file_id),
+        "filename": file.filename,
+        "file_size_bytes": file_size,
+        "download_url": "/api/app/download-latest-apk",
+        "published_at": datetime.now(timezone.utc).isoformat(),
+        "uploaded_by": admin["id"]
+    }
+
+    await db.app_releases.insert_one(release_doc)
+    return {
+        "status": "published",
+        "message": f"Release v{version_name} published successfully!",
+        "release": {k: v for k, v in release_doc.items() if k != "_id"}
+    }
 
 # Include router
 app.include_router(api_router, prefix="/api")

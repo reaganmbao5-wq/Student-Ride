@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Share, PlusSquare, Info, Smartphone, Monitor } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
+import { AndroidRobotIcon } from './AppUpdateModal';
+import { getBackendUrl } from '../../utils/urlHelpers';
 
 const AppleLogo = () => (
     <svg viewBox="0 0 384 512" width="20" height="20" fill="currentColor" className="shrink-0">
@@ -66,8 +68,9 @@ export const MultiPlatformInstallSection = () => {
             return;
         }
 
-        if (os === 'Android' && !deferredPrompt) {
-            setShowAndroidModal(true);
+        if (os === 'Android') {
+            const backendUrl = getBackendUrl();
+            window.location.href = `${backendUrl}/api/app/download-latest-apk`;
             return;
         }
 
@@ -109,9 +112,9 @@ export const MultiPlatformInstallSection = () => {
                 };
             case 'Android':
                 return {
-                    logo: <AndroidLogo />,
-                    label: 'Install on Android',
-                    enabled: isInstallEnabled || !isInstallEnabled // Always enable on Android for the fallback
+                    logo: <AndroidRobotIcon className="w-5 h-5" />,
+                    label: 'Download Android APK',
+                    enabled: true
                 };
             default:
                 // Generic fallback for Unknown

@@ -1,0 +1,147 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Download, Sparkles, AlertTriangle, ArrowUpCircle } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { useTheme } from '../../context/ThemeContext';
+import { getBackendUrl } from '../../utils/urlHelpers';
+
+// Android Robot Head SVG from Screenshot 1
+export const AndroidRobotIcon = ({ className = "w-10 h-10", fill = "#3DDC84" }) => (
+  <svg
+    viewBox="0 0 100 60"
+    className={className}
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    {/* Antennas */}
+    <line x1="28" y1="18" x2="16" y2="4" stroke={fill} strokeWidth="5" strokeLinecap="round" />
+    <line x1="72" y1="18" x2="84" y2="4" stroke={fill} strokeWidth="5" strokeLinecap="round" />
+    {/* Semi-circle head */}
+    <path
+      d="M 12 55 A 38 38 0 0 1 88 55 Z"
+      fill={fill}
+    />
+    {/* Eyes */}
+    <circle cx="34" cy="34" r="4.5" fill="#18181b" />
+    <circle cx="66" cy="34" r="4.5" fill="#18181b" />
+  </svg>
+);
+
+// Current installed build version for APK
+const CURRENT_APP_VERSION = "2.0.0";
+const CURRENT_BUILD_CODE = 10;
+
+export const AppUpdateModal = () => {
+  const { accentColor, ACCENT_COLORS } = useTheme();
+  const activeAccentHex = ACCENT_COLORS?.[accentColor]?.hex || '#8B5CF6';
+  
+  const [updateInfo, setUpdateInfo] = useState(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  useEffect(() => {
+    const checkVersion = async () => {
+      try {
+        const backendUrl = getBackendUrl();
+        const res = await fetch(`${backendUrl}/api/app/version-check`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // Check if an update is required
+        const isNative = Capacitor.isNativePlatform();
+        const serverVersionCode = data.version_code || 0;
+        const isNewer = serverVersionCode > CURRENT_BUILD_CODE;
+        const isForced = data.force_update === true;
+
+        if (isForced || (isNative && isNewer) || (typeof window !== 'undefined' && window.__SHOW_UPDATE_MODAL__)) {
+          setUpdateInfo(data);
+          setIsOpen(true);
+        }
+      } catch (err) {
+        console.warn('App version check failed:', err);
+      }
+    };
+
+    checkVersion();
+  }, []);
+
+  if (!isOpen || !updateInfo) return null;
+
+  const handleUpdate = () => {
+    setIsDownloading(true);
+    const backendUrl = getBackendUrl();
+    const downloadUrl = updateInfo.download_url?.startsWith('http')
+      ? updateInfo.download_url
+      : `${backendUrl}${updateInfo.download_url || '/api/app/download-latest-apk'}`;
+
+    // Direct browser / intent download
+    window.location.href = downloadUrl;
+  };
+
+  return (
+    <AnimatePresence>
+      <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+        {/* Clean Backdrop Blur */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="absolute inset-0 bg-black/75 backdrop-blur-md"
+        />
+
+        {/* Centered Solid Dialog (Clean Solid Palette, Zero Artificial Glow) */}
+        <motion.div
+          initial={{ scale: 0.92, opacity: 0, y: 10 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.92, opacity: 0, y: 10 }}
+          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          className="relative w-full max-w-sm bg-card text-foreground border border-border rounded-3xl p-6 shadow-2xl flex flex-col items-center text-center space-y-4"
+        >
+          {/* Green Android Robot Icon */}
+          <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center shadow-inner">
+            <AndroidRobotIcon className="w-12 h-10" />
+          </div>
+
+          {/* Title & Version */}
+          <div className="space-y-1">
+            <h3 className="text-xl font-bold tracking-tight text-foreground">
+              {updateInfo.force_update ? 'Update Required' : 'New Update Available'}
+            </h3>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted border border-border text-xs font-semibold text-muted-foreground">
+              <ArrowUpCircle className="w-3.5 h-3.5" style={{ color: activeAccentHex }} />
+              <span>Version {updateInfo.latest_version || '2.1.0'}</span>
+            </div>
+          </div>
+
+          {/* Release Notes */}
+          <p className="text-xs text-muted-foreground leading-relaxed px-2 bg-muted/50 p-3 rounded-2xl border border-border/60 text-left w-full">
+            {updateInfo.release_notes || 'This release includes real-time multi-passenger route pooling, live GPS sync, and stability improvements.'}
+          </p>
+
+          {/* Action Button */}
+          <button
+            onClick={handleUpdate}
+            disabled={isDownloading}
+            className="w-full py-3.5 px-6 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 active:scale-[0.98] transition-all shadow-lg cursor-pointer"
+            style={{
+              backgroundColor: activeAccentHex,
+            }}
+          >
+            <Download className="w-4 h-4 stroke-[2.5]" />
+            <span>{isDownloading ? 'Downloading Update...' : 'Update Now'}</span>
+          </button>
+
+          {!updateInfo.force_update && (
+            <button
+              onClick={() => setIsOpen(false)}
+              className="text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer py-1"
+            >
+              Remind Me Later
+            </button>
+          )}
+        </motion.div>
+      </div>
+    </AnimatePresence>
+  );
+};
+
+export default AppUpdateModal;
