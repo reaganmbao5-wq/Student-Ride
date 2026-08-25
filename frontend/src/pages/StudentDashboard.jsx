@@ -722,9 +722,11 @@ const StudentDashboard = () => {
       cameraMode = CAMERA_MODES.FOLLOW_DRIVER;
     }
 
-    const isNextStop = (isBriefingForThisRide && passengerBriefing?.is_next_stop !== undefined)
-      ? passengerBriefing.is_next_stop
-      : (stopsRemaining === 0);
+    const isNextStop = (activeRide.ride_mode !== 'shared' && activeRide.ride_type !== 'shared')
+      ? true
+      : ((isBriefingForThisRide && passengerBriefing?.is_next_stop !== undefined)
+          ? passengerBriefing.is_next_stop
+          : (stopsRemaining === 0));
 
     const isPinnedState = isBriefingForThisRide && (
       passengerBriefing?.is_pinned || 

@@ -222,44 +222,44 @@ export const PlatformMap = ({
 
 
 
-    map.on('dragstart', () => {
-
+    map.on('dragstart', (e) => {
       isUserDraggingRef.current = true;
-
       isUserInteractingRef.current = true;
-      hasManuallyInteractedRef.current = true;
-
+      if (e && e.originalEvent) {
+        hasManuallyInteractedRef.current = true;
+      }
       if (onDragStart) onDragStart();
-
     });
 
-
-
-    map.on('zoomstart', () => {
-
-      isUserInteractingRef.current = true;
-      hasManuallyInteractedRef.current = true;
-
+    map.on('zoomstart', (e) => {
+      if (e && e.originalEvent) {
+        isUserInteractingRef.current = true;
+        hasManuallyInteractedRef.current = true;
+      }
     });
 
+    map.on('rotatestart', (e) => {
+      if (e && e.originalEvent) {
+        isUserInteractingRef.current = true;
+        hasManuallyInteractedRef.current = true;
+      }
+    });
 
+    map.on('pitchstart', (e) => {
+      if (e && e.originalEvent) {
+        isUserInteractingRef.current = true;
+        hasManuallyInteractedRef.current = true;
+      }
+    });
 
     map.on('dragend', () => {
-
       if (onDragEnd) onDragEnd();
-
     });
 
-
-
     map.on('zoomend', () => {
-
       setTimeout(() => {
-
         isUserInteractingRef.current = false;
-
       }, 500);
-
     });
 
 
@@ -383,45 +383,50 @@ export const PlatformMap = ({
     // 1. DRIVER FOLLOW MODE (Active in-progress trip)
     const isActiveRide = ['driver_accepted', 'accepted', 'driver_en_route_to_pickup', 'driver_arrived', 'passenger_boarding', 'ongoing', 'ride_started', 'ride_in_progress', 'arriving_destination'].includes(rideStatus);
 
-    if ((cameraMode === CAMERA_MODES.FOLLOW_DRIVER || isActiveRide) && driverLocation) {
-      const lat = Number(driverLocation.lat ?? driverLocation.latitude);
-      const lng = Number(driverLocation.lng ?? driverLocation.longitude);
-      const heading = Number(driverLocation.heading || 0);
+    if (cameraMode === CAMERA_MODES.FOLLOW_DRIVER || isActiveRide) {
+      const activeLoc = driverLocation || (center && typeof center.lat === 'number' && typeof center.lng === 'number' ? center : null);
+      if (activeLoc) {
+        const lat = Number(activeLoc.lat ?? activeLoc.latitude);
+        const lng = Number(activeLoc.lng ?? activeLoc.longitude);
+        const heading = Number(activeLoc.heading || 0);
 
-      if (!isNaN(lat) && !isNaN(lng)) {
-        let isPannedAway = false;
-        if (hasManuallyInteractedRef.current && typeof mapRef.current.getCenter === 'function') {
-          const currentMapCenter = mapRef.current.getCenter();
-          const distFromDriver = Math.hypot(currentMapCenter.lat - lat, currentMapCenter.lng - lng);
-          if (distFromDriver > 0.0035) {
-            isPannedAway = true;
+        if (!isNaN(lat) && !isNaN(lng)) {
+          let isPannedAway = false;
+          if (hasManuallyInteractedRef.current && typeof mapRef.current.getCenter === 'function') {
+            const currentMapCenter = mapRef.current.getCenter();
+            const distFromDriver = Math.hypot(currentMapCenter.lat - lat, currentMapCenter.lng - lng);
+            if (distFromDriver > 0.0035) {
+              isPannedAway = true;
+            }
+          }
+
+          if (!isPannedAway) {
+            // Dynamic Zoom Logic for Shared & Private Rides:
+            // If the student is next in line (or private ride): zoom in tight (17.5)
+            // If the student is waiting for others in shared ride: zoom out (15.0) to see wider context in 3D 45° tilt tracking driver
+            const isNext = isNextStop !== false;
+            const targetZoom = isDriverView ? 16.5 : (isNext ? 17.5 : 15.0);
+
+            const effBottom = (typeof bottomPadding === 'number' && bottomPadding > 0) ? Math.max(bottomPadding, 220) : 220;
+
+            mapRef.current.easeTo({
+              center: [lng, lat], // STRICTLY track the driver in 3D
+              offset: [0, -Math.round(effBottom * 0.35)], // Places vehicle comfortably in lower-third
+              bearing: heading,
+              pitch: 45, // Instant and permanent 3D tilt
+              zoom: targetZoom,
+              duration: 1000,
+              essential: true
+            });
+            return;
           }
         }
-
-        if (!isPannedAway) {
-          // Dynamic Zoom Logic for Shared & Private Rides:
-          // If the student is next in line: zoom in tight (17.5)
-          // If the student is waiting for others: zoom out (15.5) to see wider context, in 3D 45° tilt tracking driver
-          const isNext = isNextStop !== false;
-          const targetZoom = isDriverView ? 16.5 : (isNext ? 17.5 : 15.5);
-
-          const effBottom = (typeof bottomPadding === 'number' && bottomPadding > 0) ? Math.max(bottomPadding, 220) : 220;
-
-          mapRef.current.easeTo({
-            center: [lng, lat], // STRICTLY track the driver, NEVER the pickup pin
-            offset: [0, -Math.round(effBottom * 0.35)], // Places vehicle comfortably in lower-third
-            bearing: heading,
-            pitch: 45, // Instant 3D tilt
-            zoom: targetZoom,
-            duration: 1000,
-            essential: true
-          });
-          return;
-        }
       }
+      // Strict 3D Lock: Active ride follow mode NEVER drops down to 2D pitch:0 overview!
+      return;
     }
 
-    // 2. OVERVIEW / BOUNDS MODE (Confirm Ride / Finding a Driver / Shared Ride with Other Stops Ahead / Route Preview)
+    // 2. OVERVIEW / BOUNDS MODE (Confirm Ride / Finding a Driver / Route Preview)
     const targetArray = routeBounds || bounds;
     const hasMultipleBounds = Array.isArray(targetArray) && targetArray.length >= 2;
 
@@ -593,7 +598,7 @@ export const PlatformMap = ({
           pitch: 0,
           bearing: 0,
           speed: 0.08,
-          duration: 4800,
+          duration: 1200,
           essential: true
         });
       }

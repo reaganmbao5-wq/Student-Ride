@@ -4,6 +4,7 @@
  * Complies with Section 2 Channels, Section 4 Audio/Vibration rules, and Section 5 Clean Copy.
  */
 import { haptics, VIBRATION_PATTERNS } from '../utils/haptics';
+import { toast } from 'sonner';
 
 class SystemNotificationService {
   constructor() {
@@ -84,6 +85,19 @@ class SystemNotificationService {
    * Triggers OS System Notification + Vibration + Audio
    */
   notify({ title, body, eventType = 'default', channelId = 'ride_updates', icon = '/logo192.png', tag = 'j_ride_event' }) {
+    // In-App Toast Banner
+    try {
+      if (title) {
+        if (eventType === 'driver_arrived' || eventType === 'ride_completed' || eventType === 'driver_accepted') {
+          toast.success(title, { description: body, duration: 4000 });
+        } else if (eventType === 'ride_cancelled') {
+          toast.error(title, { description: body, duration: 4000 });
+        } else {
+          toast.info(title, { description: body, duration: 4000 });
+        }
+      }
+    } catch (e) {}
+
     // 1. Hardware Vibration
     switch (eventType) {
       case 'driver_arrived':

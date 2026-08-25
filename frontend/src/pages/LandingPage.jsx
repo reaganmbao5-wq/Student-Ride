@@ -194,14 +194,19 @@ const LandingPage = () => {
 
   // Initialize native Google Auth for Capacitor
   useEffect(() => {
-    try {
-      GoogleAuth.initialize({
-        clientId: '613545438163-5eo9e0tpustjgotq6u7m7elsas8gkjst.apps.googleusercontent.com',
-        scopes: ['profile', 'email'],
-        grantOfflineAccess: true,
-      });
-    } catch (e) {
-      console.warn("GoogleAuth initialization skipped/failed:", e);
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const p = GoogleAuth.initialize({
+          clientId: '613545438163-5eo9e0tpustjgotq6u7m7elsas8gkjst.apps.googleusercontent.com',
+          scopes: ['profile', 'email'],
+          grantOfflineAccess: true,
+        });
+        if (p && typeof p.catch === 'function') {
+          p.catch(e => console.warn("GoogleAuth initialization async skipped/failed:", e));
+        }
+      } catch (e) {
+        console.warn("GoogleAuth initialization skipped/failed:", e);
+      }
     }
   }, []);
 

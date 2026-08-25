@@ -763,6 +763,7 @@ async def require_accountant(user: dict = Depends(get_current_user)) -> dict:
     return user
 
 @api_router.get("/users/me", response_model=UserResponse)
+@api_router.get("/auth/me", response_model=UserResponse)
 async def get_current_user_profile(user: dict = Depends(get_current_user)):
     return user
 
@@ -1733,7 +1734,7 @@ async def register_driver(profile: DriverProfile, user: dict = Depends(get_curre
 
 @api_router.get("/drivers/me", response_model=DriverResponse)
 async def get_my_driver_profile(user: dict = Depends(require_driver)):
-    driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
+    driver = await db.drivers.find_one({"$or": [{"user_id": user["id"]}, {"id": user["id"]}]}, {"_id": 0})
     if not driver:
         # Create empty placeholder driver marked as needs_setup
         driver = {
@@ -1817,7 +1818,7 @@ async def update_driver_settings(settings: DriverSettingsUpdate, user: dict = De
 
 @api_router.post("/drivers/toggle-online")
 async def toggle_online_status(user: dict = Depends(require_driver)):
-    driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
+    driver = await db.drivers.find_one({"$or": [{"user_id": user["id"]}, {"id": user["id"]}]}, {"_id": 0})
     if not driver:
         raise HTTPException(status_code=404, detail="Driver profile not found")
     
@@ -1830,9 +1831,9 @@ async def toggle_online_status(user: dict = Depends(require_driver)):
     if driver.get("wallet_status") == WalletStatus.RESTRICTED.value:
         raise HTTPException(status_code=403, detail="Wallet restricted. Please top up to go online.")
     
-    new_status = not driver["is_online"]
+    new_status = not bool(driver.get("is_online", False))
     await db.drivers.update_one(
-        {"user_id": user["id"]},
+        {"$or": [{"user_id": user["id"]}, {"id": user["id"]}]},
         {"$set": {"is_online": new_status}}
     )
     
@@ -2005,7 +2006,7 @@ async def get_active_ride_for_simulation():
 @api_router.get("/rides/driver/trip")
 async def get_driver_trip_state(user: dict = Depends(require_driver)):
     """Returns the current rebuilt and optimized trip queue for the driver"""
-    driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
+    driver = await db.drivers.find_one({"$or": [{"user_id": user["id"]}, {"id": user["id"]}]}, {"_id": 0})
     if not driver:
         raise HTTPException(status_code=404, detail="Driver not found")
         
@@ -2017,13 +2018,15 @@ async def get_driver_trip_state(user: dict = Depends(require_driver)):
 
 @api_router.get("/rides/driver/active", response_model=List[RideResponse])
 async def get_active_rides_for_driver(user: dict = Depends(require_driver)):
-    query = {"status": {"$in": get_active_ride_states()}}
-    
-    driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
+    driver = await db.drivers.find_one({"$or": [{"user_id": user["id"]}, {"id": user["id"]}]}, {"_id": 0})
     if not driver:
         raise HTTPException(status_code=404, detail="Driver profile not found")
         
-    query["driver_id"] = driver["id"]
+    driver_ids = [driver.get("id"), driver.get("user_id")]
+    query = {
+        "status": {"$in": get_active_ride_states()},
+        "driver_id": {"$in": [d for d in driver_ids if d]}
+    }
     
     rides = await db.rides.find(query, {"_id": 0}, sort=[("created_at", 1)]).to_list(100)
     
@@ -2407,13 +2410,8 @@ async def request_ride(ride_data: RideRequest, user: dict = Depends(get_current_
         )
         
         calculated_fare = pricing_result["fare"]
-        
-        # Commission calculation
-        settings = await get_platform_settings()
-        commission_rate = settings.get("commission_rate", DEFAULT_COMMISSION_RATE)
-        
-        commission = calculated_fare * (commission_rate / 100)
-        driver_earning = calculated_fare - commission
+        commission = pricing_result.get("commission", round(calculated_fare * 0.10, 2))
+        driver_earning = pricing_result.get("driver_earning", round(calculated_fare - commission, 2))
         
         ride_id = str(uuid.uuid4())
         ride = {
@@ -2697,6 +2695,29 @@ async def accept_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
             "status": "online"
         }
 
+    # Build instant optimistic passenger briefing before WebSocket dispatch
+    active_passengers = active_state.get("active_passengers", 0)
+    is_next_stop_initial = (active_passengers == 0)
+    initial_stops_remaining = active_passengers
+    initial_briefing_text = "Driver is approaching your pickup point." if is_next_stop_initial else "Driver is picking up another student."
+    initial_carousel = ["You are the next stop.", "Driver is approaching your pickup point."] if is_next_stop_initial else [f"{initial_stops_remaining} stop remaining before your pickup.", "Driver is picking up another student.", "Shared Ride"]
+    
+    initial_briefing = {
+        "ride_id": ride_id,
+        "briefing_text": initial_briefing_text,
+        "x3_state": "HEADING_TO_MY_PICKUP" if is_next_stop_initial else "DRIVER_EN_ROUTE_OTHER_PICKUP",
+        "is_pinned": False,
+        "carousel_messages": initial_carousel,
+        "stops_remaining": initial_stops_remaining,
+        "is_next_stop": is_next_stop_initial,
+        "intermediate_stops": [],
+        "route_segments": [],
+        "route_geometry": ride.get("verified_geometry", []) or ride.get("route_geometry", []),
+        "eta_seconds": 180,
+        "eta_text": "~3 min"
+    }
+    ride["passenger_briefing"] = initial_briefing
+
     # Register ride in in-memory active rides mapping
     manager.add_active_ride(driver["id"], ride)
     if driver.get("user_id"):
@@ -2928,15 +2949,18 @@ async def complete_ride(ride_id: str, background_tasks: BackgroundTasks, user: d
             return {"status": "completed", "fare": updated.get("fare", 0.0), "driver_earning": updated.get("driver_earning", 0.0)}
         raise HTTPException(status_code=400, detail="Invalid transition. Race condition prevented.")
     
-    now = datetime.now(timezone.utc).isoformat()
-    commission_amount = ride.get("commission", 0.0)
+    commission_amount = ride.get("commission")
+    if commission_amount is None or commission_amount <= 0.0:
+        commission_amount = round(float(ride.get("fare", 0.0)) * 0.10, 2)
+    else:
+        commission_amount = float(commission_amount)
     
     # Flipped Wallet Logic: Accumulate Platform Commission Debt
     settings = await get_platform_settings()
     max_limit = settings.get("max_commission_owed_limit", 500.0)
     
-    total_due = driver.get("total_commission_due", 0.0) + commission_amount
-    driver_earning = ride.get("driver_earning", max(0.0, ride.get("fare", 0.0) - commission_amount))
+    total_due = round(float(driver.get("total_commission_due", 0.0)) + commission_amount, 2)
+    driver_earning = round(float(ride.get("driver_earning", max(0.0, float(ride.get("fare", 0.0)) - commission_amount))), 2)
     
     wallet_status = WalletStatus.ACTIVE.value
     is_still_online = driver.get("is_online", True)
@@ -2961,6 +2985,7 @@ async def complete_ride(ride_id: str, background_tasks: BackgroundTasks, user: d
         set_ops["current_ride_id"] = None
 
     # Log transaction
+    now_iso = datetime.now(timezone.utc).isoformat()
     transaction = {
         "id": str(uuid.uuid4()),
         "driver_id": driver["id"],
@@ -2968,7 +2993,7 @@ async def complete_ride(ride_id: str, background_tasks: BackgroundTasks, user: d
         "amount": -commission_amount,
         "ride_id": ride_id,
         "description": f"Commission for ride {ride_id}",
-        "timestamp": now
+        "timestamp": now_iso
     }
 
     # Parallelize DB writes over Atlas WAN
@@ -3307,8 +3332,35 @@ async def cancel_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
                     logger.error(f"Failed direct send cancel to driver id: {e}")
                 
                 try:
-                    await DriverTripRebuilder.rebuild(driver_doc["id"], db)
-                    await broadcast_route_queue(driver_doc["id"])
+                    driver_loc = manager.driver_locations.get(driver_doc.get("user_id")) or driver_doc.get("current_location", {})
+                    trip = await DriverTripRebuilder.rebuild(driver_doc["id"], db, driver_loc=driver_loc)
+                    if trip:
+                        driver_uid = driver_doc.get("user_id") or driver_doc["id"]
+                        # Instant update driver dashboard with cleaned-up queue & segments
+                        await manager.send_personal_message({
+                            "type": "trip_updated",
+                            "route_queue": trip.get("route_queue", []),
+                            "full_driver_segments": trip.get("full_driver_segments", [])
+                        }, driver_uid)
+
+                        # Broadcast updated briefings & routes to all remaining passengers in the pool
+                        passenger_briefings = trip.get("passenger_briefings", {})
+                        for rem_s_id, briefing in passenger_briefings.items():
+                            await manager.send_personal_message({
+                                "type": "passenger_briefing_update",
+                                "ride_id": briefing["ride_id"],
+                                "briefing_text": briefing["briefing_text"],
+                                "x3_state": briefing.get("x3_state"),
+                                "is_pinned": briefing.get("is_pinned", False),
+                                "carousel_messages": briefing.get("carousel_messages", []),
+                                "stops_remaining": briefing["stops_remaining"],
+                                "is_next_stop": briefing["is_next_stop"],
+                                "intermediate_stops": briefing.get("intermediate_stops", []),
+                                "route_segments": briefing.get("route_segments", []),
+                                "route_geometry": briefing.get("route_geometry", []),
+                                "eta_seconds": briefing.get("eta_seconds"),
+                                "eta_text": briefing.get("eta_text")
+                            }, rem_s_id)
                 except Exception as e:
                     logger.error(f"Failed DriverTripRebuilder on rider cancel: {e}")
             else:
@@ -3556,10 +3608,10 @@ async def get_ride_history(
     
     if user["role"] == UserRole.DRIVER.value:
         driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
-        if driver:
-            query["driver_id"] = driver["id"]
-        else:
-            return [] # Prevent dumping entire DB history if driver profile doesn't exist yet
+        driver_ids = [user["id"]]
+        if driver and driver.get("id"):
+            driver_ids.append(driver["id"])
+        query["driver_id"] = {"$in": driver_ids}
     else:
         query["student_id"] = user["id"]
     
@@ -3646,6 +3698,20 @@ async def get_ride_by_id(ride_id: str, user: dict = Depends(get_current_user)):
     return RideResponse(**ride)
 
 # ==================== ADMIN & ACCOUNTANT ROUTES ====================
+ACTIVE_RIDE_STATUSES = [
+    RideStatus.REQUESTED.value,
+    RideStatus.ACCEPTED.value,
+    RideStatus.DRIVER_ACCEPTED.value,
+    RideStatus.DRIVER_EN_ROUTE_TO_PICKUP.value,
+    RideStatus.DRIVER_ARRIVED.value,
+    RideStatus.PASSENGER_BOARDING.value,
+    RideStatus.RIDE_STARTED.value,
+    RideStatus.RIDE_IN_PROGRESS.value,
+    RideStatus.ONGOING.value,
+    "requested", "accepted", "driver_accepted", "driver_en_route_to_pickup", 
+    "driver_arrived", "passenger_boarding", "ride_started", "ride_in_progress", "ongoing"
+]
+
 COMPLETED_RIDE_STATUSES = [
     RideStatus.COMPLETED.value,
     RideStatus.RIDE_COMPLETED.value,
@@ -3664,7 +3730,7 @@ async def get_admin_stats(user: dict = Depends(require_accountant)):
     pending_drivers = await db.drivers.count_documents({"is_approved": False})
     total_rides = await db.rides.count_documents({})
     completed_rides = await db.rides.count_documents({"status": {"$in": COMPLETED_RIDE_STATUSES}})
-    active_rides = await db.rides.count_documents({"status": {"$in": get_active_ride_states()}})
+    active_rides = await db.rides.count_documents({"status": {"$in": ACTIVE_RIDE_STATUSES}})
     
     # Calculate earnings across all completed & archived rides
     rides = await db.rides.find({"status": {"$in": COMPLETED_RIDE_STATUSES}}, {"_id": 0}).to_list(10000)
@@ -3696,13 +3762,15 @@ async def get_admin_analytics(user: dict = Depends(require_accountant)):
     """
     Detailed analytics for the admin dashboard with resilient date parsing and aggregation.
     """
-    rides = await db.rides.find({
-        "status": {"$in": COMPLETED_RIDE_STATUSES}
-    }).sort("created_at", -1).to_list(5000)
+    rides = await db.rides.find(
+        {"status": {"$in": COMPLETED_RIDE_STATUSES}},
+        {"_id": 0, "created_at": 1, "fare": 1, "commission": 1, "dropoff_location": 1}
+    ).to_list(1000)
     
     settings = await get_platform_settings()
     comm_rate = float(settings.get("commission_rate", DEFAULT_COMMISSION_RATE * 100)) / 100.0
     daily_stats = {}
+    popular_map = {}
     
     for ride in rides:
         created_raw = ride.get("created_at") or ""
@@ -3718,6 +3786,11 @@ async def get_admin_analytics(user: dict = Depends(require_accountant)):
         daily_stats[date]["revenue"] = round(daily_stats[date]["revenue"] + commission_val, 2)
         daily_stats[date]["gross_fare"] = round(daily_stats[date]["gross_fare"] + fare_val, 2)
         daily_stats[date]["rides"] += 1
+
+        drop = ride.get("dropoff_location") or {}
+        drop_name = drop.get("name") or drop.get("address")
+        if drop_name:
+            popular_map[drop_name] = popular_map.get(drop_name, 0) + 1
         
     revenue_chart = sorted(daily_stats.values(), key=lambda x: x["date"])
     # If less than 7 days, backfill recent dates for a smooth chart
@@ -3729,38 +3802,12 @@ async def get_admin_analytics(user: dict = Depends(require_accountant)):
                 revenue_chart.append({"date": d_str, "revenue": 0.0, "gross_fare": 0.0, "rides": 0})
         revenue_chart = sorted(revenue_chart, key=lambda x: x["date"])
         
-    # Online Drivers vs Busy Drivers
-    online_drivers_list = await db.drivers.find({"is_online": True}).to_list(1000)
-    online_drivers = len(online_drivers_list)
-    busy_drivers = 0
-    
-    for d in online_drivers_list:
-        try:
-            active_state = await get_driver_active_state(d["id"])
-            if active_state.get("active_rides_count", 0) > 0:
-                busy_drivers += 1
-        except Exception:
-            pass
+    # Online Drivers vs Busy Drivers (Single fast batch query)
+    online_drivers_count = await db.drivers.count_documents({"is_online": True})
+    busy_driver_ids = await db.rides.distinct("driver_id", {"status": {"$in": ACTIVE_RIDE_STATUSES}})
+    busy_drivers = len([b for b in busy_driver_ids if b])
 
-    # Top popular destinations / hotspots aggregation
-    pipeline = [
-        {"$match": {"status": {"$in": completed_statuses}}},
-        {"$group": {
-            "_id": "$dropoff_location.name",
-            "count": {"$sum": 1}
-        }},
-        {"$sort": {"count": -1}},
-        {"$limit": 6}
-    ]
-    popular_destinations = []
-    try:
-        agg_results = await db.rides.aggregate(pipeline).to_list(6)
-        for doc in agg_results:
-            if doc.get("_id"):
-                popular_destinations.append({"name": str(doc["_id"]), "value": doc["count"]})
-    except Exception as e:
-        logger.warning(f"Failed to aggregate popular destinations: {e}")
-        
+    popular_destinations = [{"name": k, "value": v} for k, v in sorted(popular_map.items(), key=lambda x: x[1], reverse=True)[:6]]
     if not popular_destinations:
         popular_destinations = [
             {"name": "Campus Library", "value": 24},
@@ -3774,7 +3821,7 @@ async def get_admin_analytics(user: dict = Depends(require_accountant)):
 
     return {
         "revenue_trends": revenue_chart,
-        "online_drivers": online_drivers,
+        "online_drivers": online_drivers_count,
         "busy_drivers": busy_drivers,
         "total_gross_volume": total_gross,
         "popular_destinations": popular_destinations
@@ -4160,12 +4207,19 @@ async def switch_user_role(user_id: str, request: SwitchRoleRequest, admin: dict
 @api_router.get("/admin/drivers", response_model=List[DriverResponse])
 async def get_all_drivers(user: dict = Depends(require_accountant)):
     drivers = await db.drivers.find({}, {"_id": 0}).to_list(1000)
+    user_ids = list({d["user_id"] for d in drivers if d.get("user_id")})
+    users_list = await db.users.find({"id": {"$in": user_ids}}, {"_id": 0, "password": 0}).to_list(len(user_ids) + 10) if user_ids else []
+    users_map = {u["id"]: u for u in users_list}
+    
     result = []
     for driver in drivers:
         try:
-            driver_user = await db.users.find_one({"id": driver["user_id"]}, {"_id": 0, "password": 0})
+            driver_user = users_map.get(driver.get("user_id"))
             if driver_user:
-                driver["user"] = UserResponse(**driver_user)
+                try:
+                    driver["user"] = UserResponse(**driver_user)
+                except Exception:
+                    driver["user"] = driver_user
             result.append(DriverResponse(**driver))
         except Exception as e:
             logger.error(f"Skipping invalid driver {driver.get('id')}: {e}")
@@ -4395,7 +4449,8 @@ async def get_accountant_summary(user: dict = Depends(require_accountant)):
     total_volume = sum(float(r.get("fare", 0.0)) for r in completed_rides)
     
     settings = await get_platform_settings()
-    comm_rate = float(settings.get("commission_rate", DEFAULT_COMMISSION_RATE * 100)) / 100.0
+    comm_val = float(settings.get("commission_rate", 0.10))
+    comm_rate = comm_val / 100.0 if comm_val > 1.0 else comm_val
     
     total_commission = sum(
         float(r.get("commission")) if r.get("commission") is not None else (float(r.get("fare", 0.0)) * comm_rate)
@@ -4416,7 +4471,7 @@ async def get_accountant_summary(user: dict = Depends(require_accountant)):
         "total_debt_outstanding": round(total_debt_accumulated, 2),
         "total_commission_paid": round(total_commission_paid, 2),
         "active_drivers_count": len(drivers),
-        "commission_rate_percent": settings.get("commission_rate", 10.0)
+        "commission_rate_percent": round(comm_rate * 100.0, 1)
     }
 
 @api_router.get("/accountant/transactions")
@@ -5217,12 +5272,13 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(None)):
                 
                 if data.get("type") == "location_update":
                     now = time.time()
-                    if now - last_loc_update < 3.0:
-                        # Throttle: Ignore rapid updates
+                    if now - last_loc_update < 0.15:
+                        # High-frequency 6-7 Hz stream support
                         continue
                     last_loc_update = now
 
-                    await manager.update_driver_location(user_id, data.get("location", {}))
+                    loc_payload = data.get("location", {})
+                    await manager.update_driver_location(user_id, loc_payload)
                     
                     # If driver has active ride, broadcast to student
                     driver = await db.drivers.find_one({"user_id": user_id}, {"_id": 0})
@@ -5234,9 +5290,12 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(None)):
                         
                         if active_ride:
                             background_tasks.add_task(manager.send_personal_message, {
-        "ride_mode": ride.get("ride_mode", RideMode.PRIVATE.value) if "ride" in locals() else (target_ride.get("ride_mode", RideMode.PRIVATE.value) if "target_ride" in locals() else RideMode.PRIVATE.value),
+                                "ride_mode": active_ride.get("ride_mode", RideMode.PRIVATE.value),
                                 "type": "driver_location",
-                                "location": data.get("location"),
+                                "location": loc_payload,
+                                "lat": loc_payload.get("lat"),
+                                "lng": loc_payload.get("lng"),
+                                "heading": loc_payload.get("heading", 0.0),
                                 "ride_id": active_ride["id"]
                             }, active_ride["student_id"])
                 
@@ -5476,8 +5535,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         # Only rate limit specific sensitive routes
         # Note: In production, use Redis. In-memory is per-worker.
+        client_ip = request.client.host if request.client else "unknown"
+        if client_ip in ["127.0.0.1", "localhost", "::1"]:
+            return await call_next(request)
+
         if request.url.path in ["/api/auth/login", "/api/auth/register", "/api/rides/request"]:
-            client_ip = request.client.host
             path = request.url.path
             key = f"{client_ip}:{path}"
             

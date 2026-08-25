@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Power, MapPin, Clock, DollarSign, Star, Navigation, AlertCircle, Bell, Check, X, Upload, FileText, MessageCircle, PhoneCall, Loader2, Users, ChevronRight } from 'lucide-react';
+import { Power, MapPin, Clock, DollarSign, Star, Navigation, AlertCircle, Bell, Check, X, Upload, FileText, MessageCircle, PhoneCall, Loader2, Users, ChevronRight, ChevronLeft } from 'lucide-react';
 import { CurrencyCircleDollar, Wallet, Car, Star as PhosphorStar } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard, GoldButton, StatusBadge, LoadingSpinner, EmptyState } from '../components/common/GlassComponents';
@@ -23,6 +23,7 @@ import { AppCache } from '../utils/AppCache';
 import { ActiveTripQueue } from '../components/driver/ActiveTripQueue';
 import { SharedRideRequestPanel } from '../components/driver/SharedRideRequestPanel';
 import { RideCard } from '../components/driver/RideCard';
+import { SlideButton } from '../components/ui/slide-button';
 
 const DriverDashboard = () => {
   const navigate = useNavigate();
@@ -35,6 +36,7 @@ const DriverDashboard = () => {
   const hardCooldownRef = useRef(0);
 
   const [isOnline, setIsOnline] = useState(false);
+  const [isTogglingOnline, setIsTogglingOnline] = useState(false);
   const [activeRide, setActiveRide] = useState(() => {
     try {
       const cached = localStorage.getItem('driver_active_ride');
@@ -108,19 +110,6 @@ const DriverDashboard = () => {
     const activeRideIds = new Set(activeRides.map(r => getRideId(r)));
     return masterSharedRidePool.filter(r => !activeRideIds.has(getRideId(r)));
   }, [masterSharedRidePool, activeRides, driverProfile?.accepts_shared_rides, availableSeats]);
-  
-  const [isSimulating, setIsSimulating] = useState(() => {
-    return localStorage.getItem('driver_is_simulating') === 'true';
-  });
-
-  const toggleSimulating = () => {
-    setIsSimulating(prev => {
-      const next = !prev;
-      localStorage.setItem('driver_is_simulating', String(next));
-      return next;
-    });
-  };
-
   const [uploading, setUploading] = useState(false);
   
   // Bottom Sheet State
@@ -129,18 +118,17 @@ const DriverDashboard = () => {
   // Watch position when online
   const { startWatching, stopWatching, isWatching } = useWatchPosition(
     useCallback((location) => {
-      // Only use real GPS if not simulating
-      if (!isSimulating) {
-        setCurrentLocation(location);
-        if (isOnline) {
-          sendLocationUpdate(location.lat, location.lng);
-          api.post('/drivers/location', {
-            latitude: location.lat,
-            longitude: location.lng
-          }).catch(console.error);
-        }
+      setCurrentLocation(location);
+      if (isOnline) {
+        sendLocationUpdate(location.lat, location.lng, location.heading, location.speed);
+        api.post('/drivers/location', {
+          latitude: location.lat,
+          longitude: location.lng,
+          heading: location.heading || 0,
+          speed: location.speed || 0
+        }).catch(console.error);
       }
-    }, [isOnline, isSimulating, sendLocationUpdate, api]),
+    }, [isOnline, sendLocationUpdate, api]),
     { enableHighAccuracy: true }
   );
 
@@ -344,6 +332,12 @@ const DriverDashboard = () => {
             if (activeRide && getRideId(activeRide) === cancelledId) {
               setActiveRide(remaining[0]);
             }
+            // INSTANT OPTIMISTIC PRUNING OF QUEUE AND ROUTE SEGMENTS
+            setRouteQueue(prevQueue => prevQueue.filter(st => st.ride_id !== cancelledId));
+            setRoutesData(prevRoutes => prevRoutes.filter(seg => {
+              const segId = String(seg.stopId || seg.rideId || '');
+              return !segId.includes(cancelledId);
+            }));
           }
           return remaining;
         });
@@ -381,26 +375,6 @@ const DriverDashboard = () => {
     }
   }, [removedSharedRideId, clearRemovedSharedRideId]);
 
-  // Simulation Mode Logic: Just prevents watchPosition from overriding the python script
-  useEffect(() => {
-    if (isSimulating && isOnline) {
-      toast.info("Simulation Mode ON: Python script can now control location safely.");
-    }
-  }, [isSimulating, isOnline]);
-
-  // When simulating, if we receive a driverLocation from the WebSocket, use it!
-  useEffect(() => {
-    if (isSimulating && driverLocation && driverLocation.location) {
-      setCurrentLocation({
-        lat: driverLocation.location.lat,
-        lng: driverLocation.location.lng,
-        heading: driverLocation.location.heading || 0
-      });
-    }
-  }, [isSimulating, driverLocation]);
-
-  const [isTogglingOnline, setIsTogglingOnline] = useState(false);
-
   useEffect(() => {
     if (driverProfile) {
       if (typeof driverProfile.is_online === 'boolean') {
@@ -415,12 +389,12 @@ const DriverDashboard = () => {
   }, [driverProfile?.is_online, driverProfile?.id]);
 
   useEffect(() => {
-    if (isOnline && !isWatching && !isSimulating) {
+    if (isOnline && !isWatching) {
       startWatching();
-    } else if ((!isOnline || isSimulating) && isWatching) {
+    } else if (!isOnline && isWatching) {
       stopWatching();
     }
-  }, [isOnline, isWatching, isSimulating, startWatching, stopWatching]);
+  }, [isOnline, isWatching, startWatching, stopWatching]);
 
   // Handle new incoming ride requests
   useEffect(() => {
@@ -656,13 +630,29 @@ const DriverDashboard = () => {
 
     const initialGeo = targetRide.verified_geometry || targetRide.route_geometry || [];
     if (initialGeo.length > 0) {
-      setRoutesData([{
-        rideId: rideId,
-        geometry: initialGeo,
-        color: '#3b82f6',
-        status: 'active',
-        isActiveLeg: true
-      }]);
+      setRoutesData(prev => {
+        if (!prev || prev.length === 0) {
+          return [{
+            rideId: rideId,
+            geometry: initialGeo,
+            color: '#3b82f6',
+            status: 'active',
+            isActiveLeg: true
+          }];
+        }
+        // Append additional passenger leg without wiping existing route
+        if (prev.some(seg => seg.rideId === rideId)) return prev;
+        return [
+          ...prev,
+          {
+            rideId: rideId,
+            geometry: initialGeo,
+            color: '#10b981',
+            status: 'active',
+            isActiveLeg: false
+          }
+        ];
+      });
     }
 
     setActiveRide(prev => prev || targetRide);
@@ -1317,32 +1307,11 @@ const DriverDashboard = () => {
             </p>
           </div>
           <div className="flex flex-col items-end gap-2">
-            <button
-              onClick={handleToggleOnline}
+            <SlideButton 
+              isOnline={isOnline}
+              onToggle={handleToggleOnline}
               disabled={isTogglingOnline}
-              className={`relative w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${isTogglingOnline ? 'opacity-70 pointer-events-none' : ''} ${isOnline
-                ? 'bg-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.4)]'
-                : 'bg-muted hover:bg-muted/80 border border-border'
-                }`}
-              data-testid="online-toggle"
-            >
-              <Power className={`w-8 h-8 ${isOnline ? 'text-white' : 'text-muted-foreground'} ${isTogglingOnline ? 'animate-spin' : ''}`} />
-              {isOnline && !isTogglingOnline && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-400 rounded-full animate-ping" />
-              )}
-            </button>
-            {isOnline && (
-              <button
-                onClick={toggleSimulating}
-                className={`text-xs px-3 py-1.5 rounded-lg border transition-all shadow-sm ${isSimulating
-                  ? 'bg-amber-500/10 border-amber-500 text-amber-600 font-bold'
-                  : 'bg-muted border-border text-foreground hover:bg-muted/80'
-                  }`}
-                title="When ON, your phone's real GPS is ignored so Python scripts can simulate movement smoothly."
-              >
-                {isSimulating ? 'Simulation Mode: ON' : 'Simulation Mode: OFF'}
-              </button>
-            )}
+            />
           </div>
         </div>
 

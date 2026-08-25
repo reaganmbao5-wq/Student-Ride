@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 import { PermissionsService } from '../../services/PermissionsService';
@@ -104,6 +104,58 @@ export const useWatchPosition = (onUpdate, options = {}) => {
   const [error, setError] = useState(null);
 
   const optionsString = JSON.stringify(options);
+  const lastPosRef = useRef(null);
+  const lastHeadingRef = useRef(0);
+
+  const processPosition = useCallback((coords) => {
+    const lat = coords.latitude;
+    const lng = coords.longitude;
+    const speed = coords.speed ?? 0;
+    const accuracy = coords.accuracy ?? null;
+    
+    let heading = coords.heading;
+    
+    // If native GPS heading is missing/NaN/null (common in browser or slow movement), calculate from previous point
+    if (heading === null || heading === undefined || isNaN(heading) || (heading === 0 && lastPosRef.current)) {
+      if (lastPosRef.current) {
+        const prev = lastPosRef.current;
+        const dLng = (lng - prev.lng) * (Math.PI / 180);
+        const lat1Rad = prev.lat * (Math.PI / 180);
+        const lat2Rad = lat * (Math.PI / 180);
+        const y = Math.sin(dLng) * Math.cos(lat2Rad);
+        const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) - Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLng);
+        const brng = (Math.atan2(y, x) * (180 / Math.PI) + 360) % 360;
+        
+        // Approximate distance moved in meters
+        const distMeters = Math.hypot(
+          (lat - prev.lat) * 111139,
+          (lng - prev.lng) * 111139 * Math.cos(lat1Rad)
+        );
+        
+        // Only update heading if driver moved more than 0.8 meters to avoid stationary GPS jitter
+        if (distMeters >= 0.8) {
+          heading = brng;
+          lastHeadingRef.current = brng;
+        } else {
+          heading = lastHeadingRef.current;
+        }
+      } else {
+        heading = lastHeadingRef.current;
+      }
+    } else {
+      lastHeadingRef.current = heading;
+    }
+
+    lastPosRef.current = { lat, lng, time: Date.now() };
+
+    onUpdate({
+      lat,
+      lng,
+      heading: typeof heading === 'number' && !isNaN(heading) ? heading : 0,
+      speed: typeof speed === 'number' && !isNaN(speed) ? speed : 0,
+      accuracy
+    });
+  }, [onUpdate]);
 
   const startWatching = useCallback(async () => {
     const isLocationEnabled = localStorage.getItem('mulu_location_enabled') !== 'false';
@@ -132,12 +184,8 @@ export const useWatchPosition = (onUpdate, options = {}) => {
             setError(err.message || 'Error watching position');
             return;
           }
-          if (position) {
-            onUpdate({
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-              accuracy: position.coords.accuracy
-            });
+          if (position && position.coords) {
+            processPosition(position.coords);
           }
         });
         setWatchId(id);
@@ -152,11 +200,9 @@ export const useWatchPosition = (onUpdate, options = {}) => {
 
       const id = navigator.geolocation.watchPosition(
         (position) => {
-          onUpdate({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-            accuracy: position.coords.accuracy
-          });
+          if (position && position.coords) {
+            processPosition(position.coords);
+          }
         },
         (error) => {
           setError(error.message);
@@ -165,7 +211,7 @@ export const useWatchPosition = (onUpdate, options = {}) => {
       );
       setWatchId(id);
     }
-  }, [onUpdate, optionsString]);
+  }, [optionsString, processPosition]);
 
   const stopWatching = useCallback(async () => {
     if (watchId !== null) {

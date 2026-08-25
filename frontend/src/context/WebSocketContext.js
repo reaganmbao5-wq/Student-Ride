@@ -252,11 +252,11 @@ export const WebSocketProvider = ({ children }) => {
     return () => clearInterval(pingInterval);
   }, []);
 
-  const sendLocationUpdate = useCallback((lat, lng) => {
+  const sendLocationUpdate = useCallback((lat, lng, heading = 0, speed = 0) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({
         type: 'location_update',
-        location: { lat, lng }
+        location: { lat, lng, heading, speed }
       }));
     }
   }, []);

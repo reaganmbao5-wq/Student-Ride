@@ -28,15 +28,14 @@ export const getOnlineWebUrl = (path = '') => {
 };
 
 export const getBackendUrl = (path = '') => {
-  const envUrl = process.env.REACT_APP_BACKEND_URL;
-  if (envUrl && envUrl !== 'undefined') {
-    return `${envUrl.replace(/\/$/, '')}${path}`;
-  }
+  if (typeof window !== 'undefined' && window.location) {
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return `http://${hostname}:8000${path}`;
+    }
 
-  if (typeof window !== 'undefined' && window.location && window.location.origin) {
     const origin = window.location.origin;
     const isNativeOrLocal =
-      origin.includes('localhost') ||
       origin.startsWith('capacitor://') ||
       origin.startsWith('file://') ||
       origin.startsWith('http://10.') ||
@@ -45,6 +44,11 @@ export const getBackendUrl = (path = '') => {
     if (!isNativeOrLocal) {
       return `${origin}${path}`;
     }
+  }
+
+  const envUrl = process.env.REACT_APP_BACKEND_URL;
+  if (envUrl && envUrl !== 'undefined') {
+    return `${envUrl.replace(/\/$/, '')}${path}`;
   }
 
   // Deployed production backend fallback URL
