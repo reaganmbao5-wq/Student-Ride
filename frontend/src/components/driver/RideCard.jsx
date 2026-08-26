@@ -33,7 +33,7 @@ export const RideCard = ({
   };
 
   const pickupLoc = request.pickup_location || { lat: -14.294896, lng: 28.559798 };
-  const mapCenter = { lat: pickupLoc.lat - 0.0010, lng: pickupLoc.lng };
+  const mapCenter = { lat: pickupLoc.lat, lng: pickupLoc.lng };
   const mapMarkers = [
     { lat: pickupLoc.lat, lng: pickupLoc.lng, iconType: 'pickup', key: `pickup-${request.id || 'single'}` }
   ];

@@ -609,7 +609,7 @@ export const PlatformMap = ({
 
   return (
 
-    <div className={`relative z-0 w-full h-full min-h-[300px] ${className}`} style={{ isolation: 'isolate' }}>
+    <div className={`relative z-0 w-full h-full ${className}`} style={{ isolation: 'isolate' }}>
 
       
 
