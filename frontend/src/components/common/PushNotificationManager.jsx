@@ -229,15 +229,15 @@ const PushNotificationManager = () => {
     if (!showPrompt) return null;
 
     return (
-        <div className="fixed top-4 left-4 right-4 z-[9999] animate-in slide-in-from-top-5 fade-in duration-300">
-            <div className="bg-[#1A1A1A] border border-gold/20 rounded-2xl shadow-2xl p-4 flex items-start sm:items-center justify-between gap-4 max-w-md mx-auto">
+        <div className="fixed top-4 left-4 right-4 z-[9999] animate-in slide-in-from-top-5 fade-in duration-300 pointer-events-auto">
+            <div className="bg-card text-card-foreground border border-border rounded-2xl shadow-2xl p-4 flex items-start sm:items-center justify-between gap-4 max-w-md mx-auto">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center shrink-0">
                         <Bell className="w-5 h-5 text-gold animate-bounce" />
                     </div>
                     <div>
-                        <h4 className="text-white font-medium text-sm">Enable Ride Updates</h4>
-                        <p className="text-white/60 text-xs mt-0.5">
+                        <h4 className="font-heading font-semibold text-foreground text-sm">Enable Ride Updates</h4>
+                        <p className="text-muted-foreground text-xs mt-0.5">
                             Get instant alerts when your driver arrives or when your ride is accepted.
                         </p>
                     </div>
@@ -245,13 +245,13 @@ const PushNotificationManager = () => {
                 <div className="flex items-center gap-2 shrink-0">
                     <button
                         onClick={() => subscribeUser(true)}
-                        className="bg-gold text-black text-xs font-semibold px-4 py-2 rounded-lg hover:bg-gold/90 transition-colors cursor-pointer"
+                        className="bg-gold text-black text-xs font-semibold px-4 py-2 rounded-xl hover:bg-gold/90 active:scale-95 transition-all cursor-pointer shadow-sm"
                     >
                         Enable
                     </button>
                     <button
                         onClick={handleDismiss}
-                        className="p-2 text-white/40 hover:text-white transition-colors cursor-pointer"
+                        className="p-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                         aria-label="Dismiss"
                     >
                         <X className="w-4 h-4" />
