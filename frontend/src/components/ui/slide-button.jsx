@@ -19,13 +19,13 @@ import { Loader2, SendHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-const DRAG_CONSTRAINTS_LTR = { left: 0, right: 155 };
-const DRAG_CONSTRAINTS_RTL = { left: -155, right: 0 };
-const DRAG_THRESHOLD = 0.75;
+const DRAG_CONSTRAINTS_LTR = { left: 0, right: 120 };
+const DRAG_CONSTRAINTS_RTL = { left: -120, right: 0 };
+const DRAG_THRESHOLD = 0.65;
 
 const BUTTON_STATES = {
-  expanded: { width: "12rem" },
-  compact: { width: "8rem" },
+  expanded: { width: "10.5rem" },
+  compact: { width: "6.5rem" },
 };
 
 const ANIMATION_CONFIG = {
@@ -62,13 +62,13 @@ export const SlideButton = forwardRef(
     // Independent motion values
     const dragX_LTR = useMotionValue(0);
     const springX_LTR = useSpring(dragX_LTR, ANIMATION_CONFIG.spring);
-    const dragProgressLTR = useTransform(springX_LTR, [0, 155], [0, 1]);
-    const adjustedWidthLTR = useTransform(springX_LTR, (x) => Math.max(0, x + 10));
+    const dragProgressLTR = useTransform(springX_LTR, [0, 120], [0, 1]);
+    const adjustedWidthLTR = useTransform(springX_LTR, (x) => Math.max(0, x + 16));
 
     const dragX_RTL = useMotionValue(0);
     const springX_RTL = useSpring(dragX_RTL, ANIMATION_CONFIG.spring);
-    const dragProgressRTL = useTransform(springX_RTL, [0, -155], [0, 1]);
-    const adjustedWidthRTL = useTransform(springX_RTL, (x) => Math.max(0, -x + 10));
+    const dragProgressRTL = useTransform(springX_RTL, [0, -120], [0, 1]);
+    const adjustedWidthRTL = useTransform(springX_RTL, (x) => Math.max(0, -x + 16));
 
     // Reset coordinates and collapse slider when online state updates
     useEffect(() => {
@@ -91,7 +91,7 @@ export const SlideButton = forwardRef(
 
     const handleDragLTR = (_event, info) => {
       if (disabled || isSubmittingRef.current) return;
-      const newX = Math.max(0, Math.min(info.offset.x, 155));
+      const newX = Math.max(0, Math.min(info.offset.x, 120));
       dragX_LTR.set(newX);
     };
 
@@ -100,7 +100,7 @@ export const SlideButton = forwardRef(
       const offset = info?.offset?.x ?? dragX_LTR.get();
       const progress = dragProgressLTR.get();
 
-      if (progress >= DRAG_THRESHOLD || offset >= 90 || dragX_LTR.get() >= 90) {
+      if (progress >= DRAG_THRESHOLD || offset >= 65 || dragX_LTR.get() >= 65) {
         isSubmittingRef.current = true;
         setStatus("loading");
         setTimeout(() => {
@@ -113,7 +113,7 @@ export const SlideButton = forwardRef(
           if (!isControlledDriverMode) {
             setStandaloneCompleted(true);
           }
-        }, 300);
+        }, 250);
       } else {
         dragX_LTR.set(0);
       }
@@ -126,7 +126,7 @@ export const SlideButton = forwardRef(
 
     const handleDragRTL = (_event, info) => {
       if (disabled || isSubmittingRef.current) return;
-      const newX = Math.min(0, Math.max(info.offset.x, -155));
+      const newX = Math.min(0, Math.max(info.offset.x, -120));
       dragX_RTL.set(newX);
     };
 
@@ -135,7 +135,7 @@ export const SlideButton = forwardRef(
       const offset = info?.offset?.x ?? dragX_RTL.get();
       const progress = dragProgressRTL.get();
 
-      if (progress >= DRAG_THRESHOLD || offset <= -90 || dragX_RTL.get() <= -90) {
+      if (progress >= DRAG_THRESHOLD || offset <= -65 || dragX_RTL.get() <= -65) {
         isSubmittingRef.current = true;
         setStatus("loading");
         setTimeout(() => {
@@ -145,7 +145,7 @@ export const SlideButton = forwardRef(
           setIsSliderExpanded(false);
           setStatus("idle");
           isSubmittingRef.current = false;
-        }, 300);
+        }, 250);
       } else {
         dragX_RTL.set(0);
       }
@@ -168,87 +168,97 @@ export const SlideButton = forwardRef(
         animate={showPill ? BUTTON_STATES.compact : BUTTON_STATES.expanded}
         transition={ANIMATION_CONFIG.spring}
         className={cn(
-          "shadow-button-inset dark:shadow-button-inset-dark relative flex h-9 items-center justify-center rounded-full bg-[#E5E7EB] dark:bg-zinc-800/90 border border-zinc-300 dark:border-white/10 select-none overflow-hidden",
+          "relative flex h-10 items-center justify-center rounded-full bg-zinc-200/90 dark:bg-zinc-800/90 border border-zinc-300 dark:border-zinc-700/60 select-none overflow-hidden shadow-inner",
           className
         )}
       >
-        {/* Fill Highlight Progress (LTR: Monochrome Contrast) */}
+        {/* Fill Highlight Progress (LTR: Go Online) */}
         {showLTRSlider && (
           <motion.div
             style={{ width: adjustedWidthLTR }}
-            className="absolute inset-y-0 left-0 z-0 rounded-full bg-black/15 dark:bg-white/20"
+            className="absolute inset-y-0 left-0 z-0 rounded-full bg-emerald-500/20 dark:bg-emerald-500/30"
           />
         )}
 
-        {/* Fill Highlight Progress (RTL: Monochrome Contrast) */}
+        {/* Fill Highlight Progress (RTL: Go Offline) */}
         {showRTLSlider && (
           <motion.div
             style={{ width: adjustedWidthRTL }}
-            className="absolute inset-y-0 right-0 z-0 rounded-full bg-black/15 dark:bg-white/20"
+            className="absolute inset-y-0 right-0 z-0 rounded-full bg-zinc-500/20 dark:bg-zinc-500/30"
           />
         )}
 
         {/* 1. LTR SLIDER (Go Online: Left -> Right) */}
         {showLTRSlider && (
-          <motion.div
-            key="slider-ltr-knob"
-            drag="x"
-            dragConstraints={DRAG_CONSTRAINTS_LTR}
-            dragElastic={0}
-            dragMomentum={false}
-            onDragStart={handleDragStartLTR}
-            onDragEnd={handleDragEndLTR}
-            onDrag={handleDragLTR}
-            style={{ x: springX_LTR }}
-            className="absolute left-0.5 z-10 flex cursor-grab items-center justify-start active:cursor-grabbing"
-          >
-            <Button
-              ref={ref}
-              disabled={status === "loading"}
-              {...props}
-              size="icon"
-              className="shadow-button rounded-full drop-shadow-xl h-8 w-8 bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white transition-transform"
+          <>
+            <span className="absolute inset-0 flex items-center justify-center text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 pl-6 pointer-events-none select-none tracking-tight">
+              Slide online →
+            </span>
+            <motion.div
+              key="slider-ltr-knob"
+              drag="x"
+              dragConstraints={DRAG_CONSTRAINTS_LTR}
+              dragElastic={0}
+              dragMomentum={false}
+              onDragStart={handleDragStartLTR}
+              onDragEnd={handleDragEndLTR}
+              onDrag={handleDragLTR}
+              style={{ x: springX_LTR }}
+              className="absolute left-1 z-10 flex cursor-grab items-center justify-start active:cursor-grabbing"
             >
-              {status === "loading" ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <SendHorizontal className="size-4" />
-              )}
-            </Button>
-          </motion.div>
+              <Button
+                ref={ref}
+                disabled={status === "loading"}
+                {...props}
+                size="icon"
+                className="rounded-full shadow-md h-8 w-8 bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white transition-transform"
+              >
+                {status === "loading" ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <SendHorizontal className="size-4" />
+                )}
+              </Button>
+            </motion.div>
+          </>
         )}
 
         {/* 2. RTL SLIDER (Go Offline: Right -> Left - Flipped UI) */}
         {showRTLSlider && (
-          <motion.div
-            key="slider-rtl-knob"
-            drag="x"
-            dragConstraints={DRAG_CONSTRAINTS_RTL}
-            dragElastic={0}
-            dragMomentum={false}
-            onDragStart={handleDragStartRTL}
-            onDragEnd={handleDragEndRTL}
-            onDrag={handleDragRTL}
-            style={{ x: springX_RTL }}
-            className="absolute right-0.5 z-10 flex cursor-grab items-center justify-end active:cursor-grabbing"
-          >
-            <Button
-              ref={ref}
-              disabled={status === "loading"}
-              {...props}
-              size="icon"
-              className="shadow-button rounded-full drop-shadow-xl h-8 w-8 bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white transition-transform"
+          <>
+            <span className="absolute inset-0 flex items-center justify-center text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 pr-6 pointer-events-none select-none tracking-tight">
+              ← Slide offline
+            </span>
+            <motion.div
+              key="slider-rtl-knob"
+              drag="x"
+              dragConstraints={DRAG_CONSTRAINTS_RTL}
+              dragElastic={0}
+              dragMomentum={false}
+              onDragStart={handleDragStartRTL}
+              onDragEnd={handleDragEndRTL}
+              onDrag={handleDragRTL}
+              style={{ x: springX_RTL }}
+              className="absolute right-1 z-10 flex cursor-grab items-center justify-end active:cursor-grabbing"
             >
-              {status === "loading" ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <SendHorizontal className="size-4 rotate-180" />
-              )}
-            </Button>
-          </motion.div>
+              <Button
+                ref={ref}
+                disabled={status === "loading"}
+                {...props}
+                size="icon"
+                className="rounded-full shadow-md h-8 w-8 bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white transition-transform"
+              >
+                {status === "loading" ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <SendHorizontal className="size-4 rotate-180" />
+                )}
+              </Button>
+            </motion.div>
+          </>
         )}
 
-        {/* 3. COMPACT PILL (Shows "ONLINE" or "OFFLINE" in bold black/white with distinguishable gray track) */}
+        {/* 3. COMPACT PILL (Shows "ONLINE" or "OFFLINE" with dot status and balanced padding) */}
         <AnimatePresence mode="wait">
           {showPill && (
             <motion.div
@@ -264,14 +274,31 @@ export const SlideButton = forwardRef(
                 ref={ref}
                 disabled={false}
                 {...props}
-                className="size-full rounded-full transition-colors bg-[#E5E7EB] hover:bg-[#D1D5DB] dark:bg-zinc-800 dark:hover:bg-zinc-700 h-9 flex items-center justify-center shadow-none border-none"
+                className="size-full rounded-full transition-colors bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700/80 h-10 flex items-center justify-center gap-1.5 px-3 shadow-none border-none"
               >
                 {status === "loading" ? (
                   <Loader2 className="size-4 animate-spin text-zinc-900 dark:text-white" />
                 ) : (
-                  <span className="font-bold text-xs uppercase tracking-wider text-black dark:text-white select-none">
-                    {isCurrentOnline ? "ONLINE" : "OFFLINE"}
-                  </span>
+                  <>
+                    <span
+                      className={cn(
+                        "w-2 h-2 rounded-full shrink-0",
+                        isCurrentOnline
+                          ? "bg-emerald-500 ring-2 ring-emerald-500/30 animate-pulse"
+                          : "bg-zinc-400 dark:bg-zinc-500"
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        "font-bold text-[11px] uppercase tracking-wider select-none",
+                        isCurrentOnline
+                          ? "text-emerald-700 dark:text-emerald-400 font-semibold"
+                          : "text-zinc-700 dark:text-zinc-300 font-semibold"
+                      )}
+                    >
+                      {isCurrentOnline ? "ONLINE" : "OFFLINE"}
+                    </span>
+                  </>
                 )}
               </Button>
             </motion.div>
