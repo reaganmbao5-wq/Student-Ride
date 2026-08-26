@@ -74,8 +74,9 @@ export const useGeolocation = (options = {}) => {
           setLoading(false);
         },
         (error) => {
+          console.warn('[useGeolocation] Position error:', error.code, error.message);
           setLocation({ lat: -14.294896006738625, lng: 28.55979849713035, accuracy: null });
-          setError(`Location unavailable. Using default location (MU).`);
+          setError(error.code === 1 ? 'PERMISSION_DENIED' : (error.message || 'Location unavailable'));
           setLoading(false);
         },
         defaultOptions
@@ -205,7 +206,8 @@ export const useWatchPosition = (onUpdate, options = {}) => {
           }
         },
         (error) => {
-          setError(error.message);
+          console.warn('[useWatchPosition] Watch error:', error.code, error.message);
+          setError(error.code === 1 ? 'PERMISSION_DENIED' : (error.message || 'Error watching position'));
         },
         defaultOptions
       );

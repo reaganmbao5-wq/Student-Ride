@@ -116,7 +116,7 @@ const DriverDashboard = () => {
   const [isSheetExpanded, setIsSheetExpanded] = useState(false);
 
   // Watch position when online
-  const { startWatching, stopWatching, isWatching } = useWatchPosition(
+  const { startWatching, stopWatching, isWatching, error: watchError } = useWatchPosition(
     useCallback((location) => {
       setCurrentLocation(location);
       if (isOnline) {
@@ -395,6 +395,14 @@ const DriverDashboard = () => {
       stopWatching();
     }
   }, [isOnline, isWatching, startWatching, stopWatching]);
+
+  useEffect(() => {
+    if (watchError && isOnline) {
+      if (watchError === 'PERMISSION_DENIED' || String(watchError).toLowerCase().includes('denied')) {
+        toast.error('Location permission is blocked. Please tap the site settings / lock icon in your browser address bar and allow Location access.', { id: 'driver-geo-denied', duration: 7000 });
+      }
+    }
+  }, [watchError, isOnline]);
 
   // Handle new incoming ride requests
   useEffect(() => {

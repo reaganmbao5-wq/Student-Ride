@@ -50,6 +50,7 @@ const RideRequestPage = () => {
   const [mapCenter, setMapCenter] = useState({ lat: -14.294896006738625, lng: 28.55979849713035 }); // Default Mulungushi University
   const [isDragging, setIsDragging] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
   const [currentAddress, setCurrentAddress] = useState('');
   
   const [destinations, setDestinations] = useState([]);
@@ -207,6 +208,44 @@ const RideRequestPage = () => {
 
     return () => clearTimeout(geocodeTimeoutRef.current);
   }, [mapCenter, isDragging, step]);
+
+  const handleCenterToCurrentLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser.');
+      return;
+    }
+
+    setIsLocating(true);
+    toast.loading('Detecting your GPS location...', { id: 'gps-locating' });
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setIsLocating(false);
+        toast.dismiss('gps-locating');
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        isExplicitSelectionRef.current = false;
+        explicitSelectedLocationRef.current = null;
+        setMapCenter(coords);
+        toast.success('Centered to your location');
+      },
+      (err) => {
+        setIsLocating(false);
+        toast.dismiss('gps-locating');
+        console.warn('[RideRequestPage] GPS location error:', err);
+        if (err.code === 1) {
+          toast.error(
+            'Location access blocked. Please tap the lock / site settings icon in your browser address bar and allow Location access.',
+            { duration: 7000 }
+          );
+        } else if (err.code === 3) {
+          toast.error('Location request timed out. Please check that device GPS is enabled.');
+        } else {
+          toast.error(`Unable to retrieve location: ${err.message || 'GPS unavailable'}`);
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  }, []);
 
 
   const calculateFare = useCallback(async (pickupLoc, dropoffLoc) => {
@@ -602,12 +641,12 @@ const RideRequestPage = () => {
 
                 {/* Right: GPS Navigation Button (Aligned flush with Row 1 Top) */}
                 <button
-                  onClick={() => refreshLocation()}
-                  disabled={geoLoading}
+                  onClick={handleCenterToCurrentLocation}
+                  disabled={isLocating || isGeocoding}
                   className="w-11 h-11 flex-shrink-0 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl flex items-center justify-center active:scale-95 transition-transform shadow-sm -mt-1 self-start"
                   title="Center to my location"
                 >
-                  <Navigation className={`w-5 h-5 text-black dark:text-white ${geoLoading ? 'animate-pulse' : ''}`} />
+                  <Navigation className={`w-5 h-5 text-black dark:text-white ${isLocating ? 'animate-spin' : isGeocoding ? 'animate-pulse' : ''}`} />
                 </button>
               </div>
 
