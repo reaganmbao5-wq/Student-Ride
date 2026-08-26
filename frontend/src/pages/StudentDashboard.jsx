@@ -616,6 +616,8 @@ const StudentDashboard = () => {
             lat: st.lat,
             lng: st.lng,
             iconType: st.stop_type === 'dropoff' ? 'dropoff' : 'pickup',
+            label: `Stop ${idx + 1}`,
+            badgeColor: '#3b82f6',
             key: `intermediate-${st.stop_id || idx}`
           });
         }
@@ -628,6 +630,8 @@ const StudentDashboard = () => {
         lat: activeRide.pickup_location.lat,
         lng: activeRide.pickup_location.lng,
         iconType: 'pickup',
+        label: 'Pickup',
+        badgeColor: '#000000',
         key: 'pickup'
       });
     }
@@ -638,6 +642,8 @@ const StudentDashboard = () => {
         lat: activeRide.dropoff_location.lat,
         lng: activeRide.dropoff_location.lng,
         iconType: 'dropoff',
+        label: 'Destination',
+        badgeColor: '#dc2626',
         key: 'dropoff'
       });
     }
