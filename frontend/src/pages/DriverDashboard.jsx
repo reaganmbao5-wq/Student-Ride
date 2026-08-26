@@ -1288,25 +1288,25 @@ const DriverDashboard = () => {
         <div className="p-4 md:p-8 pb-36 md:pb-28 space-y-6 max-w-4xl mx-auto" data-testid="driver-dashboard">
         {/* Header with Online Toggle */}
         <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0">
             <div className="flex items-center gap-2 sm:gap-3 mb-1 flex-wrap">
-              <h1 className="font-heading text-xl sm:text-2xl md:text-3xl font-bold text-foreground tracking-tight whitespace-nowrap">
-                {isOnline ? 'Ready for Rides' : "You're Offline"}
+              <h1 className="font-heading text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
+                {isOnline ? 'Ready for Rides' : 'You\'re Offline'}
               </h1>
               {earnings && (
-                <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-gold/10 border border-gold/20 shadow-sm shrink-0" title="Driver Rating">
-                  <PhosphorStar weight="duotone" className="w-3.5 h-3.5 text-gold fill-gold" />
-                  <span className="font-heading font-bold text-foreground text-xs sm:text-sm">
+                <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-gold/10 border border-gold/20 shadow-sm shrink-0" title="Driver Rating">
+                  <PhosphorStar weight="duotone" className="w-4 h-4 text-gold fill-gold" />
+                  <span className="font-heading font-bold text-foreground text-sm">
                     {earnings.rating?.toFixed(1) || '5.0'}
                   </span>
                 </div>
               )}
             </div>
-            <p className="text-xs sm:text-sm text-muted-foreground truncate">
+            <p className="text-muted-foreground text-sm">
               {isOnline ? 'Waiting for ride requests...' : 'Go online to start accepting rides'}
             </p>
           </div>
-          <div className="shrink-0 flex items-center">
+          <div className="flex flex-col items-end gap-2 shrink-0">
             <SlideButton 
               isOnline={isOnline}
               onToggle={handleToggleOnline}
