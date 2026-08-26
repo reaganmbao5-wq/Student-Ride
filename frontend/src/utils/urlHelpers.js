@@ -24,35 +24,24 @@ export const getOnlineWebUrl = (path = '') => {
   }
 
   // Deployed production website fallback URL
-  return `https://student-ride-frontend-dev.onrender.com${path}`;
+  return `https://jaey-ride.pages.dev${path}`;
 };
 
 export const getBackendUrl = (path = '') => {
+  const envUrl = process.env.REACT_APP_BACKEND_URL;
+  if (envUrl && envUrl !== 'undefined' && envUrl.trim() !== '') {
+    return `${envUrl.replace(/\/$/, '')}${path}`;
+  }
+
   if (typeof window !== 'undefined' && window.location) {
     const hostname = window.location.hostname;
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       return `http://${hostname}:8000${path}`;
     }
-
-    const origin = window.location.origin;
-    const isNativeOrLocal =
-      origin.startsWith('capacitor://') ||
-      origin.startsWith('file://') ||
-      origin.startsWith('http://10.') ||
-      origin.startsWith('http://192.168.');
-
-    if (!isNativeOrLocal) {
-      return `${origin}${path}`;
-    }
-  }
-
-  const envUrl = process.env.REACT_APP_BACKEND_URL;
-  if (envUrl && envUrl !== 'undefined') {
-    return `${envUrl.replace(/\/$/, '')}${path}`;
   }
 
   // Deployed production backend fallback URL
-  return `https://student-ride-backend-dev.onrender.com${path}`;
+  return `https://jaey-ride-backend.onrender.com${path}`;
 };
 
 export const openExternalUrl = (path = '') => {

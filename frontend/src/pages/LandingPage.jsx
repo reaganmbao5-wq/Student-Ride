@@ -143,7 +143,15 @@ const LandingPage = () => {
 
   const handleDownloadApk = () => {
     const backendUrl = getBackendUrl();
-    window.location.href = `${backendUrl}/api/app/download-latest-apk`;
+    const downloadUrl = `${backendUrl}/api/app/download-latest-apk`;
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.setAttribute('download', 'jaey-ride-latest.apk');
+    link.setAttribute('target', '_blank');
+    link.setAttribute('rel', 'noopener noreferrer');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
     localStorage.setItem('has_downloaded_apk', 'true');
     toast.success('Downloading latest Jaey Ride APK...');
   };
