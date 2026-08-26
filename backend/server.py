@@ -254,7 +254,7 @@ def validate_ride_transition(current_state: str, next_state: str) -> bool:
 ACTIVE_RIDE_STATES = [
     "requested", "accepted", "driver_accepted", "driver_en_route_to_pickup",
     "driver_arrived", "passenger_boarding", "ride_started", "ongoing",
-    "ride_in_progress", "arriving_destination"
+    "picked_up", "ride_in_progress", "arriving_destination"
 ]
 
 def get_active_ride_states():

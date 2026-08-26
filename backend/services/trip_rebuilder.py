@@ -45,8 +45,8 @@ class DriverTripRebuilder:
             # 2. Get all active rides for this driver
             # The active rides are what dictates the trip state.
             active_ride_states = [
-                "driver_accepted", "driver_en_route_to_pickup", "driver_arrived",
-                "passenger_boarding", "ride_started", "ongoing", "ride_in_progress"
+                "accepted", "driver_accepted", "driver_en_route_to_pickup", "driver_arrived",
+                "passenger_boarding", "ride_started", "ongoing", "picked_up", "ride_in_progress"
             ]
             
             cursor = db.rides.find({"$or": [{"driver_id": real_driver_id}, {"driver_id": driver_id}], "status": {"$in": active_ride_states}})
@@ -65,14 +65,14 @@ class DriverTripRebuilder:
                 # Assume 1 seat per ride for now, unless passengers field exists
                 passengers = ride.get("passengers", 1)
                 
-                if ride["status"] in ["ride_started", "ongoing", "ride_in_progress"]:
+                if ride["status"] in ["ride_started", "ongoing", "ride_in_progress", "picked_up"]:
                     occupied += passengers
                     onboard_student_ids.add(ride["student_id"])
                 else:
                     reserved += passengers
                     
                 # If not picked up, they need a pickup stop.
-                if ride["status"] not in ["ride_started", "ongoing", "ride_in_progress"]:
+                if ride["status"] not in ["ride_started", "ongoing", "ride_in_progress", "picked_up"]:
                     route_queue.append({
                         "stop_id": f"stop_pickup_{ride['id']}",
                         "ride_id": ride['id'],
