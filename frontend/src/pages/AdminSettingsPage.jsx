@@ -42,7 +42,7 @@ const AdminSettingsPage = () => {
       const res = await api.get('/app/version-check');
       setLatestRelease(res.data);
       if (res.data?.version_code) {
-        setApkVersionCode(res.data.version_code + 1);
+        setApkVersionCode(res.data.version_code);
       }
     } catch (err) {
       console.warn('Failed to fetch latest release:', err);

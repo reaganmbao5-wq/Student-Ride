@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Download, Sparkles, AlertTriangle, ArrowUpCircle } from 'lucide-react';
+import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { useTheme } from '../../context/ThemeContext';
 import { getBackendUrl } from '../../utils/urlHelpers';
@@ -26,9 +27,9 @@ export const AndroidRobotIcon = ({ className = "w-10 h-10", fill = "#3DDC84" }) 
   </svg>
 );
 
-// Current installed build version for APK
-const CURRENT_APP_VERSION = "2.0.0";
-const CURRENT_BUILD_CODE = 10;
+// Fallback build metadata (Version 2.1.0, Build 11)
+const DEFAULT_APP_VERSION = "2.1.0";
+const DEFAULT_BUILD_CODE = 11;
 
 export const AppUpdateModal = () => {
   const { accentColor, ACCENT_COLORS } = useTheme();
@@ -41,19 +42,44 @@ export const AppUpdateModal = () => {
   useEffect(() => {
     const checkVersion = async () => {
       try {
+        const isNative = Capacitor.isNativePlatform();
+        let currentBuildCode = DEFAULT_BUILD_CODE;
+        let currentVersionName = DEFAULT_APP_VERSION;
+
+        // Dynamically query real native build version from Android OS package
+        if (isNative) {
+          try {
+            const info = await App.getInfo();
+            if (info) {
+              if (info.build) currentBuildCode = parseInt(info.build, 10) || currentBuildCode;
+              if (info.version) currentVersionName = info.version;
+            }
+          } catch (e) {
+            console.warn('[AppUpdateModal] Could not read native App.getInfo():', e);
+          }
+        }
+
         const backendUrl = getBackendUrl();
         const res = await fetch(`${backendUrl}/api/app/version-check`);
         if (!res.ok) return;
         const data = await res.json();
 
-        // Check if an update is required
-        const isNative = Capacitor.isNativePlatform();
-        const serverVersionCode = data.version_code || 0;
-        const isNewer = serverVersionCode > CURRENT_BUILD_CODE;
-        const isForced = data.force_update === true;
+        const serverVersionCode = Number(data.version_code) || 0;
+        
+        // Genuinely newer build available
+        const isNewer = serverVersionCode > currentBuildCode;
+        
+        // Only force update IF an update is actually newer than current installed version
+        const isForced = isNewer && Boolean(data.force_update);
 
-        if (isForced || (isNative && isNewer) || (typeof window !== 'undefined' && window.__SHOW_UPDATE_MODAL__)) {
-          setUpdateInfo(data);
+        // Never trigger on web unless explicitly testing via window.__SHOW_UPDATE_MODAL__
+        const shouldShow = (isNative && isNewer) || (typeof window !== 'undefined' && window.__SHOW_UPDATE_MODAL__);
+
+        if (shouldShow) {
+          setUpdateInfo({
+            ...data,
+            force_update: isForced
+          });
           setIsOpen(true);
         }
       } catch (err) {
