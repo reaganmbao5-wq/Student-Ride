@@ -107,6 +107,39 @@ export const useWatchPosition = (onUpdate, options = {}) => {
   const optionsString = JSON.stringify(options);
   const lastPosRef = useRef(null);
   const lastHeadingRef = useRef(0);
+  const compassHeadingRef = useRef(null);
+
+  // Listen to physical device compass (instant orientation even when stationary or turning)
+  useEffect(() => {
+    const handleOrientation = (e) => {
+      let deg = null;
+      if (typeof e.webkitCompassHeading === 'number') {
+        // iOS Safari true compass heading
+        deg = e.webkitCompassHeading;
+      } else if (typeof e.alpha === 'number') {
+        // Android / Chrome: alpha is 0 to 360 counterclockwise from north
+        deg = (360 - e.alpha) % 360;
+      }
+      if (deg !== null && !isNaN(deg)) {
+        compassHeadingRef.current = deg;
+      }
+    };
+
+    if (typeof window !== 'undefined' && window.DeviceOrientationEvent) {
+      if ('ondeviceorientationabsolute' in window) {
+        window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+      } else {
+        window.addEventListener('deviceorientation', handleOrientation, true);
+      }
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('deviceorientationabsolute', handleOrientation, true);
+        window.removeEventListener('deviceorientation', handleOrientation, true);
+      }
+    };
+  }, []);
 
   const processPosition = useCallback((coords) => {
     const lat = coords.latitude;
@@ -116,35 +149,38 @@ export const useWatchPosition = (onUpdate, options = {}) => {
     
     let heading = coords.heading;
     
-    // If native GPS heading is missing/NaN/null (common in browser or slow movement), calculate from previous point
-    if (heading === null || heading === undefined || isNaN(heading) || (heading === 0 && lastPosRef.current)) {
-      if (lastPosRef.current) {
-        const prev = lastPosRef.current;
-        const dLng = (lng - prev.lng) * (Math.PI / 180);
-        const lat1Rad = prev.lat * (Math.PI / 180);
-        const lat2Rad = lat * (Math.PI / 180);
-        const y = Math.sin(dLng) * Math.cos(lat2Rad);
-        const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) - Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLng);
-        const brng = (Math.atan2(y, x) * (180 / Math.PI) + 360) % 360;
-        
-        // Approximate distance moved in meters
-        const distMeters = Math.hypot(
-          (lat - prev.lat) * 111139,
-          (lng - prev.lng) * 111139 * Math.cos(lat1Rad)
-        );
-        
-        // Only update heading if driver moved more than 0.8 meters to avoid stationary GPS jitter
-        if (distMeters >= 0.8) {
-          heading = brng;
-          lastHeadingRef.current = brng;
-        } else {
-          heading = lastHeadingRef.current;
-        }
+    // 1. If native GPS heading is valid (> 0 km/h)
+    if (typeof heading === 'number' && !isNaN(heading) && heading !== 0) {
+      lastHeadingRef.current = heading;
+    } 
+    // 2. Otherwise, if device physical compass is available, use exact orientation
+    else if (typeof compassHeadingRef.current === 'number' && !isNaN(compassHeadingRef.current)) {
+      heading = compassHeadingRef.current;
+      lastHeadingRef.current = heading;
+    }
+    // 3. Fallback: calculate bearing from previous point if moved >= 0.8 meters
+    else if (lastPosRef.current) {
+      const prev = lastPosRef.current;
+      const dLng = (lng - prev.lng) * (Math.PI / 180);
+      const lat1Rad = prev.lat * (Math.PI / 180);
+      const lat2Rad = lat * (Math.PI / 180);
+      const y = Math.sin(dLng) * Math.cos(lat2Rad);
+      const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) - Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLng);
+      const brng = (Math.atan2(y, x) * (180 / Math.PI) + 360) % 360;
+      
+      const distMeters = Math.hypot(
+        (lat - prev.lat) * 111139,
+        (lng - prev.lng) * 111139 * Math.cos(lat1Rad)
+      );
+      
+      if (distMeters >= 0.8) {
+        heading = brng;
+        lastHeadingRef.current = brng;
       } else {
         heading = lastHeadingRef.current;
       }
     } else {
-      lastHeadingRef.current = heading;
+      heading = lastHeadingRef.current;
     }
 
     lastPosRef.current = { lat, lng, time: Date.now() };
@@ -152,7 +188,7 @@ export const useWatchPosition = (onUpdate, options = {}) => {
     onUpdate({
       lat,
       lng,
-      heading: typeof heading === 'number' && !isNaN(heading) ? heading : 0,
+      heading: typeof heading === 'number' && !isNaN(heading) ? Math.round(heading * 10) / 10 : 0,
       speed: typeof speed === 'number' && !isNaN(speed) ? speed : 0,
       accuracy
     });

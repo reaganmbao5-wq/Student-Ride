@@ -1012,6 +1012,7 @@ class ConnectionManager:
         self.active_connections: Dict[str, List[WebSocket]] = {}
         self.driver_locations: Dict[str, Dict] = {}
         self.driver_last_active: Dict[str, float] = {}
+        self.driver_last_db_persist: Dict[str, float] = {}
         self.ride_connections: Dict[str, List[str]] = {}  # ride_id -> [user_ids]
         self.active_driver_rides: Dict[str, List[dict]] = {} # driver_id -> list of active ride dicts
 
@@ -1039,6 +1040,28 @@ class ConnectionManager:
             self.active_connections[user_id] = []
         self.active_connections[user_id].append(websocket)
         logger.info(f"User {user_id} connected via WebSocket. Total connections: {len(self.active_connections[user_id])}")
+
+        # Asynchronously rehydrate active rides if this user is a driver
+        async def check_and_hydrate_driver_rides():
+            try:
+                driver_doc = await db.drivers.find_one({"$or": [{"user_id": user_id}, {"id": user_id}]}, {"_id": 0})
+                if driver_doc:
+                    d_id = driver_doc.get("id")
+                    d_uid = driver_doc.get("user_id")
+                    query_ids = [qid for qid in [d_id, d_uid, user_id] if qid]
+                    rides_cursor = db.rides.find({
+                        "driver_id": {"$in": query_ids},
+                        "status": {"$in": get_active_ride_states()}
+                    }, {"_id": 0})
+                    active_rides = await rides_cursor.to_list(10)
+                    if active_rides:
+                        for qid in query_ids:
+                            self.active_driver_rides[qid] = active_rides
+                        logger.info(f"Rehydrated {len(active_rides)} active ride(s) for connected driver {user_id}")
+            except Exception as e:
+                logger.error(f"Error checking driver rides on connect: {e}")
+
+        asyncio.create_task(check_and_hydrate_driver_rides())
 
     def disconnect(self, websocket: WebSocket, user_id: str):
         if user_id in self.active_connections:
@@ -1097,53 +1120,88 @@ class ConnectionManager:
 
     async def update_driver_location(self, driver_id: str, location: dict):
         self.driver_locations[driver_id] = location
-        self.driver_last_active[driver_id] = time.time()
+        now = time.time()
+        self.driver_last_active[driver_id] = now
         
-        # 1. Non-blocking Async Background Task for MongoDB Persistence
-        async def persist_db():
-            try:
-                geo_location = {
-                    "type": "Point",
-                    "coordinates": [location["lng"], location["lat"]]
-                }
-                await db.driver_locations.update_one(
-                    {"driver_id": driver_id},
-                    {"$set": {
-                        "latitude": location["lat"],
-                        "longitude": location["lng"],
-                        "heading": location.get("heading", 0.0),
-                        "speed": location.get("speed", 0.0),
-                        "location": geo_location,
-                        "updated_at": datetime.now(timezone.utc)
-                    }},
-                    upsert=True
-                )
-                await db.drivers.update_one(
-                    {"$or": [{"user_id": driver_id}, {"id": driver_id}]},
-                    {"$set": {
-                        "current_location": location,
-                        "location": geo_location
-                    }}
-                )
-            except Exception as e:
-                logger.error(f"Error persisting driver location to DB: {e}")
+        # 1. Throttled Non-blocking Async Background Task for MongoDB Persistence (Every 5.0 seconds per driver)
+        if now - self.driver_last_db_persist.get(driver_id, 0.0) >= 5.0:
+            self.driver_last_db_persist[driver_id] = now
+            async def persist_db():
+                try:
+                    geo_location = {
+                        "type": "Point",
+                        "coordinates": [location["lng"], location["lat"]]
+                    }
+                    await db.driver_locations.update_one(
+                        {"driver_id": driver_id},
+                        {"$set": {
+                            "latitude": location["lat"],
+                            "longitude": location["lng"],
+                            "heading": location.get("heading", 0.0),
+                            "speed": location.get("speed", 0.0),
+                            "location": geo_location,
+                            "updated_at": datetime.now(timezone.utc)
+                        }},
+                        upsert=True
+                    )
+                    await db.drivers.update_one(
+                        {"$or": [{"user_id": driver_id}, {"id": driver_id}]},
+                        {"$set": {
+                            "current_location": location,
+                            "location": geo_location
+                        }}
+                    )
+                except Exception as e:
+                    logger.error(f"Error persisting driver location to DB: {e}")
 
-        asyncio.create_task(persist_db())
+            asyncio.create_task(persist_db())
 
         # 2. FAST IN-MEMORY BROADCAST (0 WAN Database Calls)
         cached_rides = self.active_driver_rides.get(driver_id, [])
-        for ride in cached_rides:
-            student_id = ride.get("student_id")
-            if student_id:
-                asyncio.create_task(self.send_personal_message({
-                    "type": "driver_location",
-                    "lat": location["lat"],
-                    "lng": location["lng"],
-                    "heading": location.get("heading", 0.0),
-                    "ride_id": ride["id"]
-                }, student_id))
+        if not cached_rides:
+            # Asynchronously rehydrate cache from DB if missing (e.g. after server restart)
+            async def rehydrate_and_broadcast():
+                try:
+                    driver_doc = await db.drivers.find_one({"$or": [{"user_id": driver_id}, {"id": driver_id}]}, {"_id": 0})
+                    if driver_doc:
+                        d_id = driver_doc.get("id")
+                        d_uid = driver_doc.get("user_id")
+                        query_ids = [qid for qid in [d_id, d_uid, driver_id] if qid]
+                        rides_cursor = db.rides.find({
+                            "driver_id": {"$in": query_ids},
+                            "status": {"$in": get_active_ride_states()}
+                        }, {"_id": 0})
+                        rides_found = await rides_cursor.to_list(10)
+                        if rides_found:
+                            for qid in query_ids:
+                                self.active_driver_rides[qid] = rides_found
+                            for ride in rides_found:
+                                student_id = ride.get("student_id")
+                                if student_id:
+                                    await self.send_personal_message({
+                                        "type": "driver_location",
+                                        "lat": location["lat"],
+                                        "lng": location["lng"],
+                                        "heading": location.get("heading", 0.0),
+                                        "ride_id": ride["id"]
+                                    }, student_id)
+                except Exception as e:
+                    logger.error(f"Error rehydrating active rides for driver {driver_id}: {e}")
 
-        # Broadcast back to the driver so their own map moves during simulation
+            asyncio.create_task(rehydrate_and_broadcast())
+        else:
+            for ride in cached_rides:
+                student_id = ride.get("student_id")
+                if student_id:
+                    asyncio.create_task(self.send_personal_message({
+                        "type": "driver_location",
+                        "lat": location["lat"],
+                        "lng": location["lng"],
+                        "heading": location.get("heading", 0.0),
+                        "ride_id": ride["id"]
+                    }, student_id))
+
+        # Broadcast back to the driver so their own map moves in real-time
         asyncio.create_task(self.send_personal_message({
             "type": "driver_location",
             "lat": location["lat"],
@@ -5278,26 +5336,8 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(None)):
                     last_loc_update = now
 
                     loc_payload = data.get("location", {})
-                    await manager.update_driver_location(user_id, loc_payload)
-                    
-                    # If driver has active ride, broadcast to student
-                    driver = await db.drivers.find_one({"user_id": user_id}, {"_id": 0})
-                    if driver:
-                        active_ride = await db.rides.find_one({
-                            "driver_id": driver["id"],
-                            "status": {"$in": get_active_ride_states()}
-                        }, {"_id": 0})
-                        
-                        if active_ride:
-                            background_tasks.add_task(manager.send_personal_message, {
-                                "ride_mode": active_ride.get("ride_mode", RideMode.PRIVATE.value),
-                                "type": "driver_location",
-                                "location": loc_payload,
-                                "lat": loc_payload.get("lat"),
-                                "lng": loc_payload.get("lng"),
-                                "heading": loc_payload.get("heading", 0.0),
-                                "ride_id": active_ride["id"]
-                            }, active_ride["student_id"])
+                    if loc_payload and "lat" in loc_payload and "lng" in loc_payload:
+                        await manager.update_driver_location(user_id, loc_payload)
                 
                 elif data.get("type") == "request_hard_recalculation":
                     logger.info(f"HARD RECALCULATION requested by driver {user_id}")
@@ -5308,14 +5348,14 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(None)):
                             if trip:
                                 trip = await inject_etas_into_trip(trip, driver.get("current_location", {}))
                                 if "route_queue" in trip:
-                                    background_tasks.add_task(manager.send_personal_message, {
+                                    asyncio.create_task(manager.send_personal_message({
                                         "type": "route_queue_update",
                                         "queue": trip["route_queue"]
-                                    }, user_id)
+                                    }, user_id))
                                 
                                 passenger_briefings = trip.get("passenger_briefings", {})
                                 for s_id, briefing in passenger_briefings.items():
-                                    background_tasks.add_task(manager.send_personal_message, {
+                                    asyncio.create_task(manager.send_personal_message({
                                         "type": "passenger_briefing_update",
                                         "ride_id": briefing["ride_id"],
                                         "briefing_text": briefing["briefing_text"],
@@ -5329,7 +5369,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(None)):
                                         "route_geometry": briefing["route_geometry"],
                                         "eta_seconds": briefing.get("eta_seconds"),
                                         "eta_text": briefing.get("eta_text")
-                                    }, s_id)
+                                    }, s_id))
                         except Exception as e:
                             logger.error(f"Failed to hard recalculate queue for driver {user_id}: {e}")
                 

@@ -70,6 +70,8 @@ export const haptics = {
 
   // Subtle UI navigation taps
   tap: () => safeVibrate(15),
+  selection: () => safeVibrate(10),
+  buttonClick: () => safeVibrate(15),
   primaryButton: () => safeVibrate([15, 20, 15]),
   swipeProgress: () => safeVibrate([10, 15, 10]),
   swipeSnap: () => safeVibrate([20, 30, 20]),

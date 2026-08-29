@@ -120,15 +120,19 @@ const DriverDashboard = () => {
     useCallback((location) => {
       setCurrentLocation(location);
       if (isOnline) {
-        sendLocationUpdate(location.lat, location.lng, location.heading, location.speed);
-        api.post('/drivers/location', {
-          latitude: location.lat,
-          longitude: location.lng,
-          heading: location.heading || 0,
-          speed: location.speed || 0
-        }).catch(console.error);
+        if (isConnected) {
+          sendLocationUpdate(location.lat, location.lng, location.heading, location.speed);
+        } else {
+          // Fallback to HTTP POST only if WebSocket is disconnected
+          api.post('/drivers/location', {
+            latitude: location.lat,
+            longitude: location.lng,
+            heading: location.heading || 0,
+            speed: location.speed || 0
+          }).catch(console.error);
+        }
       }
-    }, [isOnline, sendLocationUpdate, api]),
+    }, [isOnline, isConnected, sendLocationUpdate, api]),
     { enableHighAccuracy: true }
   );
 
