@@ -24,7 +24,7 @@ export const getOnlineWebUrl = (path = '') => {
   }
 
   // Deployed production website fallback URL
-  return `https://jaey-ride.pages.dev${path}`;
+  return `https://jaeyride.site${path}`;
 };
 
 export const getBackendUrl = (path = '') => {
