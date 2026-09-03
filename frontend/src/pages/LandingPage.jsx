@@ -139,6 +139,22 @@ const LandingPage = () => {
       const isNative = Capacitor.isNativePlatform();
       setIsAndroidWeb(isAndroid && !isNative);
     }
+
+    // Pre-warm memory cache for all theme and map preview cards for 0ms instant display
+    const previewAssets = [
+      '/theme_previews/dark.png',
+      '/theme_previews/light.png',
+      '/theme_previews/system.png',
+      '/theme_previews/map_night.png',
+      '/theme_previews/map_day.png',
+      '/theme_previews/map_auto.png',
+      '/assets/images/jride_text_white.png',
+      '/assets/images/jride_text_black.png'
+    ];
+    previewAssets.forEach((url) => {
+      const img = new Image();
+      img.src = url;
+    });
   }, []);
 
   const handleDownloadApk = () => {
@@ -874,18 +890,18 @@ const LandingPage = () => {
               initial="enter"
               animate="center"
               exit="exit"
-              className="w-full max-w-xl md:max-w-3xl lg:max-w-5xl xl:max-w-6xl mx-auto flex flex-col justify-between h-full px-6 sm:px-12 md:px-16 pt-2 pb-6"
+              className="w-full max-w-xl md:max-w-2xl lg:max-w-3xl xl:max-w-4xl mx-auto flex flex-col justify-between h-full px-4 sm:px-8 md:px-12 pt-1 sm:pt-2 pb-4 sm:pb-6 overflow-hidden"
             >
               {/* Header */}
-              <div className="text-center space-y-2">
-                <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white">
+              <div className="text-center space-y-1 sm:space-y-1.5 flex-shrink-0">
+                <h1 className="text-xl sm:text-3xl md:text-4xl font-bold tracking-tight text-white">
                   Now, let's customize your app experience
                 </h1>
-                <p className="text-xs sm:text-base md:text-lg text-zinc-400">It will only take a minute</p>
+                <p className="text-xs sm:text-sm md:text-base text-zinc-400">It will only take a minute</p>
               </div>
 
               {/* Dynamic Center Customization Content */}
-              <div className="my-auto py-2 flex flex-col items-center justify-center w-full">
+              <div className="my-auto py-1 flex flex-col items-center justify-center w-full flex-shrink min-h-0">
                 
                 {/* 4A: App Theme Selection with 21st.dev Liquid Gallery */}
                 {customSubStep === 'theme' && (
@@ -906,32 +922,32 @@ const LandingPage = () => {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="space-y-8 w-full"
+                    className="space-y-4 sm:space-y-6 w-full max-w-xl mx-auto"
                   >
-                    <p className="text-sm sm:text-lg text-center font-bold uppercase tracking-widest text-zinc-400 mb-4">
+                    <p className="text-xs sm:text-sm text-center font-bold uppercase tracking-widest text-zinc-400 mb-2">
                       Choose Your Accent Color
                     </p>
 
-                    <div className="grid grid-cols-4 gap-4 sm:gap-8 max-w-2xl mx-auto">
+                    <div className="grid grid-cols-4 gap-3 sm:gap-6 max-w-xl mx-auto">
                       {Object.entries(ACCENT_COLORS).map(([key, item]) => {
                         const isSelected = accentColor === key || (key === 'default' && accentColor === 'blue');
                         return (
                           <button
                             key={key}
                             onClick={() => setAccentColor(key)}
-                            className={`flex flex-col items-center gap-3 p-4 sm:p-8 rounded-3xl border transition-all ${
+                            className={`flex flex-col items-center gap-2 sm:gap-3 p-3 sm:p-5 rounded-2xl sm:rounded-3xl border transition-all ${
                               isSelected
                                 ? 'bg-zinc-800 border-white/60 shadow-2xl scale-105 ring-2 ring-white/30'
                                 : 'bg-zinc-900/70 border-zinc-800/80 hover:bg-zinc-900'
                             }`}
                           >
                             <div
-                              className="w-12 h-12 sm:w-20 sm:h-20 rounded-full shadow-2xl flex items-center justify-center text-white"
+                              className="w-10 h-10 sm:w-16 sm:h-16 rounded-full shadow-2xl flex items-center justify-center text-white"
                               style={{ backgroundColor: item.hex }}
                             >
-                              {isSelected && <Check className="w-7 h-7 sm:w-10 sm:h-10 stroke-[3]" />}
+                              {isSelected && <Check className="w-5 h-5 sm:w-8 sm:h-8 stroke-[3]" />}
                             </div>
-                            <span className="text-xs sm:text-base md:text-lg font-bold text-zinc-300 truncate w-full text-center">
+                            <span className="text-xs sm:text-sm font-bold text-zinc-300 truncate w-full text-center">
                               {item.label.split(' ')[0]}
                             </span>
                           </button>
@@ -956,14 +972,14 @@ const LandingPage = () => {
               </div>
 
               {/* Bottom Actions with Clean "Customize Later" Text (No Stars) */}
-              <div className="space-y-4 pt-2">
-                <p className="text-center text-xs sm:text-base text-zinc-400 font-medium pb-0.5">
+              <div className="space-y-2 sm:space-y-3 pt-1 sm:pt-2 flex-shrink-0">
+                <p className="text-center text-xs sm:text-sm text-zinc-400 font-medium">
                   You can always customize this later in settings
                 </p>
 
                 <button
                   onClick={goToNextStep}
-                  className="w-full py-4 sm:py-5 md:py-6 px-10 rounded-2xl font-bold text-lg sm:text-xl md:text-2xl text-white active:scale-[0.98] transition-all shadow-2xl cursor-pointer"
+                  className="w-full py-3.5 sm:py-4 md:py-4.5 px-8 rounded-2xl font-bold text-base sm:text-lg md:text-xl text-white active:scale-[0.98] transition-all shadow-2xl cursor-pointer"
                   style={{
                     backgroundColor: activeAccentHex,
                     boxShadow: `0 14px 35px -5px ${activeAccentHex}60`
@@ -972,10 +988,10 @@ const LandingPage = () => {
                   Continue
                 </button>
 
-                <div className="text-center">
+                <div className="text-center pb-1">
                   <button
                     onClick={() => navigate('/auth?mode=login')}
-                    className="text-sm sm:text-base md:text-lg font-medium hover:underline text-zinc-400 hover:text-white transition-colors"
+                    className="text-xs sm:text-sm md:text-base font-medium hover:underline text-zinc-400 hover:text-white transition-colors"
                   >
                     Already have an account? <span className="font-bold underline" style={{ color: activeAccentHex }}>Sign in</span>
                   </button>

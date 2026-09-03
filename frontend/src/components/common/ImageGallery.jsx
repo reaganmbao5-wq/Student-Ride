@@ -115,15 +115,15 @@ export function ImageGallery({
     <div className={`relative flex flex-col items-center justify-center w-full select-none ${className}`}>
       {/* Top Absolute Solid White Badge */}
       {items[opened] && (
-        <div className="mb-4 text-center">
-          <span className="inline-block bg-white text-zinc-950 font-black text-xs sm:text-sm md:text-base lg:text-lg px-6 sm:px-8 py-2 sm:py-2.5 rounded-full shadow-2xl tracking-wider uppercase border-2 border-white">
+        <div className="mb-2 sm:mb-3 text-center">
+          <span className="inline-block bg-white text-zinc-950 font-black text-xs sm:text-sm md:text-base px-5 sm:px-7 py-1.5 sm:py-2 rounded-full shadow-2xl tracking-wider uppercase border-2 border-white">
             {items[opened].title}
           </span>
         </div>
       )}
 
-      {/* Enlarged Fluid Responsive Gallery Card */}
-      <div className="relative w-[310px] h-[340px] sm:w-[400px] sm:h-[440px] md:w-[480px] md:h-[520px] lg:w-[560px] lg:h-[580px] xl:w-[620px] xl:h-[620px] max-w-[95vw] overflow-hidden rounded-[28px] border border-white/20 shadow-[0_25px_70px_rgba(0,0,0,0.8)] bg-zinc-950">
+      {/* Optimized Responsive Gallery Card that fits perfectly on all desktop and mobile viewports */}
+      <div className="relative w-[280px] h-[300px] xs:w-[310px] xs:h-[330px] sm:w-[350px] sm:h-[370px] md:w-[370px] md:h-[390px] lg:w-[390px] lg:h-[410px] xl:w-[410px] xl:h-[420px] max-h-[46vh] max-w-[92vw] overflow-hidden rounded-[24px] sm:rounded-[28px] border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.8)] bg-zinc-950">
         {gsapReady ? (
           items.map((image, i) => (
             <div
@@ -144,12 +144,14 @@ export function ImageGallery({
             </div>
           ))
         ) : (
-          /* Fallback static preview */
+          /* Fallback static preview with zero delay */
           <div className="w-full h-full">
             {items[opened] && (
               <img
                 src={items[opened].url}
                 alt={items[opened].title}
+                loading="eager"
+                decoding="sync"
                 className="w-full h-full object-cover object-top"
               />
             )}
@@ -163,17 +165,17 @@ export function ImageGallery({
       </div>
 
       {/* Side-by-Side Navigation Arrows Centered Below Image */}
-      <div className="flex items-center justify-center gap-8 sm:gap-12 pt-5 z-[101]">
+      <div className="flex items-center justify-center gap-6 sm:gap-10 pt-3 sm:pt-4 z-[101]">
         <button
           type="button"
-          className="flex h-12 w-12 sm:h-16 sm:w-16 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-zinc-900/90 text-white backdrop-blur-md shadow-2xl outline-none transition-all duration-200 hover:scale-110 hover:bg-zinc-800 active:scale-95 disabled:opacity-40"
+          className="flex h-11 w-11 sm:h-13 sm:w-13 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-zinc-900/90 text-white backdrop-blur-md shadow-2xl outline-none transition-all duration-200 hover:scale-110 hover:bg-zinc-800 active:scale-95 disabled:opacity-40"
           onClick={prev}
           disabled={disabled}
           aria-label="Previous Preview"
         >
           <svg
-            width="26"
-            height="26"
+            width="22"
+            height="22"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -187,14 +189,14 @@ export function ImageGallery({
 
         <button
           type="button"
-          className="flex h-12 w-12 sm:h-16 sm:w-16 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-zinc-900/90 text-white backdrop-blur-md shadow-2xl outline-none transition-all duration-200 hover:scale-110 hover:bg-zinc-800 active:scale-95 disabled:opacity-40"
+          className="flex h-11 w-11 sm:h-13 sm:w-13 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-zinc-900/90 text-white backdrop-blur-md shadow-2xl outline-none transition-all duration-200 hover:scale-110 hover:bg-zinc-800 active:scale-95 disabled:opacity-40"
           onClick={next}
           disabled={disabled}
           aria-label="Next Preview"
         >
           <svg
-            width="26"
-            height="26"
+            width="22"
+            height="22"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -224,6 +226,7 @@ function GalleryImage({ url, title, open, inPlace, id, onInPlace, total }) {
 
   const bigSize = circleRadius * scale;
   const overlap = 0;
+  const clipKey = (title || 'img').replace(/[^a-zA-Z0-9]/g, '_') + '_' + id;
 
   const getPosSmall = () => ({
     cx: width / 2 - (total * (circleRadius * 2 + gap) - gap) / 2 + id * (circleRadius * 2 + gap),
@@ -300,14 +303,14 @@ function GalleryImage({ url, title, open, inPlace, id, onInPlace, total }) {
       className="h-full w-full"
     >
       <defs>
-        <clipPath id={`${id}_circleClip`}>
+        <clipPath id={`${clipKey}_circleClip`}>
           <circle className="clip" cx="0" cy="0" r={circleRadius} ref={clip}></circle>
         </clipPath>
-        <clipPath id={`${id}_squareClip`}>
+        <clipPath id={`${clipKey}_squareClip`}>
           <rect className="clip" width={width} height={height}></rect>
         </clipPath>
       </defs>
-      <g clipPath={`url(#${id}${inPlace ? "_squareClip" : "_circleClip"})`}>
+      <g clipPath={`url(#${clipKey}${inPlace ? "_squareClip" : "_circleClip"})`}>
         <image width={width} height={height} href={url} className="pointer-events-none" preserveAspectRatio="xMidYMid slice"></image>
       </g>
     </svg>
@@ -334,10 +337,11 @@ function Tabs({ images, selectedIndex, onSelect, accentColor }) {
     >
       {images.map((image, i) => {
         const isSelected = selectedIndex === i;
+        const tabClipId = `tab_${(image.title || 'tab').replace(/[^a-zA-Z0-9]/g, '_')}_${i}_clip`;
         return (
           <g key={image.url || i} className="pointer-events-auto">
             <defs>
-              <clipPath id={`tab_${i}_clip`}>
+              <clipPath id={tabClipId}>
                 <circle cx={getPosX(i)} cy={getPosY()} r={circleRadius} />
               </clipPath>
             </defs>
@@ -347,7 +351,7 @@ function Tabs({ images, selectedIndex, onSelect, accentColor }) {
               width={circleRadius * 2}
               height={circleRadius * 2}
               href={image.url}
-              clipPath={`url(#tab_${i}_clip)`}
+              clipPath={`url(#${tabClipId})`}
               className="pointer-events-none"
               preserveAspectRatio="xMidYMid slice"
             />
