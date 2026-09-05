@@ -5663,7 +5663,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 @api_router.post("/upload")
-async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+async def upload_file(file: UploadFile = File(...), user: Optional[dict] = Depends(get_optional_current_user)):
     """Handles image uploads with automatic WebP compression, EXIF auto-rotation, and dimension optimization."""
     try:
         if not file.filename:
@@ -5699,14 +5699,15 @@ async def upload_file(file: UploadFile = File(...), user: dict = Depends(get_cur
         except Exception as img_err:
             logger.warning(f"PIL Compression fallback for {file.filename}: {img_err}")
 
+        user_id_val = user["id"] if user and "id" in user else "unauthenticated"
         fs = AsyncIOMotorGridFSBucket(db)
         file_id = await fs.upload_from_stream(
             upload_filename,
             content,
-            metadata={"user_id": user["id"], "content_type": content_type}
+            metadata={"user_id": user_id_val, "content_type": content_type}
         )
         
-        backend_url = os.environ.get('BACKEND_URL', 'https://student-ride-backend-manual.onrender.com').rstrip('/')
+        backend_url = os.environ.get('BACKEND_URL', 'https://jaey-ride-backend.onrender.com').rstrip('/')
         doc_url = f"{backend_url}/api/documents/{str(file_id)}"
         
         return {"url": doc_url}
