@@ -1003,17 +1003,6 @@ const ProfilePage = () => {
           <div className="space-y-2">
             <div className="flex items-center justify-between px-2">
               <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Vehicle Details</p>
-              {(!driverProfile?.needs_setup && driverProfile?.plate_number) && (
-                <button
-                  onClick={() => {
-                    haptics.tap();
-                    navigate('/driver/register');
-                  }}
-                  className="text-xs font-bold text-foreground hover:underline flex items-center gap-1"
-                >
-                  Edit Vehicle <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              )}
             </div>
 
             {(!driverProfile || driverProfile.needs_setup || !driverProfile.plate_number || !driverProfile.vehicle_model) ? (
