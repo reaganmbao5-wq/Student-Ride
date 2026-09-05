@@ -61,14 +61,7 @@ const PWAInstallPrompt = () => {
     if (platform === 'android') {
       const backendUrl = getBackendUrl();
       const downloadUrl = `${backendUrl}/api/app/download-latest-apk`;
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.setAttribute('download', 'jaey-ride-latest.apk');
-      link.setAttribute('target', '_blank');
-      link.setAttribute('rel', 'noopener noreferrer');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      window.location.href = downloadUrl;
       return;
     }
 
