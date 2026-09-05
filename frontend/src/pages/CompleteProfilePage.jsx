@@ -115,10 +115,8 @@ export default function CompleteProfilePage() {
                 try { localStorage.setItem('mulu_user_cache', JSON.stringify(updatedUser)); } catch (e) {}
             }
 
-            toast.success('Welcome to J Ride! 🎉');
-
-            // Reload into the dashboard so AuthContext picks up the stored token
-            window.location.href = isDriver ? '/driver' : '/dashboard';
+            // Reload into driver setup or student dashboard so AuthContext picks up the stored token
+            window.location.href = isDriver ? '/driver/register' : '/dashboard';
         } catch (err) {
             showFriendlyError(err, 'Failed to update profile. Please try again.');
         } finally {
