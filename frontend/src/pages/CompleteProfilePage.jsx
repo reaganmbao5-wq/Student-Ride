@@ -55,14 +55,14 @@ export default function CompleteProfilePage() {
     const [programType, setProgramType] = useState('standard');
     const [loading, setLoading] = useState(false);
     const [agreedToTerms, setAgreedToTerms] = useState(false);
-    const token = state.token;
+    const token = state.token || localStorage.getItem('token');
 
-    // Redirect if someone lands here without Google state
+    // Redirect if someone lands here without Google state or token
     useEffect(() => {
-        if (!token || !email) {
+        if (!token) {
             navigate('/auth?mode=login');
         }
-    }, [token, email, navigate]);
+    }, [token, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -107,6 +107,12 @@ export default function CompleteProfilePage() {
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
                 throw new Error(err.detail || 'Failed to update profile');
+            }
+
+            const updatedUser = await res.json().catch(() => ({}));
+            if (token) localStorage.setItem('token', token);
+            if (updatedUser && updatedUser.id) {
+                try { localStorage.setItem('mulu_user_cache', JSON.stringify(updatedUser)); } catch (e) {}
             }
 
             toast.success('Welcome to J Ride! 🎉');

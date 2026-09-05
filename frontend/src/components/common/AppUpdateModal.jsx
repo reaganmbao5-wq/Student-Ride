@@ -27,9 +27,9 @@ export const AndroidRobotIcon = ({ className = "w-10 h-10", fill = "#3DDC84" }) 
   </svg>
 );
 
-// Fallback build metadata (Version 2.1.1, Build 12)
-const DEFAULT_APP_VERSION = "2.1.1";
-const DEFAULT_BUILD_CODE = 12;
+// Fallback build metadata (Version 2.1.2, Build 13)
+const DEFAULT_APP_VERSION = "2.1.2";
+const DEFAULT_BUILD_CODE = 13;
 
 export const AppUpdateModal = () => {
   const { accentColor, ACCENT_COLORS } = useTheme();

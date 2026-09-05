@@ -386,13 +386,22 @@ const LandingPage = () => {
   };
 
   // Google OAuth Auth Handlers
-  const handleGoogleSuccessBackend = async (idToken) => {
+  const handleGoogleSuccessBackend = async (credentials) => {
     setGoogleLoading(true);
     try {
+      const payload = typeof credentials === 'string'
+        ? { id_token: credentials }
+        : {
+            id_token: credentials?.idToken,
+            access_token: credentials?.accessToken,
+            email: credentials?.email,
+            name: credentials?.name
+          };
+
       const response = await fetch(`${BACKEND_URL}/api/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_token: idToken }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -433,24 +442,17 @@ const LandingPage = () => {
   const loginWithGoogleWeb = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       if (tokenResponse.credential) {
-        await handleGoogleSuccessBackend(tokenResponse.credential);
+        await handleGoogleSuccessBackend({ idToken: tokenResponse.credential });
       } else if (tokenResponse.access_token) {
         try {
           const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
             headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
           }).then(res => res.json());
 
-          navigate('/complete-profile', {
-            state: {
-              name: userInfo.name || `${firstName} ${lastName}`.trim(),
-              email: userInfo.email,
-              phone: phone,
-              token: tokenResponse.access_token,
-              gender: gender,
-              themeMode: themeMode,
-              accentColor: accentColor,
-              mapThemeMode: mapStylePreference
-            }
+          await handleGoogleSuccessBackend({
+            accessToken: tokenResponse.access_token,
+            email: userInfo.email,
+            name: userInfo.name || `${firstName} ${lastName}`.trim(),
           });
         } catch (e) {
           showFriendlyError(e, 'Failed to retrieve Google profile.');
@@ -462,17 +464,27 @@ const LandingPage = () => {
 
   const handleGoogleClick = async () => {
     if (Capacitor.isNativePlatform()) {
+      setGoogleLoading(true);
       try {
+        try {
+          await GoogleAuth.signOut();
+        } catch (e) {}
         const googleUser = await GoogleAuth.signIn();
         const idToken = googleUser?.authentication?.idToken || googleUser?.idToken;
-        if (idToken) {
-          await handleGoogleSuccessBackend(idToken);
+        const accessToken = googleUser?.authentication?.accessToken || googleUser?.accessToken;
+        const email = googleUser?.email || googleUser?.profile?.email;
+        const name = googleUser?.name || googleUser?.profile?.name;
+
+        if (idToken || accessToken || email) {
+          await handleGoogleSuccessBackend({ idToken, accessToken, email, name });
         } else {
-          throw new Error("No Google ID token received");
+          throw new Error("No Google credentials received from device");
         }
       } catch (err) {
         console.error("Native Google Auth error:", err);
         showFriendlyError(err, 'Native Google sign-in failed or was cancelled.');
+      } finally {
+        setGoogleLoading(false);
       }
     } else {
       loginWithGoogleWeb();

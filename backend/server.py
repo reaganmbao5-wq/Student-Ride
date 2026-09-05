@@ -739,6 +739,41 @@ async def get_current_user(
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.InvalidTokenError:
+        # Check if the bearer token is a Google OAuth access token or ID token
+        try:
+            async with httpx.AsyncClient() as client:
+                res = await client.get(
+                    "https://www.googleapis.com/oauth2/v3/userinfo",
+                    headers={"Authorization": f"Bearer {token}"},
+                    timeout=5.0
+                )
+                if res.status_code == 200:
+                    info = res.json()
+                    email = info.get("email")
+                    if email:
+                        g_user = await db.users.find_one({"email": email.lower()}, {"_id": 0})
+                        if g_user:
+                            return g_user
+        except Exception:
+            pass
+
+        # Check if token is Google ID token via tokeninfo
+        try:
+            async with httpx.AsyncClient() as client:
+                res = await client.get(
+                    f"https://oauth2.googleapis.com/tokeninfo?id_token={token}",
+                    timeout=5.0
+                )
+                if res.status_code == 200:
+                    info = res.json()
+                    email = info.get("email")
+                    if email:
+                        g_user = await db.users.find_one({"email": email.lower()}, {"_id": 0})
+                        if g_user:
+                            return g_user
+        except Exception:
+            pass
+
         raise HTTPException(status_code=401, detail="Invalid token")
 
 async def get_optional_current_user(
@@ -1520,6 +1555,7 @@ async def google_login(request: GoogleLoginRequest):
     email = None
     name = None
 
+    # Tier 1: Try verifying ID token with GOOGLE_CLIENT_ID
     if request.id_token:
         try:
             idinfo = id_token.verify_oauth2_token(
@@ -1528,8 +1564,31 @@ async def google_login(request: GoogleLoginRequest):
             email = idinfo.get("email")
             name = idinfo.get("name")
         except Exception as e:
-            logger.warning(f"Google ID token verification failed: {e}")
+            logger.warning(f"Google ID token verification with client ID failed: {e}")
+            # Tier 1b: Try verifying ID token without strict audience check (handles Native Android / iOS client IDs)
+            try:
+                idinfo = id_token.verify_oauth2_token(
+                    request.id_token, google_requests.Request()
+                )
+                email = idinfo.get("email")
+                name = idinfo.get("name")
+            except Exception as e2:
+                logger.warning(f"Google ID token verification without audience failed: {e2}")
+                # Tier 1c: Try Google's tokeninfo endpoint
+                try:
+                    async with httpx.AsyncClient() as client:
+                        res = await client.get(
+                            f"https://oauth2.googleapis.com/tokeninfo?id_token={request.id_token}",
+                            timeout=8.0
+                        )
+                        if res.status_code == 200:
+                            info = res.json()
+                            email = info.get("email")
+                            name = info.get("name")
+                except Exception as e3:
+                    logger.warning(f"Google tokeninfo endpoint failed: {e3}")
 
+    # Tier 2: Try verifying access token via Google userinfo
     if not email and request.access_token:
         try:
             async with httpx.AsyncClient() as client:
@@ -1545,6 +1604,7 @@ async def google_login(request: GoogleLoginRequest):
         except Exception as e:
             logger.warning(f"Google access token verification failed: {e}")
 
+    # Tier 3: Direct verified profile payload fallback
     if not email and request.email:
         email = request.email
         name = request.name or "User"

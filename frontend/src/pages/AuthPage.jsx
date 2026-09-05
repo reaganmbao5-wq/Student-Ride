@@ -269,15 +269,25 @@ const AuthPage = () => {
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse) => {
+  const handleGoogleSuccess = async (credentials) => {
     setLoading(true);
     try {
       const backendUrl = getBackendUrl();
+      const payload = typeof credentials === 'string'
+        ? { id_token: credentials }
+        : credentials?.credential
+        ? { id_token: credentials.credential }
+        : {
+            id_token: credentials?.idToken,
+            access_token: credentials?.accessToken,
+            email: credentials?.email,
+            name: credentials?.name
+          };
 
       const response = await fetch(`${backendUrl}/api/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_token: credentialResponse.credential }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json().catch(() => ({}));
@@ -385,10 +395,14 @@ const AuthPage = () => {
       try {
         const response = await GoogleAuth.signIn();
         const idToken = response?.authentication?.idToken || response?.idToken;
-        if (idToken) {
-          handleGoogleSuccess({ credential: idToken });
+        const accessToken = response?.authentication?.accessToken || response?.accessToken;
+        const email = response?.email || response?.profile?.email;
+        const name = response?.name || response?.profile?.name;
+
+        if (idToken || accessToken || email) {
+          handleGoogleSuccess({ idToken, accessToken, email, name });
         } else {
-          throw new Error("No ID token returned by Google");
+          throw new Error("No credentials returned by Google");
         }
       } catch (error) {
         console.error('Native Google Auth Error:', error);
