@@ -45,6 +45,7 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from typing import List, Optional, Dict, Any
 import requests
+import httpx
 import math
 import json
 
@@ -5792,8 +5793,115 @@ async def update_bug_report_status(
     return {"status": "updated", "id": report_id, "new_status": new_status}
 
 # ============================================================================
-# APP RELEASES & IN-APP UPDATER (OTA) ENDPOINTS
+# APP RELEASES & IN-APP UPDATER (OTA) ENDPOINTS (3-TIER RESILIENT ARCHITECTURE)
 # ============================================================================
+
+GITHUB_REPO = os.environ.get("GITHUB_REPO", "reaganmbao5-wq/Student-Ride")
+GITHUB_TOKEN = os.environ.get("GITHUB_RELEASE_TOKEN")
+
+DOWNLOADS_DIR = Path(__file__).resolve().parent / "downloads"
+DOWNLOADS_DIR.mkdir(parents=True, exist_ok=True)
+
+async def get_github_asset_download_url(asset_id: str) -> Optional[str]:
+    """
+    Fetches the pre-signed AWS S3 CDN redirect URL from GitHub API for a release asset.
+    """
+    token = GITHUB_TOKEN or os.environ.get("GITHUB_RELEASE_TOKEN")
+    repo = GITHUB_REPO or os.environ.get("GITHUB_REPO", "reaganmbao5-wq/Student-Ride")
+    if not token or not asset_id:
+        return None
+        
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/octet-stream",
+        "X-GitHub-Api-Version": "2022-11-28"
+    }
+    try:
+        async with httpx.AsyncClient(follow_redirects=False, timeout=15.0) as client:
+            res = await client.get(
+                f"https://api.github.com/repos/{repo}/releases/assets/{asset_id}",
+                headers=headers
+            )
+            if res.status_code in (302, 307):
+                return res.headers.get("Location")
+    except Exception as e:
+        logger.warning(f"Error resolving GitHub asset S3 redirect: {e}")
+    return None
+
+async def upload_asset_to_github(file_content: bytes, filename: str, tag: str, notes: str):
+    """
+    Creates or updates a GitHub Release and uploads the APK binary asset.
+    Returns: (github_release_id, github_asset_id, browser_download_url)
+    """
+    token = GITHUB_TOKEN or os.environ.get("GITHUB_RELEASE_TOKEN")
+    repo = GITHUB_REPO or os.environ.get("GITHUB_REPO", "reaganmbao5-wq/Student-Ride")
+    if not token:
+        return None, None, None
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28"
+    }
+
+    async with httpx.AsyncClient(timeout=180.0) as client:
+        # 1. Check if release tag already exists
+        release_res = await client.get(
+            f"https://api.github.com/repos/{repo}/releases/tags/{tag}",
+            headers=headers
+        )
+        
+        if release_res.status_code == 200:
+            release_data = release_res.json()
+            release_id = release_data["id"]
+            # Delete older asset with same name if it exists to avoid collision
+            for asset in release_data.get("assets", []):
+                if asset["name"] == filename:
+                    try:
+                        await client.delete(
+                            f"https://api.github.com/repos/{repo}/releases/assets/{asset['id']}",
+                            headers=headers
+                        )
+                    except Exception:
+                        pass
+        else:
+            # Create new release
+            create_res = await client.post(
+                f"https://api.github.com/repos/{repo}/releases",
+                headers=headers,
+                json={
+                    "tag_name": tag,
+                    "name": f"Jaey Ride {tag}",
+                    "body": notes,
+                    "draft": False,
+                    "prerelease": False
+                }
+            )
+            if create_res.status_code not in (200, 201):
+                logger.error(f"GitHub Release creation failed: {create_res.text}")
+                raise HTTPException(
+                    status_code=500, 
+                    detail=f"GitHub Release creation failed: {create_res.text}"
+                )
+            release_data = create_res.json()
+            release_id = release_data["id"]
+
+        # 2. Upload APK binary to GitHub Release Assets
+        upload_url = f"https://uploads.github.com/repos/{repo}/releases/{release_id}/assets?name={filename}"
+        upload_headers = {
+            **headers,
+            "Content-Type": "application/vnd.android.package-archive"
+        }
+        asset_res = await client.post(upload_url, headers=upload_headers, content=file_content)
+        if asset_res.status_code not in (200, 201):
+            logger.error(f"GitHub Asset upload failed: {asset_res.text}")
+            raise HTTPException(
+                status_code=500, 
+                detail=f"GitHub Asset upload failed: {asset_res.text}"
+            )
+            
+        asset_data = asset_res.json()
+        return str(release_id), str(asset_data["id"]), asset_data.get("browser_download_url")
 
 @api_router.get("/app/version-check")
 async def get_app_version_info():
@@ -5802,10 +5910,9 @@ async def get_app_version_info():
     """
     latest_release = await db.app_releases.find_one({}, sort=[("version_code", -1)], projection={"_id": 0})
     if not latest_release:
-        # Default release metadata
         return {
-            "latest_version": "2.1.0",
-            "version_code": 1,
+            "latest_version": "2.1.2",
+            "version_code": 13,
             "min_required_version": "2.0.0",
             "force_update": False,
             "download_url": "/api/app/download-latest-apk",
@@ -5816,57 +5923,67 @@ async def get_app_version_info():
     return latest_release
 
 @api_router.get("/app/download-latest-apk")
+@api_router.get("/download/android")
 async def download_latest_apk():
     """
-    Streams the latest uploaded APK binary file from GridFS with proper MIME headers.
+    Resilient 3-Tier APK Delivery:
+    Tier 1: Direct stream from server local storage.
+    Tier 2: Pre-signed redirect to GitHub Releases AWS S3 CDN.
+    Tier 3: Legacy GridFS fallback.
     """
+    from starlette.responses import FileResponse
+
+    # ── TIER 1: Check Local Disk Storage
+    local_candidates = [
+        DOWNLOADS_DIR / "jaey-ride.apk",
+        Path("jaey-ride.apk"),
+        Path("JRide-release-v2.1.2.apk"),
+        Path("app-debug-885a0b1.apk"),
+        Path(__file__).resolve().parent.parent / "JRide-release-v2.1.2.apk",
+        Path(__file__).resolve().parent.parent / "mulungushi-rides-ONLINE.apk"
+    ]
+    local_file = next((p for p in local_candidates if p.exists()), None)
+    if local_file:
+        return FileResponse(
+            path=str(local_file),
+            filename="jaey-ride-latest.apk",
+            media_type="application/vnd.android.package-archive",
+            headers={"Content-Disposition": 'attachment; filename="jaey-ride-latest.apk"'}
+        )
+
+    # ── TIER 2: GitHub Releases Pre-Signed Redirect (AWS S3 CDN)
     latest_release = await db.app_releases.find_one({}, sort=[("version_code", -1)])
-    if not latest_release or "file_id" not in latest_release:
-        # Check local disk fallback if present
-        candidates = [
-            Path("app-debug-885a0b1.apk"),
-            Path(__file__).resolve().parent.parent / "app-debug-885a0b1.apk",
-            Path(__file__).resolve().parent.parent / "mulungushi-rides-ONLINE.apk",
-            Path(__file__).resolve().parent.parent / "frontend" / "android" / "app" / "build" / "outputs" / "apk" / "debug" / "app-debug.apk"
-        ]
-        local_apk = next((p for p in candidates if p.exists()), None)
-        if local_apk:
-            def iterfile():
-                with open(local_apk, mode="rb") as file_like:
-                    while chunk := file_like.read(64 * 1024):
-                        yield chunk
+    if latest_release and latest_release.get("github_asset_id"):
+        presigned_s3_url = await get_github_asset_download_url(latest_release["github_asset_id"])
+        if presigned_s3_url:
+            return RedirectResponse(url=presigned_s3_url, status_code=302)
+
+    # ── TIER 3: Legacy GridFS Fallback
+    if latest_release and "file_id" in latest_release:
+        try:
+            fs = AsyncIOMotorGridFSBucket(db, bucket_name="app_releases")
+            grid_out = await fs.open_download_stream(ObjectId(latest_release["file_id"]))
+            
+            async def stream_gridfs():
+                while True:
+                    chunk = await grid_out.readchunk()
+                    if not chunk:
+                        break
+                    yield chunk
+
+            filename = f"jaey-ride-v{latest_release.get('latest_version', 'latest')}.apk"
             return StreamingResponse(
-                iterfile(),
+                stream_gridfs(),
                 media_type="application/vnd.android.package-archive",
                 headers={
-                    "Content-Disposition": 'attachment; filename="jaey-ride-latest.apk"',
-                    "Content-Length": str(local_apk.stat().st_size)
+                    "Content-Disposition": f'attachment; filename="{filename}"',
+                    "Content-Length": str(latest_release.get("file_size_bytes", grid_out.length))
                 }
             )
-        raise HTTPException(status_code=404, detail="No APK build has been uploaded yet.")
+        except Exception as e:
+            logger.warning(f"GridFS fallback error: {e}")
 
-    fs = AsyncIOMotorGridFSBucket(db, bucket_name="app_releases")
-    try:
-        grid_out = await fs.open_download_stream(ObjectId(latest_release["file_id"]))
-    except Exception as e:
-        raise HTTPException(status_code=404, detail="Uploaded APK binary not found in storage.")
-
-    async def stream_gridfs():
-        while True:
-            chunk = await grid_out.readchunk()
-            if not chunk:
-                break
-            yield chunk
-
-    filename = f"jaey-ride-v{latest_release.get('latest_version', 'latest')}.apk"
-    return StreamingResponse(
-        stream_gridfs(),
-        media_type="application/vnd.android.package-archive",
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}"',
-            "Content-Length": str(latest_release.get("file_size_bytes", grid_out.length))
-        }
-    )
+    raise HTTPException(status_code=404, detail="No APK build has been uploaded yet.")
 
 @api_router.post("/admin/app-releases/upload")
 async def upload_new_apk_release(
@@ -5879,26 +5996,37 @@ async def upload_new_apk_release(
     admin: dict = Depends(require_admin)
 ):
     """
-    Allows Admins to upload a new APK binary and publish an OTA update release.
+    Publishes a new release to GitHub Releases, warms local disk storage, and saves lightweight metadata in MongoDB.
     """
     if not file.filename.endswith((".apk", ".bin")):
         raise HTTPException(status_code=400, detail="Only .apk files are supported.")
 
-    fs = AsyncIOMotorGridFSBucket(db, bucket_name="app_releases")
     content = await file.read()
     file_size = len(content)
+    clean_filename = f"jaey-ride-v{version_name}.apk"
 
-    file_id = await fs.upload_from_stream(
-        file.filename,
-        content,
-        metadata={
-            "version_name": version_name,
-            "version_code": version_code,
-            "uploaded_by": admin["id"],
-            "content_type": "application/vnd.android.package-archive"
-        }
-    )
+    # 1. Warm local disk cache immediately
+    try:
+        local_target = DOWNLOADS_DIR / "jaey-ride.apk"
+        with open(local_target, "wb") as f:
+            f.write(content)
+    except Exception as e:
+        logger.warning(f"Warning saving local APK disk cache: {e}")
 
+    # 2. Upload to GitHub Releases Assets
+    tag = f"v{version_name}"
+    github_rel_id, github_asset_id, browser_url = None, None, None
+    try:
+        github_rel_id, github_asset_id, browser_url = await upload_asset_to_github(
+            file_content=content,
+            filename=clean_filename,
+            tag=tag,
+            notes=release_notes
+        )
+    except Exception as e:
+        logger.warning(f"GitHub release upload warning: {e}")
+
+    # 3. Store lightweight metadata in MongoDB (Zero binary blob in DB!)
     release_doc = {
         "id": str(uuid.uuid4()),
         "latest_version": version_name,
@@ -5906,10 +6034,12 @@ async def upload_new_apk_release(
         "min_required_version": min_required_version,
         "force_update": force_update,
         "release_notes": release_notes,
-        "file_id": str(file_id),
-        "filename": file.filename,
+        "filename": clean_filename,
         "file_size_bytes": file_size,
         "download_url": "/api/app/download-latest-apk",
+        "github_release_id": github_rel_id,
+        "github_asset_id": github_asset_id,
+        "browser_download_url": browser_url,
         "published_at": datetime.now(timezone.utc).isoformat(),
         "uploaded_by": admin["id"]
     }
@@ -5918,6 +6048,7 @@ async def upload_new_apk_release(
     return {
         "status": "published",
         "message": f"Release v{version_name} published successfully!",
+        "storage": "github_releases" if github_asset_id else "local_disk",
         "release": {k: v for k, v in release_doc.items() if k != "_id"}
     }
 
