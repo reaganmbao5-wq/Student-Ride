@@ -734,10 +734,17 @@ const AuthPage = () => {
                   <p className="text-[11px] text-zinc-500 mt-1">Clear facial photo for passenger verification</p>
                 </div>
 
-                <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider">Vehicle Details</p>
+                <div className="pt-2 border-t border-zinc-800/80">
+                  <h3 className="text-base sm:text-lg font-bold text-white tracking-tight mb-0.5">
+                    Vehicle Details
+                  </h3>
+                  <p className="text-xs text-zinc-400 mb-3 font-normal">
+                    Configure your car capacity and vehicle information
+                  </p>
+                </div>
 
                 {/* Mandatory Vehicle Passenger Capacity Selector */}
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   <label className="block text-xs text-zinc-400 font-semibold uppercase tracking-wider">Passenger Capacity *</label>
                   <div className="grid grid-cols-6 gap-1.5">
                     {[1, 2, 3, 4, 5, 6].map((cap) => (

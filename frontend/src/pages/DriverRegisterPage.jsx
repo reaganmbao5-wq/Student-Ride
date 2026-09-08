@@ -216,9 +216,18 @@ const DriverRegisterPage = () => {
               <p className="text-[11px] text-muted-foreground/60 mt-1">Clear facial photo for passenger verification</p>
             </div>
 
+            <div className="pt-2 border-t border-border mt-3 mb-1">
+              <h3 className="text-base font-bold text-foreground mb-0.5">
+                Vehicle Details
+              </h3>
+              <p className="text-xs text-muted-foreground/60 mb-3 font-normal">
+                Configure your vehicle passenger capacity and car details
+              </p>
+            </div>
+
             {/* Mandatory Passenger Capacity Selector */}
             <div>
-              <label className="block text-sm text-muted-foreground/60 mb-2">Passenger Capacity *</label>
+              <label className="block text-xs uppercase tracking-wider text-muted-foreground/80 font-semibold mb-2">Passenger Capacity *</label>
               <div className="grid grid-cols-6 gap-1.5">
                 {[1, 2, 3, 4, 5, 6].map((cap) => (
                   <button

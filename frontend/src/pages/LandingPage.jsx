@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Mail, Check } from 'lucide-react';
+import { ArrowLeft, Mail, Check, Share, PlusSquare } from 'lucide-react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { GoogleAuth } from '@daniele-rolli/capacitor-google-auth';
 import { Capacitor } from '@capacitor/core';
@@ -13,6 +13,13 @@ import { getOnlineWebUrl, openExternalUrl, getBackendUrl } from '../utils/urlHel
 import { showFriendlyError } from '../utils/errorHandler';
 import { ThemeToggle } from '../components/ui/theme-toggle';
 import { AndroidRobotIcon } from '../components/common/AppUpdateModal';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';
+
+const AppleIcon = ({ className = "w-5 h-5" }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.61-.75 1.04-1.8 0.92-2.85-.9.04-2 .6-2.65 1.35-.58.66-1.09 1.73-.95 2.76 1.01.08 2.05-.51 2.68-1.26z" />
+  </svg>
+);
 
 const BACKEND_URL = getBackendUrl();
 
@@ -131,13 +138,18 @@ const LandingPage = () => {
   const [gender, setGender] = useState(() => localStorage.getItem('onboarding_gender') || 'male'); // 'male' | 'female'
   const [mapStylePreference, setMapStylePreference] = useState(() => localStorage.getItem('map_theme_mode') || 'auto'); // 'day' | 'night' | 'auto'
   const [isAndroidWeb, setIsAndroidWeb] = useState(false);
+  const [isIOSWeb, setIsIOSWeb] = useState(false);
+  const [showIOSModal, setShowIOSModal] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const ua = navigator.userAgent.toLowerCase();
       const isAndroid = /android/i.test(ua);
+      const isIOS = /iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
       const isNative = Capacitor.isNativePlatform();
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone || isNative;
       setIsAndroidWeb(isAndroid && !isNative);
+      setIsIOSWeb(isIOS && !isStandalone);
     }
 
     // Lazy pre-warm theme and map previews only when user advances past Step 2
@@ -623,8 +635,29 @@ const LandingPage = () => {
                         className="py-3.5 xs:py-4 sm:py-5 px-3.5 xs:px-4 sm:px-6 rounded-2xl font-bold text-xs xs:text-sm sm:text-base text-white bg-zinc-900/90 border border-zinc-700/80 hover:bg-zinc-800 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xl shrink-0"
                         title="Download Android APK"
                       >
-                        <AndroidRobotIcon className="w-5 h-4 xs:w-6 xs:h-5" />
+                        <AndroidRobotIcon className="w-5 h-4 xs:w-6 xs:h-5 text-emerald-500" />
                         <span className="font-semibold whitespace-nowrap">Download APK</span>
+                      </button>
+                    </div>
+                  ) : isIOSWeb ? (
+                    <div className="flex items-center gap-2.5 sm:gap-3 w-full">
+                      <button
+                        onClick={goToNextStep}
+                        className="flex-1 py-3.5 xs:py-4 sm:py-5 px-4 xs:px-6 sm:px-8 rounded-2xl font-bold text-sm xs:text-base sm:text-xl text-white shadow-2xl active:scale-[0.98] transition-all flex items-center justify-center cursor-pointer font-sans"
+                        style={{
+                          backgroundColor: activeAccentHex,
+                          boxShadow: `0 16px 40px -5px ${activeAccentHex}70`
+                        }}
+                      >
+                        Get Started
+                      </button>
+                      <button
+                        onClick={() => setShowIOSModal(true)}
+                        className="py-3.5 xs:py-4 sm:py-5 px-3.5 xs:px-4 sm:px-6 rounded-2xl font-bold text-xs xs:text-sm sm:text-base text-white bg-zinc-900/90 border border-zinc-700/80 hover:bg-zinc-800 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xl shrink-0"
+                        title="Install for iOS"
+                      >
+                        <AppleIcon className="w-5 h-5 text-white" />
+                        <span className="font-semibold whitespace-nowrap">Install for iOS</span>
                       </button>
                     </div>
                   ) : (
@@ -1067,6 +1100,58 @@ const LandingPage = () => {
 
         </AnimatePresence>
       </div>
+
+      {/* iOS Step-by-Step Installation Guide Modal */}
+      <Dialog open={showIOSModal} onOpenChange={setShowIOSModal}>
+        <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-md shadow-2xl rounded-3xl p-6">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-1">
+              <div className="w-10 h-10 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white">
+                <AppleIcon className="w-5 h-5" />
+              </div>
+              <DialogTitle className="text-white font-heading text-xl font-bold">Install on iPhone / iPad</DialogTitle>
+            </div>
+            <DialogDescription className="text-zinc-400 text-xs sm:text-sm text-left">
+              Follow these simple steps in Safari to add Jaey Ride to your home screen:
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3.5 py-3">
+            <div className="flex items-start gap-4 p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800/80">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0">
+                <Share className="w-5 h-5" />
+              </div>
+              <div className="pt-0.5 text-left">
+                <p className="text-white text-sm font-semibold">1. Tap the Share button</p>
+                <p className="text-zinc-400 text-xs mt-1">Located at the bottom navigation bar of Safari on iPhone (or top right on iPad).</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4 p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800/80">
+              <div className="w-10 h-10 rounded-xl bg-gold/10 text-gold flex items-center justify-center shrink-0">
+                <PlusSquare className="w-5 h-5" />
+              </div>
+              <div className="pt-0.5 text-left">
+                <p className="text-white text-sm font-semibold">2. Tap "Add to Home Screen"</p>
+                <p className="text-zinc-400 text-xs mt-1">Scroll down the share options list and tap <strong>"Add to Home Screen"</strong> 📲</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end mt-2">
+            <button
+              onClick={() => setShowIOSModal(false)}
+              className="w-full py-3.5 rounded-2xl font-bold text-sm text-white shadow-xl active:scale-[0.98] transition-all flex items-center justify-center cursor-pointer font-sans"
+              style={{
+                backgroundColor: activeAccentHex,
+                boxShadow: `0 8px 24px -4px ${activeAccentHex}60`
+              }}
+            >
+              Got it
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );
