@@ -24,6 +24,7 @@ import { AppCache } from '../utils/AppCache';
 import { StudentDashboardSkeleton } from '../components/common/PageSkeletons';
 import { systemNotification } from '../services/SystemNotificationService';
 import { DriverPhotoModal } from '../components/common/DriverPhotoModal';
+import { isCountdownActive } from '../components/ui/coming-soon-3';
 
 const STATUS_RANK = {
   'requested': 1,
@@ -293,7 +294,8 @@ const StudentDashboard = () => {
     }
 
     setTimeout(() => {
-      navigate('/ride');
+      const targetPath = isCountdownActive() ? '/coming-soon' : '/ride';
+      navigate(targetPath);
     }, 850);
   };
 
@@ -1094,7 +1096,7 @@ const StudentDashboard = () => {
             </div>
           </GlassCard>
 
-          <GlassCard className="p-3.5 sm:p-4 cursor-pointer hover:border-gold/30 transition-all" hover={false} onClick={() => navigate('/ride')}>
+          <GlassCard className="p-3.5 sm:p-4 cursor-pointer hover:border-gold/30 transition-all" hover={false} onClick={() => navigate(isCountdownActive() ? '/coming-soon' : '/ride')}>
             <div className="flex items-center gap-3">
               <Clock className="w-7 h-7 text-amber-500 shrink-0" />
               <div className="min-w-0">
@@ -1141,7 +1143,7 @@ const StudentDashboard = () => {
               title="No rides yet"
               description="Your ride history will appear here"
               action={
-                <GoldButton size="sm" onClick={() => navigate('/ride')}>
+                <GoldButton size="sm" onClick={() => navigate(isCountdownActive() ? '/coming-soon' : '/ride')}>
                   Book your first ride
                 </GoldButton>
               }

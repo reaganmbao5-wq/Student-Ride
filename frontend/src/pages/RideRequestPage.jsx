@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, Navigation, TrendingUp, Search, MapPin, Flag, Zap, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { isCountdownActive } from '../components/ui/coming-soon-3';
 import { useAuth } from '../context/AuthContext';
 import { useGeolocation } from '../map/hooks/useGeolocation';
 import { toast } from 'sonner';
@@ -36,6 +37,13 @@ import {
 const RideRequestPage = () => {
   const navigate = useNavigate();
   const { api } = useAuth();
+
+  useEffect(() => {
+    if (isCountdownActive()) {
+      navigate('/coming-soon', { replace: true });
+    }
+  }, [navigate]);
+
   const [rideMode, setRideMode] = useState('shared');
   const { location: userLocation, loading: geoLoading, error: geoError, refresh: refreshLocation } = useGeolocation();
   const { drivers: nearbyDrivers } = useDriverDiscovery(api, userLocation, rideMode);

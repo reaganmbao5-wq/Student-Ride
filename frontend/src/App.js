@@ -20,6 +20,8 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import CompleteProfilePage from "./pages/CompleteProfilePage";
 import RideRequestPage from "./pages/RideRequestPage";
+import ComingSoonPage from "./pages/ComingSoonPage";
+import { isCountdownActive } from "./components/ui/coming-soon-3";
 import RideHistoryPage from "./pages/RideHistoryPage";
 import DriverDashboard from "./pages/DriverDashboard";
 import DriverRegisterPage from "./pages/DriverRegisterPage";
@@ -147,7 +149,15 @@ const AppRoutes = () => {
           path="/ride"
           element={
             <ProtectedRoute allowedRoles={['student', 'lecturer']}>
-              <RideRequestPage />
+              {isCountdownActive() ? <Navigate to="/coming-soon" replace /> : <RideRequestPage />}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/coming-soon"
+          element={
+            <ProtectedRoute allowedRoles={['student', 'lecturer']}>
+              <ComingSoonPage />
             </ProtectedRoute>
           }
         />

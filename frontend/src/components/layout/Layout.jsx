@@ -12,6 +12,7 @@ import { haptics } from '../../utils/haptics';
 import { Dock, DockIcon, DockItem, DockLabel } from '../ui/dock';
 import { LimelightNav } from '../ui/limelight-nav';
 import { ThemeToggle } from '../ui/theme-toggle';
+import { isCountdownActive } from '../ui/coming-soon-3';
 
 export const Layout = ({ children }) => {
   const { user, isDriver, isAdmin, isAccountant, logout } = useAuth();
@@ -25,9 +26,11 @@ export const Layout = ({ children }) => {
     navigate('/');
   };
 
+  const ridePath = isCountdownActive() ? '/coming-soon' : '/ride';
+
   const studentNavItems = [
     { to: '/dashboard', icon: (props) => <House weight="duotone" {...props} />, label: 'Home' },
-    { to: '/ride', icon: (props) => <MapPin weight="duotone" {...props} />, label: 'Ride' },
+    { to: ridePath, icon: (props) => <MapPin weight="duotone" {...props} />, label: 'Ride' },
     { to: '/history', icon: (props) => <Clock weight="duotone" {...props} />, label: 'History' },
     { to: '/profile', icon: (props) => <User weight="duotone" {...props} />, label: 'Profile' }
   ];
@@ -70,6 +73,9 @@ export const Layout = ({ children }) => {
   const activeLimelightIndex = limelightNavItems.findIndex((item) => {
     if (item.to === '/dashboard' || item.to === '/driver' || item.to === '/admin' || item.to === '/accountant') {
       return location.pathname === item.to;
+    }
+    if (item.to === '/coming-soon' || item.to === '/ride') {
+      return location.pathname === '/coming-soon' || location.pathname === '/ride';
     }
     return location.pathname.startsWith(item.to);
   });
