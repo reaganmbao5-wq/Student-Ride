@@ -140,22 +140,22 @@ const LandingPage = () => {
       setIsAndroidWeb(isAndroid && !isNative);
     }
 
-    // Pre-warm memory cache for all theme and map preview cards for 0ms instant display
-    const previewAssets = [
-      '/theme_previews/dark.png',
-      '/theme_previews/light.png',
-      '/theme_previews/system.png',
-      '/theme_previews/map_night.png',
-      '/theme_previews/map_day.png',
-      '/theme_previews/map_auto.png',
-      '/assets/images/jride_text_white.png',
-      '/assets/images/jride_text_black.png'
-    ];
-    previewAssets.forEach((url) => {
-      const img = new Image();
-      img.src = url;
-    });
-  }, []);
+    // Lazy pre-warm theme and map previews only when user advances past Step 2
+    if (step >= 3) {
+      const previewAssets = [
+        '/theme_previews/dark.png',
+        '/theme_previews/light.png',
+        '/theme_previews/system.png',
+        '/theme_previews/map_night.png',
+        '/theme_previews/map_day.png',
+        '/theme_previews/map_auto.png',
+      ];
+      previewAssets.forEach((url) => {
+        const img = new Image();
+        img.src = url;
+      });
+    }
+  }, [step]);
 
   const handleDownloadApk = () => {
     const backendUrl = getBackendUrl();
@@ -180,49 +180,14 @@ const LandingPage = () => {
     localStorage.setItem('onboarding_gender', gender);
   }, [customSubStep, firstName, lastName, phone, showLastNameInput, showPhoneInput, gender]);
 
-  // Fetch video as Blob URL for instant native Android playback without HTTP 206 Range errors
+  // Native progressive streaming for instant playback without blocking network or memory
   useEffect(() => {
-    let isMounted = true;
-    let objectUrl = null;
-
-    fetch('/assets/videos/Firstpage.mp4')
-      .then((res) => {
-        if (!res.ok) throw new Error('Video fetch status: ' + res.status);
-        return res.blob();
-      })
-      .then((blob) => {
-        if (isMounted && videoRef.current) {
-          objectUrl = URL.createObjectURL(blob);
-          videoRef.current.src = objectUrl;
-          videoRef.current.defaultMuted = true;
-          videoRef.current.muted = true;
-          videoRef.current.play().then(() => {
-            if (isMounted) setVideoLoaded(true);
-          }).catch(() => {});
-        }
-      })
-      .catch((err) => {
-        console.warn("Video blob load error:", err);
-      });
-
-    return () => {
-      isMounted = false;
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
-    };
-  }, []);
-
-  // Auto-play / resume video on step 1 mount and remount
-  useEffect(() => {
-    if (step === 1 && videoRef.current && videoRef.current.src) {
+    if (videoRef.current) {
       videoRef.current.defaultMuted = true;
       videoRef.current.muted = true;
       const playPromise = videoRef.current.play();
       if (playPromise !== undefined) {
-        playPromise.catch((err) => {
-          console.warn("Video auto-play warning:", err);
-        });
+        playPromise.catch(() => {});
       }
     }
   }, [step]);
@@ -544,9 +509,11 @@ const LandingPage = () => {
           className="hidden md:block w-full h-full object-cover"
         />
 
-        {/* Mobile Looping Portrait Video with smooth fade-in */}
+        {/* Mobile Looping Portrait Video with instant native streaming and smooth fade-in */}
         <video
           ref={videoRef}
+          src="/assets/videos/Firstpage.mp4"
+          preload="metadata"
           autoPlay
           loop
           muted
@@ -556,6 +523,8 @@ const LandingPage = () => {
           controls={false}
           controlsList="nodownload nofullscreen noremoteplayback"
           disablePictureInPicture
+          onLoadedData={() => setVideoLoaded(true)}
+          onCanPlay={() => setVideoLoaded(true)}
           className={`block md:hidden w-full h-full object-cover scale-105 pointer-events-none transition-opacity duration-700 ${
             videoLoaded ? 'opacity-100' : 'opacity-0'
           }`}
