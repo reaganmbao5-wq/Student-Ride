@@ -466,7 +466,7 @@ class UserResponse(BaseModel):
     archived_at: Optional[str] = None
 
 class DriverProfile(BaseModel):
-    vehicle_type: VehicleType
+    vehicle_type: VehicleType = VehicleType.CAR
     plate_number: str
     vehicle_model: str
     vehicle_color: str

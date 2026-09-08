@@ -216,31 +216,6 @@ const DriverRegisterPage = () => {
               <p className="text-[11px] text-muted-foreground/60 mt-1">Clear facial photo for passenger verification</p>
             </div>
 
-            {/* Vehicle Type (Bicycle removed!) */}
-            <div>
-              <label className="block text-sm text-muted-foreground/60 mb-2">Vehicle Type *</label>
-              <div className="grid grid-cols-2 gap-2">
-                {['car', 'motorcycle'].map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => setFormData({ 
-                      ...formData, 
-                      vehicle_type: type,
-                      vehicle_capacity: type === 'motorcycle' ? 1 : 4 
-                    })}
-                    className={`p-3 rounded-xl text-sm capitalize transition-all ${formData.vehicle_type === type
-                      ? 'bg-gold text-black font-bold shadow-md'
-                      : 'bg-muted text-muted-foreground/60 hover:bg-muted/10'
-                      }`}
-                    data-testid={`vehicle-type-${type}`}
-                  >
-                    {type}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {/* Mandatory Passenger Capacity Selector */}
             <div>
               <label className="block text-sm text-muted-foreground/60 mb-2">Passenger Capacity *</label>

@@ -736,27 +736,6 @@ const AuthPage = () => {
 
                 <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider">Vehicle Details</p>
 
-                {/* Vehicle Type Selection (Bicycle removed!) */}
-                <div className="grid grid-cols-2 gap-2">
-                  {['car', 'motorcycle'].map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setFormData({ 
-                        ...formData, 
-                        vehicle_type: type,
-                        vehicle_capacity: type === 'motorcycle' ? 1 : 4
-                      })}
-                      className={`p-3 rounded-xl text-xs font-semibold capitalize transition-all ${formData.vehicle_type === type
-                        ? 'bg-gold text-zinc-950 shadow-md shadow-gold/10 font-bold'
-                        : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:bg-zinc-800'
-                        }`}
-                    >
-                      {type}
-                    </button>
-                  ))}
-                </div>
-
                 {/* Mandatory Vehicle Passenger Capacity Selector */}
                 <div className="space-y-1">
                   <label className="block text-xs text-zinc-400 font-semibold uppercase tracking-wider">Passenger Capacity *</label>
@@ -813,40 +792,24 @@ const AuthPage = () => {
                   <div className="space-y-3">
                     {[{ id: 'license', label: "Driver's License" }, { id: 'registration', label: "Vehicle Registration" }].map(doc => (
                       <div key={doc.id} className="relative">
-                        {!Capacitor.isNativePlatform() ? (
-                          <>
-                            <input
-                              type="file"
-                              name={doc.id}
-                              id={`auth_${doc.id}_upload`}
-                              accept="image/*"
-                              onChange={handleFileChange}
-                              className="hidden"
-                            />
-                            <label 
-                              htmlFor={`auth_${doc.id}_upload`}
-                              className={`flex items-center justify-between p-3.5 rounded-xl border border-dashed cursor-pointer transition-colors ${docs[doc.id] ? 'bg-gold/10 border-gold/50 text-gold' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800/80'}`}
-                            >
-                              <div className="flex items-center gap-3">
-                                <FileText className="w-5 h-5" />
-                                <span className="text-sm font-medium">{docs[doc.id] ? docs[doc.id].name : doc.label}</span>
-                              </div>
-                              {docs[doc.id] ? <CheckCircle2 className="w-5 h-5" /> : <UploadCloud className="w-5 h-5" />}
-                            </label>
-                          </>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => handleNativeCapture(doc.id)}
-                            className={`w-full flex items-center justify-between p-3.5 rounded-xl border border-dashed cursor-pointer transition-colors ${docs[doc.id] ? 'bg-gold/10 border-gold/50 text-gold' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800/80'}`}
-                          >
-                            <div className="flex items-center gap-3">
-                              <FileText className="w-5 h-5" />
-                              <span className="text-sm font-medium">{docs[doc.id] ? docs[doc.id].name : doc.label}</span>
-                            </div>
-                            {docs[doc.id] ? <CheckCircle2 className="w-5 h-5" /> : <UploadCloud className="w-5 h-5" />}
-                          </button>
-                        )}
+                        <input
+                          type="file"
+                          name={doc.id}
+                          id={`auth_${doc.id}_upload`}
+                          accept="image/*"
+                          onChange={handleFileChange}
+                          className="hidden"
+                        />
+                        <label 
+                          htmlFor={`auth_${doc.id}_upload`}
+                          className={`flex items-center justify-between p-3.5 rounded-xl border border-dashed cursor-pointer transition-colors ${docs[doc.id] ? 'bg-gold/10 border-gold/50 text-gold' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800/80'}`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <FileText className="w-5 h-5" />
+                            <span className="text-sm font-medium">{docs[doc.id] ? docs[doc.id].name : doc.label}</span>
+                          </div>
+                          {docs[doc.id] ? <CheckCircle2 className="w-5 h-5" /> : <UploadCloud className="w-5 h-5" />}
+                        </label>
                       </div>
                     ))}
                   </div>
