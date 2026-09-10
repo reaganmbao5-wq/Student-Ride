@@ -464,6 +464,7 @@ class UserResponse(BaseModel):
     is_active: bool = True
     is_archived: Optional[bool] = False
     archived_at: Optional[str] = None
+    is_beta_tester: Optional[bool] = False
 
 class DriverProfile(BaseModel):
     vehicle_type: VehicleType = VehicleType.CAR
@@ -1406,6 +1407,7 @@ async def register(user_data: UserCreate):
         "staff_id": user_data.staff_id,
         "is_active": True,
         "is_archived": False,
+        "is_beta_tester": bool(await db.beta_testers.find_one({"email": user_data.email.lower().strip()})),
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.users.insert_one(user)
@@ -1426,6 +1428,12 @@ async def login(credentials: UserLogin):
     
     if not user.get("is_active", True):
         raise HTTPException(status_code=403, detail="Account suspended")
+        
+    # Auto-sync beta status if email is in beta_testers collection
+    if not user.get("is_beta_tester"):
+        if await db.beta_testers.find_one({"email": credentials.email.lower().strip()}):
+            await db.users.update_one({"id": user["id"]}, {"$set": {"is_beta_tester": True}})
+            user["is_beta_tester"] = True
     
     token = create_token(user["id"], user["role"])
     
@@ -1445,6 +1453,11 @@ async def login(credentials: UserLogin):
 
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(user: dict = Depends(get_current_user)):
+    # Auto-sync beta status if user email is in beta_testers collection
+    if not user.get("is_beta_tester") and user.get("email"):
+        if await db.beta_testers.find_one({"email": user["email"].lower().strip()}):
+            await db.users.update_one({"id": user["id"]}, {"$set": {"is_beta_tester": True}})
+            user["is_beta_tester"] = True
     return UserResponse(**{k: v for k, v in user.items() if k != "password"})
 
 @api_router.get("/auth/password-reset/redirect")
@@ -1620,6 +1633,7 @@ async def google_login(request: GoogleLoginRequest):
         if not user:
             is_new_user = True
             user_id = str(uuid.uuid4())
+            is_beta = bool(await db.beta_testers.find_one({"email": email.lower().strip()}))
             user = {
                 "id": user_id,
                 "email": email.lower(),
@@ -1628,9 +1642,13 @@ async def google_login(request: GoogleLoginRequest):
                 "password": hash_password(secrets.token_urlsafe(32)),
                 "role": UserRole.STUDENT.value,
                 "is_active": True,
+                "is_beta_tester": is_beta,
                 "created_at": datetime.now(timezone.utc).isoformat()
             }
             await db.users.insert_one(user)
+        elif not user.get("is_beta_tester") and await db.beta_testers.find_one({"email": email.lower().strip()}):
+            await db.users.update_one({"id": user["id"]}, {"$set": {"is_beta_tester": True}})
+            user["is_beta_tester"] = True
 
         if not user.get("is_active", True):
             raise HTTPException(status_code=403, detail="Account suspended")
@@ -2475,6 +2493,22 @@ async def populate_ride_student(ride: dict) -> dict:
 @api_router.post("/rides/request", response_model=RideResponse)
 async def request_ride(ride_data: RideRequest, user: dict = Depends(get_current_user)):
     try:
+        # Beta Testing Access Guard
+        settings_doc = await db.settings.find_one({"type": "platform"}) or {}
+        beta_gate_active = settings_doc.get("beta_gate_active", True)
+        if beta_gate_active and user.get("role") not in [UserRole.ADMIN.value, "admin", "super_admin"]:
+            is_tester = bool(user.get("is_beta_tester"))
+            if not is_tester and user.get("email"):
+                tester_doc = await db.beta_testers.find_one({"email": user["email"].lower().strip()})
+                if tester_doc:
+                    is_tester = True
+                    await db.users.update_one({"id": user["id"]}, {"$set": {"is_beta_tester": True}})
+            if not is_tester:
+                raise HTTPException(
+                    status_code=403, 
+                    detail="Jaey Ride is currently in private beta testing with select users. Full campus rollout is coming soon!"
+                )
+
         # User Penalty Check
         # user_doc = await db.users.find_one({"id": user["id"]}, {"_id": 0})
         # if user_doc and user_doc.get("pending_penalty", 0.0) > 0:
@@ -4322,6 +4356,97 @@ async def switch_user_role(user_id: str, request: SwitchRoleRequest, admin: dict
         
     updated = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
     return UserResponse(**updated)
+
+# ==================== BETA TESTER MANAGEMENT ====================
+class ToggleBetaAccessRequest(BaseModel):
+    is_beta_tester: bool
+
+@api_router.patch("/admin/users/{user_id}/beta-access", response_model=UserResponse)
+async def toggle_user_beta_access(user_id: str, request: ToggleBetaAccessRequest, admin: dict = Depends(require_admin)):
+    target_user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    await db.users.update_one({"id": user_id}, {"$set": {"is_beta_tester": request.is_beta_tester}})
+    target_user["is_beta_tester"] = request.is_beta_tester
+    
+    # Synchronize with db.beta_testers collection
+    user_email = (target_user.get("email") or "").lower().strip()
+    if user_email:
+        if request.is_beta_tester:
+            await db.beta_testers.update_one(
+                {"email": user_email},
+                {"$set": {
+                    "email": user_email, 
+                    "user_id": user_id, 
+                    "name": target_user.get("name") or "",
+                    "added_at": datetime.now(timezone.utc).isoformat()
+                }},
+                upsert=True
+            )
+        else:
+            await db.beta_testers.delete_one({"email": user_email})
+            
+    await log_admin_action(admin["id"], admin["name"], "toggle_beta_access", user_id, f"Beta access set to {request.is_beta_tester}")
+    return UserResponse(**target_user)
+
+@api_router.get("/admin/beta-testers")
+async def get_beta_testers(admin: dict = Depends(require_admin)):
+    testers = await db.beta_testers.find({}, {"_id": 0}).to_list(1000)
+    settings_doc = await db.settings.find_one({"type": "platform"}) or {}
+    beta_gate_active = settings_doc.get("beta_gate_active", True)
+    return {"testers": testers, "beta_gate_active": beta_gate_active}
+
+class AddBetaTesterRequest(BaseModel):
+    email: str
+    name: Optional[str] = None
+
+@api_router.post("/admin/beta-testers")
+async def add_beta_tester(request: AddBetaTesterRequest, admin: dict = Depends(require_admin)):
+    email_clean = request.email.lower().strip()
+    if not email_clean or "@" not in email_clean:
+        raise HTTPException(status_code=400, detail="A valid email address is required")
+        
+    existing_user = await db.users.find_one({"email": email_clean})
+    user_id = existing_user["id"] if existing_user else None
+    name = request.name or (existing_user.get("name") if existing_user else "")
+    
+    await db.beta_testers.update_one(
+        {"email": email_clean},
+        {"$set": {
+            "email": email_clean, 
+            "user_id": user_id, 
+            "name": name,
+            "added_at": datetime.now(timezone.utc).isoformat()
+        }},
+        upsert=True
+    )
+    if existing_user:
+        await db.users.update_one({"id": user_id}, {"$set": {"is_beta_tester": True}})
+        
+    await log_admin_action(admin["id"], admin["name"], "add_beta_tester", email_clean)
+    return {"status": "success", "email": email_clean}
+
+@api_router.delete("/admin/beta-testers/{email}")
+async def remove_beta_tester(email: str, admin: dict = Depends(require_admin)):
+    email_clean = email.lower().strip()
+    await db.beta_testers.delete_one({"email": email_clean})
+    await db.users.update_one({"email": email_clean}, {"$set": {"is_beta_tester": False}})
+    await log_admin_action(admin["id"], admin["name"], "remove_beta_tester", email_clean)
+    return {"status": "success"}
+
+class ToggleBetaGateRequest(BaseModel):
+    active: bool
+
+@api_router.post("/admin/beta-gate/toggle")
+async def toggle_beta_gate(request: ToggleBetaGateRequest, admin: dict = Depends(require_admin)):
+    await db.settings.update_one(
+        {"type": "platform"},
+        {"$set": {"beta_gate_active": request.active}},
+        upsert=True
+    )
+    await log_admin_action(admin["id"], admin["name"], "toggle_beta_gate", str(request.active))
+    return {"status": "success", "beta_gate_active": request.active}
 
 @api_router.get("/admin/drivers", response_model=List[DriverResponse])
 async def get_all_drivers(user: dict = Depends(require_accountant)):

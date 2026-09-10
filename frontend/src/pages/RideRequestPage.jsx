@@ -36,7 +36,7 @@ import {
 
 const RideRequestPage = () => {
   const navigate = useNavigate();
-  const { api } = useAuth();
+  const { api, user } = useAuth();
   const [rideMode, setRideMode] = useState('shared');
   const { location: userLocation, loading: geoLoading, error: geoError, refresh: refreshLocation } = useGeolocation();
   const { drivers: nearbyDrivers } = useDriverDiscovery(api, userLocation, rideMode);
@@ -374,8 +374,10 @@ const RideRequestPage = () => {
     const activeDropoff = dropoff || confirmedLocationsRef.current.dropoff;
     if (!activePickup || !activeDropoff || !fareEstimate) return;
 
-    // Beta testing phase gate: intercept final request ride and direct to announcement
-    if (isCountdownActive()) {
+    // Beta testing phase gate: allow whitelisted beta testers and admins through, redirect standard users to announcement
+    const isBetaTester = Boolean(user?.is_beta_tester);
+    const isPrivileged = user?.role === 'admin' || user?.role === 'super_admin';
+    if (isCountdownActive() && !isBetaTester && !isPrivileged) {
       navigate('/coming-soon');
       return;
     }

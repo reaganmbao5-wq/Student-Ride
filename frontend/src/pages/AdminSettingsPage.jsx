@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, DollarSign, Percent, Clock, Save, Loader2, AlertCircle, UploadCloud, Smartphone, CheckCircle2 } from 'lucide-react';
+import { Settings, DollarSign, Percent, Clock, Save, Loader2, AlertCircle, UploadCloud, Smartphone, CheckCircle2, Sparkle, ShieldCheck, UserCheck, Trash2, Plus } from 'lucide-react';
 import { GlassCard, GlassInput, GoldButton, LoadingSpinner } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
@@ -32,10 +32,81 @@ const AdminSettingsPage = () => {
   const [apkUploading, setApkUploading] = useState(false);
   const [latestRelease, setLatestRelease] = useState(null);
 
+  // Beta Testing Whitelist State
+  const [betaTesters, setBetaTesters] = useState([]);
+  const [betaGateActive, setBetaGateActive] = useState(true);
+  const [newTesterEmail, setNewTesterEmail] = useState('');
+  const [newTesterName, setNewTesterName] = useState('');
+  const [addingTester, setAddingTester] = useState(false);
+  const [togglingGate, setTogglingGate] = useState(false);
+  const [deletingEmail, setDeletingEmail] = useState(null);
+
   useEffect(() => {
     fetchSettings();
     fetchLatestRelease();
+    fetchBetaTesters();
   }, []);
+
+  const fetchBetaTesters = async () => {
+    try {
+      const res = await api.get('/admin/beta-testers');
+      setBetaTesters(res.data?.testers || []);
+      setBetaGateActive(res.data?.beta_gate_active !== false);
+    } catch (err) {
+      console.warn('Failed to fetch beta testers:', err);
+    }
+  };
+
+  const handleAddBetaTester = async (e) => {
+    if (e) e.preventDefault();
+    const emailClean = newTesterEmail.trim().toLowerCase();
+    if (!emailClean || !emailClean.includes('@')) {
+      toast.error('Please enter a valid student or tester email address.');
+      return;
+    }
+    setAddingTester(true);
+    try {
+      await api.post('/admin/beta-testers', { email: emailClean, name: newTesterName.trim() });
+      toast.success(`Tester ${emailClean} whitelisted successfully!`);
+      setNewTesterEmail('');
+      setNewTesterName('');
+      fetchBetaTesters();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to add beta tester');
+    } finally {
+      setAddingTester(false);
+    }
+  };
+
+  const handleRemoveBetaTester = async (email) => {
+    setDeletingEmail(email);
+    try {
+      await api.delete(`/admin/beta-testers/${encodeURIComponent(email)}`);
+      toast.success(`Removed ${email} from beta testing whitelist`);
+      setBetaTesters(prev => prev.filter(t => t.email !== email));
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to remove beta tester');
+    } finally {
+      setDeletingEmail(null);
+    }
+  };
+
+  const handleToggleBetaGate = async () => {
+    const nextState = !betaGateActive;
+    setTogglingGate(true);
+    try {
+      await api.post('/admin/beta-gate/toggle', { active: nextState });
+      setBetaGateActive(nextState);
+      toast.success(nextState 
+        ? 'Beta Gate Activated: Only whitelisted users can request rides.' 
+        : 'Beta Gate Disabled: Ride requests are now open to everyone on campus!'
+      );
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to toggle beta gate');
+    } finally {
+      setTogglingGate(false);
+    }
+  };
 
   const fetchLatestRelease = async () => {
     try {
@@ -303,6 +374,129 @@ const AdminSettingsPage = () => {
             )}
           </GoldButton>
         )}
+
+        {/* Beta Rollout & Whitelist Management */}
+        <GlassCard className="p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+                <Sparkle className="w-6 h-6 text-purple-400" />
+              </div>
+              <div>
+                <h2 className="font-heading font-semibold text-foreground text-lg">Beta Testing & Whitelist Control</h2>
+                <p className="text-muted-foreground text-sm">Restrict ride booking to authorized testers or open to campus</p>
+              </div>
+            </div>
+
+            {/* Master Gate Toggle Button */}
+            <button
+              onClick={handleToggleBetaGate}
+              disabled={togglingGate}
+              className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer shadow-md ${
+                betaGateActive
+                  ? "bg-purple-600 hover:bg-purple-500 text-white"
+                  : "bg-emerald-600 hover:bg-emerald-500 text-white"
+              }`}
+            >
+              {togglingGate ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : betaGateActive ? (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                  Beta Gate: ACTIVE (Restricted)
+                </>
+              ) : (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-white" />
+                  Beta Gate: OFF (Public Rollout)
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Description banner */}
+          <div className="mb-6 p-4 rounded-xl bg-purple-500/5 border border-purple-500/20 text-xs text-muted-foreground leading-relaxed flex items-start gap-2.5">
+            <ShieldCheck className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-foreground">How Beta Access Works:</p>
+              <p className="mt-0.5">
+                When active, students not on this list will see the <strong className="text-foreground">"You're Early to Jaey Ride"</strong> screen when clicking Request Ride. Testers listed below (or tagged in User Management) bypass the gate and book rides immediately.
+              </p>
+            </div>
+          </div>
+
+          {/* Add Tester Form */}
+          <form onSubmit={handleAddBetaTester} className="grid grid-cols-1 sm:grid-cols-12 gap-3 mb-6">
+            <div className="sm:col-span-6">
+              <GlassInput
+                type="email"
+                placeholder="Tester Email (e.g. student@unza.zm)"
+                value={newTesterEmail}
+                onChange={(e) => setNewTesterEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="sm:col-span-4">
+              <GlassInput
+                type="text"
+                placeholder="Tester Name / Note (Optional)"
+                value={newTesterName}
+                onChange={(e) => setNewTesterName(e.target.value)}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <button
+                type="submit"
+                disabled={addingTester}
+                className="w-full h-full py-2.5 px-4 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
+              >
+                {addingTester ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> Add Tester</>}
+              </button>
+            </div>
+          </form>
+
+          {/* Whitelisted Testers List */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <UserCheck className="w-4 h-4 text-purple-400" />
+                Whitelisted Beta Testers ({betaTesters.length})
+              </h3>
+            </div>
+
+            {betaTesters.length === 0 ? (
+              <div className="p-6 rounded-2xl bg-muted/40 border border-dashed border-border text-center text-xs text-muted-foreground">
+                No external tester emails added yet. You can also grant Beta Access directly from the <strong className="text-foreground">User Management</strong> tab!
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-64 overflow-y-auto pr-1">
+                {betaTesters.map((tester) => (
+                  <div
+                    key={tester.email}
+                    className="p-3 rounded-xl bg-card border border-border flex items-center justify-between gap-2 shadow-xs hover:border-purple-500/30 transition-colors"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-foreground truncate">{tester.name || 'Beta Tester'}</p>
+                      <p className="text-[11px] text-muted-foreground truncate font-mono">{tester.email}</p>
+                    </div>
+                    <button
+                      onClick={() => handleRemoveBetaTester(tester.email)}
+                      disabled={deletingEmail === tester.email}
+                      className="w-8 h-8 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition-colors flex items-center justify-center shrink-0 cursor-pointer"
+                      title="Remove tester"
+                    >
+                      {deletingEmail === tester.email ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-red-400" />
+                      ) : (
+                        <Trash2 className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </GlassCard>
 
         {/* APK Release & Over-The-Air Update Manager */}
         <GlassCard className="p-6">

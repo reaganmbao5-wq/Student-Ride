@@ -56,6 +56,7 @@ const AdminUsersPage = () => {
   const [userDetails, setUserDetails] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [switchingRole, setSwitchingRole] = useState(false);
+  const [togglingBetaId, setTogglingBetaId] = useState(null);
 
   // Edit User / Driver Modal State
   const [isEditingUser, setIsEditingUser] = useState(false);
@@ -238,6 +239,34 @@ const AdminUsersPage = () => {
     }
   };
 
+  // Toggle Beta Tester Access for Individual User
+  const handleToggleBetaAccess = async (targetUserId, currentStatus) => {
+    const nextStatus = !currentStatus;
+    setTogglingBetaId(targetUserId);
+    try {
+      const res = await api.patch(`/admin/users/${targetUserId}/beta-access`, { is_beta_tester: nextStatus });
+      const updatedUser = res.data;
+
+      const nextUsers = users.map(u => u.id === targetUserId ? { ...u, is_beta_tester: nextStatus } : u);
+      setUsers(nextUsers);
+      AppCache.set('admin_users', nextUsers);
+
+      if (selectedUser?.id === targetUserId) {
+        setSelectedUser(prev => ({ ...prev, is_beta_tester: nextStatus }));
+        if (userDetails) {
+          setUserDetails(prev => ({ ...prev, user: { ...prev.user, is_beta_tester: nextStatus } }));
+        }
+      }
+
+      toast.success(nextStatus ? 'Beta access granted!' : 'Beta access revoked');
+    } catch (error) {
+      console.error('Error toggling beta access:', error);
+      toast.error(error.response?.data?.detail || 'Failed to update beta access');
+    } finally {
+      setTogglingBetaId(null);
+    }
+  };
+
   // Archive Graduated Students Batch Action
   const handleArchiveGraduated = async () => {
     if (!window.confirm("Archive all students who have exceeded their degree completion years (Year 4 for standard, Year 5 for engineering)?")) return;
@@ -347,7 +376,9 @@ const AdminUsersPage = () => {
 
       // Role Filter
       if (roleFilter !== 'all') {
-        if (roleFilter === 'admin') {
+        if (roleFilter === 'beta') {
+          if (!user.is_beta_tester) return false;
+        } else if (roleFilter === 'admin') {
           if (user.role !== 'admin' && user.role !== 'super_admin') return false;
         } else if (roleFilter === 'accountant') {
           if (user.role !== 'accountant') return false;
@@ -521,6 +552,7 @@ const AdminUsersPage = () => {
               className="w-full bg-muted/60 text-foreground text-sm rounded-2xl px-3 py-2.5 border border-border focus:outline-none focus:border-gold cursor-pointer"
             >
               <option value="all">All Roles</option>
+              <option value="beta">⭐ Beta Testers Only</option>
               <option value="student">Students</option>
               <option value="lecturer">Lecturers</option>
               <option value="driver">Drivers</option>
@@ -688,6 +720,28 @@ const AdminUsersPage = () => {
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-500/10 text-zinc-400 font-bold border border-zinc-500/20">
                         Archived
                       </span>
+                    )}
+                    {user.is_beta_tester ? (
+                      <button
+                        onClick={() => handleToggleBetaAccess(user.id, true)}
+                        disabled={togglingBetaId === user.id}
+                        title="Click to revoke Beta Access"
+                        className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/15 hover:bg-purple-500/25 text-purple-400 font-bold border border-purple-500/30 flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                      >
+                        <Sparkle className="w-3 h-3 text-purple-400" />
+                        {togglingBetaId === user.id ? 'Updating...' : 'Beta Tester'}
+                      </button>
+                    ) : (
+                      user.role !== 'admin' && user.role !== 'super_admin' && (
+                        <button
+                          onClick={() => handleToggleBetaAccess(user.id, false)}
+                          disabled={togglingBetaId === user.id}
+                          title="Click to grant Beta Access"
+                          className="text-[10px] px-2 py-0.5 rounded-full bg-muted/60 hover:bg-purple-500/10 text-muted-foreground hover:text-purple-400 font-semibold border border-border hover:border-purple-500/30 flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                        >
+                          {togglingBetaId === user.id ? 'Updating...' : '+ Beta'}
+                        </button>
+                      )
                     )}
                   </div>
 
@@ -895,6 +949,43 @@ const AdminUsersPage = () => {
                         </div>
                       )}
                     </div>
+
+                    {/* Beta Testing Access Panel in Drawer */}
+                    {userDetails.user?.role !== 'admin' && userDetails.user?.role !== 'super_admin' && (
+                      <div className="p-5 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                          <p className="text-xs font-bold text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <Sparkle className="w-4 h-4 text-purple-400 fill-purple-400/20" />
+                            Beta Testing & Early Feature Access
+                          </p>
+                          <p className="text-xs text-foreground">
+                            {userDetails.user?.is_beta_tester
+                              ? "Active Beta Tester: Has full permission to bypass the beta gate, request rides, and test early features."
+                              : "Standard User: Subject to the beta testing announcement gate upon booking."}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleToggleBetaAccess(userDetails.user.id, Boolean(userDetails.user.is_beta_tester))}
+                          disabled={togglingBetaId === userDetails.user.id}
+                          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer shadow-sm active:scale-95 flex items-center justify-center gap-2 ${
+                            userDetails.user?.is_beta_tester
+                              ? "bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 border border-purple-500/30"
+                              : "bg-purple-600 hover:bg-purple-500 text-white"
+                          }`}
+                        >
+                          {togglingBetaId === userDetails.user.id ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              Updating...
+                            </>
+                          ) : userDetails.user?.is_beta_tester ? (
+                            "Revoke Beta Access"
+                          ) : (
+                            "+ Grant Beta Access"
+                          )}
+                        </button>
+                      </div>
+                    )}
 
                     {/* Driver Fleet Details (If Driver) */}
                     {userDetails.driver_profile && (
