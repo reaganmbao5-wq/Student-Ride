@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, DollarSign, Percent, Clock, Save, Loader2, AlertCircle, UploadCloud, Smartphone, CheckCircle2, Sparkle, ShieldCheck, UserCheck, Trash2, Plus } from 'lucide-react';
+import { Settings, DollarSign, Percent, Clock, Save, Loader2, AlertCircle, UploadCloud, Smartphone, CheckCircle2, ShieldCheck, UserCheck, Trash2, Plus } from 'lucide-react';
 import { GlassCard, GlassInput, GoldButton, LoadingSpinner } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
@@ -380,7 +380,7 @@ const AdminSettingsPage = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
-                <Sparkle className="w-6 h-6 text-purple-400" />
+                <ShieldCheck className="w-6 h-6 text-purple-400" />
               </div>
               <div>
                 <h2 className="font-heading font-semibold text-foreground text-lg">Beta Testing & Whitelist Control</h2>

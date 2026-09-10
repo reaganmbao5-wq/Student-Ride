@@ -33,6 +33,10 @@ Always proceed autonomously. Do not ask for permissions to run codes, shell comm
     ```
   - Verify that the live domain (`https://jaeyride.site`) is serving the new bundle with zero regressions.
 
+## 5. Strict UI Iconography Rule: No AI-Like Stars
+- **NEVER use AI-like stars, sparkle icons (e.g. `Sparkle` from Lucide or Phosphor), or star emojis (e.g. `⭐`) on any UI buttons, badges, status pills, or controls.**
+- All UI elements, badges, and buttons must use standard, professional iconography (e.g., `ShieldCheck`, `Check`, `Users`, or plain clean typography).
+
 <!-- graft:start -->
 ## Graft — repo context graph
 

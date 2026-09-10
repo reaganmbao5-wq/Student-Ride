@@ -6,6 +6,12 @@
 
 ---
 
+## 🚫 STRICT UI ICONOGRAPHY RULE: NO AI-LIKE STARS
+- **NEVER use AI-like stars, sparkle icons (e.g. `Sparkle` from Lucide or Phosphor), or star emojis (e.g. `⭐`) on any UI buttons, badges, status pills, or controls.**
+- All UI elements, badges, and buttons must use standard, professional iconography (e.g., `ShieldCheck`, `Check`, `Users`, or plain clean typography).
+
+---
+
 ## 🔒 LOCKED STABLE MODULES & STRICT USER PERMISSION REQUIREMENT
 
 The following core modules and files are **STRICTLY LOCKED AND PROVEN STABLE**:

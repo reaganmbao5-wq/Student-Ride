@@ -3,9 +3,10 @@ import {
   Users, Search, Shield, Ban, Check, UserPlus, Trash2, Loader2, 
   Calendar, Filter, ArrowUpDown, ArrowUp, ArrowDown, Eye, 
   MapPin, Clock, Phone, Mail, CheckCircle, AlertCircle, RefreshCw, X, 
-  ShieldAlert, Edit3, ChevronDown, ChevronUp, Key, DollarSign, GraduationCap, Archive
+  ShieldAlert, Edit3, ChevronDown, ChevronUp, Key, DollarSign, GraduationCap, Archive,
+  ShieldCheck
 } from 'lucide-react';
-import { SteeringWheel, Car, User, Sparkle } from '@phosphor-icons/react';
+import { SteeringWheel, Car, User } from '@phosphor-icons/react';
 import { GlassCard, GlassInput, GoldButton, EmptyState, StatusBadge } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
@@ -552,7 +553,7 @@ const AdminUsersPage = () => {
               className="w-full bg-muted/60 text-foreground text-sm rounded-2xl px-3 py-2.5 border border-border focus:outline-none focus:border-gold cursor-pointer"
             >
               <option value="all">All Roles</option>
-              <option value="beta">⭐ Beta Testers Only</option>
+              <option value="beta">Beta Testers Only</option>
               <option value="student">Students</option>
               <option value="lecturer">Lecturers</option>
               <option value="driver">Drivers</option>
@@ -721,18 +722,18 @@ const AdminUsersPage = () => {
                         Archived
                       </span>
                     )}
-                    {user.is_beta_tester ? (
-                      <button
-                        onClick={() => handleToggleBetaAccess(user.id, true)}
-                        disabled={togglingBetaId === user.id}
-                        title="Click to revoke Beta Access"
-                        className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/15 hover:bg-purple-500/25 text-purple-400 font-bold border border-purple-500/30 flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
-                      >
-                        <Sparkle className="w-3 h-3 text-purple-400" />
-                        {togglingBetaId === user.id ? 'Updating...' : 'Beta Tester'}
-                      </button>
-                    ) : (
-                      user.role !== 'admin' && user.role !== 'super_admin' && (
+                    {(user.role === 'student' || user.role === 'lecturer') && (
+                      user.is_beta_tester ? (
+                        <button
+                          onClick={() => handleToggleBetaAccess(user.id, true)}
+                          disabled={togglingBetaId === user.id}
+                          title="Click to revoke Beta Access"
+                          className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/15 hover:bg-purple-500/25 text-purple-400 font-bold border border-purple-500/30 flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                        >
+                          <Check className="w-3 h-3 text-purple-400" />
+                          {togglingBetaId === user.id ? 'Updating...' : 'Beta Tester'}
+                        </button>
+                      ) : (
                         <button
                           onClick={() => handleToggleBetaAccess(user.id, false)}
                           disabled={togglingBetaId === user.id}
@@ -951,11 +952,11 @@ const AdminUsersPage = () => {
                     </div>
 
                     {/* Beta Testing Access Panel in Drawer */}
-                    {userDetails.user?.role !== 'admin' && userDetails.user?.role !== 'super_admin' && (
+                    {(userDetails.user?.role === 'student' || userDetails.user?.role === 'lecturer') && (
                       <div className="p-5 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="space-y-1">
                           <p className="text-xs font-bold text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
-                            <Sparkle className="w-4 h-4 text-purple-400 fill-purple-400/20" />
+                            <ShieldCheck className="w-4 h-4 text-purple-400" />
                             Beta Testing & Early Feature Access
                           </p>
                           <p className="text-xs text-foreground">
