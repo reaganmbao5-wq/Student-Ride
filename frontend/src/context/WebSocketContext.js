@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, useCallb
 import { App } from '@capacitor/app';
 import { useAuth } from './AuthContext';
 import { getBackendUrl } from '../utils/urlHelpers';
+import { systemNotification } from '../services/SystemNotificationService';
 
 const WebSocketContext = createContext(null);
 
@@ -12,6 +13,7 @@ export const WebSocketProvider = ({ children }) => {
   const [newRideRequest, setNewRideRequest] = useState(null);
   const [removedSharedRideId, setRemovedSharedRideId] = useState(null);
   const [rideUpdate, setRideUpdate] = useState(null);
+  const [emergencyAlert, setEmergencyAlert] = useState(null);
   const [routeQueueUpdate, setRouteQueueUpdate] = useState(null);
   const [driverTripSegments, setDriverTripSegments] = useState(null);
   const [passengerBriefing, setPassengerBriefing] = useState(null);
@@ -85,7 +87,15 @@ export const WebSocketProvider = ({ children }) => {
             setRideUpdate({ type: 'completed', ride_id: data.ride_id, fare: data.fare });
             break;
           case 'ride_cancelled':
-            setRideUpdate({ type: 'cancelled', ride_id: data.ride_id });
+            setRideUpdate({ type: 'cancelled', ride_id: data.ride_id, message: data.message });
+            break;
+          case 'emergency_sos':
+            setEmergencyAlert(data);
+            try {
+              systemNotification.notifyEmergencySos(data.student_name);
+            } catch (e) {
+              console.warn('Failed systemNotification on emergency_sos:', e);
+            }
             break;
           case 'driver_cancelled_reassigning':
             setRideUpdate({ type: 'reassigning', ride_id: data.ride_id });
@@ -289,11 +299,16 @@ export const WebSocketProvider = ({ children }) => {
     setRouteQueueUpdate(null);
   }, []);
 
+  const clearEmergencyAlert = useCallback(() => {
+    setEmergencyAlert(null);
+  }, []);
+
   const value = {
     isConnected,
     newRideRequest,
     removedSharedRideId,
     rideUpdate,
+    emergencyAlert,
     routeQueueUpdate,
     driverTripSegments,
     driverLocation,
@@ -304,6 +319,7 @@ export const WebSocketProvider = ({ children }) => {
     clearRideRequest,
     clearRemovedSharedRideId,
     clearRideUpdate,
+    clearEmergencyAlert,
     clearRouteQueueUpdate,
     clearNewMessage,
     setPassengerBriefing

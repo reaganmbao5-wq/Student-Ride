@@ -3058,6 +3058,21 @@ async def start_ride(ride_id: str, background_tasks: BackgroundTasks, user: dict
     except Exception as e:
         logger.error(f"Failed direct websocket send ride_started: {e}")
     
+    # Official push notification for ride start
+    async def send_start_push(student_id, r_id):
+        await notification_service.send(
+            user_id=student_id,
+            type="ride_started",
+            payload={
+                "title": "Ride Started",
+                "body": "You are on your way to your destination.",
+                "url": f"/ride/{r_id}",
+                "icon": "/logo192.png",
+                "badge": "/favicon-32x32.png",
+                "tag": f"ride_started_{r_id}"
+            }
+        )
+    background_tasks.add_task(send_start_push, ride["student_id"], ride_id)
     background_tasks.add_task(DriverTripRebuilder.rebuild, driver["id"], db)
     
     return {"status": "ongoing"}
@@ -3208,6 +3223,22 @@ async def complete_ride(ride_id: str, background_tasks: BackgroundTasks, user: d
     manager.remove_active_ride(driver["id"], ride_id)
     if driver.get("user_id"):
         manager.remove_active_ride(driver["user_id"], ride_id)
+
+    # Official push notification for ride completion
+    async def send_complete_push(student_id, r_id, fare_val):
+        await notification_service.send(
+            user_id=student_id,
+            type="ride_completed",
+            payload={
+                "title": "Ride Complete",
+                "body": f"You have arrived! Total fare: K{fare_val:.2f}",
+                "url": f"/ride/{r_id}",
+                "icon": "/logo192.png",
+                "badge": "/favicon-32x32.png",
+                "tag": f"ride_completed_{r_id}"
+            }
+        )
+    background_tasks.add_task(send_complete_push, ride["student_id"], ride_id, ride["fare"])
 
     background_tasks.add_task(manager.remove_from_ride, ride_id, ride["student_id"])
     background_tasks.add_task(manager.remove_from_ride, ride_id, user["id"])
@@ -3436,6 +3467,22 @@ async def cancel_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
             "ride": ride
         }, ride.get("pickup_location"))
         
+        # Official push notification to student for driver cancel
+        async def send_driver_cancel_push(student_id, r_id):
+            await notification_service.send(
+                user_id=student_id,
+                type="ride_cancelled",
+                payload={
+                    "title": "Ride Cancelled",
+                    "body": "Your driver had to cancel. Finding you another driver...",
+                    "url": f"/ride/{r_id}",
+                    "icon": "/logo192.png",
+                    "badge": "/favicon-32x32.png",
+                    "tag": f"ride_cancelled_{r_id}"
+                }
+            )
+        background_tasks.add_task(send_driver_cancel_push, ride["student_id"], ride_id)
+
         if driver_id_to_notify:
             try:
                 await DriverTripRebuilder.rebuild(driver_id_to_notify, db)
@@ -3458,31 +3505,39 @@ async def cancel_ride(ride_id: str, background_tasks: BackgroundTasks, user: dic
             "message": "Student cancelled the ride"
         }
 
-        # Direct immediate WebSocket dispatch (<10ms)
+        # Direct immediate WebSocket dispatch (<10ms) - single dispatch to avoid double toasts
         try:
             await manager.broadcast_to_ride(cancel_msg, ride_id)
         except Exception as e:
             logger.error(f"Failed direct broadcast_to_ride cancel: {e}")
-
-        try:
-            await manager.send_personal_message(cancel_msg, ride["student_id"])
-        except Exception as e:
-            logger.error(f"Failed direct send cancel to student: {e}")
         
         if ride.get("driver_id"):
             manager.remove_active_ride(ride["driver_id"], ride_id)
             driver_doc = await db.drivers.find_one({"id": ride["driver_id"]})
             if driver_doc:
-                if driver_doc.get("user_id"):
-                    manager.remove_active_ride(driver_doc["user_id"], ride_id)
+                driver_uid = driver_doc.get("user_id") or driver_doc.get("id")
+                if driver_uid:
+                    manager.remove_active_ride(driver_uid, ride_id)
                     try:
-                        await manager.send_personal_message(cancel_msg, driver_doc["user_id"])
+                        await manager.send_personal_message(cancel_msg, driver_uid)
                     except Exception as e:
-                        logger.error(f"Failed direct send cancel to driver user_id: {e}")
-                try:
-                    await manager.send_personal_message(cancel_msg, driver_doc["id"])
-                except Exception as e:
-                    logger.error(f"Failed direct send cancel to driver id: {e}")
+                        logger.error(f"Failed direct send cancel to driver: {e}")
+                    
+                    # Official push notification to driver for rider cancel
+                    async def send_rider_cancel_push(d_uid, r_id):
+                        await notification_service.send(
+                            user_id=d_uid,
+                            type="ride_cancelled",
+                            payload={
+                                "title": "Ride Cancelled",
+                                "body": f"Passenger cancelled Ride #{r_id[:8]}",
+                                "url": "/driver",
+                                "icon": "/logo192.png",
+                                "badge": "/favicon-32x32.png",
+                                "tag": f"ride_cancelled_{r_id}"
+                            }
+                        )
+                    background_tasks.add_task(send_rider_cancel_push, driver_uid, ride_id)
                 
                 try:
                     driver_loc = manager.driver_locations.get(driver_doc.get("user_id")) or driver_doc.get("current_location", {})
@@ -3566,6 +3621,25 @@ async def trigger_sos(request: EmergencyRequest, user: dict = Depends(get_curren
         )
         if success:
             admin_count += 1
+
+    # Broadcast real-time WebSocket emergency alert to all connected admins (<10ms)
+    sos_ws_payload = {
+        "type": "emergency_sos",
+        "ride_id": ride["id"],
+        "student_name": user.get("name", "Student"),
+        "student_phone": user.get("phone", "N/A"),
+        "pickup_location": ride.get("pickup_location", {}).get("name", "Pickup Point") if isinstance(ride.get("pickup_location"), dict) else "Pickup Point",
+        "dropoff_location": ride.get("dropoff_location", {}).get("name", "Dropoff Point") if isinstance(ride.get("dropoff_location"), dict) else "Dropoff Point",
+        "location": request.location or "En route",
+        "message": request.message or "Passenger triggered Emergency SOS",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    for admin in admins:
+        admin_uid = admin["id"]
+        try:
+            await manager.send_personal_message(sos_ws_payload, admin_uid)
+        except Exception as ws_err:
+            logger.warning(f"Could not send SOS websocket to admin {admin_uid}: {ws_err}")
             
     # Log the emergency action
     await log_admin_action(

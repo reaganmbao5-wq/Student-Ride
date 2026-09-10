@@ -199,18 +199,24 @@ const PushNotificationManager = () => {
                     console.warn('Channel creation notice:', chErr);
                 }
 
+                const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
                 const status = await PushNotifications.checkPermissions();
                 if (status.receive !== 'granted') {
-                    const asked = localStorage.getItem('j_ride_push_asked');
-                    if (!asked) setShowPrompt(true);
+                    if (isAdmin && isAuthenticated && token) {
+                        subscribeUser(false);
+                    } else {
+                        const asked = localStorage.getItem('j_ride_push_asked');
+                        if (!asked) setShowPrompt(true);
+                    }
                 } else if (isAuthenticated && token) {
                     subscribeUser(false);
                 }
             } else {
+                const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
                 if ('Notification' in window) {
                     if (Notification.permission === 'default') {
                         const asked = localStorage.getItem('j_ride_push_asked');
-                        if (!asked) setShowPrompt(true);
+                        if (!asked || isAdmin) setShowPrompt(true);
                     } else if (Notification.permission === 'granted' && isAuthenticated && token) {
                         subscribeUser(false);
                     }
@@ -228,6 +234,8 @@ const PushNotificationManager = () => {
 
     if (!showPrompt) return null;
 
+    const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+
     return (
         <div className="fixed top-4 left-4 right-4 z-[9999] animate-in slide-in-from-top-5 fade-in duration-300 pointer-events-auto">
             <div className="bg-card text-card-foreground border border-border rounded-2xl shadow-2xl p-4 flex items-start sm:items-center justify-between gap-4 max-w-md mx-auto">
@@ -236,9 +244,13 @@ const PushNotificationManager = () => {
                         <Bell className="w-5 h-5 text-gold animate-bounce" />
                     </div>
                     <div>
-                        <h4 className="font-heading font-semibold text-foreground text-sm">Enable Ride Updates</h4>
+                        <h4 className="font-heading font-semibold text-foreground text-sm">
+                            {isAdmin ? 'Enable Critical SOS Alerts' : 'Enable Ride Updates'}
+                        </h4>
                         <p className="text-muted-foreground text-xs mt-0.5">
-                            Get instant alerts when your driver arrives or when your ride is accepted.
+                            {isAdmin 
+                                ? 'Receive instant emergency SOS and dispatch alerts even when the app is in the background.' 
+                                : 'Get instant alerts when your driver arrives or when your ride is accepted.'}
                         </p>
                     </div>
                 </div>
@@ -247,7 +259,7 @@ const PushNotificationManager = () => {
                         onClick={() => subscribeUser(true)}
                         className="bg-gold text-black text-xs font-semibold px-4 py-2 rounded-xl hover:bg-gold/90 active:scale-95 transition-all cursor-pointer shadow-sm"
                     >
-                        Enable
+                        {isAdmin ? 'Enable Alerts' : 'Enable'}
                     </button>
                     <button
                         onClick={handleDismiss}

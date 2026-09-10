@@ -345,8 +345,14 @@ const DriverDashboard = () => {
           }
           return remaining;
         });
-        toast.error(rideUpdate.message || 'Student cancelled the ride');
-        try { haptics.tripCompleted(); } catch (e) {}
+        const wasSelfCancelled = cancelledId && terminalRideIdsRef.current.has(cancelledId);
+        if (cancelledId) {
+          terminalRideIdsRef.current.add(cancelledId);
+        }
+        if (!wasSelfCancelled) {
+          toast.error(rideUpdate.message || 'Student cancelled the ride');
+          try { haptics.tripCompleted(); } catch (e) {}
+        }
         setPendingRides(prev => prev.filter(r => getRideId(r) !== cancelledId));
         setMasterSharedRidePool(prev => prev.filter(r => getRideId(r) !== cancelledId));
         clearRideUpdate();

@@ -388,10 +388,13 @@ const StudentDashboard = () => {
         AppCache.remove('active_ride');
       } else if (rideUpdate.type === 'cancelled') {
         const cancelledId = activeRide?.id || rideUpdate.ride_id;
+        const wasSelfCancelled = cancelledId && cancelledRideIdsRef.current.has(cancelledId);
         if (cancelledId) {
           cancelledRideIdsRef.current.add(cancelledId);
         }
-        systemNotification.notifyRideCancelled('The ride was cancelled');
+        if (!wasSelfCancelled) {
+          systemNotification.notifyRideCancelled('The ride was cancelled');
+        }
         setActiveRide(null);
         setPassengerBriefing(null);
         setDriverPos(null);

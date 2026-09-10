@@ -13,6 +13,7 @@ import { Dock, DockIcon, DockItem, DockLabel } from '../ui/dock';
 import { LimelightNav } from '../ui/limelight-nav';
 import { ThemeToggle } from '../ui/theme-toggle';
 import { isCountdownActive } from '../ui/coming-soon-3';
+import { EmergencyAlertModal } from '../admin/EmergencyAlertModal';
 
 export const Layout = ({ children }) => {
   const { user, isDriver, isAdmin, isAccountant, logout } = useAuth();
@@ -250,6 +251,9 @@ export const Layout = ({ children }) => {
           }}
         />
       </nav>
+
+      {/* Real-time Emergency SOS Alert Modal for Admin */}
+      {isAdmin && <EmergencyAlertModal />}
     </div>
   );
 };
