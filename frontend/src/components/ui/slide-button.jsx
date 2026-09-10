@@ -70,14 +70,27 @@ export const SlideButton = forwardRef(
     const dragProgressRTL = useTransform(springX_RTL, [0, -155], [0, 1]);
     const adjustedWidthRTL = useTransform(springX_RTL, (x) => Math.max(0, -x + 10));
 
-    // Reset coordinates and collapse slider when online state updates
-    useEffect(() => {
+    const watchdogTimerRef = useRef(null);
+
+    const resetState = useCallback(() => {
+      if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current);
       dragX_LTR.set(0);
       dragX_RTL.set(0);
       setIsSliderExpanded(false);
       setStatus("idle");
       isSubmittingRef.current = false;
-    }, [isOnline, dragX_LTR, dragX_RTL]);
+    }, [dragX_LTR, dragX_RTL]);
+
+    // Reset coordinates and collapse slider when online state updates
+    useEffect(() => {
+      resetState();
+    }, [isOnline, resetState]);
+
+    useEffect(() => {
+      return () => {
+        if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current);
+      };
+    }, []);
 
     const isCurrentOnline = isControlledDriverMode ? isOnline : standaloneCompleted;
     const showPill = isControlledDriverMode ? !isSliderExpanded : standaloneCompleted;
@@ -96,24 +109,34 @@ export const SlideButton = forwardRef(
     };
 
     const handleDragEndLTR = (_event, info) => {
-      if (disabled || isSubmittingRef.current) return;
+      if (disabled || isSubmittingRef.current) {
+        dragX_LTR.set(0);
+        return;
+      }
       const offset = info?.offset?.x ?? dragX_LTR.get();
       const progress = dragProgressLTR.get();
 
       if (progress >= DRAG_THRESHOLD || offset >= 90 || dragX_LTR.get() >= 90) {
         isSubmittingRef.current = true;
         setStatus("loading");
+
+        // Safety watchdog: ensures button auto-unlocks after 1.2s under any network/lifecycle stalls
+        if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current);
+        watchdogTimerRef.current = setTimeout(() => {
+          resetState();
+        }, 1200);
+
         setTimeout(() => {
-          if (onToggle) onToggle();
-          if (onSlideComplete) onSlideComplete();
-          dragX_LTR.set(0);
-          setIsSliderExpanded(false);
-          setStatus("idle");
-          isSubmittingRef.current = false;
-          if (!isControlledDriverMode) {
-            setStandaloneCompleted(true);
+          try {
+            if (onToggle) onToggle();
+            if (onSlideComplete) onSlideComplete();
+          } finally {
+            resetState();
+            if (!isControlledDriverMode) {
+              setStandaloneCompleted(true);
+            }
           }
-        }, 300);
+        }, 250);
       } else {
         dragX_LTR.set(0);
       }
@@ -131,35 +154,49 @@ export const SlideButton = forwardRef(
     };
 
     const handleDragEndRTL = (_event, info) => {
-      if (disabled || isSubmittingRef.current) return;
+      if (disabled || isSubmittingRef.current) {
+        dragX_RTL.set(0);
+        return;
+      }
       const offset = info?.offset?.x ?? dragX_RTL.get();
       const progress = dragProgressRTL.get();
 
       if (progress >= DRAG_THRESHOLD || offset <= -90 || dragX_RTL.get() <= -90) {
         isSubmittingRef.current = true;
         setStatus("loading");
+
+        // Safety watchdog: ensures button auto-unlocks after 1.2s under any network/lifecycle stalls
+        if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current);
+        watchdogTimerRef.current = setTimeout(() => {
+          resetState();
+        }, 1200);
+
         setTimeout(() => {
-          if (onToggle) onToggle();
-          if (onSlideComplete) onSlideComplete();
-          dragX_RTL.set(0);
-          setIsSliderExpanded(false);
-          setStatus("idle");
-          isSubmittingRef.current = false;
-        }, 300);
+          try {
+            if (onToggle) onToggle();
+            if (onSlideComplete) onSlideComplete();
+          } finally {
+            resetState();
+            if (!isControlledDriverMode) {
+              setStandaloneCompleted(true);
+            }
+          }
+        }, 250);
       } else {
         dragX_RTL.set(0);
       }
     };
 
     const handlePillClick = () => {
-      if (isSubmittingRef.current) return;
+      if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current);
+      isSubmittingRef.current = false;
+      setStatus("idle");
+      dragX_LTR.set(0);
+      dragX_RTL.set(0);
       if (isControlledDriverMode) {
-        dragX_LTR.set(0);
-        dragX_RTL.set(0);
         setIsSliderExpanded(true);
       } else {
         setStandaloneCompleted(false);
-        dragX_LTR.set(0);
       }
     };
 

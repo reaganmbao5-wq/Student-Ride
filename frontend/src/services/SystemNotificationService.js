@@ -25,60 +25,11 @@ class SystemNotificationService {
   }
 
   /**
-   * Play short, utility-grade audio tone per Section 4 specifications
+   * Audio alerts disabled per user specification
    */
-  playAudioAlert(eventType) {
-    if (typeof window === 'undefined') return;
-    try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-
-      // Only driver_arrived, ride_cancelled, and emergency_sos are allowed sound
-      if (eventType === 'driver_arrived') {
-        // Short single tone (< 250ms), not a chime sequence
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, ctx.currentTime);
-        gain.gain.setValueAtTime(0.2, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.2);
-      } else if (eventType === 'ride_cancelled') {
-        // Brief neutral tone
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(440, ctx.currentTime);
-        gain.gain.setValueAtTime(0.15, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.15);
-      } else if (eventType === 'emergency_sos') {
-        // Distinct alarm-style tone (emergency_sos only)
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(700, ctx.currentTime);
-        osc.frequency.linearRampToValueAtTime(950, ctx.currentTime + 0.25);
-        gain.gain.setValueAtTime(0.3, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.35);
-      }
-    } catch (e) {
-      // AudioContext autostart restrictions handled silently
-    }
+  playAudioAlert(_eventType) {
+    // Audio alerts disabled
+    return;
   }
 
   /**
@@ -128,8 +79,7 @@ class SystemNotificationService {
         haptics.tap();
     }
 
-    // 2. Audio Alert (strictly compliant with Section 4)
-    this.playAudioAlert(eventType);
+    // 2. Audio Alert disabled per user specification
 
     // 3. Native OS System Notification (if permitted)
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {

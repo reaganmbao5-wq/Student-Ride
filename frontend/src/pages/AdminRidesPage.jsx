@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   MapPin, Search, Calendar, RefreshCw, User, Clock, 
-  ArrowUpDown, Filter, Eye, CheckCircle2, XCircle, AlertCircle, X 
+  ArrowUpDown, Filter, Eye, CheckCircle2, XCircle, AlertCircle, X,
+  Star, MessageSquare
 } from 'lucide-react';
 import { SteeringWheel, Car } from '@phosphor-icons/react';
-import { GlassCard, StatusBadge, EmptyState } from '../components/common/GlassComponents';
+import { GlassCard, StatusBadge, EmptyState, RatingStars } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
 import { AdminRidesSkeleton } from '../components/common/PageSkeletons';
@@ -418,6 +419,40 @@ const AdminRidesPage = () => {
                       <p className="text-xs text-muted-foreground">{selectedRide.driver?.user?.email || 'No email'}</p>
                       <p className="text-xs text-gold font-mono">{selectedRide.driver?.plate_number ? `Plate: ${selectedRide.driver.plate_number}` : ''}</p>
                     </div>
+                  </div>
+
+                  {/* Passenger Rating & Review Feedback */}
+                  <div className="p-5 rounded-2xl bg-muted/40 border border-border space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-bold text-gold uppercase tracking-wider flex items-center gap-1.5">
+                        <Star className="w-4 h-4 shrink-0 fill-gold text-gold" />
+                        Passenger Rating & Feedback
+                      </p>
+                      {selectedRide.rating ? (
+                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-gold/10 border border-gold/20">
+                          <RatingStars rating={selectedRide.rating} size="sm" />
+                          <span className="text-gold font-extrabold text-sm">{selectedRide.rating}.0 / 5.0</span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic">No rating submitted</span>
+                      )}
+                    </div>
+
+                    {selectedRide.review ? (
+                      <div className="p-3.5 rounded-xl bg-background/50 border border-border/60">
+                        <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-1 flex items-center gap-1">
+                          <MessageSquare className="w-3.5 h-3.5 text-gold" />
+                          Student Note:
+                        </p>
+                        <p className="text-foreground text-sm leading-relaxed italic">
+                          "{selectedRide.review}"
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic">
+                        {selectedRide.rating ? 'Student gave a star rating with no written note.' : 'No passenger review left for this trip.'}
+                      </p>
+                    )}
                   </div>
 
                   {/* Financials Breakdown */}
