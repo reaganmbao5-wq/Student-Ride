@@ -536,8 +536,7 @@ export const PlatformMap = ({
           });
 
           if (targetCamera && typeof targetCamera.zoom === 'number') {
-            // Compromise zoom out slightly (-0.45 zoom) as requested by user for comfortable framing on all distances
-            const balancedZoom = Math.min(16.0, targetCamera.zoom - 0.45);
+            const balancedZoom = Math.min(16.0, targetCamera.zoom);
             mapRef.current.flyTo({
               center: targetCamera.center,
               zoom: balancedZoom,

@@ -436,15 +436,12 @@ const RideRequestPage = () => {
     if (activeDropoff) markers.push({ lat: activeDropoff.lat, lng: activeDropoff.lng, iconType: 'dropoff', key: 'final-dropoff' });
   }
 
-  // Memoized bounds logic for confirm step (Includes full route curvature vertices + pickup & dropoff)
+  // Memoized bounds logic for confirm step (strictly pickup and dropoff points for focused framing)
   const bounds = useMemo(() => {
     if (step === 'confirm') {
       const p = pickup || confirmedLocationsRef.current.pickup;
       const d = dropoff || confirmedLocationsRef.current.dropoff;
       if (p && d) {
-        if (routeGeometry && Array.isArray(routeGeometry) && routeGeometry.length > 2) {
-          return routeGeometry;
-        }
         return [
           [p.lat, p.lng],
           [d.lat, d.lng]
@@ -452,7 +449,7 @@ const RideRequestPage = () => {
       }
     }
     return null;
-  }, [step, pickup, dropoff, routeGeometry]);
+  }, [step, pickup, dropoff]);
 
 
   const sheetRef = useRef(null);
