@@ -149,7 +149,7 @@ const AppRoutes = () => {
           path="/ride"
           element={
             <ProtectedRoute allowedRoles={['student', 'lecturer']}>
-              {isCountdownActive() ? <Navigate to="/coming-soon" replace /> : <RideRequestPage />}
+              <RideRequestPage />
             </ProtectedRoute>
           }
         />

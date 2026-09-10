@@ -26,11 +26,9 @@ export const Layout = ({ children }) => {
     navigate('/');
   };
 
-  const ridePath = isCountdownActive() ? '/coming-soon' : '/ride';
-
   const studentNavItems = [
     { to: '/dashboard', icon: (props) => <House weight="duotone" {...props} />, label: 'Home' },
-    { to: ridePath, icon: (props) => <MapPin weight="duotone" {...props} />, label: 'Ride' },
+    { to: '/ride', icon: (props) => <MapPin weight="duotone" {...props} />, label: 'Ride' },
     { to: '/history', icon: (props) => <Clock weight="duotone" {...props} />, label: 'History' },
     { to: '/profile', icon: (props) => <User weight="duotone" {...props} />, label: 'Profile' }
   ];

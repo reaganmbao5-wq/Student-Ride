@@ -37,13 +37,6 @@ import {
 const RideRequestPage = () => {
   const navigate = useNavigate();
   const { api } = useAuth();
-
-  useEffect(() => {
-    if (isCountdownActive()) {
-      navigate('/coming-soon', { replace: true });
-    }
-  }, [navigate]);
-
   const [rideMode, setRideMode] = useState('shared');
   const { location: userLocation, loading: geoLoading, error: geoError, refresh: refreshLocation } = useGeolocation();
   const { drivers: nearbyDrivers } = useDriverDiscovery(api, userLocation, rideMode);
@@ -380,6 +373,12 @@ const RideRequestPage = () => {
     const activePickup = pickup || confirmedLocationsRef.current.pickup;
     const activeDropoff = dropoff || confirmedLocationsRef.current.dropoff;
     if (!activePickup || !activeDropoff || !fareEstimate) return;
+
+    // Beta testing phase gate: intercept final request ride and direct to announcement
+    if (isCountdownActive()) {
+      navigate('/coming-soon');
+      return;
+    }
 
     setRequesting(true);
     try {

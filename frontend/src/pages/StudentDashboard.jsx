@@ -294,8 +294,7 @@ const StudentDashboard = () => {
     }
 
     setTimeout(() => {
-      const targetPath = isCountdownActive() ? '/coming-soon' : '/ride';
-      navigate(targetPath);
+      navigate('/ride');
     }, 850);
   };
 
@@ -1096,7 +1095,7 @@ const StudentDashboard = () => {
             </div>
           </GlassCard>
 
-          <GlassCard className="p-3.5 sm:p-4 cursor-pointer hover:border-gold/30 transition-all" hover={false} onClick={() => navigate(isCountdownActive() ? '/coming-soon' : '/ride')}>
+          <GlassCard className="p-3.5 sm:p-4 cursor-pointer hover:border-gold/30 transition-all" hover={false} onClick={() => navigate('/ride')}>
             <div className="flex items-center gap-3">
               <Clock className="w-7 h-7 text-amber-500 shrink-0" />
               <div className="min-w-0">
@@ -1143,7 +1142,7 @@ const StudentDashboard = () => {
               title="No rides yet"
               description="Your ride history will appear here"
               action={
-                <GoldButton size="sm" onClick={() => navigate(isCountdownActive() ? '/coming-soon' : '/ride')}>
+                <GoldButton size="sm" onClick={() => navigate('/ride')}>
                   Book your first ride
                 </GoldButton>
               }

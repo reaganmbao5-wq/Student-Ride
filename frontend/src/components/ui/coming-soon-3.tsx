@@ -1,10 +1,10 @@
 "use client";
 
 import React from "react";
-import { Rocket as RiRocket2Line, ArrowLeft } from "lucide-react";
+import { Rocket as RiRocket2Line } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { useTheme, ACCENT_COLORS } from "../../context/ThemeContext";
 
 // Gate flag: Remains active until manually set to false after beta testing finishes
 export const IS_BETA_TESTING_GATE_ACTIVE = true;
@@ -13,30 +13,13 @@ export function isCountdownActive() {
   return IS_BETA_TESTING_GATE_ACTIVE;
 }
 
-export default function ComingSoonBlock({ showBackToDashboard = true }) {
+export default function ComingSoonBlock() {
   const navigate = useNavigate();
+  const { accentColor } = useTheme();
+  const activeAccentHex = ACCENT_COLORS?.[accentColor]?.hex || '#3B82F6';
 
   return (
     <section className="relative flex min-h-[calc(100vh-8rem)] w-full flex-col items-center justify-center gap-8 bg-background px-4 sm:px-6 py-10 sm:py-16 text-center text-foreground transition-colors duration-300">
-      {/* Top Controls Bar */}
-      <div className="w-full max-w-2xl flex items-center justify-between px-2 mb-2">
-        {showBackToDashboard ? (
-          <button
-            type="button"
-            onClick={() => navigate('/dashboard')}
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground bg-muted/30 hover:bg-muted/60 border border-border transition-all cursor-pointer shadow-sm"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Dashboard</span>
-          </button>
-        ) : (
-          <div />
-        )}
-        <div className="flex items-center gap-3">
-          <ThemeToggle />
-        </div>
-      </div>
-
       <div className="flex flex-col items-center gap-4 max-w-xl mx-auto">
         <span className="flex items-center gap-2 border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
           <RiRocket2Line className="size-3.5" aria-hidden="true" />
@@ -53,7 +36,11 @@ export default function ComingSoonBlock({ showBackToDashboard = true }) {
       <div className="pt-2">
         <Button
           onClick={() => navigate('/dashboard')}
-          className="px-6 py-2.5 rounded-xl font-semibold shadow-md cursor-pointer text-sm"
+          className="px-7 py-3 rounded-xl font-semibold shadow-lg active:scale-98 transition-all cursor-pointer text-sm text-white"
+          style={{
+            backgroundColor: activeAccentHex,
+            boxShadow: `0 10px 25px -5px ${activeAccentHex}70`
+          }}
         >
           Return to Dashboard
         </Button>
