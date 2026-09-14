@@ -106,6 +106,32 @@ for (const filePath of files) {
           console.error(`❌ [UNDECLARED VARIABLE / REFERENCE ERROR] in ${relPath}:${line}:${col}`);
           console.error(`   Variable '${name}' is referenced but never defined!\n`);
           errorsFound++;
+        } else {
+          // Check for Temporal Dead Zone (TDZ) access of const/let before declaration
+          const binding = pathNode.scope.getBinding(name);
+          if (binding && (binding.kind === 'const' || binding.kind === 'let')) {
+            const defLine = binding.identifier?.loc?.start?.line;
+            const refLine = pathNode.node.loc?.start?.line;
+            if (defLine && refLine && defLine > refLine) {
+              let curr = pathNode.parentPath;
+              let insideDeferredFunction = false;
+              while (curr) {
+                if (curr.node.type === 'FunctionDeclaration' || curr.node.type === 'FunctionExpression' || curr.node.type === 'ArrowFunctionExpression') {
+                  const isComponent = curr.parentPath?.node?.type === 'VariableDeclarator' && /^[A-Z]/.test(curr.parentPath.node.id?.name || '');
+                  if (!isComponent) {
+                    insideDeferredFunction = true;
+                    break;
+                  }
+                }
+                curr = curr.parentPath;
+              }
+              if (!insideDeferredFunction) {
+                console.error(`❌ [TDZ REFERENCE ERROR] in ${relPath}:${refLine}:${pathNode.node.loc?.start.column}`);
+                console.error(`   Variable '${name}' is accessed before its declaration on line ${defLine}!\n`);
+                errorsFound++;
+              }
+            }
+          }
         }
       }
     });

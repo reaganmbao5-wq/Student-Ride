@@ -14,6 +14,9 @@ import { showFriendlyError } from '../utils/errorHandler';
 import { ThemeToggle } from '../components/ui/theme-toggle';
 import { AndroidRobotIcon } from '../components/common/AppUpdateModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';
+import { TourGuideButton } from '../components/common/TourGuideButton';
+import { tourGuide } from '../services/TourGuideService';
+import { LaunchSplashTransition } from '../components/common/LaunchSplashTransition';
 
 const AppleIcon = ({ className = "w-5 h-5" }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
@@ -118,6 +121,7 @@ const MAP_STYLES = [
 const LandingPage = () => {
   const navigate = useNavigate();
   const { theme, themeMode, setThemeMode, accentColor, setAccentColor, ACCENT_COLORS } = useTheme();
+  const activeAccentHex = ACCENT_COLORS?.[accentColor]?.hex || '#3B82F6';
   const { user, token: authToken, driverProfile } = useAuth();
 
   // Navigation state: ALWAYS start on step 1 (hero "Get Started" page)
@@ -344,6 +348,20 @@ const LandingPage = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (step === 1 && !localStorage.getItem('jride_landing_tour_seen') && !localStorage.getItem('jride_tour_landing_seen')) {
+      const timer = setTimeout(() => {
+        tourGuide.startLandingTour(activeAccentHex, theme);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (step > 1 && !localStorage.getItem(`jride_tour_onboarding_step_${step}_seen`)) {
+      const timer = setTimeout(() => {
+        tourGuide.startOnboardingTour(step, activeAccentHex, theme);
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, [step, activeAccentHex, theme]);
+
   const clearOnboardingCache = () => {
     localStorage.removeItem('onboarding_step');
     localStorage.removeItem('onboarding_substep');
@@ -488,8 +506,6 @@ const LandingPage = () => {
     window.open('/privacy', '_blank', 'noopener,noreferrer');
   };
 
-  // Get active accent hex for custom dynamic button color
-  const activeAccentHex = ACCENT_COLORS[accentColor]?.hex || '#3B82F6';
 
   // Theme Gallery selection helper
   const currentThemeIndex = themeMode === 'dark' ? 0 : themeMode === 'light' ? 1 : 2;
@@ -507,6 +523,7 @@ const LandingPage = () => {
 
   return (
     <div className="fixed inset-0 w-full h-full h-[100dvh] max-h-[100dvh] bg-[#0B0B0E] text-white flex flex-col justify-between overflow-hidden select-none font-sans">
+      <LaunchSplashTransition />
       
       {/* Permanent Background Media (Mounted ONCE, never unmounted across step changes) */}
       <div
@@ -552,6 +569,7 @@ const LandingPage = () => {
         {step === 1 ? (
           <div className="flex items-center justify-start">
             <img
+              id="header-jride-logo"
               src="/assets/images/jride_text_white.png"
               alt="JRide"
               className="h-8 sm:h-11 md:h-13 lg:h-15 w-auto object-contain drop-shadow-2xl select-none"
@@ -581,7 +599,8 @@ const LandingPage = () => {
             ))}
           </div>
         ) : (
-          <div className="flex items-center">
+          <div className="flex items-center gap-2.5">
+            <TourGuideButton tourType="landing" />
             <ThemeToggle />
           </div>
         )}
@@ -608,7 +627,7 @@ const LandingPage = () => {
               <div className="w-full p-5 xs:p-6 sm:p-10 md:p-14 lg:p-20 pb-8 xs:pb-10 sm:pb-14 flex flex-col items-start gap-4 sm:gap-6 safe-bottom">
                 <div className="space-y-2.5 sm:space-y-3.5 text-left max-w-4xl">
                   {/* Headline in Playfair Display serif font */}
-                  <h1 className="font-serif-hero text-3xl xs:text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-normal text-white leading-[1.12] tracking-normal drop-shadow-lg">
+                  <h1 id="tour-landing-headline" className="font-serif-hero text-3xl xs:text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-normal text-white leading-[1.12] tracking-normal drop-shadow-lg">
                     From Campus <br />
                     To Your Door Step
                   </h1>
@@ -617,7 +636,7 @@ const LandingPage = () => {
                   </p>
                 </div>
 
-                <div className="w-full max-w-xl md:max-w-2xl lg:max-w-4xl space-y-3 sm:space-y-4 pt-1 sm:pt-2">
+                <div id="tour-landing-cta" className="w-full max-w-xl md:max-w-2xl lg:max-w-4xl space-y-3 sm:space-y-4 pt-1 sm:pt-2">
                   {isAndroidWeb ? (
                     <div className="flex items-center gap-2.5 sm:gap-3 w-full">
                       <button
@@ -631,6 +650,7 @@ const LandingPage = () => {
                         Get Started
                       </button>
                       <button
+                        id="tour-landing-apk"
                         onClick={handleDownloadApk}
                         className="py-3.5 xs:py-4 sm:py-5 px-3.5 xs:px-4 sm:px-6 rounded-2xl font-bold text-xs xs:text-sm sm:text-base text-white bg-zinc-900/90 border border-zinc-700/80 hover:bg-zinc-800 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xl shrink-0"
                         title="Download Android APK"
@@ -698,7 +718,7 @@ const LandingPage = () => {
               className="w-full max-w-xl md:max-w-3xl lg:max-w-5xl xl:max-w-6xl mx-auto flex flex-col justify-between h-full px-6 sm:px-12 md:px-16 pt-4 pb-8"
             >
               <div className="space-y-8 overflow-y-auto pr-1">
-                <div>
+                <div id="tour-onboarding-details">
                   <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white mb-4">
                     What is your first name?
                   </h1>
@@ -816,7 +836,7 @@ const LandingPage = () => {
                   Select your gender
                 </h1>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+                <div id="tour-onboarding-role" className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
                   {/* Male Card */}
                   <div
                     onClick={() => setGender('male')}
@@ -908,7 +928,7 @@ const LandingPage = () => {
               </div>
 
               {/* Dynamic Center Customization Content */}
-              <div className="my-auto py-1 flex flex-col items-center justify-center w-full flex-shrink min-h-0">
+              <div id="tour-onboarding-theme" className="my-auto py-1 flex flex-col items-center justify-center w-full flex-shrink min-h-0">
                 
                 {/* 4A: App Theme Selection with 21st.dev Liquid Gallery */}
                 {customSubStep === 'theme' && (
@@ -1040,7 +1060,7 @@ const LandingPage = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="space-y-4 pt-4">
+              <div id="tour-onboarding-auth" className="space-y-4 pt-4">
                 {/* Continue with Google */}
                 <button
                   onClick={handleGoogleClick}

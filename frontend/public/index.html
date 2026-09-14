@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#D4AF37" />
+    <meta name="theme-color" content="#000000" />
     <meta name="description" content="Jaey Ride - Campus Ride Sharing App" />
     <!-- PWA Integration -->
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
@@ -58,7 +58,11 @@
 
 <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
+    <div id="root">
+        <div id="initial-splash" style="position:fixed;inset:0;background:#000000;display:flex;align-items:center;justify-content:center;z-index:999999;">
+            <img src="%PUBLIC_URL%/assets/images/jride_text_white.png" alt="JRide" style="height:32px;width:auto;object-fit:contain;display:block;" />
+        </div>
+    </div>
     <!--
       This HTML file is a template.
       To begin the development, run `npm start` or `yarn start`.

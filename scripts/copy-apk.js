@@ -5,6 +5,7 @@ const path = require('path');
 const candidates = [
     path.join(__dirname, '../frontend/android/app/build/outputs/apk/release/app-release.apk'),
     path.join(__dirname, '../frontend/android/app/build/outputs/apk/debug/app-debug.apk'),
+    path.join(__dirname, '../JRide-release-v1.0.0.apk'),
     path.join(__dirname, '../JRide-release-v2.1.2.apk'),
     path.join(__dirname, '../app-debug-885a0b1.apk')
 ];

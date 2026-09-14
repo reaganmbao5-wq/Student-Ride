@@ -8,6 +8,9 @@ import { PlatformMap } from '../map/components/PlatformMap';
 import { CAMERA_MODES } from '../map/camera/CameraConfig';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { TourGuideButton } from '../components/common/TourGuideButton';
+import { tourGuide } from '../services/TourGuideService';
 import { DriverDashboardSkeleton } from '../components/common/PageSkeletons';
 import { useWebSocket } from '../context/WebSocketContext';
 import { useWatchPosition } from '../map/hooks/useGeolocation';
@@ -28,6 +31,9 @@ import { SlideButton } from '../components/ui/slide-button';
 const DriverDashboard = () => {
   const navigate = useNavigate();
   const { user, api, driverProfile, refreshDriverProfile, logout } = useAuth();
+  const { theme, accentColor, ACCENT_COLORS } = useTheme();
+
+
   const { newRideRequest, removedSharedRideId, clearRideRequest, clearRemovedSharedRideId, sendLocationUpdate, requestHardRecalculation, rideUpdate, clearRideUpdate, routeQueueUpdate, clearRouteQueueUpdate, driverTripSegments, driverLocation, isConnected } = useWebSocket();
 
   const [routeQueue, setRouteQueue] = useState([]);
@@ -69,6 +75,28 @@ const DriverDashboard = () => {
   const [earnings, setEarnings] = useState(null);
   const [loading, setLoading] = useState(false);
   const [currentLocation, setCurrentLocation] = useState(null);
+  
+  // Auto-launch interactive driver tour on first visit when not in active ride
+  useEffect(() => {
+    if (!activeRide && !localStorage.getItem('jride_driver_tour_seen')) {
+      const timer = setTimeout(() => {
+        const activeAccentHex = ACCENT_COLORS?.[accentColor]?.hex || '#3B82F6';
+        tourGuide.startDriverDashboardTour(activeAccentHex, theme);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [activeRide, accentColor, theme, ACCENT_COLORS]);
+
+  // Auto-launch incoming request tour for first-time drivers
+  useEffect(() => {
+    if (pendingRides.length > 0 && !localStorage.getItem('jride_tour_driver_request_seen')) {
+      const timer = setTimeout(() => {
+        const activeAccentHex = ACCENT_COLORS?.[accentColor]?.hex || '#3B82F6';
+        tourGuide.startDriverIncomingRequestTour(activeAccentHex, theme);
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, [pendingRides.length, accentColor, theme, ACCENT_COLORS]);
   
   const getPassengerState = (status) => {
     if (['requested', 'accepted', 'driver_accepted', 'driver_en_route_to_pickup'].includes(status)) return 'WAITING PICKUP';
@@ -1180,7 +1208,7 @@ const DriverDashboard = () => {
             </div>
 
             {/* EXPANDED CONTENT */}
-            <div className="flex flex-col gap-8 overflow-y-auto flex-1 pt-4 pb-12 pr-2">
+            <div id="tour-driver-route-queue" className="flex flex-col gap-8 overflow-y-auto flex-1 pt-4 pb-12 pr-2">
                   {(() => {
                     // Extract unique ride_ids in order of their appearance in routeQueue
                     const routeOrderIds = [];
@@ -1319,12 +1347,13 @@ const DriverDashboard = () => {
                   </span>
                 </div>
               )}
+              <TourGuideButton tourType="driver" />
             </div>
             <p className="text-muted-foreground text-sm">
               {isOnline ? 'Waiting for ride requests...' : 'Go online to start accepting rides'}
             </p>
           </div>
-          <div className="flex flex-col items-end gap-2 shrink-0">
+          <div id="tour-driver-slide-btn" className="flex flex-col items-end gap-2 shrink-0">
             <SlideButton 
               isOnline={isOnline}
               onToggle={handleToggleOnline}
@@ -1378,7 +1407,7 @@ const DriverDashboard = () => {
 
         {/* Earnings Summary - Standalone Clean Icons without Background Boxes */}
         {earnings && (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+          <div id="tour-driver-earnings" className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
             <GlassCard className="p-3.5 sm:p-4" hover={false}>
               <div className="flex items-center gap-3">
                 <CurrencyCircleDollar weight="duotone" className="w-7 h-7 text-amber-500 shrink-0" />
@@ -1420,14 +1449,15 @@ const DriverDashboard = () => {
           <div>
             <h2 className="font-heading font-semibold text-foreground text-lg mb-4">Available Rides</h2>
             <div className="space-y-3">
-              {pendingRides.map((ride) => (
-                <RideCard
-                  key={ride.id}
-                  mode="FULL"
-                  request={ride}
-                  driverLocation={currentLocation}
-                  onAccept={(id) => handleAcceptRide(id)}
-                />
+              {pendingRides.map((ride, idx) => (
+                <div key={ride.id} id={idx === 0 ? "tour-driver-incoming-card" : undefined}>
+                  <RideCard
+                    mode="FULL"
+                    request={ride}
+                    driverLocation={currentLocation}
+                    onAccept={(id) => handleAcceptRide(id)}
+                  />
+                </div>
               ))}
             </div>
           </div>
@@ -1446,7 +1476,8 @@ const DriverDashboard = () => {
   );
 };
 
-const DocumentUploadCard = ({ title, type, url, onUpload, uploading }) => (
+function DocumentUploadCard({ title, type, url, onUpload, uploading }) {
+  return (
   <div className="relative group">
     <div className={`p-4 rounded-xl border transition-all ${url
       ? 'border-emerald-500/30 bg-emerald-500/5'
@@ -1484,6 +1515,7 @@ const DocumentUploadCard = ({ title, type, url, onUpload, uploading }) => (
       )}
     </div>
   </div>
-);
+  );
+}
 
 export default DriverDashboard;

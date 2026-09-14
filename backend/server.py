@@ -114,9 +114,19 @@ async def inject_etas_into_trip(trip: dict, driver_location: dict):
     return trip
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
+# MongoDB connection with Atlas M0 Connection Pooling & Graceful Reuse
 mongo_url = os.environ.get('MONGO_URL', 'mongodb+srv://admin:reaganmbao31?@cluster0.mucpxu8.mongodb.net/?appName=Cluster0')
-client = AsyncIOMotorClient(mongo_url)
+client = AsyncIOMotorClient(
+    mongo_url,
+    maxPoolSize=40,               # Stays well below Atlas M0 500-connection ceiling
+    minPoolSize=5,                # Maintains warm pre-authenticated TCP sockets to eliminate handshake latency
+    maxIdleTimeMS=45000,          # Reclaims idle connections to prevent stale socket accumulation
+    waitQueueTimeoutMS=5000,      # Queues burst requests gracefully rather than failing immediately
+    serverSelectionTimeoutMS=5000,# Rapid failover detection
+    connectTimeoutMS=10000,       # 10s connection timeout
+    retryWrites=True,             # Built-in driver level retry for supported writes
+    retryReads=True               # Built-in driver level retry for reads
+)
 db = client[os.environ.get('DB_NAME', 'mulungushi_rides')]
 notification_service = NotificationService(db)
 
@@ -187,6 +197,18 @@ async def startup_db_client():
         await db.rides.create_index("status")
         await db.rides.create_index("student_id")
         
+        # Atlas M0 High-Concurrency Indexes: sub-millisecond lookup and graceful connection reuse
+        for col_name, idx_args, idx_kwargs in [
+            ("users", "email", {"unique": True, "sparse": True}),
+            ("users", "id", {"unique": True, "sparse": True}),
+            ("drivers", "user_id", {"unique": True, "sparse": True}),
+            ("beta_testers", "email", {"sparse": True})
+        ]:
+            try:
+                await db[col_name].create_index(idx_args, **idx_kwargs)
+            except Exception as idx_err:
+                logger.warning(f"Index notice for {col_name}.{idx_args}: {idx_err}")
+
         # Create indexes for pricing
         await db.fixed_routes.create_index([("pickup_coordinates", "2dsphere")])
         await db.fixed_routes.create_index([("dropoff_coordinates", "2dsphere")])
@@ -6116,13 +6138,13 @@ async def get_app_version_info():
     latest_release = await db.app_releases.find_one({}, sort=[("version_code", -1)], projection={"_id": 0})
     if not latest_release:
         return {
-            "latest_version": "2.1.2",
-            "version_code": 13,
-            "min_required_version": "2.0.0",
+            "latest_version": "1.0.0",
+            "version_code": 14,
+            "min_required_version": "1.0.0",
             "force_update": False,
             "download_url": "/api/app/download-latest-apk",
-            "release_notes": "Official Jaey Ride production build with multi-passenger pooling and real-time live navigation.",
-            "file_size_bytes": 0,
+            "release_notes": "Official Jaey Ride production release v1.0.0 with deduplicated notifications, admin emergency SOS siren dispatch, driver watchdog recovery, and live route navigation.",
+            "file_size_bytes": 29473260,
             "published_at": datetime.now(timezone.utc).isoformat()
         }
     return latest_release
@@ -6135,11 +6157,12 @@ async def download_latest_apk():
     Fetches the pre-signed AWS S3 CDN redirect from GitHub Releases with zero server disk and zero database storage.
     """
     latest_release = await db.app_releases.find_one({}, sort=[("version_code", -1)])
-    if latest_release and latest_release.get("github_asset_id"):
-        presigned_s3_url = await get_github_asset_download_url(latest_release["github_asset_id"])
-        if presigned_s3_url:
-            return RedirectResponse(url=presigned_s3_url, status_code=302)
-        elif latest_release.get("browser_download_url"):
+    if latest_release:
+        if latest_release.get("github_asset_id"):
+            presigned_s3_url = await get_github_asset_download_url(latest_release["github_asset_id"])
+            if presigned_s3_url:
+                return RedirectResponse(url=presigned_s3_url, status_code=302)
+        if latest_release.get("browser_download_url"):
             return RedirectResponse(url=latest_release["browser_download_url"], status_code=302)
 
     # Fallback to querying GitHub Releases API directly for latest release asset

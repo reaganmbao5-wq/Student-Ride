@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Bell, X } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
@@ -21,6 +22,17 @@ const urlBase64ToUint8Array = (base64String) => {
 const PushNotificationManager = () => {
     const { isAuthenticated, token, user } = useAuth();
     const [showPrompt, setShowPrompt] = useState(false);
+    const location = useLocation();
+
+    // Strict security & UX check: NEVER show push notification prompts on auth pages or to unauthenticated users
+    const isAuthRoute = location.pathname.startsWith('/auth') || 
+                        location.pathname.startsWith('/login') || 
+                        location.pathname.startsWith('/register') || 
+                        location.pathname.startsWith('/forgot-password') || 
+                        location.pathname.startsWith('/reset-password') ||
+                        location.pathname === '/';
+
+    const shouldShow = Boolean(isAuthenticated && token && user && !isAuthRoute);
 
     const subscribeUser = async (isExplicit = true) => {
         try {
@@ -199,6 +211,11 @@ const PushNotificationManager = () => {
                     console.warn('Channel creation notice:', chErr);
                 }
 
+                if (!shouldShow) {
+                    setShowPrompt(false);
+                    return;
+                }
+
                 const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
                 const status = await PushNotifications.checkPermissions();
                 if (status.receive !== 'granted') {
@@ -212,11 +229,15 @@ const PushNotificationManager = () => {
                     subscribeUser(false);
                 }
             } else {
-                const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+                if (!shouldShow) {
+                    setShowPrompt(false);
+                    return;
+                }
+
                 if ('Notification' in window) {
                     if (Notification.permission === 'default') {
                         const asked = localStorage.getItem('j_ride_push_asked');
-                        if (!asked || isAdmin) setShowPrompt(true);
+                        if (!asked) setShowPrompt(true);
                     } else if (Notification.permission === 'granted' && isAuthenticated && token) {
                         subscribeUser(false);
                     }
@@ -225,14 +246,14 @@ const PushNotificationManager = () => {
         };
 
         checkPermissionAndRefresh();
-    }, [isAuthenticated, token, user?.id]);
+    }, [isAuthenticated, token, user?.id, shouldShow]);
 
     const handleDismiss = () => {
         localStorage.setItem('j_ride_push_asked', 'true');
         setShowPrompt(false);
     };
 
-    if (!showPrompt) return null;
+    if (!showPrompt || !shouldShow) return null;
 
     const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 

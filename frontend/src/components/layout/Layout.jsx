@@ -206,7 +206,7 @@ export const Layout = ({ children }) => {
       </main>
 
       {/* Desktop Apple Dock (Large screens with mouse hover: md:flex) */}
-      <nav className="hidden md:block fixed bottom-2 left-1/2 -translate-x-1/2 z-50 max-w-full safe-bottom">
+      <nav id="tour-bottom-nav-desktop" className="hidden md:block fixed bottom-2 left-1/2 -translate-x-1/2 z-50 max-w-full safe-bottom">
         <Dock className="items-end pb-3">
           {navItems.map((item) => (
             <NavLink
@@ -236,7 +236,7 @@ export const Layout = ({ children }) => {
       </nav>
 
       {/* Mobile & APK Limelight Nav (Mobile & Touch screens: block md:hidden) */}
-      <nav className="block md:hidden fixed bottom-3 left-1/2 -translate-x-1/2 z-50 max-w-full w-fit safe-bottom">
+      <nav id="tour-bottom-nav" className="block md:hidden fixed bottom-3 left-1/2 -translate-x-1/2 z-50 max-w-full w-fit safe-bottom">
         <LimelightNav
           items={limelightNavItems}
           defaultActiveIndex={activeLimelightIndex >= 0 ? activeLimelightIndex : 0}

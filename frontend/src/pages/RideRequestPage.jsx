@@ -33,10 +33,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select';
+import { useTheme } from '../context/ThemeContext';
+import { TourGuideButton } from '../components/common/TourGuideButton';
+import { tourGuide } from '../services/TourGuideService';
 
 const RideRequestPage = () => {
   const navigate = useNavigate();
   const { api, user } = useAuth();
+  const { theme, accentColor, ACCENT_COLORS } = useTheme();
+  const activeAccentHex = ACCENT_COLORS?.[accentColor]?.hex || '#3B82F6';
   const [rideMode, setRideMode] = useState('shared');
   const { location: userLocation, loading: geoLoading, error: geoError, refresh: refreshLocation } = useGeolocation();
   const { drivers: nearbyDrivers } = useDriverDiscovery(api, userLocation, rideMode);
@@ -63,6 +68,16 @@ const RideRequestPage = () => {
   const [loading, setLoading] = useState(false);
   const [requesting, setRequesting] = useState(false);
   const [isEstimatingFare, setIsEstimatingFare] = useState(false);
+
+  // Auto-launch guided walkthrough for first-time students on each stage of ride request
+  useEffect(() => {
+    if (!localStorage.getItem(`jride_tour_request_${step}_seen`)) {
+      const timer = setTimeout(() => {
+        tourGuide.startRideRequestTour(step, activeAccentHex, theme);
+      }, 850);
+      return () => clearTimeout(timer);
+    }
+  }, [step, activeAccentHex, theme]);
 
   // Debounce ref for reverse geocoding & card touch gestures
   const geocodeTimeoutRef = useRef(null);
@@ -507,7 +522,7 @@ const RideRequestPage = () => {
 
         {/* ActionSearchBar with Animated Dropdown */}
         {step !== 'confirm' && (
-          <div className="pointer-events-auto">
+          <div id={step === 'pickup' ? "tour-pickup-search" : "tour-destination-search"} className="pointer-events-auto">
             <ActionSearchBar
               locations={searchableLocations}
               onSelectLocation={handleActionSearchSelect}
@@ -515,6 +530,11 @@ const RideRequestPage = () => {
             />
           </div>
         )}
+      </div>
+
+      {/* Top Right Tour Guide Button */}
+      <div className="absolute top-10 md:top-6 right-4 z-30 pointer-events-auto">
+        <TourGuideButton tourType="request" requestStep={step} />
       </div>
 
       {/* Map Layer */}
@@ -552,7 +572,7 @@ const RideRequestPage = () => {
 
         {/* Fixed Center Marker Overlay (Only visible during selection steps) */}
         {step !== 'confirm' && (
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full z-20 pointer-events-none flex flex-col items-center">
+          <div id="tour-map-pin" className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full z-20 pointer-events-none flex flex-col items-center">
              {/* Info Tooltip */}
              <motion.div 
                initial={{ opacity: 0, y: 10 }}
@@ -647,6 +667,7 @@ const RideRequestPage = () => {
 
                 {/* Right: GPS Navigation Button (Aligned flush with Row 1 Top) */}
                 <button
+                  id="tour-gps-button"
                   onClick={handleCenterToCurrentLocation}
                   disabled={isLocating || isGeocoding}
                   className="w-11 h-11 flex-shrink-0 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl flex items-center justify-center active:scale-95 transition-transform shadow-sm -mt-1 self-start"
@@ -657,6 +678,7 @@ const RideRequestPage = () => {
               </div>
 
               <button 
+                id="tour-confirm-pickup-btn"
                 className="w-full py-3.5 bg-black text-white rounded-xl font-bold text-base active:scale-95 transition-transform disabled:opacity-50"
                 onClick={handleConfirmLocation}
                 disabled={isGeocoding || !currentAddress || currentAddress === 'Unable to fetch address'}
@@ -714,6 +736,7 @@ const RideRequestPage = () => {
               </div>
 
               <button 
+                id="tour-confirm-destination-btn"
                 className="w-full py-3.5 bg-black text-white rounded-xl font-bold text-base active:scale-95 transition-transform disabled:opacity-50"
                 onClick={handleConfirmLocation}
                 disabled={isGeocoding || !currentAddress || currentAddress === 'Unable to fetch address'}
@@ -767,6 +790,7 @@ const RideRequestPage = () => {
                        <div className="flex items-stretch gap-3 min-h-[100px]">
                           {/* Animated Swipeable & Tap-Toggleable Stationary Ride Mode Selector Card */}
                           <div 
+                            id="tour-ride-mode-toggle"
                             onTouchStart={handleTouchStart}
                             onTouchMove={handleTouchMove}
                             onTouchEnd={handleTouchEnd}
@@ -814,7 +838,7 @@ const RideRequestPage = () => {
                                     transition={{ duration: 0.2, ease: "easeInOut" }}
                                     className="w-full flex flex-col justify-between h-full"
                                   >
-                                    <div className="flex items-start justify-between gap-2 mb-0.5">
+                                    <div id="tour-ride-pricing" className="flex items-start justify-between gap-2 mb-0.5">
                                       <div>
                                         <span className={`text-[10px] font-extrabold uppercase tracking-wider ${rideMode === 'shared' ? 'text-blue-500 dark:text-blue-400' : 'text-muted-foreground'}`}>
                                           {rideMode} FARE
@@ -847,6 +871,7 @@ const RideRequestPage = () => {
 
                           {/* Request Ride Action Button (Placed DOWN at bottom of row) */}
                           <button
+                            id="tour-request-ride-btn"
                             onClick={handleRequestRide}
                             disabled={requesting || isEstimatingFare || !fareEstimate}
                             className="w-32 py-3 px-3 bg-black dark:bg-white text-white dark:text-black font-bold text-sm rounded-2xl active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center shrink-0 shadow-lg text-center leading-tight self-end mb-0.5 min-h-[50px]"

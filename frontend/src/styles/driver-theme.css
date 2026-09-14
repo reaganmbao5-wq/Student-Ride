@@ -1,0 +1,149 @@
+/* Custom JRide Theme for Driver.js Tour Guide - Pure, Non-Glowing, Minimalist Agency Style */
+@import 'driver.js/dist/driver.css';
+
+:root {
+  --driver-accent: #3B82F6;
+  --driver-accent-light: rgba(59, 130, 246, 0.12);
+  --driver-bg: #121214;
+  --driver-text: #f4f4f5;
+  --driver-subtext: #a1a1aa;
+  --driver-border: rgba(255, 255, 255, 0.12);
+}
+
+.light {
+  --driver-bg: #ffffff;
+  --driver-text: #09090b;
+  --driver-subtext: #52525b;
+  --driver-border: rgba(0, 0, 0, 0.10);
+}
+
+.dark {
+  --driver-bg: #121214;
+  --driver-text: #f4f4f5;
+  --driver-subtext: #a1a1aa;
+  --driver-border: rgba(255, 255, 255, 0.12);
+}
+
+/* Card Container - Zero Glowing, Zero Bleed, Solid Professional Box */
+.driver-popover {
+  background-color: var(--driver-bg) !important;
+  color: var(--driver-text) !important;
+  border: 1px solid var(--driver-border) !important;
+  border-radius: 1.15rem !important;
+  padding: 1.2rem !important;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.6) !important;
+  max-width: 330px !important;
+  backdrop-filter: none !important;
+  z-index: 1000000000 !important;
+  font-family: inherit !important;
+}
+
+.driver-popover-title {
+  font-family: inherit !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  color: var(--driver-text) !important;
+  margin-bottom: 0.35rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  letter-spacing: -0.01em !important;
+}
+
+.driver-popover-description {
+  font-family: inherit !important;
+  font-size: 0.8125rem !important;
+  line-height: 1.5 !important;
+  color: var(--driver-subtext) !important;
+  margin-bottom: 0.9rem !important;
+}
+
+.driver-popover-footer {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-top: 0.75rem !important;
+  padding-top: 0.75rem !important;
+  border-top: 1px solid var(--driver-border) !important;
+}
+
+.driver-popover-progress-text {
+  font-size: 0.7rem !important;
+  font-weight: 700 !important;
+  color: var(--driver-accent) !important;
+  background: var(--driver-accent-light) !important;
+  padding: 0.2rem 0.6rem !important;
+  border-radius: 9999px !important;
+  letter-spacing: 0.02em !important;
+}
+
+.driver-popover-navigation-btns {
+  display: flex !important;
+  gap: 0.45rem !important;
+}
+
+.driver-popover-footer-btn {
+  border-radius: 0.65rem !important;
+  padding: 0.4rem 0.85rem !important;
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  transition: all 0.15s ease !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+  outline: none !important;
+}
+
+.driver-popover-next-btn {
+  background-color: var(--driver-accent) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.driver-popover-next-btn:hover {
+  filter: brightness(1.08) !important;
+}
+
+.driver-popover-prev-btn {
+  background-color: transparent !important;
+  color: var(--driver-subtext) !important;
+  border: 1px solid var(--driver-border) !important;
+}
+
+.driver-popover-prev-btn:hover {
+  background-color: rgba(128, 128, 128, 0.08) !important;
+  color: var(--driver-text) !important;
+}
+
+.driver-popover-close-btn {
+  color: var(--driver-subtext) !important;
+  top: 0.85rem !important;
+  right: 0.85rem !important;
+  font-size: 1.1rem !important;
+  transition: color 0.15s ease !important;
+}
+
+.driver-popover-close-btn:hover {
+  color: var(--driver-text) !important;
+}
+
+/* Stage Cutout - Clean, No Halos */
+.driver-stage {
+  border-radius: 0.85rem !important;
+  box-shadow: none !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* Arrow Shapes */
+.driver-popover-arrow-side-left {
+  border-right-color: var(--driver-bg) !important;
+}
+.driver-popover-arrow-side-right {
+  border-left-color: var(--driver-bg) !important;
+}
+.driver-popover-arrow-side-top {
+  border-bottom-color: var(--driver-bg) !important;
+}
+.driver-popover-arrow-side-bottom {
+  border-top-color: var(--driver-bg) !important;
+}

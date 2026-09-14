@@ -23,6 +23,8 @@ import { haptics } from '../utils/haptics';
 import { AppCache } from '../utils/AppCache';
 import { StudentDashboardSkeleton } from '../components/common/PageSkeletons';
 import { systemNotification } from '../services/SystemNotificationService';
+import { TourGuideButton } from '../components/common/TourGuideButton';
+import { tourGuide } from '../services/TourGuideService';
 import { DriverPhotoModal } from '../components/common/DriverPhotoModal';
 import { isCountdownActive } from '../components/ui/coming-soon-3';
 
@@ -70,7 +72,7 @@ const StudentDashboard = () => {
   const initialRideState = location.state?.initialRide || null;
 
   const { user, api } = useAuth();
-  const { accentColor } = useTheme();
+  const { theme, accentColor, ACCENT_COLORS } = useTheme();
   const { isConnected, rideUpdate, driverLocation, passengerBriefing, clearRideUpdate, setPassengerBriefing } = useWebSocket();
   const { location: userLocation } = useGeolocation();
   
@@ -78,6 +80,44 @@ const StudentDashboard = () => {
   // Always start with loading=false — render from cache immediately, fetch happens silently in background
   const [loading, setLoading] = useState(false);
   
+  // Auto-launch interactive tour on first visit when not in active ride
+  useEffect(() => {
+    if (!activeRide && !localStorage.getItem('jride_student_tour_seen')) {
+      const timer = setTimeout(() => {
+        const activeAccentHex = ACCENT_COLORS?.[accentColor]?.hex || '#3B82F6';
+        tourGuide.startStudentDashboardTour(activeAccentHex, theme);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [activeRide, accentColor, theme, ACCENT_COLORS]);
+
+  // Auto-launch guided walkthrough for finding driver
+  useEffect(() => {
+    if (activeRide && activeRide.status === 'requested' && !localStorage.getItem('jride_tour_finding_seen')) {
+      const timer = setTimeout(() => {
+        const activeAccentHex = ACCENT_COLORS?.[accentColor]?.hex || '#3B82F6';
+        tourGuide.startFindingDriverTour(activeAccentHex, theme);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [activeRide?.status, accentColor, theme, ACCENT_COLORS]);
+
+  // Auto-launch guided walkthrough for active ride
+  useEffect(() => {
+    if (
+      activeRide &&
+      ['accepted', 'driver_accepted', 'driver_en_route_to_pickup', 'driver_arrived', 'passenger_boarding', 'ride_started', 'ride_in_progress', 'ongoing'].includes(activeRide.status) &&
+      !localStorage.getItem('jride_tour_active_seen')
+    ) {
+      const timer = setTimeout(() => {
+        const activeAccentHex = ACCENT_COLORS?.[accentColor]?.hex || '#3B82F6';
+        const isShared = activeRide.ride_mode === 'shared' || activeRide.ride_type === 'shared';
+        tourGuide.startActiveRideTour(isShared, activeAccentHex, theme);
+      }, 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [activeRide?.status, activeRide?.ride_mode, activeRide?.ride_type, accentColor, theme, ACCENT_COLORS]);
+
   // 6-Second Alternating Awareness Message Banner Timer
   const [showBriefingBanner, setShowBriefingBanner] = useState(true);
   useEffect(() => {
@@ -411,6 +451,8 @@ const StudentDashboard = () => {
       } else if (rideUpdate.type === 'reassigning') {
         systemNotification.notifyRideCancelled('Driver cancelled. Finding a new driver...');
         setActiveRide(prev => prev ? { ...prev, status: 'requested', driver_id: null, driver: null } : null);
+        setPassengerBriefing(null);
+        setDriverPos(null);
         AppCache.remove('active_ride');
       }
       clearRideUpdate();
@@ -787,8 +829,16 @@ const StudentDashboard = () => {
 
     return (
       <div className="fixed inset-0 bg-background overflow-hidden flex flex-col" data-testid="student-active-ride">
+        {/* Top Right Tour Guide Button during Active Ride / Finding Driver */}
+        <div className="absolute top-4 right-4 z-30 pointer-events-auto">
+          <TourGuideButton 
+            tourType={activeRide.status === 'requested' ? 'finding' : 'activeRide'} 
+            isShared={activeRide.ride_mode === 'shared' || activeRide.ride_type === 'shared'} 
+          />
+        </div>
+
         {/* Map Layer */}
-        <div className="flex-1 relative z-0">
+        <div id="tour-student-active-map" className="flex-1 relative z-0">
           <PlatformMap
             center={
               (activeRide && activeRide.status === 'requested' && activeRide.pickup_location)
@@ -823,6 +873,7 @@ const StudentDashboard = () => {
 
         {/* Bottom Sheet Overlay (Fixed flush at bottom-0, zero-flicker rock solid stability with swipe up/down) */}
         <div
+          id="tour-student-bottom-sheet"
           onTouchStart={handleSheetTouchStart}
           onTouchMove={handleSheetTouchMove}
           onTouchEnd={handleSheetTouchEnd}
@@ -1032,21 +1083,24 @@ const StudentDashboard = () => {
         {/* Top Greeting & Hero Ride Request Feature matching Mockup */}
         <div className="flex flex-col items-center text-center space-y-2 pt-0 pb-1">
           {/* Header Greeting (Bigger typography, clean Hello, smoothly animated gradient on name with !) */}
-          <div className="w-full text-left font-heading pb-1">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-foreground tracking-tight leading-tight">
-              Hello,{' '}
-              <span
-                className="animate-name-gradient"
-                style={{
-                  backgroundImage: getNameGradient(accentColor)
-                }}
-              >
-                {user?.name ? user.name.split(' ')[0] : 'Student'}!
-              </span>
-            </h1>
-            <p className="text-muted-foreground text-xs md:text-sm font-medium mt-1">
-              Where Would You Like To Go ?
-            </p>
+          <div className="w-full text-left font-heading pb-1 flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-foreground tracking-tight leading-tight">
+                Hello,{' '}
+                <span
+                  className="animate-name-gradient"
+                  style={{
+                    backgroundImage: getNameGradient(accentColor)
+                  }}
+                >
+                  {user?.name ? user.name.split(' ')[0] : 'Student'}!
+                </span>
+              </h1>
+              <p className="text-muted-foreground text-xs md:text-sm font-medium mt-1">
+                Where Would You Like To Go ?
+              </p>
+            </div>
+            <TourGuideButton tourType="student" />
           </div>
 
           {/* Hero Top-Down Car with Yellow Circle Background (Exact commit 546fe09 drive-under structure) */}
@@ -1071,6 +1125,7 @@ const StudentDashboard = () => {
 
             {/* Request a Ride Button (Positioned above car layer with z-20 so car drives under it) */}
             <motion.button
+              id="tour-student-request-btn"
               type="button"
               onClick={handleRequestRideClick}
               whileHover={{ scale: 1.03 }}
@@ -1085,7 +1140,7 @@ const StudentDashboard = () => {
         </div>
 
         {/* Quick Stats - Standalone Clean Icons without Background Boxes */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        <div id="tour-student-stats" className="grid grid-cols-2 gap-3 sm:gap-4">
           <GlassCard className="p-3.5 sm:p-4" hover={false}>
             <div className="flex items-center gap-3">
               <Car weight="duotone" className="w-7 h-7 text-blue-500 shrink-0" />
@@ -1110,7 +1165,7 @@ const StudentDashboard = () => {
         </div>
 
         {/* Recent Rides */}
-        <div>
+        <div id="tour-student-recent">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-heading font-semibold text-foreground text-lg">Recent Rides</h2>
             <button
