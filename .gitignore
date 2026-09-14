@@ -82,4 +82,6 @@ __pycache__/
 *.apk
 RIDE_CYCLE_DEBUG_CHECKLIST.md
 RIDE_LIFECYCLE_PERFORMANCE_AUDIT_REPORT.md
-
+cropped_assets/
+raylight_assets/
+upscaled_4k/
