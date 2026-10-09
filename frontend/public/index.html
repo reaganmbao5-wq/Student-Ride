@@ -5,7 +5,38 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
-    <meta name="description" content="Jaey Ride - Campus Ride Sharing App" />
+    
+    <!-- Primary SEO Meta Tags -->
+    <title>Jaey Ride | Official Campus Ride-Sharing at Mulungushi University &amp; Kabwe</title>
+    <meta name="title" content="Jaey Ride | Official Campus Ride-Sharing at Mulungushi University &amp; Kabwe" />
+    <meta name="description" content="Book affordable, safe campus rides at Mulungushi University (Main Campus &amp; Town Campus) with Jaey Ride (JRide). Share rides, split fares, and track verified drivers in Kabwe, Zambia." />
+    <meta name="keywords" content="Jaey Ride, JRide, Mulungushi ride, Mulungushi University taxi, Mulungushi rideshare, Kabwe rideshare, student ride sharing Zambia, campus taxi Kabwe, Great North Road campus taxi" />
+    <meta name="author" content="Jaey Ride" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="canonical" href="https://jaeyride.site/" />
+
+    <!-- Local & Geographic Meta Tags (Kabwe, Central Province, Zambia) -->
+    <meta name="geo.region" content="ZM-02" />
+    <meta name="geo.placename" content="Kabwe, Mulungushi University" />
+    <meta name="geo.position" content="-14.4087;28.2849" />
+    <meta name="ICBM" content="-14.4087, 28.2849" />
+
+    <!-- Open Graph / Facebook / WhatsApp -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://jaeyride.site/" />
+    <meta property="og:title" content="Jaey Ride | Official Campus Ride-Sharing at Mulungushi University &amp; Kabwe" />
+    <meta property="og:description" content="The dedicated campus mobility platform for Mulungushi University students and lecturers. Request rides, share seats, and travel safely across Kabwe." />
+    <meta property="og:image" content="https://jaeyride.site/logo512.png" />
+    <meta property="og:site_name" content="Jaey Ride" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://jaeyride.site/" />
+    <meta name="twitter:title" content="Jaey Ride | Mulungushi University Campus Rides" />
+    <meta name="twitter:description" content="Affordable, safe student rides and carpooling for Mulungushi University and Kabwe, Zambia." />
+    <meta name="twitter:image" content="https://jaeyride.site/logo512.png" />
+
     <!-- PWA Integration -->
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <link rel="preconnect" href="https://mt0.google.com" crossorigin="" />
@@ -19,22 +50,116 @@
     <link rel="icon" type="image/png" sizes="48x48" href="%PUBLIC_URL%/favicon-48x48.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/apple-touch-icon.png" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+
     <!-- Preload hero car image at high priority -->
     <link rel="preload" as="image" href="%PUBLIC_URL%/car_top.png" fetchpriority="high" />
-    <!--
-        manifest.json provides metadata used when your web app is installed on a
-        user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-        -->
-    <!--
-        Notice the use of %PUBLIC_URL% in the tags above.
-        It will be replaced with the URL of the `public` folder during the build.
-        Only files inside the `public` folder can be referenced from the HTML.
 
-        Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-        work correctly both with client-side routing and a non-root public URL.
-        Learn how to configure a non-root public URL by running `npm run build`.
-        -->
-    <title>Jaey Ride</title>
+    <!-- Schema.org JSON-LD Structured Data: SoftwareApplication & LocalBusiness & FAQPage -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "SoftwareApplication",
+          "@id": "https://jaeyride.site/#software",
+          "name": "Jaey Ride",
+          "alternateName": ["JRide", "Jaey Ride Zambia", "Mulungushi Ride"],
+          "applicationCategory": "TravelApplication",
+          "operatingSystem": "Android, Web, iOS (PWA)",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "ZMW"
+          },
+          "description": "Campus ride-sharing and carpooling app for Mulungushi University students, staff, and drivers in Kabwe, Zambia.",
+          "url": "https://jaeyride.site",
+          "downloadUrl": "https://jaeyride.site/api/app/download-latest-apk",
+          "softwareVersion": "1.0.0"
+        },
+        {
+          "@type": "LocalBusiness",
+          "@id": "https://jaeyride.site/#business",
+          "name": "Jaey Ride - Mulungushi Campus Rides",
+          "alternateName": "Jaey Ride",
+          "image": "https://jaeyride.site/logo512.png",
+          "url": "https://jaeyride.site",
+          "priceRange": "K15 - K100",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Great North Road, Main Campus",
+            "addressLocality": "Kabwe",
+            "addressRegion": "Central Province",
+            "addressCountry": "ZM"
+          },
+          "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": -14.4087,
+            "longitude": 28.2849
+          },
+          "areaServed": [
+            {
+              "@type": "Place",
+              "name": "Mulungushi University Main Campus"
+            },
+            {
+              "@type": "Place",
+              "name": "Mulungushi University Town Campus"
+            },
+            {
+              "@type": "Place",
+              "name": "Kabwe Town Center"
+            }
+          ]
+        },
+        {
+          "@type": "FAQPage",
+          "@id": "https://jaeyride.site/#faq",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "What is Jaey Ride?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Jaey Ride (JRide) is the official student ride-sharing and campus mobility platform created specifically for Mulungushi University students, lecturers, and verified drivers in Kabwe, Zambia. It offers affordable private and shared rides around campus and between campus and town."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How do Mulungushi University students request a ride on Jaey Ride?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Students can access Jaey Ride via https://jaeyride.site or by installing the JRide Android APK. Simply enter your campus pickup and destination (e.g. Hostels, Graduation Square, Library, Town Campus), select Private or Shared ride mode, and confirm to connect with nearby verified drivers instantly."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Where does Jaey Ride operate?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Jaey Ride operates across Mulungushi University Main Campus along Great North Road, Town Campus, surrounding student residential areas, and Kabwe Town Center."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How do drivers join Jaey Ride?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Drivers can register at https://jaeyride.site/driver/register by submitting their driver's license, vehicle details, road tax, and inspection documents for administrative verification."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Is Jaey Ride safe for students?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. All drivers undergo KYC verification, trips are tracked live on Mapbox GPS maps in real time, and an emergency SOS dispatch system is monitored 24/7 by administrators."
+              }
+            }
+          ]
+        }
+      ]
+    }
+    </script>
 
     <script>
         // SPA redirect handler for direct page refreshes
@@ -57,17 +182,27 @@
 </head>
 
 <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <noscript>
+        <div style="font-family: sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.6;">
+            <h1>Jaey Ride - Mulungushi University Campus Ride-Sharing &amp; Taxi Service</h1>
+            <p><strong>Jaey Ride (JRide)</strong> is the dedicated ride-sharing and carpooling platform designed for Mulungushi University students, staff, and drivers in Kabwe, Zambia.</p>
+            <h2>Campus Mobility Features</h2>
+            <ul>
+                <li><strong>Affordable Student Rates:</strong> Split fares with classmates using shared ride mode.</li>
+                <li><strong>Verified Drivers:</strong> Campus-approved drivers with background and vehicle checks.</li>
+                <li><strong>Live GPS Tracking:</strong> Turn-by-turn live navigation across Great North Road Main Campus and Town Campus.</li>
+                <li><strong>Safety &amp; SOS Protection:</strong> Built-in emergency alerts and ride monitoring.</li>
+            </ul>
+            <h2>Popular Campus Routes</h2>
+            <p>Mulungushi Main Campus &bull; Graduation Square &bull; Student Hostels &bull; Town Campus &bull; Kabwe Town Center</p>
+            <p>Please enable JavaScript to use the web application or download the Android APK from <a href="https://jaeyride.site/download/android">jaeyride.site/download/android</a>.</p>
+        </div>
+    </noscript>
     <div id="root">
         <div id="initial-splash" style="position:fixed;inset:0;background:#000000;display:flex;align-items:center;justify-content:center;z-index:999999;">
             <img src="%PUBLIC_URL%/assets/images/jride_text_white.png" alt="JRide" style="height:32px;width:auto;object-fit:contain;display:block;" />
         </div>
     </div>
-    <!--
-      This HTML file is a template.
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
 </body>
 
 </html>

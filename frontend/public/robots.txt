@@ -1,0 +1,41 @@
+# Robots.txt for Jaey Ride (https://jaeyride.site)
+# Allows standard search crawlers and AI search indexers
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin
+Disallow: /student/
+Disallow: /driver/dashboard
+Disallow: /driver/active
+
+# Generative Engine Crawlers (AI Overviews, Gemini, ChatGPT, Perplexity, Claude)
+User-agent: Googlebot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+# Canonical Sitemap Location
+Sitemap: https://jaeyride.site/sitemap.xml
