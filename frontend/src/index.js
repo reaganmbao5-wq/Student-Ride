@@ -1,8 +1,8 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import "@/index.css";
+import "./index.css";
 import "./map/styles/map.css";
-import App from "@/App";
+import App from "./App";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import * as Sentry from "@sentry/react";
 

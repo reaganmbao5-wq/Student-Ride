@@ -410,7 +410,8 @@ const LandingPage = () => {
             gender: gender,
             themeMode: themeMode,
             accentColor: accentColor,
-            mapThemeMode: mapStylePreference
+            mapThemeMode: mapStylePreference,
+            avatar_url: data.user?.avatar_url || null
           }
         });
       } else {

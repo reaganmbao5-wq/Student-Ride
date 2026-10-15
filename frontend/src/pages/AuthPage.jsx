@@ -195,14 +195,14 @@ const AuthPage = () => {
           return;
         }
 
+        if (!docs.profile_photo) {
+          toast.error(isDriver ? 'Please upload your driver profile photo' : 'Please upload your profile photo');
+          setLoading(false);
+          return;
+        }
+
         let user;
         if (isDriver) {
-          if (!docs.profile_photo) {
-            toast.error('Please upload your driver profile photo');
-            setLoading(false);
-            return;
-          }
-
           setUploadingDocs(true);
           let profilePhotoUrl = "";
           let licenseUrl = "";
@@ -235,6 +235,11 @@ const AuthPage = () => {
           toast.success('Driver account created! Waiting for approval.');
           navigate('/driver');
         } else {
+          setUploadingDocs(true);
+          let profilePhotoUrl = "";
+          if (docs.profile_photo) {
+            profilePhotoUrl = await uploadFile(docs.profile_photo);
+          }
           user = await register(
             formData.name,
             formData.email,
@@ -242,8 +247,10 @@ const AuthPage = () => {
             formData.password,
             passengerRole,
             passengerRole === 'student' ? yearOfStudy : null,
-            passengerRole === 'student' ? programType : null
+            passengerRole === 'student' ? programType : null,
+            profilePhotoUrl
           );
+          setUploadingDocs(false);
           toast.success('Account created successfully!');
           navigate('/dashboard');
         }
@@ -304,6 +311,7 @@ const AuthPage = () => {
             name: data.user.name,
             email: data.user.email,
             token: data.access_token,
+            avatar_url: data.user?.avatar_url || null,
           }
         });
       } else {
@@ -359,6 +367,7 @@ const AuthPage = () => {
                 name: data.user.name,
                 email: data.user.email,
                 token: data.access_token,
+                avatar_url: data.user?.avatar_url || userInfo?.picture || null,
               }
             });
           } else {
@@ -520,6 +529,41 @@ const AuthPage = () => {
                   >
                     <div className={`w-5 h-5 rounded-full bg-zinc-50 absolute top-0.5 transition-all ${isDriver ? 'right-0.5' : 'left-0.5'}`} />
                   </button>
+                </div>
+
+                {/* Mandatory Profile Photo Upload */}
+                <div className="flex flex-col items-center justify-center pt-1 pb-3">
+                  <label className="block text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-2">
+                    {isDriver ? 'Driver Profile Photo *' : 'Profile Photo *'}
+                  </label>
+                  <div className="relative group cursor-pointer">
+                    <input
+                      type="file"
+                      name="profile_photo"
+                      id="auth_profile_photo_upload"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                    <label htmlFor="auth_profile_photo_upload" className="block relative cursor-pointer">
+                      <div className={`w-24 h-24 rounded-full border-2 overflow-hidden flex items-center justify-center transition-all ${profilePhotoPreview ? 'border-gold shadow-none' : 'border-dashed border-zinc-700 bg-zinc-900 hover:border-gold'}`}>
+                        {profilePhotoPreview ? (
+                          <img src={profilePhotoPreview} alt="Profile Preview" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="flex flex-col items-center gap-1 text-zinc-500 hover:text-gold transition-colors">
+                            <CameraIcon className="w-7 h-7" />
+                            <span className="text-[10px] font-bold uppercase tracking-wider">Upload</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-gold text-zinc-950 flex items-center justify-center shadow-md">
+                        <CameraIcon className="w-4 h-4" />
+                      </div>
+                    </label>
+                  </div>
+                  <p className="text-[11px] text-zinc-500 mt-1">
+                    {isDriver ? 'Clear facial photo for passenger verification' : 'Clear facial photo for profile verification'}
+                  </p>
                 </div>
 
                 <div className="space-y-4 mb-4">
@@ -703,37 +747,6 @@ const AuthPage = () => {
 
             {mode === 'register' && isDriver && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="space-y-4 pt-4">
-                {/* Mandatory Driver Profile Photo Upload */}
-                <div className="flex flex-col items-center justify-center pt-2 pb-2">
-                  <label className="block text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-2">Driver Profile Photo *</label>
-                  <div className="relative group cursor-pointer">
-                    <input
-                      type="file"
-                      name="profile_photo"
-                      id="auth_profile_photo_upload"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="hidden"
-                    />
-                    <label htmlFor="auth_profile_photo_upload" className="block relative cursor-pointer">
-                      <div className={`w-24 h-24 rounded-full border-2 overflow-hidden flex items-center justify-center transition-all ${profilePhotoPreview ? 'border-gold shadow-none' : 'border-dashed border-zinc-700 bg-zinc-900 hover:border-gold'}`}>
-                        {profilePhotoPreview ? (
-                          <img src={profilePhotoPreview} alt="Driver Preview" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="flex flex-col items-center gap-1 text-zinc-500 hover:text-gold transition-colors">
-                            <CameraIcon className="w-7 h-7" />
-                            <span className="text-[10px] font-bold uppercase tracking-wider">Upload</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-gold text-zinc-950 flex items-center justify-center shadow-md">
-                        <CameraIcon className="w-4 h-4" />
-                      </div>
-                    </label>
-                  </div>
-                  <p className="text-[11px] text-zinc-500 mt-1">Clear facial photo for passenger verification</p>
-                </div>
-
                 <div className="pt-2 border-t border-zinc-800/80">
                   <h3 className="text-base sm:text-lg font-bold text-white tracking-tight mb-0.5">
                     Vehicle Details

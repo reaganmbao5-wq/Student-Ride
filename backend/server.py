@@ -403,6 +403,7 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
     role: UserRole = UserRole.STUDENT
+    avatar_url: Optional[str] = None
     year_of_study: Optional[int] = None
     program_type: Optional[str] = None
     department: Optional[str] = None
@@ -1423,6 +1424,7 @@ async def register(user_data: UserCreate):
         "phone": user_data.phone,
         "password": hash_password(user_data.password),
         "role": role.value,
+        "avatar_url": user_data.avatar_url,
         "year_of_study": user_data.year_of_study,
         "program_type": user_data.program_type,
         "department": user_data.department,

@@ -80,6 +80,7 @@ __pycache__/
 .mcp.json
 .ignore
 *.apk
+*.aab
 RIDE_CYCLE_DEBUG_CHECKLIST.md
 RIDE_LIFECYCLE_PERFORMANCE_AUDIT_REPORT.md
 cropped_assets/

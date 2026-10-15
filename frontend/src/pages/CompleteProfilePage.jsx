@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { GlassCard, GlassInput, GoldButton, LoadingSpinner } from '../components/common/GlassComponents';
-import { Phone, Lock, User, Mail, CheckCircle, GraduationCap } from 'lucide-react';
+import { Phone, Lock, User, Mail, CheckCircle, GraduationCap, Camera as CameraIcon } from 'lucide-react';
 import { Car } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { getOnlineWebUrl, openExternalUrl, getBackendUrl } from '../utils/urlHelpers';
 import { showFriendlyError } from '../utils/errorHandler';
 import { useTheme } from '../context/ThemeContext';
+import { compressImage } from '../utils/imageCompressor';
 
 const BACKEND_URL = getBackendUrl();
 
@@ -49,6 +50,8 @@ export default function CompleteProfilePage() {
     const [name] = useState(state.name || '');
     const [email] = useState(state.email || '');
     const [phone, setPhone] = useState(state.phone || '');
+    const [profilePhoto, setProfilePhoto] = useState(null);
+    const [profilePhotoPreview, setProfilePhotoPreview] = useState(state.avatar_url || state.picture || null);
     const [isDriver, setIsDriver] = useState(false);
     const [passengerRole, setPassengerRole] = useState('student');
     const [yearOfStudy, setYearOfStudy] = useState('1');
@@ -56,6 +59,14 @@ export default function CompleteProfilePage() {
     const [loading, setLoading] = useState(false);
     const [agreedToTerms, setAgreedToTerms] = useState(false);
     const token = state.token || localStorage.getItem('token');
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setProfilePhoto(file);
+            setProfilePhotoPreview(URL.createObjectURL(file));
+        }
+    };
 
     // Redirect if someone lands here without Google state or token
     useEffect(() => {
@@ -66,6 +77,10 @@ export default function CompleteProfilePage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!profilePhoto && !profilePhotoPreview) {
+            toast.error('Please upload your profile photo');
+            return;
+        }
         if (!phone.trim()) {
             toast.error('Please enter your phone number');
             return;
@@ -77,10 +92,27 @@ export default function CompleteProfilePage() {
 
         setLoading(true);
         try {
+            let avatarUrl = profilePhotoPreview;
+            if (profilePhoto) {
+                const compressed = await compressImage(profilePhoto, 1200, 0.8);
+                const uploadFormData = new FormData();
+                uploadFormData.append("file", compressed);
+                const uploadRes = await fetch(`${BACKEND_URL}/api/upload`, {
+                    method: 'POST',
+                    body: uploadFormData,
+                });
+                if (!uploadRes.ok) {
+                    throw new Error('Failed to upload profile photo');
+                }
+                const uploadData = await uploadRes.json();
+                avatarUrl = uploadData.url;
+            }
+
             // Update the user profile with phone, role, year_of_study, and preferences
             const updateBody = { 
                 phone,
                 role: isDriver ? 'student' : passengerRole,
+                ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
                 ...(state.gender ? { gender: state.gender } : {})
             };
             if (!isDriver && passengerRole === 'student') {
@@ -209,6 +241,38 @@ export default function CompleteProfilePage() {
                             <div className="relative flex justify-center">
                                 <span className="bg-card px-3 text-xs text-muted-foreground">Your details</span>
                             </div>
+                        </div>
+
+                        {/* Profile Photo — mandatory */}
+                        <div className="flex flex-col items-center justify-center pt-1 pb-2">
+                            <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                                Profile Photo *
+                            </label>
+                            <div className="relative group cursor-pointer">
+                                <input
+                                    type="file"
+                                    id="complete_profile_photo_upload"
+                                    accept="image/*"
+                                    onChange={handleFileChange}
+                                    className="hidden"
+                                />
+                                <label htmlFor="complete_profile_photo_upload" className="block relative cursor-pointer">
+                                    <div className={`w-24 h-24 rounded-full border-2 overflow-hidden flex items-center justify-center transition-all ${profilePhotoPreview ? 'border-gold shadow-none' : 'border-dashed border-border bg-card hover:border-gold'}`}>
+                                        {profilePhotoPreview ? (
+                                            <img src={profilePhotoPreview} alt="Profile Preview" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="flex flex-col items-center gap-1 text-muted-foreground hover:text-gold transition-colors">
+                                                <CameraIcon className="w-7 h-7" />
+                                                <span className="text-[10px] font-bold uppercase tracking-wider">Upload</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-gold text-zinc-950 flex items-center justify-center shadow-md">
+                                        <CameraIcon className="w-4 h-4" />
+                                    </div>
+                                </label>
+                            </div>
+                            <p className="text-[11px] text-muted-foreground mt-1">Clear facial photo for account verification</p>
                         </div>
 
                         {/* Phone — editable */}
