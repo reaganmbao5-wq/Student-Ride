@@ -1,4 +1,4 @@
-package com.jride.app;
+package com.jaeyride.app;
 
 import com.getcapacitor.BridgeActivity;
 

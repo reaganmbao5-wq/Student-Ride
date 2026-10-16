@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">JRide</string>
     <string name="title_activity_main">JRide</string>
-    <string name="package_name">com.jride.app</string>
-    <string name="custom_url_scheme">com.jride.app</string>
+    <string name="package_name">com.jaeyride.app</string>
+    <string name="custom_url_scheme">com.jaeyride.app</string>
     <string name="server_client_id">613545438163-5eo9e0tpustjgotq6u7m7elsas8gkjst.apps.googleusercontent.com</string>
 </resources>
