@@ -13,6 +13,7 @@ import { getOnlineWebUrl, openExternalUrl, getBackendUrl } from '../utils/urlHel
 import { showFriendlyError } from '../utils/errorHandler';
 import { ThemeToggle } from '../components/ui/theme-toggle';
 import { AndroidRobotIcon } from '../components/common/AppUpdateModal';
+import { PlayStoreAccessModal, GooglePlayIcon, getStoredPlayStoreEmail, checkOrRequestPlayStoreAccess, PLAY_STORE_URL } from '../components/common/PlayStoreAccessModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';
 import { TourGuideButton } from '../components/common/TourGuideButton';
 import { tourGuide } from '../services/TourGuideService';
@@ -173,12 +174,21 @@ const LandingPage = () => {
     }
   }, [step]);
 
-  const handleDownloadApk = () => {
-    const backendUrl = getBackendUrl();
-    const downloadUrl = `${backendUrl}/api/app/download-latest-apk`;
-    window.location.href = downloadUrl;
-    localStorage.setItem('has_downloaded_apk', 'true');
-    toast.success('Starting Jaey Ride download...');
+  const [showPlayStoreModal, setShowPlayStoreModal] = useState(false);
+
+  const handleDownloadApk = async () => {
+    const storedEmail = getStoredPlayStoreEmail();
+    if (storedEmail) {
+      try {
+        const data = await checkOrRequestPlayStoreAccess(storedEmail);
+        if (data.status === 'synced') {
+          toast.success('Opening Google Play Store...');
+          window.location.href = data.play_store_url || PLAY_STORE_URL;
+          return;
+        }
+      } catch (e) {}
+    }
+    setShowPlayStoreModal(true);
   };
 
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -654,10 +664,10 @@ const LandingPage = () => {
                         id="tour-landing-apk"
                         onClick={handleDownloadApk}
                         className="py-3.5 xs:py-4 sm:py-5 px-3.5 xs:px-4 sm:px-6 rounded-2xl font-bold text-xs xs:text-sm sm:text-base text-white bg-zinc-900/90 border border-zinc-700/80 hover:bg-zinc-800 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xl shrink-0"
-                        title="Download Android APK"
+                        title="Download from Play Store"
                       >
-                        <AndroidRobotIcon className="w-5 h-4 xs:w-6 xs:h-5 text-emerald-500" />
-                        <span className="font-semibold whitespace-nowrap">Download APK</span>
+                        <GooglePlayIcon className="w-4 h-4 xs:w-5 xs:h-5 text-emerald-400" />
+                        <span className="font-semibold whitespace-nowrap">Download from Play Store</span>
                       </button>
                     </div>
                   ) : isIOSWeb ? (
@@ -1173,6 +1183,12 @@ const LandingPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <PlayStoreAccessModal
+        open={showPlayStoreModal}
+        onOpenChange={setShowPlayStoreModal}
+        onContinueInBrowser={goToNextStep}
+      />
 
     </div>
   );

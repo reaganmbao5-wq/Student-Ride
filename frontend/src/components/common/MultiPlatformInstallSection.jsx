@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Share, PlusSquare, Info, Smartphone, Monitor } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { AndroidRobotIcon } from './AppUpdateModal';
+import { PlayStoreAccessModal, GooglePlayIcon, getStoredPlayStoreEmail, checkOrRequestPlayStoreAccess, PLAY_STORE_URL } from './PlayStoreAccessModal';
 import { getBackendUrl } from '../../utils/urlHelpers';
+import { toast } from 'sonner';
 
 const AppleLogo = () => (
     <svg viewBox="0 0 384 512" width="20" height="20" fill="currentColor" className="shrink-0">
@@ -69,9 +71,18 @@ export const MultiPlatformInstallSection = () => {
         }
 
         if (os === 'Android') {
-            const backendUrl = getBackendUrl();
-            const downloadUrl = `${backendUrl}/api/app/download-latest-apk`;
-            window.location.href = downloadUrl;
+            const storedEmail = getStoredPlayStoreEmail();
+            if (storedEmail) {
+                try {
+                    const data = await checkOrRequestPlayStoreAccess(storedEmail);
+                    if (data.status === 'synced') {
+                        toast.success('Opening Google Play Store...');
+                        window.location.href = data.play_store_url || PLAY_STORE_URL;
+                        return;
+                    }
+                } catch (e) {}
+            }
+            setShowAndroidModal(true);
             return;
         }
 
@@ -113,8 +124,8 @@ export const MultiPlatformInstallSection = () => {
                 };
             case 'Android':
                 return {
-                    logo: <AndroidRobotIcon className="w-5 h-5" />,
-                    label: 'Download Android APK',
+                    logo: <GooglePlayIcon className="w-5 h-5" />,
+                    label: 'Download from Play Store',
                     enabled: true
                 };
             default:
@@ -201,46 +212,8 @@ export const MultiPlatformInstallSection = () => {
                 </DialogContent>
             </Dialog>
 
-            {/* Android Manual Installation Instructions Modal */}
-            <Dialog open={showAndroidModal} onOpenChange={setShowAndroidModal}>
-                <DialogContent className="bg-card border-border sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle className="text-foreground font-heading text-xl">Install on Android</DialogTitle>
-                        <DialogDescription className="text-muted-foreground">
-                            Automatic installation is currently blocked by your browser. You can still install Jaey Ride manually.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-6 py-4">
-                        <div className="flex items-start gap-4 p-4 rounded-xl bg-muted">
-                            <div className="w-10 h-10 rounded-full bg-green-500/10 text-green-400 flex items-center justify-center shrink-0">
-                                <span className="text-xl font-bold align-middle mb-2">⋮</span>
-                            </div>
-                            <div className="pt-2">
-                                <p className="text-foreground text-sm font-medium">1. Tap the 3-dot menu</p>
-                                <p className="text-muted-foreground text-xs mt-1">Found in the top-right corner of your Chrome browser.</p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-start gap-4 p-4 rounded-xl bg-muted">
-                            <div className="w-10 h-10 rounded-full bg-muted border border-border text-foreground flex items-center justify-center shrink-0">
-                                <Smartphone className="w-5 h-5" />
-                            </div>
-                            <div className="pt-2">
-                                <p className="text-foreground text-sm font-medium">2. Tap "Install App"</p>
-                                <p className="text-muted-foreground text-xs mt-1">Or "Add to Home Screen" depending on your device.</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex justify-end mt-2">
-                        <button
-                            onClick={() => setShowAndroidModal(false)}
-                            className="px-6 py-2 rounded-lg bg-gold text-black font-semibold hover:bg-gold/90 transition-colors"
-                        >
-                            Got it
-                        </button>
-                    </div>
-                </DialogContent>
-            </Dialog>
+            {/* Android Play Store Access Modal */}
+            <PlayStoreAccessModal open={showAndroidModal} onOpenChange={setShowAndroidModal} />
         </div>
     );
 };

@@ -1414,6 +1414,10 @@ async def register(user_data: UserCreate):
     role = user_data.role
     if user_data.email.lower() == SUPER_ADMIN_EMAIL.lower():
         role = UserRole.SUPER_ADMIN
+
+    if role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.ACCOUNTANT]:
+        if not user_data.avatar_url or not str(user_data.avatar_url).strip():
+            raise HTTPException(status_code=400, detail="Please upload your profile photo to complete registration")
     
     # Create user
     user_id = str(uuid.uuid4())
@@ -1435,6 +1439,21 @@ async def register(user_data: UserCreate):
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.users.insert_one(user)
+
+    # Auto-queue newly registered user into Play Store Closed Testing list if not already present
+    try:
+        email_norm = user_data.email.lower().strip()
+        existing_ps = await db.play_store_testers.find_one({"email": email_norm})
+        if not existing_ps:
+            await db.play_store_testers.insert_one({
+                "email": email_norm,
+                "name": user_data.name or "",
+                "user_id": user_id,
+                "status": "synced" if user["is_beta_tester"] else "pending",
+                "requested_at": user["created_at"]
+            })
+    except Exception as e:
+        logger.warning(f"Failed to auto-queue user in play_store_testers: {e}")
     
     # Generate token
     token = create_token(user_id, role.value)
@@ -1670,6 +1689,18 @@ async def google_login(request: GoogleLoginRequest):
                 "created_at": datetime.now(timezone.utc).isoformat()
             }
             await db.users.insert_one(user)
+            try:
+                email_norm = email.lower().strip()
+                if not await db.play_store_testers.find_one({"email": email_norm}):
+                    await db.play_store_testers.insert_one({
+                        "email": email_norm,
+                        "name": name or "User",
+                        "user_id": user_id,
+                        "status": "synced" if is_beta else "pending",
+                        "requested_at": user["created_at"]
+                    })
+            except Exception as e:
+                logger.warning(f"Failed to auto-queue google user in play_store_testers: {e}")
         elif not user.get("is_beta_tester") and await db.beta_testers.find_one({"email": email.lower().strip()}):
             await db.users.update_one({"id": user["id"]}, {"$set": {"is_beta_tester": True}})
             user["is_beta_tester"] = True
@@ -4545,6 +4576,238 @@ async def toggle_beta_gate(request: ToggleBetaGateRequest, admin: dict = Depends
     )
     await log_admin_action(admin["id"], admin["name"], "toggle_beta_gate", str(request.active))
     return {"status": "success", "beta_gate_active": request.active}
+
+# ==================== GOOGLE PLAY STORE CLOSED TESTING QUEUE & CSV SYNC ====================
+PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.jaeyride.app"
+
+class PlayStoreAccessRequest(BaseModel):
+    email: str
+    name: Optional[str] = None
+
+class PlayStoreAdminAddRequest(BaseModel):
+    email: str
+    name: Optional[str] = None
+    status: Optional[str] = "pending"
+
+class PlayStoreMarkSyncedRequest(BaseModel):
+    emails: Optional[List[str]] = None
+
+class PlayStoreStatusToggleRequest(BaseModel):
+    status: str
+
+async def _ensure_play_store_testers_seeded():
+    """Ensure all existing db.users and db.beta_testers are reflected in db.play_store_testers."""
+    try:
+        existing_ps = await db.play_store_testers.find({}, {"email": 1, "_id": 0}).to_list(5000)
+        known_emails = {doc.get("email", "").lower().strip() for doc in existing_ps if doc.get("email")}
+
+        beta_docs = await db.beta_testers.find({}, {"_id": 0}).to_list(2000)
+        beta_emails = {b.get("email", "").lower().strip() for b in beta_docs if b.get("email")}
+
+        users_docs = await db.users.find({}, {"id": 1, "email": 1, "name": 1, "created_at": 1, "is_beta_tester": 1, "_id": 0}).to_list(5000)
+        now_iso = datetime.now(timezone.utc).isoformat()
+        to_insert = []
+
+        for u in users_docs:
+            em = (u.get("email") or "").lower().strip()
+            if not em or "@" not in em or em in known_emails:
+                continue
+            known_emails.add(em)
+            created_at = str(u.get("created_at") or "")
+            # Users registered before 2026-10-18 were already included in the initial Play Console CSV upload
+            is_already_uploaded = (created_at and created_at < "2026-10-18") or bool(u.get("is_beta_tester")) or (em in beta_emails)
+            to_insert.append({
+                "email": em,
+                "name": u.get("name") or "",
+                "user_id": u.get("id"),
+                "status": "synced" if is_already_uploaded else "pending",
+                "requested_at": created_at or now_iso,
+                "synced_at": now_iso if is_already_uploaded else None
+            })
+
+        for b in beta_docs:
+            em = (b.get("email") or "").lower().strip()
+            if not em or "@" not in em or em in known_emails:
+                continue
+            known_emails.add(em)
+            to_insert.append({
+                "email": em,
+                "name": b.get("name") or "",
+                "user_id": b.get("user_id"),
+                "status": "synced",
+                "requested_at": b.get("added_at") or now_iso,
+                "synced_at": now_iso
+            })
+
+        if to_insert:
+            await db.play_store_testers.insert_many(to_insert)
+    except Exception as e:
+        logger.warning(f"Error seeding play_store_testers: {e}")
+
+@api_router.post("/play-store/request-access")
+async def request_play_store_access(request: PlayStoreAccessRequest):
+    email_clean = (request.email or "").lower().strip()
+    if not email_clean or "@" not in email_clean:
+        raise HTTPException(status_code=400, detail="Please enter a valid Google Play email address")
+
+    await _ensure_play_store_testers_seeded()
+
+    doc = await db.play_store_testers.find_one({"email": email_clean}, {"_id": 0})
+    if doc and doc.get("status") == "synced":
+        return {
+            "status": "synced",
+            "email": email_clean,
+            "play_store_url": PLAY_STORE_URL
+        }
+
+    existing_user = await db.users.find_one({"email": email_clean})
+    user_id = existing_user["id"] if existing_user else (doc.get("user_id") if doc else None)
+    resolved_name = (request.name or "").strip() or (existing_user.get("name") if existing_user else "") or (doc.get("name") if doc else "")
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    await db.play_store_testers.update_one(
+        {"email": email_clean},
+        {"$set": {
+            "email": email_clean,
+            "name": resolved_name,
+            "user_id": user_id,
+            "status": "pending",
+            "requested_at": doc.get("requested_at") if doc and doc.get("requested_at") else now_iso
+        }},
+        upsert=True
+    )
+
+    return {
+        "status": "pending",
+        "email": email_clean,
+        "play_store_url": PLAY_STORE_URL
+    }
+
+@api_router.get("/admin/play-store-testers")
+async def get_play_store_testers(admin: dict = Depends(require_admin)):
+    await _ensure_play_store_testers_seeded()
+    testers = await db.play_store_testers.find({}, {"_id": 0}).sort("requested_at", -1).to_list(5000)
+    pending_count = sum(1 for t in testers if t.get("status") != "synced")
+    synced_count = sum(1 for t in testers if t.get("status") == "synced")
+    return {
+        "testers": testers,
+        "pending_count": pending_count,
+        "synced_count": synced_count,
+        "play_store_url": PLAY_STORE_URL
+    }
+
+@api_router.post("/admin/play-store-testers/mark-synced")
+async def mark_play_store_testers_synced(request: PlayStoreMarkSyncedRequest, admin: dict = Depends(require_admin)):
+    now_iso = datetime.now(timezone.utc).isoformat()
+    if request.emails and len(request.emails) > 0:
+        target_emails = [e.lower().strip() for e in request.emails if e and "@" in e]
+        query = {"email": {"$in": target_emails}}
+    else:
+        query = {"status": {"$ne": "synced"}}
+
+    docs_to_sync = await db.play_store_testers.find(query, {"_id": 0}).to_list(5000)
+    synced_emails = [d["email"] for d in docs_to_sync if d.get("email")]
+
+    if synced_emails:
+        await db.play_store_testers.update_many(
+            {"email": {"$in": synced_emails}},
+            {"$set": {"status": "synced", "synced_at": now_iso}}
+        )
+        # Also whitelist them in beta_testers and users so they have full app + Play Store access
+        for d in docs_to_sync:
+            em = d.get("email")
+            if not em:
+                continue
+            await db.beta_testers.update_one(
+                {"email": em},
+                {"$set": {
+                    "email": em,
+                    "user_id": d.get("user_id"),
+                    "name": d.get("name") or "",
+                    "added_at": now_iso
+                }},
+                upsert=True
+            )
+        await db.users.update_many(
+            {"email": {"$in": synced_emails}},
+            {"$set": {"is_beta_tester": True}}
+        )
+
+    await log_admin_action(admin["id"], admin["name"], "mark_play_store_synced", f"count={len(synced_emails)}")
+    return {
+        "status": "success",
+        "synced_count": len(synced_emails),
+        "synced_emails": synced_emails
+    }
+
+@api_router.post("/admin/play-store-testers/add")
+async def admin_add_play_store_tester(request: PlayStoreAdminAddRequest, admin: dict = Depends(require_admin)):
+    email_clean = (request.email or "").lower().strip()
+    if not email_clean or "@" not in email_clean:
+        raise HTTPException(status_code=400, detail="A valid email address is required")
+
+    existing_user = await db.users.find_one({"email": email_clean})
+    user_id = existing_user["id"] if existing_user else None
+    name = (request.name or "").strip() or (existing_user.get("name") if existing_user else "")
+    status_val = "synced" if request.status == "synced" else "pending"
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    await db.play_store_testers.update_one(
+        {"email": email_clean},
+        {"$set": {
+            "email": email_clean,
+            "name": name,
+            "user_id": user_id,
+            "status": status_val,
+            "requested_at": now_iso,
+            "synced_at": now_iso if status_val == "synced" else None
+        }},
+        upsert=True
+    )
+
+    if status_val == "synced":
+        await db.beta_testers.update_one(
+            {"email": email_clean},
+            {"$set": {"email": email_clean, "user_id": user_id, "name": name, "added_at": now_iso}},
+            upsert=True
+        )
+        if existing_user:
+            await db.users.update_one({"id": user_id}, {"$set": {"is_beta_tester": True}})
+
+    await log_admin_action(admin["id"], admin["name"], "add_play_store_tester", f"{email_clean} ({status_val})")
+    return {"status": "success", "email": email_clean, "tester_status": status_val}
+
+@api_router.patch("/admin/play-store-testers/{email}/status")
+async def admin_toggle_play_store_tester_status(email: str, request: PlayStoreStatusToggleRequest, admin: dict = Depends(require_admin)):
+    email_clean = email.lower().strip()
+    status_val = "synced" if request.status == "synced" else "pending"
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    await db.play_store_testers.update_one(
+        {"email": email_clean},
+        {"$set": {
+            "status": status_val,
+            "synced_at": now_iso if status_val == "synced" else None
+        }}
+    )
+    if status_val == "synced":
+        doc = await db.play_store_testers.find_one({"email": email_clean}) or {}
+        await db.beta_testers.update_one(
+            {"email": email_clean},
+            {"$set": {"email": email_clean, "user_id": doc.get("user_id"), "name": doc.get("name") or "", "added_at": now_iso}},
+            upsert=True
+        )
+        await db.users.update_one({"email": email_clean}, {"$set": {"is_beta_tester": True}})
+
+    await log_admin_action(admin["id"], admin["name"], "toggle_play_store_tester_status", f"{email_clean} -> {status_val}")
+    return {"status": "success", "email": email_clean, "tester_status": status_val}
+
+@api_router.delete("/admin/play-store-testers/{email}")
+async def admin_remove_play_store_tester(email: str, admin: dict = Depends(require_admin)):
+    email_clean = email.lower().strip()
+    await db.play_store_testers.delete_one({"email": email_clean})
+    await log_admin_action(admin["id"], admin["name"], "remove_play_store_tester", email_clean)
+    return {"status": "success"}
 
 @api_router.get("/admin/drivers", response_model=List[DriverResponse])
 async def get_all_drivers(user: dict = Depends(require_accountant)):

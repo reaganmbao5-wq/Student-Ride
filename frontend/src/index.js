@@ -91,13 +91,4 @@ if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
       console.log('SW registration failed: ', registrationError);
     });
   });
-
-  // Listen for the controlling sw changing to reload the page newly activated Service Worker
-  let refreshing = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!refreshing) {
-      window.location.reload();
-      refreshing = true;
-    }
-  });
 }

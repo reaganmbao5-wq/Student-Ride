@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Download, X, Share, PlusSquare } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { AndroidRobotIcon } from './AppUpdateModal';
+import { PlayStoreAccessModal, GooglePlayIcon, getStoredPlayStoreEmail, checkOrRequestPlayStoreAccess, PLAY_STORE_URL } from './PlayStoreAccessModal';
 import { getBackendUrl } from '../../utils/urlHelpers';
+import { toast } from 'sonner';
 
 const detectPlatform = () => {
   if (typeof window === 'undefined') return 'unknown';
@@ -20,6 +22,7 @@ const PWAInstallPrompt = () => {
   const [platform, setPlatform] = useState('unknown');
   const [isStandalone, setIsStandalone] = useState(false);
   const [showIOSModal, setShowIOSModal] = useState(false);
+  const [showPlayStoreModal, setShowPlayStoreModal] = useState(false);
 
   useEffect(() => {
     // Check if already installed / standalone
@@ -59,9 +62,18 @@ const PWAInstallPrompt = () => {
     }
 
     if (platform === 'android') {
-      const backendUrl = getBackendUrl();
-      const downloadUrl = `${backendUrl}/api/app/download-latest-apk`;
-      window.location.href = downloadUrl;
+      const storedEmail = getStoredPlayStoreEmail();
+      if (storedEmail) {
+        try {
+          const data = await checkOrRequestPlayStoreAccess(storedEmail);
+          if (data.status === 'synced') {
+            toast.success('Opening Google Play Store...');
+            window.location.href = data.play_store_url || PLAY_STORE_URL;
+            return;
+          }
+        } catch (e) {}
+      }
+      setShowPlayStoreModal(true);
       return;
     }
 
@@ -89,18 +101,18 @@ const PWAInstallPrompt = () => {
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gold/10 text-gold flex items-center justify-center shrink-0">
               {platform === 'android' ? (
-                <AndroidRobotIcon className="w-5 h-5 text-emerald-500" />
+                <GooglePlayIcon className="w-5 h-5 text-emerald-500" />
               ) : (
                 <Download className="w-5 h-5" />
               )}
             </div>
             <div>
               <h4 className="font-heading font-semibold text-foreground text-sm">
-                {platform === 'android' ? 'Download Android APK' : 'Install Jaey Ride App'}
+                {platform === 'android' ? 'Download from Play Store' : 'Install Jaey Ride App'}
               </h4>
               <p className="text-muted-foreground text-xs mt-0.5">
                 {platform === 'ios' && 'Add to Home Screen for fast booking & live alerts'}
-                {platform === 'android' && 'Get the official APK for native speed & alerts'}
+                {platform === 'android' && 'Get the official app on Google Play for native speed & alerts'}
                 {platform !== 'ios' && platform !== 'android' && 'Install for a faster, full-screen experience'}
               </p>
             </div>
@@ -166,6 +178,8 @@ const PWAInstallPrompt = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <PlayStoreAccessModal open={showPlayStoreModal} onOpenChange={setShowPlayStoreModal} />
     </>
   );
 };

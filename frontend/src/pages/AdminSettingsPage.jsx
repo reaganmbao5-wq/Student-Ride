@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, DollarSign, Percent, Clock, Save, Loader2, AlertCircle, UploadCloud, Smartphone, CheckCircle2, ShieldCheck, UserCheck, Trash2, Plus } from 'lucide-react';
+import { Settings, DollarSign, Percent, Clock, Save, Loader2, AlertCircle, UploadCloud, Smartphone, CheckCircle2, ShieldCheck, UserCheck, Trash2, Plus, Download, Check } from 'lucide-react';
 import { GlassCard, GlassInput, GoldButton, LoadingSpinner } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
 import { AdminSettingsSkeleton } from '../components/common/PageSkeletons';
 import { AndroidRobotIcon } from '../components/common/AppUpdateModal';
+import { GooglePlayIcon } from '../components/common/PlayStoreAccessModal';
 import { getBackendUrl } from '../utils/urlHelpers';
 import { toast } from 'sonner';
 
@@ -41,11 +42,128 @@ const AdminSettingsPage = () => {
   const [togglingGate, setTogglingGate] = useState(false);
   const [deletingEmail, setDeletingEmail] = useState(null);
 
+  // Google Play Store Closed Testing Queue State
+  const [playStoreTesters, setPlayStoreTesters] = useState([]);
+  const [psFilterTab, setPsFilterTab] = useState('pending'); // 'pending' | 'synced' | 'all'
+  const [psNewEmail, setPsNewEmail] = useState('');
+  const [psNewName, setPsNewName] = useState('');
+  const [psAdding, setPsAdding] = useState(false);
+  const [psMarkingSynced, setPsMarkingSynced] = useState(false);
+  const [psActionEmail, setPsActionEmail] = useState(null);
+
   useEffect(() => {
     fetchSettings();
     fetchLatestRelease();
     fetchBetaTesters();
+    fetchPlayStoreTesters();
   }, []);
+
+  const fetchPlayStoreTesters = async () => {
+    try {
+      const res = await api.get('/admin/play-store-testers');
+      setPlayStoreTesters(res.data?.testers || []);
+    } catch (err) {
+      console.warn('Failed to fetch Play Store testers:', err);
+    }
+  };
+
+  const handleExportPlayStoreCsv = (mode = 'pending') => {
+    const list = mode === 'pending'
+      ? playStoreTesters.filter(t => t.status !== 'synced')
+      : playStoreTesters;
+
+    if (list.length === 0) {
+      toast.error(mode === 'pending' ? 'No pending emails to export!' : 'No emails found to export!');
+      return;
+    }
+
+    const csvContent = list.map(t => (t.email || '').trim().toLowerCase()).filter(Boolean).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const dateStr = new Date().toISOString().slice(0, 10);
+    link.href = url;
+    link.setAttribute('download', `jaeyride-playstore-${mode}-${dateStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success(`Exported ${list.length} email(s) to CSV! Upload in Google Play Console → Testers, then click "Mark Pending as Uploaded".`);
+  };
+
+  const handleMarkPlayStoreSynced = async () => {
+    const pendingList = playStoreTesters.filter(t => t.status !== 'synced');
+    if (pendingList.length === 0) {
+      toast.info('All queued emails are already marked as active on Play Store.');
+      return;
+    }
+    setPsMarkingSynced(true);
+    try {
+      const res = await api.post('/admin/play-store-testers/mark-synced', {});
+      const count = res.data?.synced_count || pendingList.length;
+      toast.success(`Marked ${count} email(s) as Active on Play Store & whitelisted!`);
+      fetchPlayStoreTesters();
+      fetchBetaTesters();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to mark emails as synced');
+    } finally {
+      setPsMarkingSynced(false);
+    }
+  };
+
+  const handleAddPlayStoreTester = async (e) => {
+    if (e) e.preventDefault();
+    const emailClean = psNewEmail.trim().toLowerCase();
+    if (!emailClean || !emailClean.includes('@')) {
+      toast.error('Please enter a valid Google Play email address.');
+      return;
+    }
+    setPsAdding(true);
+    try {
+      await api.post('/admin/play-store-testers/add', {
+        email: emailClean,
+        name: psNewName.trim(),
+        status: 'pending'
+      });
+      toast.success(`Added ${emailClean} to Play Store pending queue`);
+      setPsNewEmail('');
+      setPsNewName('');
+      fetchPlayStoreTesters();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to add Play Store tester');
+    } finally {
+      setPsAdding(false);
+    }
+  };
+
+  const handleTogglePlayStoreTesterStatus = async (email, currentStatus) => {
+    const nextStatus = currentStatus === 'synced' ? 'pending' : 'synced';
+    setPsActionEmail(email);
+    try {
+      await api.patch(`/admin/play-store-testers/${encodeURIComponent(email)}/status`, { status: nextStatus });
+      toast.success(`${email} marked as ${nextStatus === 'synced' ? 'Active on Play Store' : 'Pending Upload'}`);
+      fetchPlayStoreTesters();
+      if (nextStatus === 'synced') fetchBetaTesters();
+    } catch (err) {
+      toast.error('Failed to update status');
+    } finally {
+      setPsActionEmail(null);
+    }
+  };
+
+  const handleDeletePlayStoreTester = async (email) => {
+    setPsActionEmail(email);
+    try {
+      await api.delete(`/admin/play-store-testers/${encodeURIComponent(email)}`);
+      toast.success(`Removed ${email} from Play Store list`);
+      setPlayStoreTesters(prev => prev.filter(t => t.email !== email));
+    } catch (err) {
+      toast.error('Failed to remove email');
+    } finally {
+      setPsActionEmail(null);
+    }
+  };
 
   const fetchBetaTesters = async () => {
     try {
@@ -496,6 +614,218 @@ const AdminSettingsPage = () => {
               </div>
             )}
           </div>
+        </GlassCard>
+
+        {/* Google Play Store Closed Testing Queue & CSV Sync */}
+        <GlassCard className="p-6">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                <GooglePlayIcon className="w-6 h-6 text-emerald-400" />
+              </div>
+              <div>
+                <h2 className="font-heading font-semibold text-foreground text-lg">Google Play Store Testers & CSV Sync</h2>
+                <p className="text-muted-foreground text-sm">
+                  Export new emails to CSV for Google Play Console, then mark them active so they redirect straight to Play Store
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleExportPlayStoreCsv('pending')}
+                className="px-3.5 py-2.5 rounded-xl font-bold text-xs bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700 transition-all flex items-center gap-2 cursor-pointer shadow-sm"
+              >
+                <Download className="w-4 h-4 text-emerald-400" />
+                <span>Export Pending CSV ({playStoreTesters.filter(t => t.status !== 'synced').length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleExportPlayStoreCsv('all')}
+                className="px-3.5 py-2.5 rounded-xl font-bold text-xs bg-muted hover:bg-muted/80 text-foreground border border-border transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <Download className="w-4 h-4 text-muted-foreground" />
+                <span>Export All ({playStoreTesters.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleMarkPlayStoreSynced}
+                disabled={psMarkingSynced || playStoreTesters.filter(t => t.status !== 'synced').length === 0}
+                className="px-4 py-2.5 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white transition-all flex items-center gap-2 cursor-pointer shadow-md"
+              >
+                {psMarkingSynced ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4" />
+                )}
+                <span>Mark Pending as Uploaded to Play Store</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Workflow explanation banner */}
+          <div className="mb-6 p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20 text-xs text-muted-foreground leading-relaxed flex items-start gap-2.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-foreground">How Play Store Smart Redirect Works:</p>
+              <p className="mt-0.5">
+                1. Users who tap <strong className="text-foreground">Download from Play Store</strong> (or register on the web) are added to <strong className="text-amber-400">Pending Upload</strong> if they aren't on Play Console yet.<br />
+                2. Click <strong className="text-foreground">Export Pending CSV</strong> and upload that CSV in <strong className="text-foreground">Google Play Console → Closed testing → Testers</strong>.<br />
+                3. Click <strong className="text-emerald-400">Mark Pending as Uploaded to Play Store</strong> — those users are immediately marked <strong className="text-emerald-400">Active</strong> and whitelisted so their next click opens Google Play directly!
+              </p>
+            </div>
+          </div>
+
+          {/* Manual Add to Play Store Queue */}
+          <form onSubmit={handleAddPlayStoreTester} className="grid grid-cols-1 sm:grid-cols-12 gap-3 mb-6">
+            <div className="sm:col-span-6">
+              <GlassInput
+                type="email"
+                placeholder="Google Play Gmail (e.g. user@gmail.com)"
+                value={psNewEmail}
+                onChange={(e) => setPsNewEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="sm:col-span-4">
+              <GlassInput
+                type="text"
+                placeholder="User Name (Optional)"
+                value={psNewName}
+                onChange={(e) => setPsNewName(e.target.value)}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <button
+                type="submit"
+                disabled={psAdding}
+                className="w-full h-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
+              >
+                {psAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> Add Email</>}
+              </button>
+            </div>
+          </form>
+
+          {/* Filter Tabs */}
+          <div className="flex items-center gap-2 mb-4 border-b border-border pb-3">
+            <button
+              type="button"
+              onClick={() => setPsFilterTab('pending')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                psFilterTab === 'pending'
+                  ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Pending Upload ({playStoreTesters.filter(t => t.status !== 'synced').length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setPsFilterTab('synced')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                psFilterTab === 'synced'
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Active on Play Store ({playStoreTesters.filter(t => t.status === 'synced').length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setPsFilterTab('all')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                psFilterTab === 'all'
+                  ? 'bg-muted text-foreground border border-border'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              All ({playStoreTesters.length})
+            </button>
+          </div>
+
+          {/* Filtered Testers Grid */}
+          {(() => {
+            const filteredPs = playStoreTesters.filter(t => {
+              if (psFilterTab === 'pending') return t.status !== 'synced';
+              if (psFilterTab === 'synced') return t.status === 'synced';
+              return true;
+            });
+
+            if (filteredPs.length === 0) {
+              return (
+                <div className="p-6 rounded-2xl bg-muted/40 border border-dashed border-border text-center text-xs text-muted-foreground">
+                  {psFilterTab === 'pending'
+                    ? 'Zero pending emails! Everyone in the queue has been exported and marked as active on Google Play.'
+                    : 'No emails found in this view.'}
+                </div>
+              );
+            }
+
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-72 overflow-y-auto pr-1">
+                {filteredPs.map((item) => {
+                  const isSynced = item.status === 'synced';
+                  return (
+                    <div
+                      key={item.email}
+                      className="p-3 rounded-xl bg-card border border-border flex items-center justify-between gap-2 shadow-xs hover:border-emerald-500/30 transition-colors"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-xs font-bold text-foreground truncate">{item.name || 'Play Store User'}</p>
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
+                              isSynced
+                                ? 'bg-emerald-500/15 text-emerald-400'
+                                : 'bg-amber-500/15 text-amber-400'
+                            }`}
+                          >
+                            {isSynced ? 'Active' : 'Pending'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground truncate font-mono mt-0.5">{item.email}</p>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleTogglePlayStoreTesterStatus(item.email, item.status)}
+                          disabled={psActionEmail === item.email}
+                          className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-colors cursor-pointer ${
+                            isSynced
+                              ? 'bg-muted hover:bg-amber-500/20 text-muted-foreground hover:text-amber-400'
+                              : 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400'
+                          }`}
+                          title={isSynced ? 'Move back to Pending' : 'Mark as Active on Play Store'}
+                        >
+                          {psActionEmail === item.email ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : isSynced ? (
+                            'Set Pending'
+                          ) : (
+                            'Mark Active'
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeletePlayStoreTester(item.email)}
+                          disabled={psActionEmail === item.email}
+                          className="w-7 h-7 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition-colors flex items-center justify-center cursor-pointer"
+                          title="Remove email"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </GlassCard>
 
         {/* APK Release & Over-The-Air Update Manager */}
