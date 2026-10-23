@@ -23,13 +23,13 @@ const AdminSettingsPage = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // APK Release Management State
+  // APK & Play Store Release Management State
   const [apkFile, setApkFile] = useState(null);
-  const [apkVersionName, setApkVersionName] = useState('2.1.0');
-  const [apkVersionCode, setApkVersionCode] = useState(11);
-  const [apkMinVersion, setApkMinVersion] = useState('2.0.0');
+  const [apkVersionName, setApkVersionName] = useState('1.0.0');
+  const [apkVersionCode, setApkVersionCode] = useState(3);
+  const [apkMinVersion, setApkMinVersion] = useState('1.0.0');
   const [apkForceUpdate, setApkForceUpdate] = useState(false);
-  const [apkNotes, setApkNotes] = useState('Enhanced multi-passenger route optimization and real-time live navigation.');
+  const [apkNotes, setApkNotes] = useState('Mandatory profile photo verification, first-load splash smoothness fix, and Google Play Store smart redirect.');
   const [apkUploading, setApkUploading] = useState(false);
   const [latestRelease, setLatestRelease] = useState(null);
 
@@ -230,8 +230,14 @@ const AdminSettingsPage = () => {
     try {
       const res = await api.get('/app/version-check');
       setLatestRelease(res.data);
-      if (res.data?.version_code) {
-        setApkVersionCode(res.data.version_code);
+      if (res.data) {
+        if (res.data.version_code !== undefined) setApkVersionCode(res.data.version_code);
+        if (res.data.latest_version || res.data.version_name) {
+          setApkVersionName(res.data.latest_version || res.data.version_name);
+        }
+        if (res.data.min_required_version) setApkMinVersion(res.data.min_required_version);
+        if (res.data.force_update !== undefined) setApkForceUpdate(Boolean(res.data.force_update));
+        if (res.data.release_notes) setApkNotes(res.data.release_notes);
       }
     } catch (err) {
       console.warn('Failed to fetch latest release:', err);
@@ -240,16 +246,24 @@ const AdminSettingsPage = () => {
 
   const handleUploadApk = async (e) => {
     if (e) e.preventDefault();
-    if (!apkFile) {
-      toast.error('Please select an .apk file to upload.');
-      return;
-    }
-
     setApkUploading(true);
-    const formData = new FormData();
-    formData.append('file', apkFile);
 
     try {
+      if (!apkFile) {
+        const res = await api.post('/admin/app-releases/config', {
+          version_name: apkVersionName,
+          version_code: apkVersionCode,
+          min_required_version: apkMinVersion,
+          force_update: apkForceUpdate,
+          release_notes: apkNotes
+        });
+        toast.success(res.data?.message || 'Play Store in-app update settings saved!');
+        fetchLatestRelease();
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', apkFile);
       const url = `/admin/app-releases/upload?version_name=${encodeURIComponent(apkVersionName)}&version_code=${apkVersionCode}&min_required_version=${encodeURIComponent(apkMinVersion)}&force_update=${apkForceUpdate}&release_notes=${encodeURIComponent(apkNotes)}`;
       const res = await api.post(url, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
@@ -258,7 +272,7 @@ const AdminSettingsPage = () => {
       setApkFile(null);
       fetchLatestRelease();
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Failed to upload APK release');
+      toast.error(err.response?.data?.detail || 'Failed to update app release settings');
     } finally {
       setApkUploading(false);
     }
@@ -930,21 +944,21 @@ const AdminSettingsPage = () => {
               </div>
             </div>
 
-            {/* Upload Button */}
+            {/* Save / Publish Button */}
             <button
               onClick={handleUploadApk}
-              disabled={apkUploading || !apkFile}
+              disabled={apkUploading}
               className="w-full py-3.5 px-6 rounded-xl font-bold text-sm text-white bg-gold hover:bg-gold/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 shadow-lg"
             >
               {apkUploading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Uploading & Publishing Release...</span>
+                  <span>Saving Release Configuration...</span>
                 </>
               ) : (
                 <>
-                  <UploadCloud className="w-4 h-4" />
-                  <span>Publish & Release APK (OTA)</span>
+                  <Save className="w-4 h-4" />
+                  <span>{apkFile ? 'Publish & Release APK (OTA)' : 'Save Play Store In-App Update Config'}</span>
                 </>
               )}
             </button>

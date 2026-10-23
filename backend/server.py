@@ -6395,33 +6395,71 @@ async def upload_asset_to_github(file_content: bytes, filename: str, tag: str, n
 
         return str(release_id), str(asset_data["id"]), asset_data.get("browser_download_url")
 
+class AppReleaseConfigPayload(BaseModel):
+    version_name: str = "1.0.0"
+    version_code: int = 3
+    min_required_version: str = "1.0.0"
+    force_update: bool = False
+    release_notes: str = "Mandatory profile photo verification, first-load splash smoothness fix, and Google Play Store smart redirect."
+
 @api_router.get("/app/version-check")
 async def get_app_version_info():
     """
-    Returns latest published APK release metadata for in-app update checks.
+    Returns latest published release metadata for in-app update checks (synced with Google Play Store).
     """
-    latest_release = await db.app_releases.find_one({}, sort=[("version_code", -1)], projection={"_id": 0})
+    latest_release = await db.app_releases.find_one({}, sort=[("published_at", -1)], projection={"_id": 0})
     if not latest_release:
         return {
             "latest_version": "1.0.0",
-            "version_code": 14,
+            "version_name": "1.0.0",
+            "version_code": 3,
             "min_required_version": "1.0.0",
             "force_update": False,
-            "download_url": "/api/app/download-latest-apk",
-            "release_notes": "Official Jaey Ride production release v1.0.0 with deduplicated notifications, admin emergency SOS siren dispatch, driver watchdog recovery, and live route navigation.",
-            "file_size_bytes": 29473260,
+            "download_url": PLAY_STORE_URL,
+            "release_notes": "Mandatory profile photo verification, first-load splash smoothness fix, and Google Play Store smart redirect.",
             "published_at": datetime.now(timezone.utc).isoformat()
         }
+    if not latest_release.get("latest_version") and latest_release.get("version_name"):
+        latest_release["latest_version"] = latest_release["version_name"]
+    if not latest_release.get("version_name") and latest_release.get("latest_version"):
+        latest_release["version_name"] = latest_release["latest_version"]
+    latest_release["download_url"] = PLAY_STORE_URL
     return latest_release
+
+@api_router.post("/admin/app-releases/config")
+async def save_play_store_release_config(payload: AppReleaseConfigPayload, admin: dict = Depends(require_admin)):
+    """
+    Updates the active Play Store in-app update configuration (build code, force update toggle, release notes)
+    without requiring an APK binary upload.
+    """
+    now_iso = datetime.now(timezone.utc).isoformat()
+    release_doc = {
+        "id": str(uuid.uuid4()),
+        "latest_version": payload.version_name,
+        "version_name": payload.version_name,
+        "version_code": payload.version_code,
+        "min_required_version": payload.min_required_version,
+        "force_update": payload.force_update,
+        "release_notes": payload.release_notes,
+        "download_url": PLAY_STORE_URL,
+        "published_at": now_iso,
+        "uploaded_by": admin["id"]
+    }
+    await db.app_releases.insert_one(release_doc)
+    return {
+        "status": "saved",
+        "message": f"Play Store update config saved (v{payload.version_name}, build {payload.version_code})!",
+        "release": {k: v for k, v in release_doc.items() if k != "_id"}
+    }
 
 @api_router.get("/app/download-latest-apk")
 @api_router.get("/download/android")
 async def download_latest_apk():
     """
-    Direct GitHub Releases CDN Delivery:
-    Fetches the pre-signed AWS S3 CDN redirect from GitHub Releases with zero server disk and zero database storage.
+    Redirects directly to Google Play Store listing for com.jaeyride.app.
     """
-    latest_release = await db.app_releases.find_one({}, sort=[("version_code", -1)])
+    return RedirectResponse(url=PLAY_STORE_URL, status_code=302)
+    latest_release = await db.app_releases.find_one({}, sort=[("published_at", -1)])
     if latest_release:
         if latest_release.get("github_asset_id"):
             presigned_s3_url = await get_github_asset_download_url(latest_release["github_asset_id"])

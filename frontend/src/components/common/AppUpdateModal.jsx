@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, Sparkles, AlertTriangle, ArrowUpCircle } from 'lucide-react';
+import { Download, AlertTriangle, ArrowUpCircle } from 'lucide-react';
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 import { getBackendUrl } from '../../utils/urlHelpers';
+import { PlayStoreAccessModal, checkOrRequestPlayStoreAccess, getStoredPlayStoreEmail, PLAY_STORE_URL } from './PlayStoreAccessModal';
 
 // Android Robot Head SVG from Screenshot 1
 export const AndroidRobotIcon = ({ className = "w-10 h-10", fill = "#3DDC84" }) => (
@@ -27,17 +29,20 @@ export const AndroidRobotIcon = ({ className = "w-10 h-10", fill = "#3DDC84" }) 
   </svg>
 );
 
-// Fallback build metadata (Version 1.0.0, Build 14)
+// Fallback build metadata (Version 1.0.0, Build 4 matching Google Play Console)
 const DEFAULT_APP_VERSION = "1.0.0";
-const DEFAULT_BUILD_CODE = 14;
+const DEFAULT_BUILD_CODE = 4;
 
 export const AppUpdateModal = () => {
   const { accentColor, ACCENT_COLORS } = useTheme();
+  const { user } = useAuth();
   const activeAccentHex = ACCENT_COLORS?.[accentColor]?.hex || '#8B5CF6';
   
   const [updateInfo, setUpdateInfo] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [showPlayStoreModal, setShowPlayStoreModal] = useState(false);
+  const [playStoreResult, setPlayStoreResult] = useState(null);
 
   useEffect(() => {
     const checkVersion = async () => {
@@ -92,14 +97,27 @@ export const AppUpdateModal = () => {
 
   if (!isOpen || !updateInfo) return null;
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     setIsDownloading(true);
-    const backendUrl = getBackendUrl();
-    const downloadUrl = updateInfo.download_url?.startsWith('http')
-      ? updateInfo.download_url
-      : `${backendUrl}${updateInfo.download_url || '/api/app/download-latest-apk'}`;
-
-    window.location.href = downloadUrl;
+    try {
+      const userEmail = user?.email || getStoredPlayStoreEmail();
+      if (userEmail) {
+        const res = await checkOrRequestPlayStoreAccess(userEmail, user?.name || '');
+        if (res.status === 'synced') {
+          window.open(res.play_store_url || PLAY_STORE_URL, '_blank', 'noopener,noreferrer');
+          setIsDownloading(false);
+          return;
+        }
+        setShowPlayStoreModal(true);
+        setIsDownloading(false);
+        return;
+      }
+      setShowPlayStoreModal(true);
+    } catch (err) {
+      window.open(PLAY_STORE_URL, '_blank', 'noopener,noreferrer');
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   return (
@@ -152,7 +170,7 @@ export const AppUpdateModal = () => {
             }}
           >
             <Download className="w-4 h-4 stroke-[2.5]" />
-            <span>{isDownloading ? 'Downloading Update...' : 'Update Now'}</span>
+            <span>{isDownloading ? 'Opening Play Store...' : 'Update on Play Store'}</span>
           </button>
 
           {!updateInfo.force_update && (
@@ -165,6 +183,10 @@ export const AppUpdateModal = () => {
           )}
         </motion.div>
       </div>
+      <PlayStoreAccessModal
+        open={showPlayStoreModal}
+        onOpenChange={setShowPlayStoreModal}
+      />
     </AnimatePresence>
   );
 };
