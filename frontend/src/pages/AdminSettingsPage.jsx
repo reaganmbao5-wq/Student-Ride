@@ -26,7 +26,7 @@ const AdminSettingsPage = () => {
   // APK & Play Store Release Management State
   const [apkFile, setApkFile] = useState(null);
   const [apkVersionName, setApkVersionName] = useState('1.0.0');
-  const [apkVersionCode, setApkVersionCode] = useState(5);
+  const [apkVersionCode, setApkVersionCode] = useState(6);
   const [apkMinVersion, setApkMinVersion] = useState('1.0.0');
   const [apkForceUpdate, setApkForceUpdate] = useState(false);
   const [apkNotes, setApkNotes] = useState('Mandatory profile photo verification, first-load splash smoothness fix, and Google Play Store smart redirect.');

@@ -625,8 +625,11 @@ class FixedRouteBase(BaseModel):
     dropoff_coordinates: Dict[str, Any] # GeoJSON Point
     tolerance_radius_meters: float = Field(..., ge=50, le=2000)
     fixed_price: float = Field(..., gt=0) # Shared / Per-Seat Driver Base Fare
-    flat_commission: Optional[float] = Field(5.0, ge=0.0) # Flat Commission for Shared Ride
+    flat_commission: Optional[float] = Field(1.0, ge=0.0) # Flat Commission for Shared Ride
     private_fixed_price: Optional[float] = Field(None, gt=0) # Optional Custom Driver Base Fare for Private Ride
+    private_flat_commission: Optional[float] = Field(2.0, ge=0.0) # Flat Commission for Private Ride
+    zone: Optional[str] = "up_down"
+    tags: Optional[List[str]] = []
     is_active: bool = True
 
 class FixedRouteResponse(FixedRouteBase):
@@ -936,123 +939,165 @@ async def calculate_ride_fare(pickup_loc: Dict[str, Any], dropoff_loc: Dict[str,
     pickup_point = (pickup_loc["lat"], pickup_loc["lng"])
     dropoff_point = (dropoff_loc["lat"], dropoff_loc["lng"])
     
-    # 1. Check Fixed Routes (Cached in-memory)
+    # 1. Check Fixed Routes (Cached in-memory, loads up to 5000 active routes)
     now = time.time()
     if _cached_fixed_routes is not None and (now - _cached_fixed_routes_ts) < 30.0:
         active_routes = _cached_fixed_routes
     else:
-        active_routes = await db.fixed_routes.find({"is_active": True}).to_list(100)
+        active_routes = await db.fixed_routes.find({"is_active": True}).to_list(5000)
         _cached_fixed_routes = active_routes
         _cached_fixed_routes_ts = now
+        
+    matched_candidates = []
     for route in active_routes:
         r_p_lng = route["pickup_coordinates"]["coordinates"][0]
         r_p_lat = route["pickup_coordinates"]["coordinates"][1]
         r_d_lng = route["dropoff_coordinates"]["coordinates"][0]
         r_d_lat = route["dropoff_coordinates"]["coordinates"][1]
         
+        # Dual-direction (Bidirectional) matching: A -> B or B -> A
         p_dist = calculate_haversine_distance(pickup_point[0], pickup_point[1], r_p_lat, r_p_lng)
         d_dist = calculate_haversine_distance(dropoff_point[0], dropoff_point[1], r_d_lat, r_d_lng)
+        rev_p_dist = calculate_haversine_distance(pickup_point[0], pickup_point[1], r_d_lat, r_d_lng)
+        rev_d_dist = calculate_haversine_distance(dropoff_point[0], dropoff_point[1], r_p_lat, r_p_lng)
         
-        tolerance_km = route["tolerance_radius_meters"] / 1000.0
+        tolerance_km = route.get("tolerance_radius_meters", 350) / 1000.0
         
-        if p_dist <= tolerance_km and d_dist <= tolerance_km:
-            shared_fixed_driver = float(route["fixed_price"])
-            shared_commission = float(route.get("flat_commission") if route.get("flat_commission") is not None else round(shared_fixed_driver * commission_rate, 2))
-            
-            is_private = (ride_mode == RideMode.PRIVATE or str(ride_mode).lower() == "private")
-            
-            if is_private:
-                # Private Ride ("In Taka" Whole Car)
-                # If custom private fixed price exists, use it; otherwise, multiply shared price * private_multiplier (3.5x)
-                if route.get("private_fixed_price") is not None and float(route["private_fixed_price"]) > 0:
-                    driver_earning = float(route["private_fixed_price"])
-                else:
-                    driver_earning = round(shared_fixed_driver * private_mult, 2)
-                    
-                commission = round(driver_earning * commission_rate, 2)
-                total_student_fare = round(driver_earning + commission, 2)
-            else:
-                # Shared Ride (Per Seat)
-                driver_earning = shared_fixed_driver
-                commission = shared_commission
-                total_student_fare = round(driver_earning + commission, 2)
-            
-            logger.info(f"Fixed Route Match: {route['pickup_name']} -> {route['dropoff_name']} | Mode: {ride_mode} | Driver: {driver_earning}, Comm: {commission}, Student Total: {total_student_fare}")
-            return {
-                "fare": total_student_fare,
-                "driver_earning": driver_earning,
-                "commission": commission,
-                "is_fixed": True,
-                "route_name": f"{route['pickup_name']} to {route['dropoff_name']}",
-                "breakdown": {
-                    "base": driver_earning,
-                    "distance": 0,
-                    "time": 0,
-                    "surge": 0,
-                    "commission": commission,
-                    "student_fare": total_student_fare
-                }
-            }
+        is_forward = (p_dist <= tolerance_km and d_dist <= tolerance_km)
+        is_reverse = (rev_p_dist <= tolerance_km and rev_d_dist <= tolerance_km)
+        
+        if is_forward:
+            matched_candidates.append({
+                "route": route,
+                "is_forward": True,
+                "delta": p_dist + d_dist
+            })
+        elif is_reverse:
+            matched_candidates.append({
+                "route": route,
+                "is_forward": False,
+                "delta": rev_p_dist + rev_d_dist
+            })
 
-    # 2. Dynamic Pricing
-    base_fare = settings.get("base_fare", 15.0)
-    per_km = settings.get("per_km_rate", 1.40)
-    per_min = settings.get("per_minute_rate", 0.10)
-    surge = settings.get("surge_multiplier", 1.0)
-    min_fare = settings.get("minimum_fare", 15.0)
-    
-    # Time-based Surge Logic
-    current_hour = datetime.now(timezone.utc).hour + 2 # Adjusting to local Lusaka time (UTC+2)
-    if current_hour >= 24: current_hour -= 24
-    
-    time_multiplier = 1.0
-    surge_reason = None
-    
-    if current_hour >= 22 or current_hour < 5:
-        time_multiplier = 1.5
-        surge_reason = "Late Night Surge"
-    elif 7 <= current_hour <= 9:
-        time_multiplier = 1.2
-        surge_reason = "Morning Peak Surge"
+    if matched_candidates:
+        # Pick the route with closest geographic match to actual pins
+        matched_candidates.sort(key=lambda x: x["delta"])
+        best_match = matched_candidates[0]
+        route = best_match["route"]
+        is_forward = best_match["is_forward"]
         
-    final_surge = surge * time_multiplier
+        shared_fixed_driver = float(route["fixed_price"])
+        shared_commission = float(route.get("flat_commission") if route.get("flat_commission") is not None else 1.0)
+        
+        is_private = (ride_mode == RideMode.PRIVATE or str(ride_mode).lower() == "private")
+        
+        if is_private:
+            # Private Ride ("In Taka" Whole Car)
+            if route.get("private_fixed_price") is not None and float(route["private_fixed_price"]) > 0:
+                driver_earning = float(route["private_fixed_price"])
+            else:
+                driver_earning = shared_fixed_driver * private_mult
+                
+            if route.get("private_flat_commission") is not None and float(route["private_flat_commission"]) >= 0:
+                commission = float(route["private_flat_commission"])
+            else:
+                commission = max(2.0, driver_earning * commission_rate)
+        else:
+            # Shared Ride (Per Seat)
+            driver_earning = shared_fixed_driver
+            commission = shared_commission
+        
+        # Enforce clean integers (Zero decimals)
+        driver_earning_int = int(round(driver_earning))
+        commission_int = int(round(commission))
+        total_student_fare_int = driver_earning_int + commission_int
+        
+        route_name = f"{route['pickup_name']} to {route['dropoff_name']}" if is_forward else f"{route['dropoff_name']} to {route['pickup_name']}"
+        
+        logger.info(f"Fixed Route Match ({'Forward' if is_forward else 'Reverse'}): {route_name} | Mode: {ride_mode} | Driver: {driver_earning_int}, Comm: {commission_int}, Student Total: {total_student_fare_int}")
+        return {
+            "fare": total_student_fare_int,
+            "driver_earning": driver_earning_int,
+            "commission": commission_int,
+            "is_fixed": True,
+            "route_name": route_name,
+            "breakdown": {
+                "base": driver_earning_int,
+                "distance": 0,
+                "time": 0,
+                "surge": 0,
+                "commission": commission_int,
+                "student_fare": total_student_fare_int
+            }
+        }
+
+    # 2. Dynamic Fallback Pricing - Calibrated Distance Tiers for Non-Landmarks
+    # Strictly zero per-minute rate, zero time-of-day surge, zero decimals.
+    # Calibrated to real campus geography & Great North Road trips:
+    # Tier 1: Inbound campus (< 2.5 km) -> Shared K20 + K1 = K21 | Private K50 + K2 = K52
+    # Tier 2: Campus to Near Across / Suburbs (2.5 - 5.0 km) -> Shared K32 + K1 = K33 | Private K75 + K3 = K78
+    # Tier 3: Mid-distance (5.0 - 10.0 km) -> Shared K45 + K2 = K47 | Private K110 + K5 = K115
+    # Tier 4: Long-distance / Kabwe Highway to Town (> 10.0 km) -> Shared K65 + K3 = K68 | Private K220 + K5 = K225
     
-    dist_cost = distance_km * per_km
-    time_cost = duration_min * per_min
+    is_private = (ride_mode == RideMode.PRIVATE or str(ride_mode).lower() == "private")
     
-    subtotal = base_fare + dist_cost + time_cost
-    surge_total = subtotal * final_surge
-    
-    # Shared vs Private Mode Calculation
-    shared_per_seat_base = max(surge_total, min_fare)
-    
-    if ride_mode == RideMode.PRIVATE or ride_mode == "private":
-        # Private Ride ("In Taka" Whole Car) = 3.5x Shared Per-Seat Base Fare
-        driver_base_fare = round(shared_per_seat_base * private_mult, 2)
+    if distance_km < 2.5:
+        # Inbound campus
+        if is_private:
+            driver_base = 50
+            comm = 2
+        else:
+            driver_base = 20
+            comm = 1
+        tier_name = "Campus Inbound"
+    elif distance_km < 5.0:
+        # Campus to Near Across
+        if is_private:
+            driver_base = 75
+            comm = 3
+        else:
+            driver_base = 32
+            comm = 1
+        tier_name = "Campus to Across"
+    elif distance_km < 10.0:
+        # Mid-distance
+        if is_private:
+            driver_base = 110
+            comm = 5
+        else:
+            driver_base = 45
+            comm = 2
+        tier_name = "Mid-Distance"
     else:
-        # Shared Ride (Per Seat)
-        driver_base_fare = round(shared_per_seat_base, 2)
+        # Highway to Town / Long Distance
+        if is_private:
+            extra_km = max(0.0, distance_km - 10.0)
+            driver_base = int(round(220 + (extra_km * 5.0)))
+            comm = 5
+        else:
+            extra_km = max(0.0, distance_km - 10.0)
+            driver_base = int(round(65 + (extra_km * 2.0)))
+            comm = 3
+        tier_name = "Town / Highway Distance"
         
-    # Commission Add-On (Student Pays Driver Base + 10% Commission)
-    commission_amount = round(driver_base_fare * commission_rate, 2)
-    student_total_fare = round(driver_base_fare + commission_amount, 2)
+    student_total = driver_base + comm
     
     return {
-        "fare": student_total_fare,
-        "driver_earning": driver_base_fare,
-        "commission": commission_amount,
+        "fare": student_total,
+        "driver_earning": driver_base,
+        "commission": comm,
         "is_fixed": False,
-        "route_name": "Standard Ride",
-        "surge_reason": surge_reason,
+        "route_name": f"Standard Ride ({tier_name})",
+        "surge_reason": None,
         "breakdown": {
-            "base": base_fare,
-            "distance": round(dist_cost, 2),
-            "time": round(time_cost, 2),
-            "surge_multiplier": final_surge,
-            "driver_earning": driver_base_fare,
-            "commission": commission_amount,
-            "student_fare": student_total_fare,
-            "min_fare_applied": shared_per_seat_base == min_fare
+            "base": driver_base,
+            "distance": round(distance_km, 1),
+            "time": 0,
+            "surge_multiplier": 1.0,
+            "driver_earning": driver_base,
+            "commission": comm,
+            "student_fare": student_total,
+            "min_fare_applied": False
         }
     }
 
@@ -5236,24 +5281,35 @@ async def update_pricing_settings(settings: PricingSettings, user: dict = Depend
     return {"status": "updated"}
 
 @api_router.get("/admin/fixed-routes", response_model=List[FixedRouteResponse])
-async def get_fixed_routes(user: dict = Depends(require_admin)):
-    routes = await db.fixed_routes.find({}).sort("created_at", -1).to_list(100)
+async def get_fixed_routes(
+    q: Optional[str] = None,
+    zone: Optional[str] = None,
+    limit: int = 5000,
+    user: dict = Depends(require_admin)
+):
+    query = {}
+    if zone and zone != "all":
+        query["zone"] = zone
+    if q and q.strip():
+        term = q.strip()
+        query["$or"] = [
+            {"pickup_name": {"$regex": term, "$options": "i"}},
+            {"dropoff_name": {"$regex": term, "$options": "i"}},
+            {"tags": {"$regex": term, "$options": "i"}},
+            {"zone": {"$regex": term, "$options": "i"}}
+        ]
+    routes = await db.fixed_routes.find(query).sort("created_at", -1).to_list(limit)
     return [FixedRouteResponse(**r) for r in routes]
 
 @api_router.post("/admin/fixed-routes", response_model=FixedRouteResponse)
 async def create_fixed_route(route: FixedRouteCreate, user: dict = Depends(require_admin)):
+    global _cached_fixed_routes
     new_route = route.dict()
     new_route["id"] = str(uuid.uuid4())
     new_route["created_at"] = datetime.now(timezone.utc)
     
-    # Ensure GeoJSON strict format for indexing
-    # The client might send {lat, lng}, we need {type: Point, coordinates: [lng, lat]}
-    # The model defines pickup_coordinates as Dict[str, Any], assuming it's already GeoJSON or we assume client sends GeoJSON.
-    # Let's enforce it here if needed, but for now assuming client sends valid GeoJSON Point structure matching the model.
-    # Actually, let's validate or construct it to be safe if the client sends raw coords.
-    # But the model says Dict[str, Any] # GeoJSON Point. I'll rely on frontend sending correct structure.
-    
     await db.fixed_routes.insert_one(new_route)
+    _cached_fixed_routes = None  # Invalidate in-memory cache
     
     await log_admin_action(
         user["id"], user["name"], "create_fixed_route", 
@@ -5263,16 +5319,17 @@ async def create_fixed_route(route: FixedRouteCreate, user: dict = Depends(requi
 
 @api_router.put("/admin/fixed-routes/{route_id}")
 async def update_fixed_route(route_id: str, route: FixedRouteCreate, user: dict = Depends(require_admin)):
+    global _cached_fixed_routes
     existing = await db.fixed_routes.find_one({"id": route_id})
     if not existing:
         raise HTTPException(status_code=404, detail="Route not found")
         
     update_data = route.dict()
-    # Preserve id and created_at
     update_data["id"] = route_id
     update_data["created_at"] = existing["created_at"]
     
     await db.fixed_routes.replace_one({"id": route_id}, update_data)
+    _cached_fixed_routes = None  # Invalidate in-memory cache
     
     await log_admin_action(
         user["id"], user["name"], "update_fixed_route", 
@@ -5282,15 +5339,18 @@ async def update_fixed_route(route_id: str, route: FixedRouteCreate, user: dict 
 
 @api_router.delete("/admin/fixed-routes/{route_id}")
 async def delete_fixed_route(route_id: str, user: dict = Depends(require_admin)):
+    global _cached_fixed_routes
     result = await db.fixed_routes.delete_one({"id": route_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Route not found")
         
+    _cached_fixed_routes = None  # Invalidate in-memory cache
     await log_admin_action(user["id"], user["name"], "delete_fixed_route", route_id, "Deleted route")
     return {"status": "deleted"}
 
 @api_router.patch("/admin/fixed-routes/{route_id}/toggle")
 async def toggle_fixed_route(route_id: str, user: dict = Depends(require_admin)):
+    global _cached_fixed_routes
     route = await db.fixed_routes.find_one({"id": route_id})
     if not route:
         raise HTTPException(status_code=404, detail="Route not found")
@@ -5300,6 +5360,7 @@ async def toggle_fixed_route(route_id: str, user: dict = Depends(require_admin))
         {"id": route_id},
         {"$set": {"is_active": new_status}}
     )
+    _cached_fixed_routes = None  # Invalidate in-memory cache
     return {"status": "updated", "is_active": new_status}
 
 class AdminCreateStaffRequest(BaseModel):
