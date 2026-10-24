@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import "@/App.css";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import posthog from "./utils/analytics";
 import { LayoutGroup } from "framer-motion";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { WebSocketProvider } from "./context/WebSocketContext";
@@ -336,6 +337,24 @@ const AppRoutes = () => {
   );
 };
 
+
+// Automatic SPA Route & Pageview Tracker for PostHog
+const PostHogPageTracker = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    try {
+      posthog.capture('$pageview', {
+        $current_url: window.location.href,
+        path: location.pathname + location.search,
+        title: document.title
+      });
+    } catch (e) {}
+  }, [location]);
+
+  return null;
+};
+
 // Ensure backend stays awake on free tiers
 const KeepAlive = () => {
   useEffect(() => {
@@ -364,6 +383,7 @@ function App() {
             <PushNotificationManager />
             <NetworkMonitor />
             <AppUpdateModal />
+            <PostHogPageTracker />
             <KeepAlive />
             <Toaster position="top-center" />
           </AuthProvider>
