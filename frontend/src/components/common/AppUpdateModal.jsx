@@ -31,7 +31,7 @@ export const AndroidRobotIcon = ({ className = "w-10 h-10", fill = "#3DDC84" }) 
 
 // Fallback build metadata (Version 1.0.0, Build 4 matching Google Play Console)
 const DEFAULT_APP_VERSION = "1.0.0";
-const DEFAULT_BUILD_CODE = 6;
+const DEFAULT_BUILD_CODE = 7;
 
 export const AppUpdateModal = () => {
   const { accentColor, ACCENT_COLORS } = useTheme();
