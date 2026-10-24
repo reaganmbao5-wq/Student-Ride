@@ -37,6 +37,11 @@ Always proceed autonomously. Do not ask for permissions to run codes, shell comm
 - **NEVER use AI-like stars, sparkle icons (e.g. `Sparkle` from Lucide or Phosphor), or star emojis (e.g. `⭐`) on any UI buttons, badges, status pills, or controls.**
 - All UI elements, badges, and buttons must use standard, professional iconography (e.g., `ShieldCheck`, `Check`, `Users`, or plain clean typography).
 
+
+## Bundle Placement Rule: Always in Project Root, Never on Desktop
+- ALWAYS place newly built .aab or .apk files directly in the root of the project (C:\Users\Reaga\OneDrive\Documents\VS Codes\Projects\Mapbox stable\).
+- NEVER place or leave bundles on the Desktop.
+
 <!-- graft:start -->
 ## Graft — repo context graph
 

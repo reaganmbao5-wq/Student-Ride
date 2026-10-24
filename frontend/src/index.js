@@ -5,6 +5,10 @@ import "./map/styles/map.css";
 import App from "./App";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import * as Sentry from "@sentry/react";
+import { initPostHog } from "./utils/analytics";
+
+// Initialize PostHog Product & Session Analytics
+initPostHog();
 
 Sentry.init({
   dsn: process.env.REACT_APP_SENTRY_DSN,

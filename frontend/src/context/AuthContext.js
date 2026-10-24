@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import axios from 'axios';
 import { AppCache } from '../utils/AppCache';
 import { getBackendUrl } from '../utils/urlHelpers';
+import { identifyUser, resetUser } from '../utils/analytics';
 
 const AuthContext = createContext(null);
 
@@ -65,6 +66,7 @@ export const AuthProvider = ({ children }) => {
       const response = await api.get('/auth/me');
       console.log('PROFILE_LOADED', response.data);
       setUser(response.data);
+      if (response.data?.id) { identifyUser(response.data.id, { email: response.data.email, name: response.data.name, role: response.data.role }); }
       // Persist to localStorage so next refresh is instant (0ms)
       try { localStorage.setItem('mulu_user_cache', JSON.stringify(response.data)); } catch {}
 
@@ -174,6 +176,7 @@ export const AuthProvider = ({ children }) => {
     setToken(access_token);
     setUser(userData);
     console.log('LOGIN_SUCCESS', userData);
+    if (userData?.id) { identifyUser(userData.id, { email: userData.email, name: userData.name, role: userData.role }); }
 
     if (userData.role === 'driver') {
       try {
@@ -268,6 +271,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    resetUser();
     localStorage.removeItem('token');
     localStorage.removeItem('mulu_user_cache');
     localStorage.removeItem('mulu_driver_cache');

@@ -16,6 +16,7 @@ import ActionSearchBar from '../components/ui/ActionSearchBar';
 import finalPlaces from '../data/final_places.json';
 import { TilePreloader } from '../map/services/TilePreloader';
 import { haptics } from '../utils/haptics';
+import { trackRideRequested, trackFareViewed, trackRideSearch } from '../utils/analytics';
 import {
   Stepper,
   StepperItem,
@@ -303,6 +304,14 @@ const RideRequestPage = () => {
       });
       const data = response.data;
       if (data) {
+        trackFareViewed({
+          pickup: activePickup?.display_name || activePickup?.name,
+          dropoff: activeDropoff?.display_name || activeDropoff?.name,
+          sharedFare: data.shared?.estimated_fare || data.shared?.fare || estSharedFare,
+          privateFare: data.private?.estimated_fare || data.private?.fare || estPrivateFare,
+          isFixed: data.shared?.is_fixed || data.private?.is_fixed || false,
+          routeName: data.shared?.route_name || data.private?.route_name || 'Standard'
+        });
         setFareEstimate({
           private_fare: data.private?.estimated_fare || data.private?.fare || estPrivateFare,
           shared_fare: data.shared?.estimated_fare || data.shared?.fare || estSharedFare,
@@ -400,6 +409,12 @@ const RideRequestPage = () => {
     setRequesting(true);
     try {
       const activeFare = rideMode === 'shared' ? fareEstimate.shared_fare : fareEstimate.private_fare;
+      trackRideRequested({
+        pickup: activePickup?.display_name || activePickup?.name,
+        dropoff: activeDropoff?.display_name || activeDropoff?.name,
+        fare: activeFare,
+        mode: rideMode
+      });
       const res = await api.post('/rides/request', {
         pickup_location: activePickup,
         dropoff_location: activeDropoff,
@@ -844,7 +859,7 @@ const RideRequestPage = () => {
                                           {rideMode} FARE
                                         </span>
                                         <div className="text-xl font-bold font-heading text-foreground">
-                                          K{rideMode === 'shared' ? fareEstimate.shared_fare?.toFixed(2) : fareEstimate.private_fare?.toFixed(2)}
+                                          K{Math.round(rideMode === 'shared' ? (fareEstimate.shared_fare || 0) : (fareEstimate.private_fare || 0))}
                                         </div>
                                       </div>
                                       {/* Shifted ETA & Distance comfortably below Save badge */}
