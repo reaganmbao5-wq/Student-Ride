@@ -487,7 +487,7 @@ class UserResponse(BaseModel):
     is_active: bool = True
     is_archived: Optional[bool] = False
     archived_at: Optional[str] = None
-    is_beta_tester: Optional[bool] = False
+    is_beta_tester: Optional[bool] = True
 
 class DriverProfile(BaseModel):
     vehicle_type: VehicleType = VehicleType.CAR
@@ -1480,7 +1480,7 @@ async def register(user_data: UserCreate):
         "staff_id": user_data.staff_id,
         "is_active": True,
         "is_archived": False,
-        "is_beta_tester": bool(await db.beta_testers.find_one({"email": user_data.email.lower().strip()})),
+        "is_beta_tester": True,  # Full rollout: all users are permitted
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.users.insert_one(user)
@@ -1517,11 +1517,8 @@ async def login(credentials: UserLogin):
     if not user.get("is_active", True):
         raise HTTPException(status_code=403, detail="Account suspended")
         
-    # Auto-sync beta status if email is in beta_testers collection
-    if not user.get("is_beta_tester"):
-        if await db.beta_testers.find_one({"email": credentials.email.lower().strip()}):
-            await db.users.update_one({"id": user["id"]}, {"$set": {"is_beta_tester": True}})
-            user["is_beta_tester"] = True
+    # Full rollout: guarantee all users have beta access unlocked
+    user["is_beta_tester"] = True
     
     token = create_token(user["id"], user["role"])
     
@@ -1541,11 +1538,8 @@ async def login(credentials: UserLogin):
 
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(user: dict = Depends(get_current_user)):
-    # Auto-sync beta status if user email is in beta_testers collection
-    if not user.get("is_beta_tester") and user.get("email"):
-        if await db.beta_testers.find_one({"email": user["email"].lower().strip()}):
-            await db.users.update_one({"id": user["id"]}, {"$set": {"is_beta_tester": True}})
-            user["is_beta_tester"] = True
+    # Full rollout: guarantee all users have beta access unlocked
+    user["is_beta_tester"] = True
     return UserResponse(**{k: v for k, v in user.items() if k != "password"})
 
 @api_router.get("/auth/password-reset/redirect")
@@ -1730,7 +1724,7 @@ async def google_login(request: GoogleLoginRequest):
                 "password": hash_password(secrets.token_urlsafe(32)),
                 "role": UserRole.STUDENT.value,
                 "is_active": True,
-                "is_beta_tester": is_beta,
+                "is_beta_tester": True,
                 "created_at": datetime.now(timezone.utc).isoformat()
             }
             await db.users.insert_one(user)
@@ -1746,8 +1740,7 @@ async def google_login(request: GoogleLoginRequest):
                     })
             except Exception as e:
                 logger.warning(f"Failed to auto-queue google user in play_store_testers: {e}")
-        elif not user.get("is_beta_tester") and await db.beta_testers.find_one({"email": email.lower().strip()}):
-            await db.users.update_one({"id": user["id"]}, {"$set": {"is_beta_tester": True}})
+        else:
             user["is_beta_tester"] = True
 
         if not user.get("is_active", True):
@@ -2593,11 +2586,11 @@ async def populate_ride_student(ride: dict) -> dict:
 @api_router.post("/rides/request", response_model=RideResponse)
 async def request_ride(ride_data: RideRequest, user: dict = Depends(get_current_user)):
     try:
-        # Beta Testing Access Guard
+        # Beta Testing Access Guard (Deactivated for full rollout)
         settings_doc = await db.settings.find_one({"type": "platform"}) or {}
-        beta_gate_active = settings_doc.get("beta_gate_active", True)
+        beta_gate_active = settings_doc.get("beta_gate_active", False)
         if beta_gate_active and user.get("role") not in [UserRole.ADMIN.value, "admin", "super_admin"]:
-            is_tester = bool(user.get("is_beta_tester"))
+            is_tester = bool(user.get("is_beta_tester", True))
             if not is_tester and user.get("email"):
                 tester_doc = await db.beta_testers.find_one({"email": user["email"].lower().strip()})
                 if tester_doc:
@@ -4568,7 +4561,7 @@ async def toggle_user_beta_access(user_id: str, request: ToggleBetaAccessRequest
 async def get_beta_testers(admin: dict = Depends(require_admin)):
     testers = await db.beta_testers.find({}, {"_id": 0}).to_list(1000)
     settings_doc = await db.settings.find_one({"type": "platform"}) or {}
-    beta_gate_active = settings_doc.get("beta_gate_active", True)
+    beta_gate_active = settings_doc.get("beta_gate_active", False)
     return {"testers": testers, "beta_gate_active": beta_gate_active}
 
 class AddBetaTesterRequest(BaseModel):

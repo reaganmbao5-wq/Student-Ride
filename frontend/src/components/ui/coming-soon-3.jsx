@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useTheme, ACCENT_COLORS } from "../../context/ThemeContext";
 
 // Gate flag: Remains active until manually set to false after beta testing finishes
-export const IS_BETA_TESTING_GATE_ACTIVE = true;
+export const IS_BETA_TESTING_GATE_ACTIVE = false;
 
 export function isCountdownActive() {
   return IS_BETA_TESTING_GATE_ACTIVE;
