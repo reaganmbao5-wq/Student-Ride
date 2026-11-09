@@ -1544,8 +1544,8 @@ async def get_me(user: dict = Depends(get_current_user)):
 
 @api_router.get("/auth/password-reset/redirect")
 async def password_reset_redirect(token: str):
-    """Redirects to the frontend reset page. Using the backend domain helps bypass PWA deep linking issues."""
-    frontend_url = os.environ.get("REACT_APP_FRONTEND_URL", "https://mulungushistudentride.site")
+    """Redirects to the Cloudflare Pages reset page."""
+    frontend_url = os.environ.get("REACT_APP_FRONTEND_URL", "https://jaeyride.site").rstrip('/')
     return RedirectResponse(url=f"{frontend_url}/reset-password?token={token}")
 
 def _send_password_reset_email_task(email_params: dict):
@@ -1572,7 +1572,7 @@ async def request_password_reset(request: PasswordResetRequest, background_tasks
     reset_token = f"{b64_uid}.{raw_secret}"
     
     hashed_token = hash_password(reset_token)
-    expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
     
     await db.users.update_one(
         {"id": user["id"]},
@@ -1583,29 +1583,104 @@ async def request_password_reset(request: PasswordResetRequest, background_tasks
     )
     
     try:
-        frontend_url = os.environ.get("REACT_APP_FRONTEND_URL", "https://mulungushistudentride.site")
-        backend_url = os.environ.get('BACKEND_URL', 'https://jaey-ride-backend.onrender.com').rstrip('/')
-        reset_link = f"{backend_url}/api/auth/password-reset/redirect?token={reset_token}"
+        # Direct Cloudflare Pages URL for password reset (takes user straight to https://jaeyride.site)
+        frontend_url = os.environ.get("REACT_APP_FRONTEND_URL", "https://jaeyride.site").rstrip('/')
+        reset_link = f"{frontend_url}/reset-password?token={reset_token}"
         
         from_email = os.environ.get("RESEND_FROM_EMAIL", "noreply@mulungushistudentride.site")
         sender = from_email if "onboarding@resend.dev" in from_email else f"Jaey Ride <{from_email}>"
+        logo_url = "https://jaeyride.site/assets/images/jride_text_black.png"
+        user_display_name = user.get("name", "User")
+        
+        email_html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reset your password</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f9fafb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #111827;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f9fafb; width: 100%; padding: 48px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 480px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e5e7eb; padding: 40px 36px; text-align: left;">
+          
+          <!-- Brand Wordmark Logo -->
+          <tr>
+            <td style="padding-bottom: 24px;">
+              <a href="https://jaeyride.site" target="_blank" style="text-decoration: none; display: inline-block;">
+                <img src="{logo_url}" alt="JRide" height="28" style="display: block; height: 28px; width: auto; border: 0; outline: none;" />
+              </a>
+            </td>
+          </tr>
+
+          <!-- Heading & Instructions -->
+          <tr>
+            <td>
+              <h1 style="margin: 0 0 16px; font-size: 20px; font-weight: 600; color: #111827; letter-spacing: -0.01em;">
+                Reset your password
+              </h1>
+              <p style="margin: 0 0 16px; font-size: 15px; line-height: 24px; color: #374151;">
+                Hello {user_display_name},
+              </p>
+              <p style="margin: 0 0 24px; font-size: 15px; line-height: 24px; color: #374151;">
+                We received a request to reset the password for your Jaey Ride account. Click the button below to choose a new password:
+              </p>
+            </td>
+          </tr>
+
+          <!-- Primary Action Button -->
+          <tr>
+            <td style="padding: 8px 0 28px;">
+              <a href="{reset_link}" target="_blank" style="display: inline-block; background-color: #111827; color: #ffffff; font-size: 14px; font-weight: 500; text-decoration: none; padding: 12px 24px; border-radius: 8px; text-align: center;">
+                Reset password
+              </a>
+            </td>
+          </tr>
+
+          <!-- Security & Fallback Details -->
+          <tr>
+            <td>
+              <p style="margin: 0 0 16px; font-size: 14px; line-height: 22px; color: #6b7280;">
+                This link will expire in <strong>15 minutes</strong>. If you did not request a password reset, you can safely ignore this email.
+              </p>
+              <p style="margin: 0 0 8px; font-size: 13px; line-height: 20px; color: #9ca3af;">
+                Button not working? Copy and paste this link into your browser:
+              </p>
+              <p style="margin: 0 0 28px; font-size: 13px; line-height: 20px; word-break: break-all;">
+                <a href="{reset_link}" target="_blank" style="color: #2563eb; text-decoration: underline;">{reset_link}</a>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Clean Divider -->
+          <tr>
+            <td>
+              <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 0 0 20px;" />
+            </td>
+          </tr>
+
+          <!-- Minimalist Footer -->
+          <tr>
+            <td>
+              <p style="margin: 0; font-size: 12px; line-height: 18px; color: #9ca3af;">
+                Jaey Ride &bull; <a href="https://jaeyride.site" target="_blank" style="color: #9ca3af; text-decoration: underline;">jaeyride.site</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
         
         email_params = {
             "from": sender,
             "to": [user["email"]],
-            "subject": "Reset your Jaey Ride Password",
-            "html": f"""
-            <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-                <h2>Password Reset Request</h2>
-                <p>Hello {user.get('name', 'User')},</p>
-                <p>We received a request to reset your password. Click the button below to choose a new password:</p>
-                <a href="{reset_link}" style="display: inline-block; padding: 12px 24px; background-color: #2563eb; color: #ffffff; text-decoration: none; border-radius: 6px; margin: 20px 0;">Reset Password</a>
-                <p>If you didn't request this, you can safely ignore this email.</p>
-                <p>This link will expire in 1 hour.</p>
-                <hr style="border: none; border-top: 1px solid #eaeaea; margin-top: 30px;"/>
-                <p style="font-size: 12px; color: #888;">Jaey Ride Support Team</p>
-            </div>
-            """
+            "subject": "Reset your password",
+            "html": email_html
         }
         background_tasks.add_task(_send_password_reset_email_task, email_params)
         logger.info(f"Queued password reset email task for {user['email']}")
