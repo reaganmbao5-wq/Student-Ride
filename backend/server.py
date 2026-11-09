@@ -131,7 +131,7 @@ db = client[os.environ.get('DB_NAME', 'mulungushi_rides')]
 notification_service = NotificationService(db)
 
 # Resend API Configuration
-resend.api_key = os.environ.get('RESEND_API_KEY', 're_X7gVHfvT_F9eBjUDtnFbvE6rhr954sMGR')
+resend.api_key = os.environ.get('RESEND_API_KEY', '')
 
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '613545438163-5eo9e0tpustjgotq6u7m7elsas8gkjst.apps.googleusercontent.com')
@@ -1550,10 +1550,13 @@ async def password_reset_redirect(token: str):
 
 def _send_password_reset_email_task(email_params: dict):
     try:
-        resend.Emails.send(email_params)
-        logger.info(f"Password reset email sent to {email_params.get('to')}")
+        api_key = os.environ.get('RESEND_API_KEY', '')
+        if api_key:
+            resend.api_key = api_key
+        resp = resend.Emails.send(email_params)
+        logger.info(f"Password reset email successfully sent to {email_params.get('to')}: {resp}")
     except Exception as e:
-        logger.error(f"Failed to send password reset email: {e}")
+        logger.error(f"Failed to send password reset email to {email_params.get('to')}: {e}")
 
 @api_router.post("/auth/password-reset/request")
 async def request_password_reset(request: PasswordResetRequest, background_tasks: BackgroundTasks):
@@ -1581,7 +1584,7 @@ async def request_password_reset(request: PasswordResetRequest, background_tasks
     
     try:
         frontend_url = os.environ.get("REACT_APP_FRONTEND_URL", "https://mulungushistudentride.site")
-        backend_url = os.environ.get('BACKEND_URL', 'https://student-ride-backend-dev.onrender.com').rstrip('/')
+        backend_url = os.environ.get('BACKEND_URL', 'https://jaey-ride-backend.onrender.com').rstrip('/')
         reset_link = f"{backend_url}/api/auth/password-reset/redirect?token={reset_token}"
         
         from_email = os.environ.get("RESEND_FROM_EMAIL", "noreply@mulungushistudentride.site")
