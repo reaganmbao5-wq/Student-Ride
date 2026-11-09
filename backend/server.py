@@ -1589,7 +1589,7 @@ async def request_password_reset(request: PasswordResetRequest, background_tasks
         
         from_email = os.environ.get("RESEND_FROM_EMAIL", "noreply@mulungushistudentride.site")
         sender = from_email if "onboarding@resend.dev" in from_email else f"Jaey Ride <{from_email}>"
-        logo_url = "https://jaeyride.site/assets/images/jride_text_black.png"
+        logo_url = "https://jaeyride.site/assets/images/jride_text_white.png"
         user_display_name = user.get("name", "User")
         
         email_html = f"""<!DOCTYPE html>
@@ -1609,7 +1609,13 @@ async def request_password_reset(request: PasswordResetRequest, background_tasks
           <tr>
             <td style="padding-bottom: 24px;">
               <a href="https://jaeyride.site" target="_blank" style="text-decoration: none; display: inline-block;">
-                <img src="{logo_url}" alt="JRide" height="28" style="display: block; height: 28px; width: auto; border: 0; outline: none;" />
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="background-color: #000000; border-radius: 8px; padding: 6px 14px;">
+                  <tr>
+                    <td>
+                      <img src="{logo_url}" alt="JRide" height="22" style="display: block; height: 22px; width: auto; border: 0; outline: none;" />
+                    </td>
+                  </tr>
+                </table>
               </a>
             </td>
           </tr>
