@@ -1,32 +1,60 @@
 import os
 import json
+import base64
 import asyncio
 from pywebpush import webpush, WebPushException
 import logging
 from datetime import datetime, timezone
 import firebase_admin
 from firebase_admin import credentials, messaging, exceptions
+from google.auth import exceptions as google_auth_exceptions
 
 logger = logging.getLogger(__name__)
 
-# Initialize Firebase Admin SDK
-try:
-    if not firebase_admin._apps:
+
+def _init_firebase():
+    """Initialize Firebase Admin SDK from env var JSON/Base64 or fallback local key file."""
+    if firebase_admin._apps:
+        return True
+    try:
+        raw_env = (
+            os.environ.get("FIREBASE_CREDENTIALS_JSON")
+            or os.environ.get("FIREBASE_CREDENTIALS_BASE64")
+            or ""
+        ).strip()
+
+        if raw_env:
+            if not raw_env.startswith("{"):
+                raw_env = base64.b64decode(raw_env).decode("utf-8")
+            cred_dict = json.loads(raw_env)
+            cred = credentials.Certificate(cred_dict)
+            firebase_admin.initialize_app(cred)
+            logger.info("Firebase Admin SDK initialized from environment variable.")
+            return True
+
         cred_path = os.path.join(os.path.dirname(__file__), '..', 'firebase-adminsdk.json')
         if os.path.exists(cred_path):
             cred = credentials.Certificate(cred_path)
             firebase_admin.initialize_app(cred)
-            logger.info("Firebase Admin SDK initialized successfully.")
-        else:
-            logger.warning(f"Firebase Service Account file not found at {cred_path}")
-except Exception as e:
-    logger.error(f"Failed to initialize Firebase Admin SDK: {e}")
+            logger.info("Firebase Admin SDK initialized from firebase-adminsdk.json.")
+            return True
+
+        logger.warning(
+            "Firebase credentials not configured: neither FIREBASE_CREDENTIALS_JSON env var nor %s exists.",
+            cred_path,
+        )
+        return False
+    except Exception as e:
+        logger.error(f"Failed to initialize Firebase Admin SDK: {e}")
+        return False
+
 
 class NotificationService:
     def __init__(self, db):
         self.db = db
         self.vapid_private_key = os.environ.get("VAPID_PRIVATE_KEY")
-        self.vapid_subject = os.environ.get("VAPID_SUBJECT") or "mailto:admin@mulungushistudentride.site"
+        self.vapid_subject = os.environ.get("VAPID_SUBJECT") or "mailto:reaganmbao5@gmail.com"
+        _init_firebase()
 
     async def save_subscription(self, user_id: str, role: str, subscription_info: dict, device_info: dict = None):
         """Save a new push subscription or refresh existing one for a user"""
@@ -136,6 +164,9 @@ class NotificationService:
             logger.info(f"No push subscriptions found for user {user_id}")
             return False
 
+        vapid_private_key = self.vapid_private_key or os.environ.get("VAPID_PRIVATE_KEY")
+        vapid_subject = self.vapid_subject or os.environ.get("VAPID_SUBJECT") or "mailto:reaganmbao5@gmail.com"
+
         success_count = 0
         for sub in subscriptions:
             try:
@@ -143,6 +174,10 @@ class NotificationService:
                 endpoint = sub_info.get("endpoint", "")
                 
                 if endpoint.startswith("FCM_TOKEN:"):
+                    if not _init_firebase():
+                        logger.error(f"Cannot send FCM push to {user_id}: Firebase Admin SDK is not initialized.")
+                        continue
+
                     # Handle Native FCM Push Notification
                     fcm_token = endpoint.replace("FCM_TOKEN:", "")
                     priority = 'high' if channel_id in ['ride_updates', 'emergency_sos'] else 'normal'
@@ -192,19 +227,28 @@ class NotificationService:
                             "sent_via": "FCM",
                             "created_at": datetime.now(timezone.utc).isoformat()
                         })
-                    except messaging.UnregisteredError:
-                        logger.warning(f"FCM token expired/unregistered for user {user_id}. Purging dead subscription.")
+                    except (messaging.UnregisteredError, messaging.SenderIdMismatchError) as token_err:
+                        logger.warning(f"FCM token expired/mismatched for user {user_id} ({token_err}). Purging dead subscription.")
                         await self.db.push_subscriptions.delete_one({"_id": sub["_id"]})
+                    except google_auth_exceptions.RefreshError as auth_err:
+                        # Server service-account credentials issue — never delete user subscriptions
+                        logger.error(f"Firebase OAuth credential error sending to {user_id} (check FIREBASE_CREDENTIALS_JSON): {auth_err}")
+                    except exceptions.InvalidArgumentError as arg_err:
+                        err_str = str(arg_err).lower()
+                        logger.error(f"Firebase invalid argument for user {user_id}: {arg_err}")
+                        if "registration token" in err_str or "not a valid fcm registration token" in err_str:
+                            await self.db.push_subscriptions.delete_one({"_id": sub["_id"]})
                     except exceptions.FirebaseError as f_err:
+                        err_str = str(f_err).lower()
                         logger.error(f"Firebase error for user {user_id}: {f_err}")
-                        if "not found" in str(f_err).lower() or "invalid" in str(f_err).lower() or "unregistered" in str(f_err).lower():
+                        if "requested entity was not found" in err_str or "unregistered" in err_str:
                             await self.db.push_subscriptions.delete_one({"_id": sub["_id"]})
                     except Exception as ex:
                         logger.error(f"Unexpected FCM send error for {user_id}: {ex}")
 
                 else:
                     # Handle standard Web Push (VAPID)
-                    if not self.vapid_private_key:
+                    if not vapid_private_key:
                         logger.warning("VAPID_PRIVATE_KEY not set for Web Push.")
                         continue
                         
@@ -213,9 +257,9 @@ class NotificationService:
                             webpush,
                             subscription_info=sub_info,
                             data=json.dumps(message),
-                            vapid_private_key=self.vapid_private_key,
+                            vapid_private_key=vapid_private_key,
                             vapid_claims={
-                                "sub": self.vapid_subject
+                                "sub": vapid_subject
                             }
                         )
                         success_count += 1
@@ -233,7 +277,8 @@ class NotificationService:
                         })
                     except WebPushException as ex:
                         logger.error(f"WebPush error sending to {user_id}: {repr(ex)}")
-                        if ex.response is not None and ex.response.status_code in [400, 401, 403, 404, 410]:
+                        # Only purge on 404/410 (subscription permanently gone/expired), never on 401/403 VAPID auth errors
+                        if ex.response is not None and ex.response.status_code in [404, 410]:
                             await self.db.push_subscriptions.delete_one({"_id": sub["_id"]})
                             logger.info(f"Purged dead web push subscription for user {user_id} (status: {ex.response.status_code})")
                     except Exception as webpush_err:

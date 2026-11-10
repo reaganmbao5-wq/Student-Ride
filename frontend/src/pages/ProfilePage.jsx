@@ -22,23 +22,13 @@ import { openExternalUrl, getBackendUrl } from '../utils/urlHelpers';
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { PermissionsService } from '../services/PermissionsService';
+import { syncWebPushSubscription } from '../utils/webPushHelper';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '../components/ui/dialog';
-
-const urlBase64ToUint8Array = (base64String) => {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-};
 
 const ProfilePage = () => {
   const { user, driverProfile, logout, isDriver, isAdmin, isSuperAdmin, api, fetchUser, updateUser, setUser } = useAuth();
@@ -248,38 +238,16 @@ const ProfilePage = () => {
           setPermissionState('granted');
         }
       } else if ('Notification' in window) {
-        if (Notification.permission === 'granted') {
-          setPermissionState('granted');
-          const registration = await navigator.serviceWorker.ready;
-          let publicKey;
-          try {
-            const res = await api.get('/notifications/vapid-public-key');
-            publicKey = res.data?.publicKey || res.data?.public_key;
-          } catch (e) {
-            try {
-              const backendUrl = getBackendUrl ? getBackendUrl() : '';
-              if (backendUrl) {
-                const res = await fetch(`${backendUrl}/api/notifications/vapid-public-key`);
-                if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
-                  const data = await res.json();
-                  publicKey = data?.publicKey || data?.public_key;
-                }
-              }
-            } catch (fetchErr) {
-              console.warn('Could not fetch VAPID key:', fetchErr);
-            }
-          }
-          if (publicKey) {
-            const convertedVapidKey = urlBase64ToUint8Array(publicKey);
-            const subscription = await registration.pushManager.subscribe({
-              userVisibleOnly: true,
-              applicationServerKey: convertedVapidKey,
-            });
-            await api.post('/notifications/subscribe', subscription);
-          }
-        } else {
-          const perm = await Notification.requestPermission();
-          setPermissionState(perm);
+        let perm = Notification.permission;
+        if (perm !== 'granted') {
+          perm = await Notification.requestPermission();
+        }
+        setPermissionState(perm);
+        if (perm === 'granted') {
+          await syncWebPushSubscription({
+            backendUrl: getBackendUrl(),
+            authToken: localStorage.getItem('token'),
+          });
         }
       }
     } catch (err) {

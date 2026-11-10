@@ -6,18 +6,7 @@ import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { PermissionsService } from '../../services/PermissionsService';
 import { getBackendUrl } from '../../utils/urlHelpers';
-
-// Utility to convert Base64 VAPID key to Uint8Array
-const urlBase64ToUint8Array = (base64String) => {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-};
+import { syncWebPushSubscription } from '../../utils/webPushHelper';
 
 const PushNotificationManager = () => {
     const { isAuthenticated, token, user } = useAuth();
@@ -126,25 +115,12 @@ const PushNotificationManager = () => {
                     }
                 }
 
-                if ('serviceWorker' in navigator) {
-                    const registration = await navigator.serviceWorker.ready;
-                    const keyResponse = await fetch(`${backendUrl}/api/notifications/vapid-public-key`, { headers });
-                    const data = await keyResponse.json();
-                    const publicKey = data.public_key || data.publicKey;
-                    
-                    if (publicKey) {
-                        const convertedVapidKey = urlBase64ToUint8Array(publicKey);
-                        const subscription = await registration.pushManager.subscribe({
-                            userVisibleOnly: true,
-                            applicationServerKey: convertedVapidKey,
-                        });
-
-                        await fetch(`${backendUrl}/api/notifications/subscribe`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', ...headers },
-                            body: JSON.stringify(subscription),
-                        });
-
+                if ('serviceWorker' in navigator && 'PushManager' in window) {
+                    const sub = await syncWebPushSubscription({
+                        backendUrl,
+                        authToken: currentToken,
+                    });
+                    if (sub) {
                         console.log('Web Push subscription registered successfully');
                     }
                 }

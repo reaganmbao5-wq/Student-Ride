@@ -86,3 +86,7 @@ RIDE_LIFECYCLE_PERFORMANCE_AUDIT_REPORT.md
 cropped_assets/
 raylight_assets/
 upscaled_4k/
+
+# Firebase Admin SDK secrets (keep in Render env var FIREBASE_CREDENTIALS_JSON)
+*firebase-adminsdk*.json
+firebase-adminsdk.json

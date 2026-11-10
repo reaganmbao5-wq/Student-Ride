@@ -3,22 +3,12 @@ import axios from 'axios';
 import { AppCache } from '../utils/AppCache';
 import { getBackendUrl } from '../utils/urlHelpers';
 import { identifyUser, resetUser } from '../utils/analytics';
+import { syncWebPushSubscription } from '../utils/webPushHelper';
 
 const AuthContext = createContext(null);
 
 const BACKEND_URL = getBackendUrl();
 const API_URL = `${BACKEND_URL}/api`;
-
-const urlBase64ToUint8Array = (base64String) => {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-};
 
 export const AuthProvider = ({ children }) => {
   // Initialize user from localStorage cache for instant 0ms render (no spinner on refresh)
@@ -138,31 +128,15 @@ export const AuthProvider = ({ children }) => {
   const subscribeUserToPush = async (accessToken) => {
     try {
       if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-      if (Notification.permission === 'denied') return;
+      if (typeof Notification === 'undefined' || Notification.permission === 'denied') return;
 
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') return;
 
-      const registration = await navigator.serviceWorker.ready;
-      let subscription = await registration.pushManager.getSubscription();
-
-      if (!subscription) {
-        const vapidRes = await axios.get(`${API_URL}/notifications/vapid-public-key`);
-        const vapidPublicKey = vapidRes.data.public_key;
-        if (!vapidPublicKey) return;
-
-        const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
-
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: convertedVapidKey
-        });
+      const sub = await syncWebPushSubscription({ backendUrl: BACKEND_URL, authToken: accessToken });
+      if (sub) {
+        console.log('Successfully configured push notifications');
       }
-
-      await axios.post(`${API_URL}/notifications/subscribe`, subscription, {
-        headers: { Authorization: `Bearer ${accessToken}` }
-      });
-      console.log('Successfully configured push notifications');
     } catch (err) {
       console.error('Failed to subscribe to push notifications:', err);
     }
