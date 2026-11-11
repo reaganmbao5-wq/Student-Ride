@@ -231,7 +231,7 @@ async def startup_db_client():
         
         # Start Phase 3.2.6.X Background Orchestrator
         global orchestrator
-        orchestrator = BackgroundOrchestrator(db, internal_bus)
+        orchestrator = BackgroundOrchestrator(db, internal_bus, notify_admins_fn=notify_admins)
         await orchestrator.start()
         
     except Exception as e:
@@ -1447,6 +1447,113 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
+def _short_place_name(loc: Any, default_label: str = "Campus") -> str:
+    if not isinstance(loc, dict):
+        return str(loc) if loc else default_label
+    raw = loc.get("name") or loc.get("address") or default_label
+    parts = [p.strip() for p in str(raw).split(",") if p.strip()]
+    if not parts:
+        return default_label
+    return ", ".join(parts[:2]) if len(parts) > 1 else parts[0]
+
+async def notify_admins(
+    event_type: str,
+    title: str,
+    body: str,
+    url: str = "/admin",
+    tag: Optional[str] = None,
+    extra_ws_data: Optional[dict] = None
+) -> int:
+    """
+    Routes operational notifications strictly to admin and super_admin accounts (push + live WebSocket).
+    Never targets regular student, lecturer, or driver accounts.
+    """
+    try:
+        admins = await db.users.find(
+            {
+                "role": {"$in": [UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value]},
+                "is_active": {"$ne": False},
+                "is_archived": {"$ne": True}
+            },
+            {"id": 1, "role": 1, "_id": 0}
+        ).to_list(100)
+
+        if not admins:
+            return 0
+
+        notif_tag = tag or f"{event_type}-{int(time.time())}"
+        ws_payload = {
+            "type": "admin_notification",
+            "event_type": event_type,
+            "title": title,
+            "body": body,
+            "url": url,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            **(extra_ws_data or {})
+        }
+
+        async def _send_to_admin(admin_doc):
+            admin_id = admin_doc.get("id")
+            if not admin_id:
+                return False
+            try:
+                await manager.send_personal_message(ws_payload, admin_id)
+            except Exception as ws_err:
+                logger.warning(f"Admin WebSocket dispatch notice for {admin_id}: {ws_err}")
+            try:
+                return await notification_service.send(
+                    user_id=admin_id,
+                    type=event_type,
+                    payload={
+                        "title": title,
+                        "body": body,
+                        "url": url,
+                        "icon": "/logo192.png",
+                        "badge": "/favicon-32x32.png",
+                        "tag": notif_tag,
+                        "channelId": "ride_updates"
+                    }
+                )
+            except Exception as push_err:
+                logger.error(f"Admin push dispatch error for {admin_id}: {push_err}")
+                return False
+
+        results = await asyncio.gather(*[_send_to_admin(a) for a in admins])
+        return sum(1 for r in results if r)
+    except Exception as e:
+        logger.error(f"Error in notify_admins ({event_type}): {e}")
+        return 0
+
+async def _check_new_user_milestone(latest_user_name: str):
+    """Batches new user signup notifications so admins receive a summary every 5 new signups."""
+    try:
+        from pymongo import ReturnDocument
+        updated = await db.settings.find_one_and_update(
+            {"type": "admin_notification_counters"},
+            {
+                "$inc": {"pending_new_users_count": 1},
+                "$set": {"latest_user_name": latest_user_name, "updated_at": datetime.now(timezone.utc).isoformat()}
+            },
+            upsert=True,
+            return_document=ReturnDocument.AFTER
+        )
+        pending_count = int((updated or {}).get("pending_new_users_count", 0))
+        if pending_count >= 5:
+            await db.settings.update_one(
+                {"type": "admin_notification_counters"},
+                {"$set": {"pending_new_users_count": 0}}
+            )
+            total_users = await db.users.count_documents({"is_archived": {"$ne": True}})
+            await notify_admins(
+                event_type="new_users_milestone",
+                title="New Users Joined",
+                body=f"{pending_count} new users joined recently, including {latest_user_name}. Total registered users: {total_users}.",
+                url="/admin/users",
+                tag="admin-users-milestone"
+            )
+    except Exception as e:
+        logger.warning(f"Failed checking new user milestone: {e}")
+
 # ==================== AUTH ROUTES ====================
 @api_router.post("/auth/register", response_model=TokenResponse)
 async def register(user_data: UserCreate):
@@ -1500,6 +1607,10 @@ async def register(user_data: UserCreate):
     except Exception as e:
         logger.warning(f"Failed to auto-queue user in play_store_testers: {e}")
     
+    # Batched milestone notification to admins (every 5 new signups)
+    if role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.ACCOUNTANT]:
+        asyncio.create_task(_check_new_user_milestone(user.get("name") or "New User"))
+
     # Generate token
     token = create_token(user_id, role.value)
     
@@ -1824,6 +1935,7 @@ async def google_login(request: GoogleLoginRequest):
                     })
             except Exception as e:
                 logger.warning(f"Failed to auto-queue google user in play_store_testers: {e}")
+            asyncio.create_task(_check_new_user_milestone(user.get("name") or "New User"))
         else:
             user["is_beta_tester"] = True
 
@@ -1987,6 +2099,13 @@ async def register_driver(profile: DriverProfile, user: dict = Depends(get_curre
         await db.users.update_one({"id": user["id"]}, {"$set": {"role": UserRole.DRIVER.value}})
         updated_driver = await db.drivers.find_one({"user_id": user["id"]}, {"_id": 0})
         updated_driver["needs_setup"] = False
+        asyncio.create_task(notify_admins(
+            event_type="driver_pending_approval",
+            title="Driver Pending Approval",
+            body=f"{user.get('name', 'Driver')} ({profile.vehicle_color} {profile.vehicle_model}, {profile.plate_number.upper()}) registered and is waiting for approval.",
+            url="/admin/drivers",
+            tag=f"driver-approval-{user['id']}"
+        ))
         return DriverResponse(**updated_driver)
 
     driver_id = str(uuid.uuid4())
@@ -2044,6 +2163,13 @@ async def register_driver(profile: DriverProfile, user: dict = Depends(get_curre
     # Update user role
     await db.users.update_one({"id": user["id"]}, {"$set": {"role": UserRole.DRIVER.value}})
     driver["needs_setup"] = False
+    asyncio.create_task(notify_admins(
+        event_type="driver_pending_approval",
+        title="Driver Pending Approval",
+        body=f"{user.get('name', 'Driver')} ({profile.vehicle_color} {profile.vehicle_model}, {profile.plate_number.upper()}) registered and is waiting for approval.",
+        url="/admin/drivers",
+        tag=f"driver-approval-{user['id']}"
+    ))
     return DriverResponse(**driver)
 
 @api_router.get("/drivers/me", response_model=DriverResponse)
@@ -2780,12 +2906,26 @@ async def request_ride(ride_data: RideRequest, user: dict = Depends(get_current_
         }
         ride["student"] = student_obj
         ride["student_name"] = user["name"]
+        ride["student_phone"] = user.get("phone", "")
         
         # Broadcast to available drivers
         await manager.broadcast_to_nearby_drivers({
             "type": "new_ride_request",
             "ride": ride
         }, ride_data.pickup_location)
+
+        # Notify admins of new ride request
+        pickup_label = _short_place_name(ride_data.pickup_location, "pickup")
+        dropoff_label = _short_place_name(ride_data.dropoff_location, "destination")
+        mode_label = "shared" if str(ride_data.ride_mode.value).lower() == "shared" else "private"
+        asyncio.create_task(notify_admins(
+            event_type="new_ride_request_admin",
+            title="New Ride Request",
+            body=f"{user.get('name', 'Student')} requested a {mode_label} ride from {pickup_label} to {dropoff_label} (K{float(calculated_fare):.2f}).",
+            url="/admin/rides",
+            tag=f"admin-ride-req-{ride['id']}",
+            extra_ws_data={"ride": ride}
+        ))
         
         return RideResponse(**ride)
     except Exception as e:
@@ -3314,6 +3454,14 @@ async def complete_ride(ride_id: str, background_tasks: BackgroundTasks, user: d
         wallet_status = WalletStatus.RESTRICTED.value
         is_still_online = False
         logger.warning(f"Driver {driver['id']} reached commission debt limit: K{total_due:.2f} / K{max_limit:.2f}. Restricting account.")
+        if driver.get("wallet_status") != WalletStatus.RESTRICTED.value:
+            asyncio.create_task(notify_admins(
+                event_type="driver_account_restricted",
+                title="Driver Account Restricted",
+                body=f"{user.get('name', 'Driver')} reached the commission limit (K{total_due:.2f} owed) and has been taken offline.",
+                url="/admin/drivers",
+                tag=f"driver-restricted-{driver['id']}"
+            ))
         
     remaining_active_rides = await db.rides.count_documents({
         "driver_id": driver["id"],
@@ -3772,13 +3920,33 @@ async def trigger_sos(request: EmergencyRequest, user: dict = Depends(get_curren
     if not ride:
         raise HTTPException(status_code=404, detail="Ride not found")
         
-    # Safety check: only the student or driver can trigger SOS
-    if user["id"] != ride["student_id"] and user["id"] != ride.get("driver_id"):
+    # Safety check: student, assigned driver, or admin can trigger SOS
+    is_authorized = (
+        user["id"] == ride["student_id"]
+        or user["id"] == ride.get("driver_id")
+        or user.get("role") in [UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value]
+    )
+    if not is_authorized and ride.get("driver_id"):
+        drv_doc = await db.drivers.find_one({"id": ride["driver_id"]}, {"user_id": 1})
+        if drv_doc and drv_doc.get("user_id") == user["id"]:
+            is_authorized = True
+    if not is_authorized:
         raise HTTPException(status_code=403, detail="Not authorized to trigger SOS for this ride")
 
-    # Get all admins and super admins
+    pickup_label = _short_place_name(ride.get("pickup_location"), "Pickup Point")
+    dropoff_label = _short_place_name(ride.get("dropoff_location"), "Dropoff Point")
+    user_phone = user.get("phone") or "No phone"
+    loc_str = "En route"
+    if isinstance(request.location, dict) and request.location.get("lat") is not None and request.location.get("lng") is not None:
+        loc_str = f"{round(float(request.location['lat']), 5)}, {round(float(request.location['lng']), 5)}"
+    elif isinstance(request.location, str) and request.location.strip():
+        loc_str = request.location.strip()
+
+    # Get all active admins and super admins
     admins = await db.users.find({
-        "role": {"$in": [UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value]}
+        "role": {"$in": [UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value]},
+        "is_active": {"$ne": False},
+        "is_archived": {"$ne": True}
     }).to_list(100)
     
     # Broadcast push notification to all admins
@@ -3788,12 +3956,13 @@ async def trigger_sos(request: EmergencyRequest, user: dict = Depends(get_curren
             user_id=admin["id"],
             type="emergency_sos",
             payload={
-                "title": "🚨 EMERGENCY SOS",
-                "body": f"SOS triggered by {user['name']} in Ride #{ride['id'][:8]}. User is in danger!",
-                "url": f"/admin/rides/{ride['id']}",
+                "title": "Emergency SOS Alert",
+                "body": f"{user.get('name', 'Student')} ({user_phone}) triggered SOS on a ride from {pickup_label} to {dropoff_label}.",
+                "url": "/admin/rides",
                 "icon": "/logo192.png",
                 "badge": "/favicon-32x32.png",
-                "tag": f"emergency-{ride['id']}"
+                "tag": f"emergency-{ride['id']}",
+                "channelId": "emergency_sos"
             }
         )
         if success:
@@ -3804,10 +3973,10 @@ async def trigger_sos(request: EmergencyRequest, user: dict = Depends(get_curren
         "type": "emergency_sos",
         "ride_id": ride["id"],
         "student_name": user.get("name", "Student"),
-        "student_phone": user.get("phone", "N/A"),
-        "pickup_location": ride.get("pickup_location", {}).get("name", "Pickup Point") if isinstance(ride.get("pickup_location"), dict) else "Pickup Point",
-        "dropoff_location": ride.get("dropoff_location", {}).get("name", "Dropoff Point") if isinstance(ride.get("dropoff_location"), dict) else "Dropoff Point",
-        "location": request.location or "En route",
+        "student_phone": user_phone,
+        "pickup_location": pickup_label,
+        "dropoff_location": dropoff_label,
+        "location": loc_str,
         "message": request.message or "Passenger triggered Emergency SOS",
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
@@ -6359,11 +6528,12 @@ async def create_bug_report(
     payload: BugReportCreate,
     user: Optional[dict] = Depends(get_optional_current_user)
 ):
+    reporter_name = (user.get("name") or user.get("full_name") or "Anonymous User") if user else "Anonymous User"
     doc = {
         "id": str(uuid.uuid4()),
         "user_id": user["id"] if user else "anonymous",
         "user_email": user.get("email", "") if user else "",
-        "user_name": user.get("full_name", "Anonymous User") if user else "Anonymous User",
+        "user_name": reporter_name,
         "category": payload.category,
         "description": payload.description,
         "device_info": payload.device_info or {},
@@ -6373,6 +6543,16 @@ async def create_bug_report(
     }
     await db.bug_reports.insert_one(doc)
     doc.pop("_id", None)
+    short_desc = (payload.description or "").strip()
+    if len(short_desc) > 80:
+        short_desc = short_desc[:77] + "..."
+    asyncio.create_task(notify_admins(
+        event_type="new_bug_report",
+        title="New Bug Report",
+        body=f"{reporter_name} reported a {payload.category} issue: \"{short_desc}\"",
+        url="/admin/bug-reports",
+        tag=f"bug-report-{doc['id']}"
+    ))
     return {"status": "success", "report": doc}
 
 @api_router.post("/support/auto-log-error")

@@ -3,6 +3,8 @@ import { App } from '@capacitor/app';
 import { useAuth } from './AuthContext';
 import { getBackendUrl } from '../utils/urlHelpers';
 import { systemNotification } from '../services/SystemNotificationService';
+import { toast } from 'sonner';
+import { haptics } from '../utils/haptics';
 
 const WebSocketContext = createContext(null);
 
@@ -14,6 +16,7 @@ export const WebSocketProvider = ({ children }) => {
   const [removedSharedRideId, setRemovedSharedRideId] = useState(null);
   const [rideUpdate, setRideUpdate] = useState(null);
   const [emergencyAlert, setEmergencyAlert] = useState(null);
+  const [adminNotification, setAdminNotification] = useState(null);
   const [routeQueueUpdate, setRouteQueueUpdate] = useState(null);
   const [driverTripSegments, setDriverTripSegments] = useState(null);
   const [passengerBriefing, setPassengerBriefing] = useState(null);
@@ -90,11 +93,29 @@ export const WebSocketProvider = ({ children }) => {
             setRideUpdate({ type: 'cancelled', ride_id: data.ride_id, message: data.message });
             break;
           case 'emergency_sos':
-            setEmergencyAlert(data);
-            try {
-              systemNotification.notifyEmergencySos(data.student_name);
-            } catch (e) {
-              console.warn('Failed systemNotification on emergency_sos:', e);
+            if (user?.role === 'admin' || user?.role === 'super_admin') {
+              setEmergencyAlert(data);
+              try {
+                systemNotification.notifyEmergencySos(data.student_name);
+              } catch (e) {
+                console.warn('Failed systemNotification on emergency_sos:', e);
+              }
+            }
+            break;
+          case 'admin_notification':
+            if (user?.role === 'admin' || user?.role === 'super_admin') {
+              setAdminNotification(data);
+              try {
+                haptics.newRideRequest();
+                if (data.title) {
+                  toast.info(data.title, {
+                    description: data.body,
+                    duration: 5000
+                  });
+                }
+              } catch (e) {
+                console.warn('Failed toast on admin_notification:', e);
+              }
             }
             break;
           case 'driver_cancelled_reassigning':
@@ -303,12 +324,17 @@ export const WebSocketProvider = ({ children }) => {
     setEmergencyAlert(null);
   }, []);
 
+  const clearAdminNotification = useCallback(() => {
+    setAdminNotification(null);
+  }, []);
+
   const value = {
     isConnected,
     newRideRequest,
     removedSharedRideId,
     rideUpdate,
     emergencyAlert,
+    adminNotification,
     routeQueueUpdate,
     driverTripSegments,
     driverLocation,
@@ -320,6 +346,7 @@ export const WebSocketProvider = ({ children }) => {
     clearRemovedSharedRideId,
     clearRideUpdate,
     clearEmergencyAlert,
+    clearAdminNotification,
     clearRouteQueueUpdate,
     clearNewMessage,
     setPassengerBriefing

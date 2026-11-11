@@ -591,24 +591,44 @@ const StudentDashboard = () => {
   };
 
   const handleSOS = async () => {
-    // 1. Redirect to phone dialer immediately for user safety
-    window.location.href = 'tel:+260976954518';
-
-    // 2. Secretly alert all admins via backend
-    if (!activeRide) return;
-    try {
-      await api.post('/emergency/sos', {
+    // 1. Dispatch SOS alert to all admins immediately (with keepalive so dialer switch never aborts the request)
+    if (activeRide) {
+      const sosPayload = {
         ride_id: activeRide.id,
-        location: userLocation,
+        location: userLocation && userLocation.lat !== undefined && userLocation.lng !== undefined
+          ? { lat: Number(userLocation.lat), lng: Number(userLocation.lng) }
+          : null,
         message: "User triggered SOS from phone"
-      });
-      toast.success('Emergency alert sent to admins.', {
-        description: 'Help is on the way.',
-        duration: 10000
-      });
-    } catch (error) {
-      console.error('Failed to send SOS alert:', error);
+      };
+      try {
+        const currentToken = localStorage.getItem('token');
+        const baseUrl = api?.defaults?.baseURL || '';
+        if (baseUrl && typeof fetch !== 'undefined') {
+          fetch(`${baseUrl}/emergency/sos`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(currentToken ? { Authorization: `Bearer ${currentToken}` } : {})
+            },
+            body: JSON.stringify(sosPayload),
+            keepalive: true
+          }).catch(() => {});
+        } else {
+          api.post('/emergency/sos', sosPayload).catch(() => {});
+        }
+        toast.success('Emergency alert sent to admins.', {
+          description: 'Help is on the way.',
+          duration: 10000
+        });
+      } catch (error) {
+        console.error('Failed to send SOS alert:', error);
+      }
     }
+
+    // 2. Open phone dialer right after SOS packet is flushed
+    setTimeout(() => {
+      window.location.href = 'tel:+260976954518';
+    }, 120);
   };
 
   if (loading) {

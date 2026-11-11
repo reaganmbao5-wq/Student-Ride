@@ -17,6 +17,7 @@ export const RideCard = ({
 
   const isShared = !request.ride_mode || String(request.ride_mode).toLowerCase() === 'shared';
   const studentName = request.student?.name || request.student_name || request.user_name || request.student?.full_name || request.user?.name || request.name || 'Student';
+  const studentPhone = request.student?.phone || request.student_phone || request.user_phone || request.user?.phone || request.phone || '';
   const rawFare = request.fare ?? request.calculated_fare ?? request.price ?? request.amount ?? 0;
   const price = Number(rawFare).toFixed(2);
 
@@ -67,6 +68,20 @@ export const RideCard = ({
                     <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Destination:</p>
                     <p className="text-[13px] font-bold text-foreground truncate">{formatAddress(request.dropoff_location?.address)}</p>
                   </div>
+                  <div>
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Phone:</p>
+                    {studentPhone ? (
+                      <a
+                        href={`tel:${studentPhone}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-[13px] font-bold text-foreground hover:text-primary underline-offset-2 hover:underline inline-block truncate"
+                      >
+                        {studentPhone}
+                      </a>
+                    ) : (
+                      <p className="text-[13px] font-bold text-muted-foreground truncate">No phone provided</p>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="mt-4">
@@ -76,7 +91,7 @@ export const RideCard = ({
 
             {/* RIGHT: Mini Map & TAG */}
             <div className="w-[120px] flex flex-col items-end shrink-0">
-              <div className={`text-[10px] uppercase font-black tracking-widest px-2.5 py-1 rounded-full border mb-3 ${isShared ? 'bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400 dark:border-blue-500/30' : 'bg-purple-500/10 text-purple-600 border-purple-500/20 dark:text-purple-400 dark:border-purple-500/30'}`}>
+              <div className={`text-[10px] uppercase font-black tracking-widest px-3 py-1 rounded-full border mb-3 ${isShared ? 'bg-[#0088ff] text-white border-transparent shadow-sm' : 'bg-purple-600 text-white border-transparent shadow-sm'}`}>
                 {isShared ? 'Shared' : 'Private'}
               </div>
               {/* REAL MINI MAP: Focused cleanly on Pickup Location Pin with meaningful landmark context at zoom 15.2 */}
@@ -123,11 +138,25 @@ export const RideCard = ({
                   <p className="text-[9.5px] uppercase font-bold text-muted-foreground tracking-wider">Destination:</p>
                   <p className="text-[11.5px] font-bold text-foreground truncate">{formatAddress(request.dropoff_location?.address)}</p>
                 </div>
+                <div>
+                  <p className="text-[9.5px] uppercase font-bold text-muted-foreground tracking-wider">Phone:</p>
+                  {studentPhone ? (
+                    <a
+                      href={`tel:${studentPhone}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-[11.5px] font-bold text-foreground hover:text-primary underline-offset-2 hover:underline inline-block truncate"
+                    >
+                      {studentPhone}
+                    </a>
+                  ) : (
+                    <p className="text-[11.5px] font-bold text-muted-foreground truncate">No phone provided</p>
+                  )}
+                </div>
               </div>
             </div>
             
             <div className="w-[92px] flex flex-col items-end shrink-0">
-              <div className={`text-[9.5px] uppercase font-black tracking-widest px-2 py-0.5 rounded-full border mb-2 ${isShared ? 'bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400 dark:border-blue-500/30' : 'bg-purple-500/10 text-purple-600 border-purple-500/20 dark:text-purple-400 dark:border-purple-500/30'}`}>
+              <div className={`text-[9.5px] uppercase font-black tracking-widest px-2.5 py-0.5 rounded-full border mb-2 ${isShared ? 'bg-[#0088ff] text-white border-transparent shadow-sm' : 'bg-purple-600 text-white border-transparent shadow-sm'}`}>
                 {isShared ? 'Shared' : 'Private'}
               </div>
               <div className="w-full h-[82px] rounded-xl overflow-hidden pointer-events-none shadow-sm border border-border relative isolate">

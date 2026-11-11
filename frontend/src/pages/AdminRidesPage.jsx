@@ -8,6 +8,7 @@ import { SteeringWheel, Car } from '@phosphor-icons/react';
 import { GlassCard, StatusBadge, EmptyState, RatingStars } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
+import { useWebSocket } from '../context/WebSocketContext';
 import { AdminRidesSkeleton } from '../components/common/PageSkeletons';
 import { AppCache } from '../utils/AppCache';
 import { toast } from 'sonner';
@@ -25,6 +26,7 @@ const MONTH_NAMES = [
 
 const AdminRidesPage = () => {
   const { api } = useAuth();
+  const { adminNotification } = useWebSocket();
   const [rides, setRides] = useState(() => AppCache.get('admin_rides') || []);
   const [loading, setLoading] = useState(() => !AppCache.get('admin_rides'));
   
@@ -41,6 +43,12 @@ const AdminRidesPage = () => {
   useEffect(() => {
     fetchRides(Boolean(AppCache.get('admin_rides')));
   }, []);
+
+  useEffect(() => {
+    if (adminNotification) {
+      fetchRides(true);
+    }
+  }, [adminNotification]);
 
   const fetchRides = async (isBackground = false) => {
     try {

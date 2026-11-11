@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Bug, AlertTriangle, CheckCircle, Clock, Smartphone, MapPin, RefreshCw, ChevronDown, Monitor, ZoomIn, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useWebSocket } from '../context/WebSocketContext';
 import { Layout } from '../components/layout/Layout';
 import { toast } from 'sonner';
 
 export const AdminBugReportsPage = () => {
   const { api } = useAuth();
+  const { adminNotification } = useWebSocket();
   const [activeTab, setActiveTab] = useState('user-reports'); // 'user-reports' | 'auto-errors'
   const [bugReports, setBugReports] = useState([]);
   const [systemErrors, setSystemErrors] = useState([]);
@@ -33,6 +35,12 @@ export const AdminBugReportsPage = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (adminNotification?.event_type === 'new_bug_report') {
+      fetchData();
+    }
+  }, [adminNotification]);
 
   const handleStatusChange = async (reportId, newStatus) => {
     try {

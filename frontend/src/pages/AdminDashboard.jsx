@@ -5,6 +5,7 @@ import { GlassCard, StatusBadge } from '../components/common/GlassComponents';
 import { PlatformMap } from '../map/components/PlatformMap';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
+import { useWebSocket } from '../context/WebSocketContext';
 import { AdminDashboardSkeleton } from '../components/common/PageSkeletons';
 import { AdminPushNotifications } from '../components/admin/AdminPushNotifications';
 import { AppCache } from '../utils/AppCache';
@@ -22,6 +23,7 @@ import {
 
 const AdminDashboard = () => {
   const { api, isSuperAdmin } = useAuth();
+  const { adminNotification } = useWebSocket();
   const [stats, setStats] = useState(() => AppCache.get('admin_stats') || null);
   const [analytics, setAnalytics] = useState(() => AppCache.get('admin_analytics') || null);
   const [activeRides, setActiveRides] = useState(() => AppCache.get('admin_active_rides') || []);
@@ -33,6 +35,12 @@ const AdminDashboard = () => {
     const interval = setInterval(() => fetchData(true), 15000); // Silent refresh every 15s
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (adminNotification) {
+      fetchData(true);
+    }
+  }, [adminNotification]);
 
   const fetchData = async (isBackground = false) => {
     try {
@@ -328,7 +336,7 @@ const AdminDashboard = () => {
                       </div>
                       <div>
                         <p className="text-foreground font-bold">
-                          {ride.student?.name || 'Student'} → {ride.driver?.user?.name || 'Assigned Driver'}
+                          {ride.student?.name || 'Student'} → {ride.driver?.user?.name || (ride.status === 'requested' ? 'Waiting for driver...' : 'Assigned Driver')}
                         </p>
                         <p className="text-muted-foreground text-[11px] truncate max-w-[220px]">
                           {ride.pickup_location?.name || ride.pickup_location?.address} → {ride.dropoff_location?.name || ride.dropoff_location?.address}

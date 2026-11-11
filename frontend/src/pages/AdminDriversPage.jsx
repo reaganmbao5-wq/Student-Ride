@@ -8,6 +8,7 @@ import { SteeringWheel, Car } from '@phosphor-icons/react';
 import { GlassCard, GlassInput, GoldButton, EmptyState } from '../components/common/GlassComponents';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../context/AuthContext';
+import { useWebSocket } from '../context/WebSocketContext';
 import { AdminDriversSkeleton } from '../components/common/PageSkeletons';
 import { AppCache } from '../utils/AppCache';
 import { resolveMediaUrl } from '../utils/urlHelpers';
@@ -51,6 +52,7 @@ const DriverAvatar = ({ src, name, size = "w-11 h-11", textSize = "text-base" })
 
 const AdminDriversPage = () => {
   const { api, token } = useAuth();
+  const { adminNotification } = useWebSocket();
   const [drivers, setDrivers] = useState(() => AppCache.get('admin_drivers') || []);
   const [loading, setLoading] = useState(() => !AppCache.get('admin_drivers'));
   
@@ -89,6 +91,12 @@ const AdminDriversPage = () => {
   useEffect(() => {
     fetchDrivers(Boolean(AppCache.get('admin_drivers')));
   }, []);
+
+  useEffect(() => {
+    if (adminNotification) {
+      fetchDrivers(true);
+    }
+  }, [adminNotification]);
 
   const fetchDrivers = async (isBackground = false) => {
     try {
