@@ -14,6 +14,8 @@ import { LimelightNav } from '../ui/limelight-nav';
 import { ThemeToggle } from '../ui/theme-toggle';
 import { isCountdownActive } from '../ui/coming-soon-3';
 import { EmergencyAlertModal } from '../admin/EmergencyAlertModal';
+import EmptyComponent from '../ui/empty5';
+import { isOutsideOperatingHours, OPERATING_HOURS_COPY } from '../../utils/operatingHours';
 
 export const Layout = ({ children }) => {
   const { user, isDriver, isAdmin, isAccountant, logout } = useAuth();
@@ -21,6 +23,7 @@ export const Layout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [showClosedModal, setShowClosedModal] = React.useState(false);
 
   const handleLogout = () => {
     logout();
@@ -101,6 +104,13 @@ export const Layout = ({ children }) => {
               key={item.to}
               to={item.to}
               end={item.to === '/dashboard' || item.to === '/driver' || item.to === '/admin' || item.to === '/accountant'}
+              onClick={(e) => {
+                if (item.to === '/ride' && isOutsideOperatingHours()) {
+                  e.preventDefault();
+                  haptics.tap();
+                  setShowClosedModal(true);
+                }
+              }}
               className={({ isActive }) => cn(
                 "flex items-center gap-3 p-3 rounded-xl transition-all",
                 isActive
@@ -213,7 +223,13 @@ export const Layout = ({ children }) => {
               key={item.to}
               to={item.to}
               end={item.to === '/dashboard' || item.to === '/driver' || item.to === '/admin'}
-              onClick={() => haptics.tap()}
+              onClick={(e) => {
+                haptics.tap();
+                if (item.to === '/ride' && isOutsideOperatingHours()) {
+                  e.preventDefault();
+                  setShowClosedModal(true);
+                }
+              }}
               className="outline-none"
             >
               {({ isActive }) => (
@@ -244,6 +260,10 @@ export const Layout = ({ children }) => {
             const target = navItems[index];
             if (target && target.to) {
               haptics.tap();
+              if (target.to === '/ride' && isOutsideOperatingHours()) {
+                setShowClosedModal(true);
+                return;
+              }
               setTimeout(() => {
                 navigate(target.to);
               }, 120);
@@ -251,6 +271,33 @@ export const Layout = ({ children }) => {
           }}
         />
       </nav>
+
+      {/* Operating Hours Closed Notice Modal (19:30 to 06:00) */}
+      {showClosedModal && (
+        <div
+          className="fixed inset-0 z-[70] bg-black/65 backdrop-blur-sm flex items-center justify-center p-4"
+          data-testid="operating-hours-closed-modal"
+        >
+          <div className="w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
+            <EmptyComponent
+              title={OPERATING_HOURS_COPY.title}
+              description={OPERATING_HOURS_COPY.description}
+              primaryLabel={OPERATING_HOURS_COPY.primaryLabel}
+              secondaryLabel={OPERATING_HOURS_COPY.secondaryLabel}
+              onPrimaryAction={() => {
+                setShowClosedModal(false);
+                if (location.pathname !== '/dashboard') {
+                  navigate('/dashboard');
+                }
+              }}
+              onSecondaryAction={() => {
+                setShowClosedModal(false);
+                navigate('/history');
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Real-time Emergency SOS Alert Modal for Admin */}
       {isAdmin && <EmergencyAlertModal />}

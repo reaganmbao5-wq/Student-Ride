@@ -27,6 +27,8 @@ import { TourGuideButton } from '../components/common/TourGuideButton';
 import { tourGuide } from '../services/TourGuideService';
 import { DriverPhotoModal } from '../components/common/DriverPhotoModal';
 import { isCountdownActive } from '../components/ui/coming-soon-3';
+import EmptyComponent from '../components/ui/empty5';
+import { isOutsideOperatingHours, OPERATING_HOURS_COPY } from '../utils/operatingHours';
 
 const STATUS_RANK = {
   'requested': 1,
@@ -70,6 +72,16 @@ const StudentDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const initialRideState = location.state?.initialRide || null;
+  const [showSharedHoldNotice, setShowSharedHoldNotice] = useState(() => Boolean(location.state?.showSharedHoldNotice));
+
+  useEffect(() => {
+    if (showSharedHoldNotice) {
+      const timer = setTimeout(() => {
+        setShowSharedHoldNotice(false);
+      }, 9000);
+      return () => clearTimeout(timer);
+    }
+  }, [showSharedHoldNotice]);
 
   const { user, api } = useAuth();
   const { theme, accentColor, ACCENT_COLORS } = useTheme();
@@ -320,8 +332,14 @@ const StudentDashboard = () => {
   const [rideToDelete, setRideToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [isDriving, setIsDriving] = useState(false);
+  const [showClosedHoursModal, setShowClosedHoursModal] = useState(false);
+  const isClosedNow = isOutsideOperatingHours();
 
   const handleRequestRideClick = () => {
+    if (isOutsideOperatingHours()) {
+      setShowClosedHoursModal(true);
+      return;
+    }
     if (isDriving) return;
     setIsDriving(true);
 
@@ -1139,8 +1157,10 @@ const StudentDashboard = () => {
             </div>
 
             {/* Subtext Guidance (Positioned above car layer with z-20) */}
-            <p className="text-xs md:text-sm text-muted-foreground font-medium mt-10 md:mt-12 mb-4 max-w-xs relative z-20">
-              Tap to set your pickup point and destination
+            <p className="text-xs md:text-sm text-muted-foreground font-medium mt-10 md:mt-12 mb-3 max-w-xs relative z-20">
+              {isClosedNow
+                ? 'Operating Hours: 06:00 AM – 07:30 PM (Currently Closed)'
+                : 'Tap to set your pickup point and destination'}
             </p>
 
             {/* Request a Ride Button (Positioned above car layer with z-20 so car drives under it) */}
@@ -1173,7 +1193,7 @@ const StudentDashboard = () => {
             </div>
           </GlassCard>
 
-          <GlassCard className="p-3.5 sm:p-4 cursor-pointer hover:border-gold/30 transition-all" hover={false} onClick={() => navigate('/ride')}>
+          <GlassCard className="p-3.5 sm:p-4 cursor-pointer hover:border-gold/30 transition-all" hover={false} onClick={handleRequestRideClick}>
             <div className="flex items-center gap-3">
               <Clock className="w-7 h-7 text-amber-500 shrink-0" />
               <div className="min-w-0">
@@ -1220,7 +1240,7 @@ const StudentDashboard = () => {
               title="No rides yet"
               description="Your ride history will appear here"
               action={
-                <GoldButton size="sm" onClick={() => navigate('/ride')}>
+                <GoldButton size="sm" onClick={handleRequestRideClick}>
                   Book your first ride
                 </GoldButton>
               }
@@ -1336,6 +1356,69 @@ const StudentDashboard = () => {
         onClose={() => setIsPhotoModalOpen(false)}
       />
 
+      <AnimatePresence>
+        {showSharedHoldNotice && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm flex items-center justify-center p-4"
+            data-testid="finding-driver-shared-hold-modal"
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0, y: 12 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: 12 }}
+              transition={{ duration: 0.22 }}
+              className="w-full max-w-md"
+            >
+              <EmptyComponent
+                title="Why Inbound Shared Rides Are On Hold"
+                description="We are finding your Private Ride driver right now! Shared Rides on Up School, Down School, and Across routes are temporarily paused so drivers can come to you immediately without waiting to fill multiple seats. Shared Rides remain open for Town trips and will return to campus routes as more students join the platform."
+                primaryLabel="Continue Finding Driver"
+                secondaryLabel="Cancel & Back to Home"
+                onPrimaryAction={() => setShowSharedHoldNotice(false)}
+                onSecondaryAction={async () => {
+                  setShowSharedHoldNotice(false);
+                  await handleCancelRide();
+                }}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showClosedHoursModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] bg-black/65 backdrop-blur-sm flex items-center justify-center p-4"
+            data-testid="dashboard-operating-hours-modal"
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0, y: 12 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: 12 }}
+              transition={{ duration: 0.22 }}
+              className="w-full max-w-md"
+            >
+              <EmptyComponent
+                title={OPERATING_HOURS_COPY.title}
+                description={OPERATING_HOURS_COPY.description}
+                primaryLabel={OPERATING_HOURS_COPY.primaryLabel}
+                secondaryLabel={OPERATING_HOURS_COPY.secondaryLabel}
+                onPrimaryAction={() => setShowClosedHoursModal(false)}
+                onSecondaryAction={() => {
+                  setShowClosedHoursModal(false);
+                  navigate('/history');
+                }}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </Layout>
   );
