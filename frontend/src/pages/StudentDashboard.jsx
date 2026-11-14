@@ -27,6 +27,7 @@ import { TourGuideButton } from '../components/common/TourGuideButton';
 import { tourGuide } from '../services/TourGuideService';
 import { DriverPhotoModal } from '../components/common/DriverPhotoModal';
 import { isCountdownActive } from '../components/ui/coming-soon-3';
+import EmptyComponent from '../components/ui/empty5';
 
 const STATUS_RANK = {
   'requested': 1,
@@ -70,6 +71,16 @@ const StudentDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const initialRideState = location.state?.initialRide || null;
+  const [showSharedHoldNotice, setShowSharedHoldNotice] = useState(() => Boolean(location.state?.showSharedHoldNotice));
+
+  useEffect(() => {
+    if (showSharedHoldNotice) {
+      const timer = setTimeout(() => {
+        setShowSharedHoldNotice(false);
+      }, 9000);
+      return () => clearTimeout(timer);
+    }
+  }, [showSharedHoldNotice]);
 
   const { user, api } = useAuth();
   const { theme, accentColor, ACCENT_COLORS } = useTheme();
@@ -1336,6 +1347,37 @@ const StudentDashboard = () => {
         onClose={() => setIsPhotoModalOpen(false)}
       />
 
+      <AnimatePresence>
+        {showSharedHoldNotice && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm flex items-center justify-center p-4"
+            data-testid="finding-driver-shared-hold-modal"
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0, y: 12 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: 12 }}
+              transition={{ duration: 0.22 }}
+              className="w-full max-w-md"
+            >
+              <EmptyComponent
+                title="Why Inbound Shared Rides Are On Hold"
+                description="We are finding your Private Ride driver right now! Shared Rides on Up School, Down School, and Across routes are temporarily paused so drivers can come to you immediately without waiting to fill multiple seats. Shared Rides remain open for Town trips and will return to campus routes as more students join the platform."
+                primaryLabel="Continue Finding Driver"
+                secondaryLabel="Cancel & Back to Home"
+                onPrimaryAction={() => setShowSharedHoldNotice(false)}
+                onSecondaryAction={async () => {
+                  setShowSharedHoldNotice(false);
+                  await handleCancelRide();
+                }}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </Layout>
   );

@@ -37,13 +37,16 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { TourGuideButton } from '../components/common/TourGuideButton';
 import { tourGuide } from '../services/TourGuideService';
+import EmptyComponent from '../components/ui/empty5';
 
 const RideRequestPage = () => {
   const navigate = useNavigate();
   const { api, user } = useAuth();
   const { theme, accentColor, ACCENT_COLORS } = useTheme();
   const activeAccentHex = ACCENT_COLORS?.[accentColor]?.hex || '#3B82F6';
-  const [rideMode, setRideMode] = useState('shared');
+  const [rideMode, setRideMode] = useState('private');
+  const [showSharedHoldModal, setShowSharedHoldModal] = useState(false);
+  const [sharedHoldModalMode, setSharedHoldModalMode] = useState('blocked'); // 'blocked' | 'private_notice'
   const { location: userLocation, loading: geoLoading, error: geoError, refresh: refreshLocation } = useGeolocation();
   const { drivers: nearbyDrivers } = useDriverDiscovery(api, userLocation, rideMode);
 
@@ -281,12 +284,32 @@ const RideRequestPage = () => {
     const estDist = Math.max(0.5, R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
     const estDuration = Math.max(2, Math.round(estDist * 2.2 + 1));
     
-    const estPrivateFare = Math.max(20, Math.round(15 + estDist * 5));
-    const estSharedFare = Math.max(15, Math.round(estPrivateFare * 0.7));
+    const pAddr = (p.address || p.name || '').toLowerCase();
+    const dAddr = (d.address || d.name || '').toLowerCase();
+    const isTownKeyword = pAddr.includes('kobil') || pAddr.includes('town') || dAddr.includes('kobil') || dAddr.includes('town');
+    const estSharedDisabled = !isTownKeyword && estDist < 5.0;
+
+    let estPrivateFare = 52;
+    let estSharedFare = 21;
+    if (estDist >= 10.0 || isTownKeyword) {
+      estPrivateFare = 215;
+      estSharedFare = 63;
+    } else if (estDist >= 5.0) {
+      estPrivateFare = 115;
+      estSharedFare = 47;
+    } else if (estDist >= 2.5) {
+      estPrivateFare = 73;
+      estSharedFare = 31;
+    }
+
+    if (estSharedDisabled) {
+      setRideMode('private');
+    }
 
     setFareEstimate({
       private_fare: estPrivateFare,
       shared_fare: estSharedFare,
+      shared_disabled: estSharedDisabled,
       distance_km: parseFloat(estDist.toFixed(1)),
       distance: parseFloat(estDist.toFixed(1)),
       duration_mins: estDuration,
@@ -304,6 +327,10 @@ const RideRequestPage = () => {
       });
       const data = response.data;
       if (data) {
+        const backendSharedDisabled = Boolean(data.shared_disabled ?? data.shared?.shared_disabled ?? estSharedDisabled);
+        if (backendSharedDisabled) {
+          setRideMode('private');
+        }
         trackFareViewed({
           pickup: activePickup?.display_name || activePickup?.name,
           dropoff: activeDropoff?.display_name || activeDropoff?.name,
@@ -315,6 +342,8 @@ const RideRequestPage = () => {
         setFareEstimate({
           private_fare: data.private?.estimated_fare || data.private?.fare || estPrivateFare,
           shared_fare: data.shared?.estimated_fare || data.shared?.fare || estSharedFare,
+          shared_disabled: backendSharedDisabled,
+          zone: data.zone || data.private?.zone,
           distance_km: data.verified_distance || data.distance_km || parseFloat(estDist.toFixed(1)),
           duration_mins: data.verified_duration || data.duration_mins || estDuration,
           duration_min: data.duration_min || data.verified_duration || data.duration_mins || estDuration,
@@ -393,10 +422,12 @@ const RideRequestPage = () => {
 
   const [isCollapsing, setIsCollapsing] = useState(false);
 
-  const handleRequestRide = async () => {
+  const submitRideRequest = async (modeOverride = null, showNoticeOnDashboard = false) => {
     const activePickup = pickup || confirmedLocationsRef.current.pickup;
     const activeDropoff = dropoff || confirmedLocationsRef.current.dropoff;
     if (!activePickup || !activeDropoff || !fareEstimate) return;
+
+    const effectiveMode = modeOverride || rideMode;
 
     // Beta testing phase gate: allow whitelisted beta testers and admins through, redirect standard users to announcement
     const isBetaTester = Boolean(user?.is_beta_tester);
@@ -408,28 +439,60 @@ const RideRequestPage = () => {
 
     setRequesting(true);
     try {
-      const activeFare = rideMode === 'shared' ? fareEstimate.shared_fare : fareEstimate.private_fare;
+      const activeFare = effectiveMode === 'shared' ? fareEstimate.shared_fare : fareEstimate.private_fare;
       trackRideRequested({
         pickup: activePickup?.display_name || activePickup?.name,
         dropoff: activeDropoff?.display_name || activeDropoff?.name,
         fare: activeFare,
-        mode: rideMode
+        mode: effectiveMode
       });
       const res = await api.post('/rides/request', {
         pickup_location: activePickup,
         dropoff_location: activeDropoff,
-        ride_mode: rideMode,
+        ride_mode: effectiveMode,
         estimated_fare: activeFare,
         estimated_distance: fareEstimate.distance || fareEstimate.distance_km,
         estimated_duration: fareEstimate.duration || fareEstimate.duration_mins
       });
 
       toast.success('Ride requested! Finding a driver...');
-      navigate('/dashboard', { state: { initialRide: res.data } });
+      navigate('/dashboard', {
+        state: {
+          initialRide: res.data,
+          showSharedHoldNotice: Boolean(showNoticeOnDashboard)
+        }
+      });
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to request ride');
       setRequesting(false);
+      setShowSharedHoldModal(false);
     }
+  };
+
+  const handleRequestRide = async () => {
+    const activePickup = pickup || confirmedLocationsRef.current.pickup;
+    const activeDropoff = dropoff || confirmedLocationsRef.current.dropoff;
+    if (!activePickup || !activeDropoff || !fareEstimate) return;
+
+    const isSharedDisabled = Boolean(fareEstimate?.shared_disabled);
+
+    // 1. If student selected the grayed-out Shared Ride on an inbound/across route, block and show the pop-up
+    if (rideMode === 'shared' && isSharedDisabled) {
+      setSharedHoldModalMode('blocked');
+      setShowSharedHoldModal(true);
+      return;
+    }
+
+    // 2. If student selected Private Ride on an inbound/across route, show the pop-up briefly as it transitions to Finding a Driver
+    if (rideMode === 'private' && isSharedDisabled) {
+      setSharedHoldModalMode('private_notice');
+      setShowSharedHoldModal(true);
+      await submitRideRequest('private', true);
+      return;
+    }
+
+    // 3. Town routes (both Shared and Private rides active as normal)
+    await submitRideRequest(rideMode, false);
   };
 
   const handleBack = () => {
@@ -767,6 +830,8 @@ const RideRequestPage = () => {
                  const savePercent = fareEstimate && fareEstimate.private_fare > 0 && fareEstimate.shared_fare < fareEstimate.private_fare
                    ? Math.round((1 - fareEstimate.shared_fare / fareEstimate.private_fare) * 100)
                    : 30;
+                 const isSharedDisabled = Boolean(fareEstimate?.shared_disabled);
+                 const isSharedSelectedAndDisabled = rideMode === 'shared' && isSharedDisabled;
 
                  return (
                    <>
@@ -775,7 +840,9 @@ const RideRequestPage = () => {
                        <span className="text-[11px] font-medium text-zinc-400 text-right select-none">
                          {rideMode === 'shared' 
                            ? 'Tap/Swipe to switch to Private' 
-                           : 'Tap/Swipe to switch to Shared'}
+                           : isSharedDisabled
+                             ? 'Tap/Swipe to view Shared (On Hold)'
+                             : 'Tap/Swipe to switch to Shared'}
                        </span>
                      </div>
                      
@@ -814,10 +881,12 @@ const RideRequestPage = () => {
                               haptics.swipeSnap();
                             }}
                             style={{ touchAction: 'none' }}
-                            className={`flex-1 p-3 rounded-2xl cursor-pointer select-none transition-colors duration-300 relative overflow-hidden flex flex-col justify-between border-2 touch-none ${
-                              rideMode === 'shared' 
-                                ? 'bg-card text-card-foreground border-blue-500 shadow-md' 
-                                : 'bg-card text-card-foreground border-border shadow-md'
+                            className={`flex-1 p-3 rounded-2xl cursor-pointer select-none transition-all duration-300 relative overflow-hidden flex flex-col justify-between border-2 touch-none ${
+                              isSharedSelectedAndDisabled
+                                ? 'bg-zinc-100/90 dark:bg-zinc-900/70 text-zinc-400 dark:text-zinc-500 border-zinc-300 dark:border-zinc-700 grayscale opacity-70 shadow-inner'
+                                : rideMode === 'shared' 
+                                  ? 'bg-card text-card-foreground border-blue-500 shadow-md' 
+                                  : 'bg-card text-card-foreground border-purple-600/80 dark:border-purple-500/80 shadow-md'
                             }`}
                           >
                             {/* Loading Skeleton */}
@@ -837,10 +906,20 @@ const RideRequestPage = () => {
                               </div>
                             ) : (
                               <>
-                                {/* Original embedded Save Badge flush on top-right corner */}
-                                {rideMode === 'shared' && fareEstimate.shared_fare < fareEstimate.private_fare && (
+                                {/* Top-right badge */}
+                                {rideMode === 'shared' && isSharedDisabled && (
+                                  <div className="absolute top-0 right-0 bg-zinc-500 text-white text-[9px] font-extrabold px-2.5 py-0.5 rounded-bl-xl shadow z-10 uppercase tracking-wider">
+                                    On Hold
+                                  </div>
+                                )}
+                                {rideMode === 'shared' && !isSharedDisabled && fareEstimate.shared_fare < fareEstimate.private_fare && (
                                   <div className="absolute top-0 right-0 bg-blue-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-bl-xl shadow z-10">
                                     Save {savePercent}%
+                                  </div>
+                                )}
+                                {rideMode === 'private' && isSharedDisabled && (
+                                  <div className="absolute top-0 right-0 bg-zinc-200 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 text-[9px] font-bold px-2 py-0.5 rounded-bl-xl z-10">
+                                    Shared K{Math.round(fareEstimate.shared_fare || 0)} • On Hold
                                   </div>
                                 )}
 
@@ -855,16 +934,22 @@ const RideRequestPage = () => {
                                   >
                                     <div id="tour-ride-pricing" className="flex items-start justify-between gap-2 mb-0.5">
                                       <div>
-                                        <span className={`text-[10px] font-extrabold uppercase tracking-wider ${rideMode === 'shared' ? 'text-blue-500 dark:text-blue-400' : 'text-muted-foreground'}`}>
-                                          {rideMode} FARE
+                                        <span className={`text-[10px] font-extrabold uppercase tracking-wider ${
+                                          isSharedSelectedAndDisabled
+                                            ? 'text-zinc-400 dark:text-zinc-500'
+                                            : rideMode === 'shared'
+                                              ? 'text-blue-500 dark:text-blue-400'
+                                              : 'text-purple-600 dark:text-purple-400'
+                                        }`}>
+                                          {rideMode} FARE {isSharedSelectedAndDisabled ? '(PAUSED)' : ''}
                                         </span>
-                                        <div className="text-xl font-bold font-heading text-foreground">
+                                        <div className={`text-xl font-bold font-heading ${isSharedSelectedAndDisabled ? 'text-zinc-400 dark:text-zinc-500' : 'text-foreground'}`}>
                                           K{Math.round(rideMode === 'shared' ? (fareEstimate.shared_fare || 0) : (fareEstimate.private_fare || 0))}
                                         </div>
                                       </div>
-                                      {/* Shifted ETA & Distance comfortably below Save badge */}
-                                      <div className={`flex flex-col items-end shrink-0 ${rideMode === 'shared' ? 'pt-3' : 'pt-0.5'}`}>
-                                        <p className="text-xs text-foreground font-semibold">
+                                      {/* Shifted ETA & Distance comfortably below top-right badge */}
+                                      <div className={`flex flex-col items-end shrink-0 ${(rideMode === 'shared' || isSharedDisabled) ? 'pt-3' : 'pt-0.5'}`}>
+                                        <p className={`text-xs font-semibold ${isSharedSelectedAndDisabled ? 'text-zinc-400 dark:text-zinc-500' : 'text-foreground'}`}>
                                           {Math.ceil(fareEstimate.duration_min ?? fareEstimate.duration ?? fareEstimate.verified_duration ?? 1)} min
                                         </p>
                                         <p className="text-[10px] text-muted-foreground">
@@ -874,9 +959,11 @@ const RideRequestPage = () => {
                                     </div>
 
                                     <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
-                                      {rideMode === 'shared'
-                                        ? 'Lower fare. Ride may include other passengers.'
-                                        : 'Entire vehicle reserved. No additional platform passengers.'}
+                                      {isSharedSelectedAndDisabled
+                                        ? 'Temporarily paused on campus & Across routes. Tap for Private.'
+                                        : rideMode === 'shared'
+                                          ? 'Lower fare. Ride may include other passengers.'
+                                          : 'Entire vehicle reserved. Fast direct pickup.'}
                                     </p>
                                   </motion.div>
                                 </AnimatePresence>
@@ -889,7 +976,11 @@ const RideRequestPage = () => {
                             id="tour-request-ride-btn"
                             onClick={handleRequestRide}
                             disabled={requesting || isEstimatingFare || !fareEstimate}
-                            className="w-32 py-3 px-3 bg-black dark:bg-white text-white dark:text-black font-bold text-sm rounded-2xl active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center shrink-0 shadow-lg text-center leading-tight self-end mb-0.5 min-h-[50px]"
+                            className={`w-32 py-3 px-3 font-bold text-sm rounded-2xl active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center shrink-0 shadow-lg text-center leading-tight self-end mb-0.5 min-h-[50px] ${
+                              isSharedSelectedAndDisabled
+                                ? 'bg-zinc-300 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+                                : 'bg-black dark:bg-white text-white dark:text-black'
+                            }`}
                           >
                             {requesting ? (
                               <>
@@ -909,6 +1000,59 @@ const RideRequestPage = () => {
           )}
         </motion.div>
       </motion.div>
+
+      {/* Shared Ride On Hold / Private Ride Transition Notice Modal */}
+      <AnimatePresence>
+        {showSharedHoldModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm flex items-center justify-center p-4"
+            data-testid="shared-hold-modal"
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0, y: 12 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: 12 }}
+              transition={{ duration: 0.22 }}
+              className="w-full max-w-md"
+            >
+              <EmptyComponent
+                title={
+                  sharedHoldModalMode === 'blocked'
+                    ? 'Shared Rides Currently On Hold'
+                    : 'Why Inbound Rides Are Private Right Now'
+                }
+                description={
+                  sharedHoldModalMode === 'blocked'
+                    ? `For Up School, Down School, and Across routes, Shared Rides (K${Math.round(fareEstimate?.shared_fare || 21)}) are temporarily on hold because drivers cannot easily dispatch for a single shared seat. Please book a Private Ride (K${Math.round(fareEstimate?.private_fare || 52)}) for immediate pickup—Shared Rides will be turned back on as more riders join the platform!`
+                    : 'Your Private Ride is being dispatched! Please note that Shared Rides on campus and Across routes are temporarily paused so drivers can come to you immediately without waiting to fill seats. We will re-enable Shared Rides on these routes once more students are active on the platform.'
+                }
+                primaryLabel={
+                  sharedHoldModalMode === 'blocked'
+                    ? `Order Private Ride (K${Math.round(fareEstimate?.private_fare || 52)})`
+                    : 'Continue to Finding Driver'
+                }
+                secondaryLabel="Go Back to Home"
+                onPrimaryAction={() => {
+                  if (sharedHoldModalMode === 'blocked') {
+                    setRideMode('private');
+                    setShowSharedHoldModal(false);
+                    submitRideRequest('private', true);
+                  } else {
+                    setShowSharedHoldModal(false);
+                  }
+                }}
+                onSecondaryAction={() => {
+                  setShowSharedHoldModal(false);
+                  navigate('/dashboard');
+                }}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -1013,13 +1013,17 @@ async def calculate_ride_fare(pickup_loc: Dict[str, Any], dropoff_loc: Dict[str,
         total_student_fare_int = driver_earning_int + commission_int
         
         route_name = f"{route['pickup_name']} to {route['dropoff_name']}" if is_forward else f"{route['dropoff_name']} to {route['pickup_name']}"
+        route_zone = str(route.get("zone", "up_down")).lower()
+        shared_disabled = route_zone in ["up_down", "across"]
         
-        logger.info(f"Fixed Route Match ({'Forward' if is_forward else 'Reverse'}): {route_name} | Mode: {ride_mode} | Driver: {driver_earning_int}, Comm: {commission_int}, Student Total: {total_student_fare_int}")
+        logger.info(f"Fixed Route Match ({'Forward' if is_forward else 'Reverse'}): {route_name} | Zone: {route_zone} | Mode: {ride_mode} | Driver: {driver_earning_int}, Comm: {commission_int}, Student Total: {total_student_fare_int}")
         return {
             "fare": total_student_fare_int,
             "driver_earning": driver_earning_int,
             "commission": commission_int,
             "is_fixed": True,
+            "zone": route_zone,
+            "shared_disabled": shared_disabled,
             "route_name": route_name,
             "breakdown": {
                 "base": driver_earning_int,
@@ -1081,12 +1085,15 @@ async def calculate_ride_fare(pickup_loc: Dict[str, Any], dropoff_loc: Dict[str,
         tier_name = "Town / Highway Distance"
         
     student_total = driver_base + comm
+    shared_disabled = distance_km < 5.0
     
     return {
         "fare": student_total,
         "driver_earning": driver_base,
         "commission": comm,
         "is_fixed": False,
+        "zone": "up_down" if distance_km < 2.5 else ("across" if distance_km < 5.0 else "town"),
+        "shared_disabled": shared_disabled,
         "route_name": f"Standard Ride ({tier_name})",
         "surge_reason": None,
         "breakdown": {
@@ -2864,6 +2871,12 @@ async def request_ride(ride_data: RideRequest, user: dict = Depends(get_current_
             duration,
             ride_data.ride_mode
         )
+        
+        if ride_data.ride_mode == RideMode.SHARED and pricing_result.get("shared_disabled"):
+            raise HTTPException(
+                status_code=400,
+                detail="Shared rides are temporarily on hold for campus and across routes. Please select a Private Ride."
+            )
         
         calculated_fare = pricing_result["fare"]
         commission = pricing_result.get("commission", round(calculated_fare * 0.10, 2))
@@ -6007,6 +6020,7 @@ async def estimate_fare(data: dict, user: dict = Depends(get_current_user)):
 
     private_pricing = await calculate_ride_fare(pickup, dropoff, distance_km, duration_min, RideMode.PRIVATE)
     shared_pricing = await calculate_ride_fare(pickup, dropoff, distance_km, duration_min, RideMode.SHARED)
+    shared_disabled = bool(shared_pricing.get("shared_disabled", False))
 
     return {
         "private": {
@@ -6015,6 +6029,8 @@ async def estimate_fare(data: dict, user: dict = Depends(get_current_user)):
             "distance_charge": private_pricing["breakdown"]["distance"],
             "time_charge": private_pricing["breakdown"]["time"],
             "is_fixed": private_pricing.get("is_fixed", False),
+            "zone": private_pricing.get("zone"),
+            "route_name": private_pricing.get("route_name"),
             "surge_reason": private_pricing.get("surge_reason")
         },
         "shared": {
@@ -6023,8 +6039,13 @@ async def estimate_fare(data: dict, user: dict = Depends(get_current_user)):
             "distance_charge": shared_pricing["breakdown"]["distance"],
             "time_charge": shared_pricing["breakdown"]["time"],
             "is_fixed": shared_pricing.get("is_fixed", False),
+            "zone": shared_pricing.get("zone"),
+            "route_name": shared_pricing.get("route_name"),
+            "shared_disabled": shared_disabled,
             "surge_reason": shared_pricing.get("surge_reason")
         },
+        "shared_disabled": shared_disabled,
+        "zone": shared_pricing.get("zone"),
         "verified_distance": round(distance_km, 2),
         "verified_duration": round(duration_min, 1),
         "duration_min": round(duration_min, 1),
