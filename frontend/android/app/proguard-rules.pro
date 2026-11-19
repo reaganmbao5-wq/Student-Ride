@@ -1,21 +1,57 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# ==============================================================================
+# Jaey Ride — R8 / ProGuard Optimization & Keep Rules
+# Enables DEX shrinking + obfuscation above Google Play's 25% threshold while
+# preserving Capacitor plugins, WebView JS interfaces, Google Auth, and FCM.
+# ==============================================================================
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Preserve clean stack traces for Play Console deobfuscation mapping
+-keepattributes SourceFile,LineNumberTable,*Annotation*,Signature,InnerClasses,EnclosingMethod
+-renamesourcefileattribute SourceFile
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Keep MainActivity entrypoint
+-keep class com.jaeyride.app.MainActivity { *; }
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Keep Capacitor plugin classes loaded by reflection from capacitor.plugins.json
+-keep @com.getcapacitor.annotation.CapacitorPlugin public class * extends com.getcapacitor.Plugin {
+    public <init>();
+    @com.getcapacitor.PluginMethod <methods>;
+    @com.getcapacitor.annotation.PermissionCallback <methods>;
+    @com.getcapacitor.annotation.ActivityCallback <methods>;
+}
+-keep class * extends com.getcapacitor.Plugin {
+    public <init>();
+    @com.getcapacitor.PluginMethod <methods>;
+    @com.getcapacitor.annotation.PermissionCallback <methods>;
+    @com.getcapacitor.annotation.ActivityCallback <methods>;
+}
+
+# Explicitly preserve registered Capacitor plugin classes & Google Auth plugin
+-keep class com.capacitorjs.plugins.** {
+    public <init>(...);
+    @com.getcapacitor.PluginMethod <methods>;
+    @com.getcapacitor.annotation.PermissionCallback <methods>;
+    @com.getcapacitor.annotation.ActivityCallback <methods>;
+}
+-keep class com.codetrixstudio.capacitor.GoogleAuth.** { *; }
+-keep class com.getcapacitor.plugin.SystemBars { *; }
+-keep class com.getcapacitor.plugin.CapacitorCookies { *; }
+-keep class com.getcapacitor.plugin.CapacitorHttp { *; }
+-keep class com.getcapacitor.plugin.WebView { *; }
+-keep class com.getcapacitor.MessageHandler { *; }
+
+# Keep Android WebView @JavascriptInterface methods (Capacitor JS-to-Native bridge)
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
+
+# Keep Cordova plugin classes if any are loaded reflectively
+-keep class * extends org.apache.cordova.CordovaPlugin {
+    public <init>();
+}
+
+# Keep Firebase Messaging Service & Google Play Services reflective entrypoints
+-keep class com.capacitorjs.plugins.pushnotifications.MessagingService { *; }
+-keep class com.google.firebase.messaging.FirebaseMessagingService { *; }
+-dontwarn com.google.android.gms.**
+-dontwarn com.google.firebase.**
+-dontwarn org.apache.cordova.**
