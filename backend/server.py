@@ -4959,39 +4959,11 @@ async def _ensure_play_store_testers_seeded():
 
 @api_router.post("/play-store/request-access")
 async def request_play_store_access(request: PlayStoreAccessRequest):
+    # App is now publicly available in Google Play Production — grant immediate access
+    # to every caller (including older v8/v9 app installs checking the legacy endpoint).
     email_clean = (request.email or "").lower().strip()
-    if not email_clean or "@" not in email_clean:
-        raise HTTPException(status_code=400, detail="Please enter a valid Google Play email address")
-
-    await _ensure_play_store_testers_seeded()
-
-    doc = await db.play_store_testers.find_one({"email": email_clean}, {"_id": 0})
-    if doc and doc.get("status") == "synced":
-        return {
-            "status": "synced",
-            "email": email_clean,
-            "play_store_url": PLAY_STORE_URL
-        }
-
-    existing_user = await db.users.find_one({"email": email_clean})
-    user_id = existing_user["id"] if existing_user else (doc.get("user_id") if doc else None)
-    resolved_name = (request.name or "").strip() or (existing_user.get("name") if existing_user else "") or (doc.get("name") if doc else "")
-    now_iso = datetime.now(timezone.utc).isoformat()
-
-    await db.play_store_testers.update_one(
-        {"email": email_clean},
-        {"$set": {
-            "email": email_clean,
-            "name": resolved_name,
-            "user_id": user_id,
-            "status": "pending",
-            "requested_at": doc.get("requested_at") if doc and doc.get("requested_at") else now_iso
-        }},
-        upsert=True
-    )
-
     return {
-        "status": "pending",
+        "status": "synced",
         "email": email_clean,
         "play_store_url": PLAY_STORE_URL
     }
