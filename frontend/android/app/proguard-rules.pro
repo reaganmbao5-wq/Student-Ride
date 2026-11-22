@@ -1,45 +1,34 @@
 # ==============================================================================
 # Jaey Ride — R8 / ProGuard Optimization & Keep Rules
-# Enables DEX shrinking + obfuscation above Google Play's 25% threshold while
-# preserving Capacitor plugins, WebView JS interfaces, Google Auth, and FCM.
+# Enables DEX shrinking + obfuscation well above Google Play's 25% threshold
+# while preserving Capacitor core, annotations, plugins, WebView bridges,
+# Ionic geolocation libs, Google Auth, and Firebase Messaging.
 # ==============================================================================
 
-# Preserve clean stack traces for Play Console deobfuscation mapping
--keepattributes SourceFile,LineNumberTable,*Annotation*,Signature,InnerClasses,EnclosingMethod
+# Preserve clean stack traces, annotations, generics, and Kotlin metadata
+-keepattributes SourceFile,LineNumberTable,*Annotation*,Signature,InnerClasses,EnclosingMethod,RuntimeVisibleAnnotations,RuntimeInvisibleAnnotations
 -renamesourcefileattribute SourceFile
+-keep class kotlin.Metadata { *; }
 
-# Keep MainActivity entrypoint
--keep class com.jaeyride.app.MainActivity { *; }
+# Keep MainActivity & native JS bridge helpers
+-keep class com.jaeyride.app.** { *; }
 
-# Keep Capacitor plugin classes loaded by reflection from capacitor.plugins.json
--keep @com.getcapacitor.annotation.CapacitorPlugin public class * extends com.getcapacitor.Plugin {
-    public <init>();
-    @com.getcapacitor.PluginMethod <methods>;
-    @com.getcapacitor.annotation.PermissionCallback <methods>;
-    @com.getcapacitor.annotation.ActivityCallback <methods>;
-}
--keep class * extends com.getcapacitor.Plugin {
-    public <init>();
-    @com.getcapacitor.PluginMethod <methods>;
-    @com.getcapacitor.annotation.PermissionCallback <methods>;
-    @com.getcapacitor.annotation.ActivityCallback <methods>;
-}
+# Keep Capacitor core runtime, Bridge, Plugin, PluginHandle, and ALL annotations
+# (Critical: Plugin.getPermissionStates() reflects on @CapacitorPlugin/@Permission)
+-keep class com.getcapacitor.** { *; }
+-keep interface com.getcapacitor.** { *; }
+-keep @interface com.getcapacitor.** { *; }
 
-# Explicitly preserve registered Capacitor plugin classes & Google Auth plugin
--keep class com.capacitorjs.plugins.** {
-    public <init>(...);
-    @com.getcapacitor.PluginMethod <methods>;
-    @com.getcapacitor.annotation.PermissionCallback <methods>;
-    @com.getcapacitor.annotation.ActivityCallback <methods>;
-}
+# Keep ALL Capacitor official & community plugins and their Ionic backing libraries
+-keep class com.capacitorjs.plugins.** { *; }
+-keep class io.ionic.libs.** { *; }
 -keep class com.codetrixstudio.capacitor.GoogleAuth.** { *; }
--keep class com.getcapacitor.plugin.SystemBars { *; }
--keep class com.getcapacitor.plugin.CapacitorCookies { *; }
--keep class com.getcapacitor.plugin.CapacitorHttp { *; }
--keep class com.getcapacitor.plugin.WebView { *; }
--keep class com.getcapacitor.MessageHandler { *; }
 
-# Keep Android WebView @JavascriptInterface methods (Capacitor JS-to-Native bridge)
+# Keep any custom Capacitor plugin classes loaded by reflection
+-keep @com.getcapacitor.annotation.CapacitorPlugin class * { *; }
+-keep class * extends com.getcapacitor.Plugin { *; }
+
+# Keep Android WebView @JavascriptInterface methods (JS-to-Native bridge)
 -keepclassmembers class * {
     @android.webkit.JavascriptInterface <methods>;
 }
@@ -55,3 +44,4 @@
 -dontwarn com.google.android.gms.**
 -dontwarn com.google.firebase.**
 -dontwarn org.apache.cordova.**
+-dontwarn io.ionic.libs.**

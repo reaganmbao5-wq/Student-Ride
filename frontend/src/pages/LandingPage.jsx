@@ -176,19 +176,9 @@ const LandingPage = () => {
 
   const [showPlayStoreModal, setShowPlayStoreModal] = useState(false);
 
-  const handleDownloadApk = async () => {
-    const storedEmail = getStoredPlayStoreEmail();
-    if (storedEmail) {
-      try {
-        const data = await checkOrRequestPlayStoreAccess(storedEmail);
-        if (data.status === 'synced') {
-          toast.success('Opening Google Play Store...');
-          window.location.href = data.play_store_url || PLAY_STORE_URL;
-          return;
-        }
-      } catch (e) {}
-    }
-    setShowPlayStoreModal(true);
+  const handleDownloadApk = () => {
+    toast.success('Opening Google Play Store...');
+    window.location.href = PLAY_STORE_URL;
   };
 
   const [googleLoading, setGoogleLoading] = useState(false);
